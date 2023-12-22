@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ES2020",
+    "lib": ["ESNext", "DOM", "dom.iterable"],
+    //"types": ["node"],
+    "moduleResolution": "Node",
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noEmit": false,
+    //"noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "sourceMap": false,
+    "paths": {
+      "*": ["node_modules/*"]
+    }
+  },
+  "include": ["./src/*", "./src/tests"],
+  "exclude": ["node_modules", "dist"]
+}
