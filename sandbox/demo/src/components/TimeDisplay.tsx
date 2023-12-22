@@ -6,6 +6,7 @@ export const TimeDisplay = defineComponent({
   },
 
   init: function ({ state }) {
+    console.log("init")
     const interval = setInterval(() => {
       state.time = Date.now()
     }, 1000)

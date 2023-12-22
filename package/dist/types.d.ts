@@ -1,8 +1,11 @@
+import { str_internal } from "./constants";
 export type ComponentState = Record<string, unknown>;
 export type Component<T extends ComponentState = any> = IComponentDefinition<T> & {
     state: T;
-    dirty: boolean;
     node?: string | Node | null;
+    parent?: Component;
+    dirty?: boolean;
+    [str_internal]: true;
 };
 export interface IComponentDefinition<T extends ComponentState> {
     state?: T;
