@@ -1,20 +1,26 @@
 import { str_internal } from "./constants"
 
 export type ComponentState = Record<string, unknown>
+export type ComponentProps = { [key: string]: any } | null
 
-export type Component<T extends ComponentState = any> =
-  IComponentDefinition<T> & {
-    state: T
-    node?: string | Node | null
-    parent?: Component
-    dirty?: boolean
-    [str_internal]: true
-  }
+export type Component<
+  T extends ComponentState = any,
+  U extends ComponentProps = any
+> = IComponentDefinition<T, U> & {
+  state: T
+  node?: string | Node | null
+  parent?: Component
+  dirty?: boolean
+  [str_internal]: true
+}
 
-export interface IComponentDefinition<T extends ComponentState> {
+export interface IComponentDefinition<
+  T extends ComponentState,
+  U extends ComponentProps
+> {
   state?: T
-  init?: ComponentInitFunction<T>
-  render: ComponentRenderFunction<T>
+  init?: ComponentInitFunction<T, U>
+  render: ComponentRenderFunction<T, U>
 }
 
 declare global {
@@ -45,18 +51,24 @@ declare global {
 
 export type JSXTag = string | ((props: any, children: unknown[]) => Component)
 
-type ComponentRenderFunction<T extends ComponentState> = (props: {
-  state: T
-}) => JSX.Element | null
+type ComponentRenderFunction<
+  T extends ComponentState,
+  U extends ComponentProps
+> = (props: { state: T; props: U }) => JSX.Element | null
 
-type ComponentCleanupFunction<T extends ComponentState> = (props: {
-  state: T
-}) => void
+type ComponentCleanupFunction<
+  T extends ComponentState,
+  U extends ComponentProps
+> = (props: { state: T; props: U }) => void
 
-type ComponentInitFunction<T extends ComponentState> = (props: {
+type ComponentInitFunction<
+  T extends ComponentState,
+  U extends ComponentProps
+> = (props: {
   state: T
+  props: U
 }) =>
-  | ComponentCleanupFunction<T>
+  | ComponentCleanupFunction<T, U>
   | void
-  | Promise<ComponentCleanupFunction<T>>
+  | Promise<ComponentCleanupFunction<T, U>>
   | Promise<void>

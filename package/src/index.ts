@@ -4,6 +4,7 @@ import type {
   Component,
   JSXTag,
   IComponentDefinition,
+  ComponentProps,
 } from "./types"
 
 export class ReflexDOM {
@@ -24,12 +25,16 @@ export class ReflexDOM {
     this._app = app
   }
 
-  public static mount(root: Element, appFunc: () => Component) {
+  public static mount(
+    root: Element,
+    appFunc: (props: ComponentProps) => Component
+  ) {
+    // @ts-expect-error
     const app = appFunc()
-    app.state = this.getInstance().createStateProxy(app.state)
+    this.getInstance().registerComponent(app)
     ReflexDOM.getInstance().app = app
-    if (app.init) app.init({ state: app.state })
-    const node = app.render({ state: app.state })
+    if (app.init) app.init({ state: app.state, props: null })
+    const node = app.render({ state: app.state, props: null })
     if (node === null) return
     app.node = node as Node
     root.appendChild(app.node)
@@ -56,7 +61,7 @@ export class ReflexDOM {
     this.components.forEach((component) => {
       if (!component.dirty) return
       component.dirty = false
-      const node = component.render({ state: component.state })
+      const node = component.render({ state: component.state, props: null })
       if (node === null) {
         ;(component.node as Element)?.remove()
         component.node = null
@@ -92,17 +97,20 @@ export class ReflexDOM {
   }
 }
 
-export function defineComponent<T extends ComponentState>(
-  args: IComponentDefinition<T>
-): () => Component<T> {
+export function defineComponent<
+  T extends ComponentState,
+  U extends ComponentProps
+>(defs: IComponentDefinition<T, U>): (props: U) => Component<T, U> {
+  const { render, init } = defs
   return () => {
     return {
       [str_internal]: true,
-      state: {} as T,
       node: null,
       dirty: false,
       parent: undefined,
-      ...args,
+      state: defs.state ?? ({} as T),
+      render,
+      init,
     }
   }
 }
@@ -127,8 +135,8 @@ export function h(
     }
     ReflexDOM.getInstance().registerComponent(component)
 
-    if (component.init) component.init({ state: component.state })
-    const node = component.render({ state: component.state })
+    if (component.init) component.init({ state: component.state, props })
+    const node = component.render({ state: component.state, props })
     if (node === null) return null
     component.node = node as Node
     return component.node as JSX.Element

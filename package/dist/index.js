@@ -30,12 +30,13 @@ export class ReflexDOM {
         this._app = app;
     }
     static mount(root, appFunc) {
+        // @ts-expect-error
         const app = appFunc();
-        app.state = this.getInstance().createStateProxy(app.state);
+        this.getInstance().registerComponent(app);
         ReflexDOM.getInstance().app = app;
         if (app.init)
-            app.init({ state: app.state });
-        const node = app.render({ state: app.state });
+            app.init({ state: app.state, props: null });
+        const node = app.render({ state: app.state, props: null });
         if (node === null)
             return;
         app.node = node;
@@ -62,7 +63,7 @@ export class ReflexDOM {
             if (!component.dirty)
                 return;
             component.dirty = false;
-            const node = component.render({ state: component.state });
+            const node = component.render({ state: component.state, props: null });
             if (node === null) {
                 ;
                 component.node?.remove();
@@ -102,15 +103,17 @@ Object.defineProperty(ReflexDOM, "instance", {
     writable: true,
     value: new ReflexDOM()
 });
-export function defineComponent(args) {
+export function defineComponent(defs) {
+    const { render, init } = defs;
     return () => {
         return {
             [str_internal]: true,
-            state: {},
             node: null,
             dirty: false,
             parent: undefined,
-            ...args,
+            state: defs.state ?? {},
+            render,
+            init,
         };
     };
 }
@@ -127,8 +130,8 @@ export function h(tag, props = null, ...children) {
         }
         ReflexDOM.getInstance().registerComponent(component);
         if (component.init)
-            component.init({ state: component.state });
-        const node = component.render({ state: component.state });
+            component.init({ state: component.state, props });
+        const node = component.render({ state: component.state, props });
         if (node === null)
             return null;
         component.node = node;
