@@ -3,7 +3,7 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
@@ -17,11 +17,8 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "baseUrl": ".",
-    "sourceMap": false,
-    "paths": {
-      "*": ["node_modules/*"]
-    }
+    "sourceMap": false
   },
-  "include": ["./src/*", "./src/tests"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["./src/*", "./src/tests", "src/types.ts"],
+  "exclude": ["dist"]
 }

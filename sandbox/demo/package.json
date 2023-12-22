@@ -1,18 +1,19 @@
 {
-  "name": "my-package-demo",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "demo",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\"",
-    "build": "tsc",
-    "dev": "tsc && node dist/index.js"
+    "dev": "vite",
+    "test": "vite test",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "my-package": "workspace:^"
+    "reflex-ui": "workspace:^"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
   }
 }
