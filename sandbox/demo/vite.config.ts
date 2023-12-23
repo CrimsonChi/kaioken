@@ -6,5 +6,7 @@ export default defineConfig({
     jsx: "transform",
     jsxFactory: "reflex.h",
     jsxFragment: "reflex.fragment",
+    loader: "tsx",
+    include: ["**/*.tsx", "**/*.ts"],
   },
 })

@@ -5,15 +5,16 @@ export type ComponentProps = {
 } | null;
 export type Component<T extends ComponentState = any, U extends ComponentProps = any> = IComponentDefinition<T, U> & {
     state: T;
+    props: U;
     node?: string | Node | null;
-    parent?: Component;
     dirty?: boolean;
+    destroy?: ComponentFunc<T, U, void>;
     [str_internal]: true;
 };
 export interface IComponentDefinition<T extends ComponentState, U extends ComponentProps> {
     state?: T;
-    init?: ComponentInitFunction<T, U>;
-    render: ComponentRenderFunction<T, U>;
+    init?: ComponentFunc<T, U, ComponentFunc<T, U, void> | void>;
+    render: ComponentFunc<T, U, JSX.Element | null>;
 }
 declare global {
     namespace JSX {
@@ -36,16 +37,10 @@ declare global {
     }
 }
 export type JSXTag = string | ((props: any, children: unknown[]) => Component);
-type ComponentRenderFunction<T extends ComponentState, U extends ComponentProps> = (props: {
+export type ComponentFunc<T extends ComponentState, U extends ComponentProps, V extends unknown> = (props: {
     state: T;
     props: U;
-}) => JSX.Element | null;
-type ComponentCleanupFunction<T extends ComponentState, U extends ComponentProps> = (props: {
-    state: T;
-    props: U;
-}) => void;
-type ComponentInitFunction<T extends ComponentState, U extends ComponentProps> = (props: {
-    state: T;
-    props: U;
-}) => ComponentCleanupFunction<T, U> | void | Promise<ComponentCleanupFunction<T, U>> | Promise<void>;
-export {};
+}) => V;
+export type NodeToComponentMap = WeakMap<Node, Component>;
+export type ComponentToNodeMap = WeakMap<Component, Node | null>;
+export type ComponentToChildrenMap = WeakMap<Component, Component[]>;

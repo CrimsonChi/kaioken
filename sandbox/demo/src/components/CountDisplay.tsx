@@ -1,15 +1,16 @@
 import { defineComponent } from "reflex-ui"
 
-export const TimeDisplay = defineComponent({
+export const CountDisplay = defineComponent({
   state: {
-    time: Date.now(),
+    count: 0,
   },
 
-  init: function ({ state }) {
+  init({ state }) {
     console.log("init")
     const interval = setInterval(() => {
-      state.time = Date.now()
-    }, 1000)
+      state.count++
+      console.log("tick")
+    }, 1e3)
 
     return () => {
       console.log("cleanup")
@@ -18,9 +19,10 @@ export const TimeDisplay = defineComponent({
   },
 
   render({ state }) {
+    console.log("render")
     return (
       <div>
-        <p>{new Date(state.time).toLocaleTimeString()}</p>
+        <p>{state.count}</p>
       </div>
     )
   },

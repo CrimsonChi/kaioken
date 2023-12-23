@@ -5,17 +5,22 @@ import type {
   JSXTag,
   IComponentDefinition,
   ComponentProps,
+  NodeToComponentMap,
+  ComponentToNodeMap,
 } from "./types"
 
 export class ReflexDOM {
   private static instance = new ReflexDOM()
+  private nodeMap: NodeToComponentMap = new WeakMap()
+  private componentMap: ComponentToNodeMap = new WeakMap()
 
-  private components: Component[] = []
   private updateQueued = false
+  private updateQueue: Component[] = []
   private _app?: Component
+  private renderStack: Component[] = []
 
   get root() {
-    return this.app?.node
+    return this.app?.node as Element | null
   }
 
   get app() {
@@ -25,19 +30,41 @@ export class ReflexDOM {
     this._app = app
   }
 
+  getRenderStack() {
+    return this.renderStack
+  }
+
+  getNodeMap() {
+    return this.nodeMap
+  }
+
+  getComponentMap() {
+    return this.componentMap
+  }
+
   public static mount(
     root: Element,
     appFunc: (props: ComponentProps) => Component
   ) {
+    const instance = ReflexDOM.getInstance()
     // @ts-expect-error
     const app = appFunc()
-    this.getInstance().registerComponent(app)
-    ReflexDOM.getInstance().app = app
-    if (app.init) app.init({ state: app.state, props: null })
-    const node = app.render({ state: app.state, props: null })
+    app.state = createStateProxy(app)
+    instance.app = app
+
+    if (app.init) {
+      app.destroy = app.init({ state: app.state, props: null }) ?? undefined
+    }
+
+    instance.renderStack.push(app)
+    const node = app.render({ state: app.state, props: null }) as Node | null
+    instance.renderStack.pop()
+    instance.componentMap.set(app, node)
+
     if (node === null) return
-    app.node = node as Node
-    root.appendChild(app.node)
+    instance.nodeMap.set(node, app)
+    root.appendChild(node)
+
     return ReflexDOM.getInstance()
   }
 
@@ -48,7 +75,10 @@ export class ReflexDOM {
     return this.instance
   }
 
-  private queueUpdate() {
+  queueUpdate(component: Component) {
+    component.dirty = true
+    this.updateQueue.push(component)
+
     if (this.updateQueued) return
     this.updateQueued = true
     queueMicrotask(() => {
@@ -58,67 +88,71 @@ export class ReflexDOM {
   }
 
   private update() {
-    this.components.forEach((component) => {
-      if (!component.dirty) return
+    const queue = [...this.updateQueue]
+    this.updateQueue = []
+    for (const component of queue) {
+      if (!component.dirty) continue
+
+      const parent = this.renderStack[this.renderStack.length - 1]
+
       component.dirty = false
-      const node = component.render({ state: component.state, props: null })
-      if (node === null) {
-        ;(component.node as Element)?.remove()
-        component.node = null
-        return
-      }
-      if (component.node === null) {
-        component.node = node as Node
-      } else {
-        ;(component.node as Element).replaceWith(node as Node)
-        component.node = node as Node
-      }
-    })
-  }
+      const node = this.componentMap.get(component) as Element | null
 
-  private createStateProxy<T extends ComponentState>(
-    component: Component<T>
-  ): T {
-    const instance = this
-    const state = component.state ?? {}
-    return new Proxy(state, {
-      set(target, key, value) {
-        target[key as keyof T] = value
-        component.dirty = true
-        instance.queueUpdate()
-        return true
-      },
-    })
-  }
+      this.renderStack.push(component)
+      const newNode = component.render({
+        state: component.state,
+        props: null,
+      }) as Element | null
+      this.renderStack.pop()
 
-  registerComponent(component: Component) {
-    component.state = this.createStateProxy(component)
-    this.components.push(component)
+      if (node === null && newNode === null) continue
+      if (node && newNode) {
+        node.replaceWith(newNode)
+        this.nodeMap.set(newNode, component)
+        this.componentMap.set(component, newNode)
+      } else if (node && !newNode) {
+        node.remove()
+        this.nodeMap.delete(node)
+        this.componentMap.delete(component)
+      } else if (!node && newNode) {
+        this.nodeMap.set(newNode, component)
+        this.componentMap.set(component, newNode)
+      }
+    }
   }
+}
+
+function createStateProxy<T extends ComponentState>(
+  component: Component<T>
+): T {
+  const state = component.state ?? {}
+  return new Proxy(state, {
+    set(target, key, value) {
+      target[key as keyof T] = value
+      ReflexDOM.getInstance().queueUpdate(component)
+      return true
+    },
+  })
 }
 
 export function defineComponent<
   T extends ComponentState,
   U extends ComponentProps
->(defs: IComponentDefinition<T, U>): (props: U) => Component<T, U> {
-  const { render, init } = defs
-  return () => {
-    return {
-      [str_internal]: true,
-      node: null,
-      dirty: false,
-      parent: undefined,
-      state: defs.state ?? ({} as T),
-      render,
-      init,
-    }
-  }
-}
+>(defs: IComponentDefinition<T, U>) {
+  const initial = {
+    [str_internal]: true,
+    node: null,
+    dirty: false,
+    state: defs.state ?? ({} as T),
+    props: null,
+    render: defs.render,
+    init: defs.init,
+  } as Component<T, U>
 
-function isComponent<T extends ComponentState>(
-  node: unknown
-): node is Component<T> {
-  return !!node && str_internal in (node as Component)
+  return function (props: U, children: unknown[]): Component<T, U> {
+    const component = { ...initial, props, children }
+    return component as Component<T, U>
+  }
 }
 
 export function h(
@@ -126,20 +160,29 @@ export function h(
   props: Record<string, unknown> | null = null,
   ...children: unknown[]
 ): JSX.Element | null {
+  const instance = ReflexDOM.getInstance()
   if (typeof tag === "function") {
     const component = tag(props, children)
-    for (const child of children) {
-      if (isComponent(child)) {
-        child.parent = component
-      }
-    }
-    ReflexDOM.getInstance().registerComponent(component)
+    component.state = createStateProxy(component)
+    component.props = props ?? ({} as ComponentProps)
 
-    if (component.init) component.init({ state: component.state, props })
-    const node = component.render({ state: component.state, props })
-    if (node === null) return null
-    component.node = node as Node
-    return component.node as JSX.Element
+    if (component.init) {
+      component.destroy =
+        component.init({ state: component.state, props }) ?? undefined
+    }
+
+    const stack = instance.getRenderStack()
+    stack.push(component)
+    const node = component.render({
+      state: component.state,
+      props,
+    }) as Node | null
+    stack.pop()
+
+    component.node = node
+    instance.getComponentMap().set(component, node)
+    if (node) instance.getNodeMap().set(node, component)
+    return node
   }
 
   const el = document.createElement(tag)
