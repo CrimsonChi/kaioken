@@ -15,20 +15,20 @@ declare global {
         interface IntrinsicClassAttributes<T> {
             [key: string]: any;
         }
-        type Element = string | Node | Fiber;
+        type Element = string | Node | VNode;
     }
 }
-export type Fiber = {
+export type VNode = {
     type?: string | Function;
     props: {
         [key: string]: any;
-        children: Fiber[];
+        children: VNode[];
     };
     dom?: HTMLElement | Text;
-    parent?: Fiber;
-    child?: Fiber;
-    sibling?: Fiber;
-    alternate?: Fiber;
+    parent?: VNode;
+    child?: VNode;
+    sibling?: VNode;
+    alternate?: VNode;
     effectTag?: string;
     hooks: any[];
 };
