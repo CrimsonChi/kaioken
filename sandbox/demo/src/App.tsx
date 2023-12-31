@@ -1,4 +1,5 @@
 import { useState, useEffect } from "reflex-ui"
+import { CountDisplay } from "./components/CountDisplay"
 
 export const App = () => {
   const [count, setCount] = useState(0)
@@ -19,6 +20,7 @@ export const App = () => {
       >
         Increment
       </button>
+      <CountDisplay />
     </div>
   )
 }

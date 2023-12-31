@@ -1,11 +1,11 @@
 // https://pomb.us/build-your-own-react/
-import type { Fiber } from "./types"
+import type { VNode } from "./types"
 
 export function createElement(
   type: string | Function,
   props = {},
-  ...children: Fiber[]
-): Fiber {
+  ...children: VNode[]
+): VNode {
   return {
     type,
     props: {
@@ -18,7 +18,7 @@ export function createElement(
   }
 }
 
-function createTextElement(text: string): Fiber {
+function createTextElement(text: string): VNode {
   return {
     type: "TEXT_ELEMENT",
     props: {
@@ -29,13 +29,13 @@ function createTextElement(text: string): Fiber {
   }
 }
 
-function createDom(fiber: Fiber): HTMLElement | Text {
+function createDom(vNode: VNode): HTMLElement | Text {
   const dom =
-    fiber.type == "TEXT_ELEMENT"
+    vNode.type == "TEXT_ELEMENT"
       ? document.createTextNode("")
-      : document.createElement(fiber.type as string)
+      : document.createElement(vNode.type as string)
 
-  updateDom(dom, {}, fiber.props)
+  updateDom(dom, {}, vNode.props)
 
   return dom
 }
@@ -98,39 +98,39 @@ function commitRoot() {
   wipRoot = undefined
 }
 
-function commitWork(fiber?: Fiber) {
-  if (!fiber) {
+function commitWork(vNode?: VNode) {
+  if (!vNode) {
     return
   }
 
-  let domParentFiber = fiber.parent
-  while (!domParentFiber?.dom) {
-    domParentFiber = domParentFiber?.parent
+  let domParentNode = vNode.parent
+  while (!domParentNode?.dom) {
+    domParentNode = domParentNode?.parent
   }
-  const domParent = domParentFiber.dom
+  const domParent = domParentNode.dom
 
-  if (fiber.effectTag === "PLACEMENT" && fiber.dom != null) {
-    domParent.appendChild(fiber.dom)
-  } else if (fiber.effectTag === "UPDATE" && fiber.dom != null) {
-    updateDom(fiber.dom, fiber.alternate?.props ?? {}, fiber.props)
-  } else if (fiber.effectTag === "DELETION") {
-    commitDeletion(fiber, domParent)
+  if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
+    domParent.appendChild(vNode.dom)
+  } else if (vNode.effectTag === "UPDATE" && vNode.dom != null) {
+    updateDom(vNode.dom, vNode.alternate?.props ?? {}, vNode.props)
+  } else if (vNode.effectTag === "DELETION") {
+    commitDeletion(vNode, domParent)
     return
   }
 
-  commitWork(fiber.child)
-  commitWork(fiber.sibling)
+  commitWork(vNode.child)
+  commitWork(vNode.sibling)
 }
 
-function commitDeletion(fiber: Fiber, domParent: HTMLElement | Text) {
-  if (fiber.dom) {
-    domParent.removeChild(fiber.dom)
-  } else if (fiber.child) {
-    commitDeletion(fiber.child, domParent)
+function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
+  if (vNode.dom) {
+    domParent.removeChild(vNode.dom)
+  } else if (vNode.child) {
+    commitDeletion(vNode.child, domParent)
   }
 }
 
-export function render(appFunc: () => Fiber, container: HTMLElement) {
+export function render(appFunc: () => VNode, container: HTMLElement) {
   const app = appFunc()
   app.type = appFunc
   wipRoot = {
@@ -145,10 +145,10 @@ export function render(appFunc: () => Fiber, container: HTMLElement) {
   nextUnitOfWork = wipRoot
 }
 
-let nextUnitOfWork: Fiber | undefined = undefined
-let currentRoot: Fiber | undefined = undefined
-let wipRoot: Fiber | undefined = undefined
-let deletions: Fiber[] = []
+let nextUnitOfWork: VNode | undefined = undefined
+let currentRoot: VNode | undefined = undefined
+let wipRoot: VNode | undefined = undefined
+let deletions: VNode[] = []
 let pendingEffects: Function[] = []
 
 function workLoop(deadline: IdleDeadline) {
@@ -167,43 +167,43 @@ function workLoop(deadline: IdleDeadline) {
 
 requestIdleCallback(workLoop)
 
-function performUnitOfWork(fiber: Fiber): Fiber | undefined {
-  const isFunctionComponent = fiber.type instanceof Function
+function performUnitOfWork(vNode: VNode): VNode | undefined {
+  const isFunctionComponent = vNode.type instanceof Function
   if (isFunctionComponent) {
-    updateFunctionComponent(fiber)
+    updateFunctionComponent(vNode)
   } else {
-    updateHostComponent(fiber)
+    updateHostComponent(vNode)
   }
-  if (fiber.child) {
-    return fiber.child
+  if (vNode.child) {
+    return vNode.child
   }
-  let nextFiber: Fiber | undefined = fiber
-  while (nextFiber) {
-    if (nextFiber.sibling) {
-      return nextFiber.sibling
+  let nextNode: VNode | undefined = vNode
+  while (nextNode) {
+    if (nextNode.sibling) {
+      return nextNode.sibling
     }
-    nextFiber = nextFiber.parent
+    nextNode = nextNode.parent
   }
   return
 }
 
-let wipFiber: Fiber | null = null
+let wipNode: VNode | null = null
 let hookIndex: number = -1
 
-function updateFunctionComponent(fiber: Fiber) {
-  wipFiber = fiber
+function updateFunctionComponent(vNode: VNode) {
+  wipNode = vNode
   hookIndex = 0
 
-  wipFiber.hooks = []
-  const children = [(fiber.type as Function)(fiber.props)]
-  reconcileChildren(fiber, children)
+  wipNode.hooks = []
+  const children = [(vNode.type as Function)(vNode.props)]
+  reconcileChildren(vNode, children)
 }
 
 export function useState<T>(initial: T) {
   const oldHook =
-    wipFiber?.alternate &&
-    wipFiber.alternate.hooks &&
-    wipFiber.alternate.hooks[hookIndex]
+    wipNode?.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
 
   const hook = {
     state: oldHook ? oldHook.state : initial,
@@ -228,16 +228,16 @@ export function useState<T>(initial: T) {
     deletions = []
   }
 
-  wipFiber?.hooks.push(hook)
+  wipNode?.hooks.push(hook)
   hookIndex++
   return [hook.state, setState] as const
 }
 
 export function useEffect(callback: Function, deps: any[] = []) {
   const oldHook =
-    wipFiber?.alternate &&
-    wipFiber.alternate.hooks &&
-    wipFiber.alternate.hooks[hookIndex]
+    wipNode?.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
 
   const hasChangedDeps =
     deps.length === 0 ||
@@ -247,75 +247,74 @@ export function useEffect(callback: Function, deps: any[] = []) {
     pendingEffects.push(callback)
   }
 
-  wipFiber?.hooks.push({
+  wipNode?.hooks.push({
     deps,
     callback,
   })
   hookIndex++
 }
 
-function updateHostComponent(fiber: Fiber) {
-  if (!fiber.dom) {
-    fiber.dom = createDom(fiber)
+function updateHostComponent(vNode: VNode) {
+  if (!vNode.dom) {
+    vNode.dom = createDom(vNode)
   }
-  reconcileChildren(fiber, fiber.props.children)
+  reconcileChildren(vNode, vNode.props.children)
 }
 
-function reconcileChildren(wipFiber: Fiber, children: Fiber[]) {
+function reconcileChildren(wipNode: VNode, children: VNode[]) {
   let index = 0
-  let oldFiber: Fiber | undefined =
-    wipFiber.alternate && wipFiber.alternate.child
-  let prevSibling: Fiber | undefined = undefined
+  let oldNode: VNode | undefined = wipNode.alternate && wipNode.alternate.child
+  let prevSibling: VNode | undefined = undefined
 
-  while (index < children.length || oldFiber != null) {
+  while (index < children.length || oldNode != null) {
     const child = children[index]
-    let newFiber = undefined
+    let newNode = undefined
 
-    const sameType = oldFiber && child && child.type == oldFiber.type
+    const sameType = oldNode && child && child.type == oldNode.type
 
     if (sameType) {
-      newFiber = {
-        type: oldFiber!.type,
+      newNode = {
+        type: oldNode!.type,
         props: child.props,
-        dom: oldFiber!.dom,
-        parent: wipFiber,
-        alternate: oldFiber,
+        dom: oldNode!.dom,
+        parent: wipNode,
+        alternate: oldNode,
         effectTag: "UPDATE",
-        hooks: oldFiber!.hooks,
+        hooks: oldNode!.hooks,
       }
     }
     if (child && !sameType) {
-      newFiber = {
+      newNode = {
         type: child.type,
         props: child.props,
         dom: undefined,
-        parent: wipFiber,
+        parent: wipNode,
         alternate: undefined,
         effectTag: "PLACEMENT",
         hooks: [],
       }
     }
-    if (oldFiber && !sameType) {
-      oldFiber.effectTag = "DELETION"
-      deletions.push(oldFiber)
+    if (oldNode && !sameType) {
+      oldNode.effectTag = "DELETION"
+      deletions.push(oldNode)
     }
 
-    if (oldFiber) {
-      oldFiber = oldFiber.sibling
+    if (oldNode) {
+      oldNode = oldNode.sibling
     }
 
     if (index === 0) {
-      wipFiber.child = newFiber
+      wipNode.child = newNode
     } else if (child) {
-      prevSibling!.sibling = newFiber
+      prevSibling!.sibling = newNode
     }
 
-    prevSibling = newFiber
+    prevSibling = newNode
     index++
   }
 }
 
-export function fragment(props: { children: Fiber[] }) {
+export function fragment(props: { children: VNode[] }) {
   return {
     type: "fragment",
     props,
