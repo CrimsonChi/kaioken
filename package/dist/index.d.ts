@@ -3,13 +3,11 @@ export declare class ReflexDOM {
     private static instance;
     private updateQueued;
     private updateQueue;
-    private _stateDepsMap;
     private _root?;
     private app?;
     private _renderStack;
     get root(): Element | null | undefined;
     get renderStack(): Component[];
-    get stateDepsMap(): WeakMap<ComponentState, Set<Component>>;
     static mount(root: Element, appFunc: (props: ComponentProps, children: unknown[]) => Component): ReflexDOM | undefined;
     static getInstance(): ReflexDOM;
     static queueUpdate(component: Component): void;

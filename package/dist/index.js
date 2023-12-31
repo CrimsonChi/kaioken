@@ -1,4 +1,5 @@
 import { str_internal } from "./constants";
+import { diffMerge } from "./diffMerge";
 export class ReflexDOM {
     constructor() {
         Object.defineProperty(this, "updateQueued", {
@@ -12,12 +13,6 @@ export class ReflexDOM {
             configurable: true,
             writable: true,
             value: []
-        });
-        Object.defineProperty(this, "_stateDepsMap", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new WeakMap()
         });
         Object.defineProperty(this, "_root", {
             enumerable: true,
@@ -44,9 +39,6 @@ export class ReflexDOM {
     }
     get renderStack() {
         return this._renderStack;
-    }
-    get stateDepsMap() {
-        return this._stateDepsMap;
     }
     static mount(root, appFunc) {
         const instance = ReflexDOM.getInstance();
@@ -93,17 +85,6 @@ export class ReflexDOM {
             if (!component.dirty)
                 continue;
             component.dirty = false;
-            const deps = this.stateDepsMap.get(component.state);
-            console.log("deps", deps);
-            if (deps) {
-                debugger;
-                for (const dep of deps) {
-                    if (dep != component && dep.destroy) {
-                        debugger;
-                        dep.destroy({ state: dep.state, props: dep.props });
-                    }
-                }
-            }
             this.renderStack.push(component);
             const newNode = component.render({
                 state: component.state,
@@ -111,12 +92,11 @@ export class ReflexDOM {
             });
             this.renderStack.pop();
             const node = component.node;
-            component.node = newNode;
             if (!node && newNode === null)
                 continue;
             if (node && newNode) {
-                //diffMerge(node, newNode)
-                node.replaceWith(newNode);
+                diffMerge(node, newNode);
+                //node.replaceWith(newNode)
             }
             else if (node && !newNode) {
                 node.remove();
@@ -133,24 +113,13 @@ Object.defineProperty(ReflexDOM, "instance", {
     value: new ReflexDOM()
 });
 function createStateProxy(component) {
-    const state = component.state ?? {};
-    const instance = ReflexDOM.getInstance();
-    component.state = new Proxy(state, {
+    component.state = new Proxy(component.state ?? {}, {
         set(target, key, value) {
             target[key] = value;
             ReflexDOM.queueUpdate(component);
             return true;
         },
         get(target, p, receiver) {
-            const stack = instance.renderStack;
-            if (stack.length === 0)
-                return Reflect.get(target, p, receiver);
-            const current = stack[stack.length - 1];
-            const deps = instance.stateDepsMap.get(receiver);
-            if (deps)
-                deps.add(current);
-            else
-                instance.stateDepsMap.set(receiver, new Set([current]));
             return Reflect.get(target, p, receiver);
         },
     });

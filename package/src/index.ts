@@ -13,7 +13,6 @@ export class ReflexDOM {
   private static instance = new ReflexDOM()
   private updateQueued = false
   private updateQueue: Component[] = []
-  private _stateDepsMap = new WeakMap<ComponentState, Set<Component>>()
 
   private _root?: Element | null
 
@@ -26,9 +25,6 @@ export class ReflexDOM {
   }
   get renderStack() {
     return this._renderStack
-  }
-  get stateDepsMap() {
-    return this._stateDepsMap
   }
 
   public static mount(
@@ -84,17 +80,6 @@ export class ReflexDOM {
       if (!component.dirty) continue
       component.dirty = false
 
-      const deps = this.stateDepsMap.get(component.state)
-      console.log("deps", deps)
-
-      if (deps) {
-        for (const dep of deps) {
-          if (dep != component && dep.destroy) {
-            dep.destroy({ state: dep.state, props: dep.props })
-          }
-        }
-      }
-
       this.renderStack.push(component)
       const newNode = component.render({
         state: component.state,
@@ -103,7 +88,6 @@ export class ReflexDOM {
       this.renderStack.pop()
 
       const node = component.node as Element | null
-      component.node = node
 
       if (!node && newNode === null) continue
       if (node && newNode) {
@@ -118,23 +102,13 @@ export class ReflexDOM {
 }
 
 function createStateProxy<T extends ComponentState>(component: Component<T>) {
-  const state = component.state ?? {}
-  const instance = ReflexDOM.getInstance()
-
-  component.state = new Proxy(state, {
+  component.state = new Proxy(component.state ?? {}, {
     set(target, key, value) {
       target[key as keyof T] = value
       ReflexDOM.queueUpdate(component)
       return true
     },
     get(target, p, receiver) {
-      const stack = instance.renderStack
-      if (stack.length === 0) return Reflect.get(target, p, receiver)
-
-      const current = stack[stack.length - 1]
-      const deps = instance.stateDepsMap.get(receiver)
-      if (deps) deps.add(current)
-      else instance.stateDepsMap.set(receiver, new Set([current]))
       return Reflect.get(target, p, receiver)
     },
   })
