@@ -27,7 +27,7 @@ const isEvent = (key) => key.startsWith("on");
 const isProperty = (key) => key !== "children" && !isEvent(key);
 const isNew = (prev, next) => (key) => prev[key] !== next[key];
 const isGone = (_prev, next) => (key) => !(key in next);
-function updateDom(dom, prevProps, nextProps) {
+function updateDom(dom, prevProps, nextProps = {}) {
     //Remove old or changed event listeners
     Object.keys(prevProps)
         .filter(isEvent)
@@ -84,6 +84,7 @@ function commitWork(fiber) {
     }
     else if (fiber.effectTag === "DELETION") {
         commitDeletion(fiber, domParent);
+        return;
     }
     commitWork(fiber.child);
     commitWork(fiber.sibling);
@@ -96,13 +97,16 @@ function commitDeletion(fiber, domParent) {
         commitDeletion(fiber.child, domParent);
     }
 }
-export function render(node, container) {
+export function render(appFunc, container) {
+    const app = appFunc();
+    app.type = appFunc;
     wipRoot = {
         dom: container,
         props: {
-            children: [node],
+            children: [app],
         },
         alternate: currentRoot,
+        hooks: [],
     };
     deletions = [];
     nextUnitOfWork = wipRoot;
@@ -186,28 +190,28 @@ function updateHostComponent(fiber) {
     }
     reconcileChildren(fiber, fiber.props.children);
 }
-function reconcileChildren(wipFiber, nodes) {
+function reconcileChildren(wipFiber, children) {
     let index = 0;
     let oldFiber = wipFiber.alternate && wipFiber.alternate.child;
     let prevSibling = undefined;
-    while (index < nodes.length || oldFiber != null) {
-        const element = nodes[index];
+    while (index < children.length || oldFiber != null) {
+        const child = children[index];
         let newFiber = undefined;
-        const sameType = oldFiber && element && element.type == oldFiber.type;
+        const sameType = oldFiber && child && child.type == oldFiber.type;
         if (sameType) {
             newFiber = {
                 type: oldFiber.type,
-                props: element.props,
+                props: child.props,
                 dom: oldFiber.dom,
                 parent: wipFiber,
                 alternate: oldFiber,
                 effectTag: "UPDATE",
             };
         }
-        if (element && !sameType) {
+        if (child && !sameType) {
             newFiber = {
-                type: element.type,
-                props: element.props,
+                type: child.type,
+                props: child.props,
                 dom: undefined,
                 parent: wipFiber,
                 alternate: undefined,
@@ -224,7 +228,7 @@ function reconcileChildren(wipFiber, nodes) {
         if (index === 0) {
             wipFiber.child = newFiber;
         }
-        else if (element) {
+        else if (child) {
             prevSibling.sibling = newFiber;
         }
         prevSibling = newFiber;
@@ -232,7 +236,10 @@ function reconcileChildren(wipFiber, nodes) {
     }
 }
 export function fragment(props) {
-    return props.children;
+    return {
+        type: "fragment",
+        props,
+    };
 }
 /** @jsx Didact.createElement */
 // function Counter() {

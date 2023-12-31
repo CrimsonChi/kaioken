@@ -1,3 +1,4 @@
+// https://pomb.us/build-your-own-react/
 import type { Fiber } from "./types"
 
 export function createElement(
@@ -44,7 +45,11 @@ const isProperty = (key: string) => key !== "children" && !isEvent(key)
 const isNew = (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key]
 const isGone = (_prev: Rec, next: Rec) => (key: string) => !(key in next)
 
-function updateDom(dom: HTMLElement | Text, prevProps: Rec, nextProps: Rec) {
+function updateDom(
+  dom: HTMLElement | Text,
+  prevProps: Rec,
+  nextProps: Rec = {}
+) {
   //Remove old or changed event listeners
   Object.keys(prevProps)
     .filter(isEvent)
@@ -106,6 +111,7 @@ function commitWork(fiber?: Fiber) {
     updateDom(fiber.dom, fiber.alternate?.props ?? {}, fiber.props)
   } else if (fiber.effectTag === "DELETION") {
     commitDeletion(fiber, domParent)
+    return
   }
 
   commitWork(fiber.child)
@@ -120,13 +126,16 @@ function commitDeletion(fiber: Fiber, domParent: HTMLElement | Text) {
   }
 }
 
-export function render(node: Fiber, container: HTMLElement) {
+export function render(appFunc: () => Fiber, container: HTMLElement) {
+  const app = appFunc()
+  app.type = appFunc
   wipRoot = {
     dom: container,
     props: {
-      children: [node],
+      children: [app],
     },
     alternate: currentRoot,
+    hooks: [],
   }
   deletions = []
   nextUnitOfWork = wipRoot
@@ -189,6 +198,7 @@ export function useState<T>(initial: T) {
     wipFiber?.alternate &&
     wipFiber.alternate.hooks &&
     wipFiber.alternate.hooks[hookIndex]
+
   const hook = {
     state: oldHook ? oldHook.state : initial,
     queue: [] as Function[],
@@ -223,37 +233,37 @@ function updateHostComponent(fiber: Fiber) {
   reconcileChildren(fiber, fiber.props.children)
 }
 
-function reconcileChildren(wipFiber: Fiber, nodes: Fiber[]) {
+function reconcileChildren(wipFiber: Fiber, children: Fiber[]) {
   let index = 0
   let oldFiber: Fiber | undefined =
     wipFiber.alternate && wipFiber.alternate.child
   let prevSibling: Fiber | undefined = undefined
 
-  while (index < nodes.length || oldFiber != null) {
-    const element = nodes[index]
+  while (index < children.length || oldFiber != null) {
+    const child = children[index]
     let newFiber = undefined
 
-    const sameType = oldFiber && element && element.type == oldFiber.type
+    const sameType = oldFiber && child && child.type == oldFiber.type
 
     if (sameType) {
       newFiber = {
         type: oldFiber!.type,
-        props: element.props,
+        props: child.props,
         dom: oldFiber!.dom,
         parent: wipFiber,
         alternate: oldFiber,
         effectTag: "UPDATE",
       }
     }
-    if (element && !sameType) {
+    if (child && !sameType) {
       newFiber = {
-        type: element.type,
-        props: element.props,
+        type: child.type,
+        props: child.props,
         dom: undefined,
         parent: wipFiber,
         alternate: undefined,
         effectTag: "PLACEMENT",
-      } as Fiber
+      }
     }
     if (oldFiber && !sameType) {
       oldFiber.effectTag = "DELETION"
@@ -266,7 +276,7 @@ function reconcileChildren(wipFiber: Fiber, nodes: Fiber[]) {
 
     if (index === 0) {
       wipFiber.child = newFiber
-    } else if (element) {
+    } else if (child) {
       prevSibling!.sibling = newFiber
     }
 
@@ -276,7 +286,10 @@ function reconcileChildren(wipFiber: Fiber, nodes: Fiber[]) {
 }
 
 export function fragment(props: { children: Fiber[] }) {
-  return props.children
+  return {
+    type: "fragment",
+    props,
+  }
 }
 
 /** @jsx Didact.createElement */

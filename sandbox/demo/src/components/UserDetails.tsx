@@ -1,15 +1,11 @@
-export const UserDetails = ({
-  name,
-  setName,
-}: {
-  name: string
-  setName: (name: string) => void
-}) => {
+import { useState } from "reflex-ui"
+
+export const UserDetails = () => {
+  const [name, setName] = useState("John")
   return (
     <div>
       <input value={name} />
-      <input
-        type="text"
+      <Input
         value={name}
         oninput={(e: KeyboardEvent) => {
           setName((e.target as HTMLInputElement).value)
@@ -17,4 +13,14 @@ export const UserDetails = ({
       />
     </div>
   )
+}
+
+function Input({
+  value,
+  oninput,
+}: {
+  value: string
+  oninput: (e: KeyboardEvent) => void
+}) {
+  return <input type="text" value={value} oninput={oninput} />
 }
