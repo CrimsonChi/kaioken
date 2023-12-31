@@ -1,7 +1,21 @@
 import { str_internal } from "./constants";
 import { diffMerge } from "./diffMerge";
+let currentInstance = null;
 export class ReflexDOM {
-    constructor() {
+    constructor(root) {
+        Object.defineProperty(this, "root", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: root
+        });
+        // @ts-expect-error
+        Object.defineProperty(this, "app", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "updateQueued", {
             enumerable: true,
             configurable: true,
@@ -14,68 +28,44 @@ export class ReflexDOM {
             writable: true,
             value: []
         });
-        Object.defineProperty(this, "_root", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // @ts-expect-error
-        Object.defineProperty(this, "app", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_renderStack", {
+        Object.defineProperty(this, "renderStack", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: []
         });
+        if (currentInstance) {
+            throw new Error("Only one instance of ReflexDOM is allowed");
+        }
+        currentInstance = this;
     }
-    get root() {
-        return this._root;
-    }
-    get renderStack() {
-        return this._renderStack;
-    }
-    static mount(root, appFunc) {
-        const instance = ReflexDOM.getInstance();
-        instance._root = root;
+    mount(appFunc) {
         // @ts-expect-error
-        const app = (instance.app = appFunc());
+        const app = (this.app = appFunc());
         createStateProxy(app);
         const { state, props } = app;
         if (app.init) {
             app.destroy = app.init({ state, props }) ?? undefined;
         }
-        instance.renderStack.push(app);
+        this.renderStack.push(app);
         const node = app.render({ state, props });
-        instance.renderStack.pop();
+        this.renderStack.pop();
         if (node === null)
             return;
-        app.node = root.appendChild(node);
-        return ReflexDOM.getInstance();
+        app.node = this.root?.appendChild(node);
+        return this;
     }
-    static getInstance() {
-        if (this.instance === null) {
-            this.instance = new ReflexDOM();
-        }
-        return this.instance;
-    }
-    static queueUpdate(component) {
+    queueUpdate(component) {
         if (component.dirty)
             return;
         component.dirty = true;
-        const instance = ReflexDOM.getInstance();
-        instance.updateQueue.push(component);
-        if (instance.updateQueued)
+        this.updateQueue.push(component);
+        if (this.updateQueued)
             return;
-        instance.updateQueued = true;
+        this.updateQueued = true;
         queueMicrotask(() => {
-            instance.updateQueued = false;
-            instance.update();
+            this.updateQueued = false;
+            this.update();
         });
     }
     update() {
@@ -106,17 +96,11 @@ export class ReflexDOM {
         }
     }
 }
-Object.defineProperty(ReflexDOM, "instance", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: new ReflexDOM()
-});
 function createStateProxy(component) {
     component.state = new Proxy(component.state ?? {}, {
         set(target, key, value) {
             target[key] = value;
-            ReflexDOM.queueUpdate(component);
+            currentInstance?.queueUpdate(component);
             return true;
         },
         get(target, p, receiver) {
@@ -139,7 +123,6 @@ export function defineComponent(defs) {
     };
 }
 export function h(tag, props = null, ...children) {
-    const instance = ReflexDOM.getInstance();
     if (typeof tag === "function") {
         const component = tag(props, children);
         createStateProxy(component);
@@ -148,12 +131,12 @@ export function h(tag, props = null, ...children) {
             component.destroy =
                 component.init({ state: component.state, props }) ?? undefined;
         }
-        instance.renderStack.push(component);
+        currentInstance?.renderStack.push(component);
         const node = component.render({
             state: component.state,
             props,
         });
-        instance.renderStack.pop();
+        currentInstance?.renderStack.pop();
         component.node = node;
         return node;
     }

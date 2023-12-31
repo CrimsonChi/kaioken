@@ -9,32 +9,27 @@ import type {
   ComponentProps,
 } from "./types"
 
+let currentInstance: ReflexDOM | null = null
+
 export class ReflexDOM {
-  private static instance = new ReflexDOM()
-  private updateQueued = false
-  private updateQueue: Component[] = []
-
-  private _root?: Element | null
-
   // @ts-expect-error
   private app?: Component
-  private _renderStack: Component[] = []
+  private updateQueued = false
+  private updateQueue: Component[] = []
+  renderStack: Component[] = []
 
-  get root() {
-    return this._root
-  }
-  get renderStack() {
-    return this._renderStack
+  constructor(private root: Element | null) {
+    if (currentInstance) {
+      throw new Error("Only one instance of ReflexDOM is allowed")
+    }
+    currentInstance = this
   }
 
-  public static mount(
-    root: Element,
+  public mount(
     appFunc: (props: ComponentProps, children: unknown[]) => Component
   ) {
-    const instance = ReflexDOM.getInstance()
-    instance._root = root
     // @ts-expect-error
-    const app = (instance.app = appFunc())
+    const app = (this.app = appFunc())
     createStateProxy(app)
     const { state, props } = app
 
@@ -42,34 +37,26 @@ export class ReflexDOM {
       app.destroy = app.init({ state, props }) ?? undefined
     }
 
-    instance.renderStack.push(app)
+    this.renderStack.push(app)
     const node = app.render({ state, props }) as Node | null
-    instance.renderStack.pop()
+    this.renderStack.pop()
 
     if (node === null) return
-    app.node = root.appendChild(node)
+    app.node = this.root?.appendChild(node)
 
-    return ReflexDOM.getInstance()
+    return this
   }
 
-  static getInstance() {
-    if (this.instance === null) {
-      this.instance = new ReflexDOM()
-    }
-    return this.instance
-  }
-
-  static queueUpdate(component: Component) {
+  queueUpdate(component: Component) {
     if (component.dirty) return
     component.dirty = true
-    const instance = ReflexDOM.getInstance()
-    instance.updateQueue.push(component)
+    this.updateQueue.push(component)
 
-    if (instance.updateQueued) return
-    instance.updateQueued = true
+    if (this.updateQueued) return
+    this.updateQueued = true
     queueMicrotask(() => {
-      instance.updateQueued = false
-      instance.update()
+      this.updateQueued = false
+      this.update()
     })
   }
 
@@ -105,7 +92,7 @@ function createStateProxy<T extends ComponentState>(component: Component<T>) {
   component.state = new Proxy(component.state ?? {}, {
     set(target, key, value) {
       target[key as keyof T] = value
-      ReflexDOM.queueUpdate(component)
+      currentInstance?.queueUpdate(component)
       return true
     },
     get(target, p, receiver) {
@@ -138,8 +125,6 @@ export function h(
   props: Record<string, unknown> | null = null,
   ...children: unknown[]
 ): JSX.Element | null {
-  const instance = ReflexDOM.getInstance()
-
   if (typeof tag === "function") {
     const component = tag(props, children)
     createStateProxy(component)
@@ -150,12 +135,12 @@ export function h(
         component.init({ state: component.state, props }) ?? undefined
     }
 
-    instance.renderStack.push(component)
+    currentInstance?.renderStack.push(component)
     const node = component.render({
       state: component.state,
       props,
     }) as Node | null
-    instance.renderStack.pop()
+    currentInstance?.renderStack.pop()
     component.node = node
 
     return node
