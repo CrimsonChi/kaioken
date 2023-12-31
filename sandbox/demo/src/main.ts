@@ -1,8 +1,9 @@
 import { App } from "./App"
 import "./style.css"
-import { ReflexDOM } from "reflex-ui"
+import { render } from "reflex-ui"
 
 const root = document.querySelector<HTMLDivElement>("#app")!
 
-const instance = new ReflexDOM(root).mount(App)
+// @ts-ignore
+const instance = render(App(), root)
 console.log("mounted", instance)

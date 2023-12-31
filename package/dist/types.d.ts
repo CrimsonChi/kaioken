@@ -1,22 +1,3 @@
-import { str_internal } from "./constants";
-export type ComponentState = Record<string, unknown>;
-export type ComponentProps = {
-    [key: string]: any;
-} | null;
-export type Component<T extends ComponentState = any, U extends ComponentProps = any> = IComponentDefinition<T, U> & {
-    node?: Node | null;
-    state: T;
-    props: U;
-    dirty?: boolean;
-    destroy?: ComponentFunc<T, U, void>;
-    children?: unknown[];
-    [str_internal]: true;
-};
-export interface IComponentDefinition<T extends ComponentState, U extends ComponentProps> {
-    state?: T;
-    init?: ComponentFunc<T, U, ComponentFunc<T, U, void> | void>;
-    render: ComponentFunc<T, U, JSX.Element | null>;
-}
 declare global {
     namespace JSX {
         interface IntrinsicElements {
@@ -34,14 +15,20 @@ declare global {
         interface IntrinsicClassAttributes<T> {
             [key: string]: any;
         }
-        type Element = string | Node | Component;
+        type Element = string | Node | Fiber;
     }
 }
-export type JSXTag = string | ((props: any, children: unknown[]) => Component);
-export type ComponentFunc<T extends ComponentState, U extends ComponentProps, V extends unknown> = (props: {
-    state: T;
-    props: U;
-}) => V;
-export type NodeToComponentMap = WeakMap<Node, Component>;
-export type ComponentToNodeMap = WeakMap<Component, Node | null>;
-export type ComponentToChildrenMap = WeakMap<Component, Component[]>;
+export type Fiber = {
+    type?: string | Function;
+    props: {
+        [key: string]: any;
+        children: Fiber[];
+    };
+    dom?: HTMLElement | Text;
+    parent?: Fiber;
+    child?: Fiber;
+    sibling?: Fiber;
+    alternate?: Fiber;
+    effectTag?: string;
+    hooks?: any[];
+};
