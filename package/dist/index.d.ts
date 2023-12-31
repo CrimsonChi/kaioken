@@ -1,21 +1,18 @@
-import type { ComponentState, Component, JSXTag, IComponentDefinition, ComponentProps, NodeToComponentMap, ComponentToNodeMap } from "./types";
+import type { ComponentState, Component, JSXTag, IComponentDefinition, ComponentProps } from "./types";
 export declare class ReflexDOM {
     private static instance;
-    private nodeMap;
-    private componentMap;
     private updateQueued;
     private updateQueue;
-    private _app?;
-    private renderStack;
-    get root(): Element | null;
-    get app(): Component | undefined;
-    set app(app: Component | undefined);
-    getRenderStack(): Component[];
-    getNodeMap(): NodeToComponentMap;
-    getComponentMap(): ComponentToNodeMap;
-    static mount(root: Element, appFunc: (props: ComponentProps) => Component): ReflexDOM | undefined;
+    private _stateDepsMap;
+    private _root?;
+    private app?;
+    private _renderStack;
+    get root(): Element | null | undefined;
+    get renderStack(): Component[];
+    get stateDepsMap(): WeakMap<ComponentState, Set<Component>>;
+    static mount(root: Element, appFunc: (props: ComponentProps, children: unknown[]) => Component): ReflexDOM | undefined;
     static getInstance(): ReflexDOM;
-    queueUpdate(component: Component): void;
+    static queueUpdate(component: Component): void;
     private update;
 }
 export declare function defineComponent<T extends ComponentState, U extends ComponentProps>(defs: IComponentDefinition<T, U>): (props: U, children: unknown[]) => Component<T, U>;

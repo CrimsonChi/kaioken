@@ -9,7 +9,6 @@ export const CountDisplay = defineComponent({
     console.log("init")
     const interval = setInterval(() => {
       state.count++
-      console.log("tick")
     }, 1e3)
 
     return () => {
@@ -19,10 +18,11 @@ export const CountDisplay = defineComponent({
   },
 
   render({ state }) {
-    console.log("render")
+    console.log("render", state)
     return (
       <div>
         <p>{state.count}</p>
+        <button onclick={() => state.count++}>+1</button>
       </div>
     )
   },

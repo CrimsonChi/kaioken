@@ -7,9 +7,9 @@ export type Component<
   T extends ComponentState = any,
   U extends ComponentProps = any
 > = IComponentDefinition<T, U> & {
+  node?: Node | null
   state: T
   props: U
-  node?: string | Node | null
   dirty?: boolean
   destroy?: ComponentFunc<T, U, void>
   [str_internal]: true

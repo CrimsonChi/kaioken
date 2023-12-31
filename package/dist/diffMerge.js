@@ -1,4 +1,4 @@
-export function diffMerge(oldNode, newNode, nodeMap, stateMap) {
+export function diffMerge(oldNode, newNode) {
     if (oldNode.isEqualNode(newNode)) {
         return;
     }
@@ -38,26 +38,17 @@ export function diffMerge(oldNode, newNode, nodeMap, stateMap) {
         for (let i = 0; i < maxLength; i++) {
             const oldChild = oldChildren[i];
             const newChild = newChildren[i];
-            const oldData = nodeMap.get(oldChild);
             if (oldChild && newChild) {
-                if (oldData) {
-                    const state = oldData.state;
-                    diffMerge(oldChild, newChild, nodeMap, stateMap);
-                    stateMap.set(state, oldChild);
-                }
-                else {
-                    diffMerge(oldChild, newChild, nodeMap, stateMap);
-                }
+                diffMerge(oldChild, newChild);
             }
             else if (oldChild) {
                 oldElement.removeChild(oldChild);
-                if (oldData) {
-                    stateMap.delete(oldData.state);
-                    nodeMap.delete(oldChild);
-                }
+            }
+            else if (newChild) {
+                oldElement.appendChild(newChild);
             }
             else {
-                oldElement.appendChild(newChild);
+                throw new Error("This should never happen");
             }
         }
     }

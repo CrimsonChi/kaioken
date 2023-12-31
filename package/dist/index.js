@@ -1,18 +1,6 @@
 import { str_internal } from "./constants";
 export class ReflexDOM {
     constructor() {
-        Object.defineProperty(this, "nodeMap", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new WeakMap()
-        });
-        Object.defineProperty(this, "componentMap", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new WeakMap()
-        });
         Object.defineProperty(this, "updateQueued", {
             enumerable: true,
             configurable: true,
@@ -25,13 +13,26 @@ export class ReflexDOM {
             writable: true,
             value: []
         });
-        Object.defineProperty(this, "_app", {
+        Object.defineProperty(this, "_stateDepsMap", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new WeakMap()
+        });
+        Object.defineProperty(this, "_root", {
             enumerable: true,
             configurable: true,
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "renderStack", {
+        // @ts-expect-error
+        Object.defineProperty(this, "app", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_renderStack", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -39,40 +40,30 @@ export class ReflexDOM {
         });
     }
     get root() {
-        return this.app?.node;
+        return this._root;
     }
-    get app() {
-        return this._app;
+    get renderStack() {
+        return this._renderStack;
     }
-    set app(app) {
-        this._app = app;
-    }
-    getRenderStack() {
-        return this.renderStack;
-    }
-    getNodeMap() {
-        return this.nodeMap;
-    }
-    getComponentMap() {
-        return this.componentMap;
+    get stateDepsMap() {
+        return this._stateDepsMap;
     }
     static mount(root, appFunc) {
         const instance = ReflexDOM.getInstance();
+        instance._root = root;
         // @ts-expect-error
-        const app = appFunc();
-        app.state = createStateProxy(app);
-        instance.app = app;
+        const app = (instance.app = appFunc());
+        createStateProxy(app);
+        const { state, props } = app;
         if (app.init) {
-            app.destroy = app.init({ state: app.state, props: null }) ?? undefined;
+            app.destroy = app.init({ state, props }) ?? undefined;
         }
         instance.renderStack.push(app);
-        const node = app.render({ state: app.state, props: null });
+        const node = app.render({ state, props });
         instance.renderStack.pop();
-        instance.componentMap.set(app, node);
         if (node === null)
             return;
-        instance.nodeMap.set(node, app);
-        root.appendChild(node);
+        app.node = root.appendChild(node);
         return ReflexDOM.getInstance();
     }
     static getInstance() {
@@ -81,15 +72,18 @@ export class ReflexDOM {
         }
         return this.instance;
     }
-    queueUpdate(component) {
-        component.dirty = true;
-        this.updateQueue.push(component);
-        if (this.updateQueued)
+    static queueUpdate(component) {
+        if (component.dirty)
             return;
-        this.updateQueued = true;
+        component.dirty = true;
+        const instance = ReflexDOM.getInstance();
+        instance.updateQueue.push(component);
+        if (instance.updateQueued)
+            return;
+        instance.updateQueued = true;
         queueMicrotask(() => {
-            this.updateQueued = false;
-            this.update();
+            instance.updateQueued = false;
+            instance.update();
         });
     }
     update() {
@@ -98,30 +92,36 @@ export class ReflexDOM {
         for (const component of queue) {
             if (!component.dirty)
                 continue;
-            const parent = this.renderStack[this.renderStack.length - 1];
             component.dirty = false;
-            const node = this.componentMap.get(component);
+            const deps = this.stateDepsMap.get(component.state);
+            console.log("deps", deps);
+            if (deps) {
+                debugger;
+                for (const dep of deps) {
+                    if (dep != component && dep.destroy) {
+                        debugger;
+                        dep.destroy({ state: dep.state, props: dep.props });
+                    }
+                }
+            }
             this.renderStack.push(component);
             const newNode = component.render({
                 state: component.state,
-                props: null,
+                props: component.props,
             });
             this.renderStack.pop();
-            if (node === null && newNode === null)
+            const node = component.node;
+            component.node = newNode;
+            if (!node && newNode === null)
                 continue;
             if (node && newNode) {
+                //diffMerge(node, newNode)
                 node.replaceWith(newNode);
-                this.nodeMap.set(newNode, component);
-                this.componentMap.set(component, newNode);
             }
             else if (node && !newNode) {
                 node.remove();
-                this.nodeMap.delete(node);
-                this.componentMap.delete(component);
             }
             else if (!node && newNode) {
-                this.nodeMap.set(newNode, component);
-                this.componentMap.set(component, newNode);
             }
         }
     }
@@ -134,21 +134,33 @@ Object.defineProperty(ReflexDOM, "instance", {
 });
 function createStateProxy(component) {
     const state = component.state ?? {};
-    return new Proxy(state, {
+    const instance = ReflexDOM.getInstance();
+    component.state = new Proxy(state, {
         set(target, key, value) {
             target[key] = value;
-            ReflexDOM.getInstance().queueUpdate(component);
+            ReflexDOM.queueUpdate(component);
             return true;
+        },
+        get(target, p, receiver) {
+            const stack = instance.renderStack;
+            if (stack.length === 0)
+                return Reflect.get(target, p, receiver);
+            const current = stack[stack.length - 1];
+            const deps = instance.stateDepsMap.get(receiver);
+            if (deps)
+                deps.add(current);
+            else
+                instance.stateDepsMap.set(receiver, new Set([current]));
+            return Reflect.get(target, p, receiver);
         },
     });
 }
 export function defineComponent(defs) {
     const initial = {
         [str_internal]: true,
-        node: null,
         dirty: false,
         state: defs.state ?? {},
-        props: null,
+        props: {},
         render: defs.render,
         init: defs.init,
     };
@@ -161,23 +173,19 @@ export function h(tag, props = null, ...children) {
     const instance = ReflexDOM.getInstance();
     if (typeof tag === "function") {
         const component = tag(props, children);
-        component.state = createStateProxy(component);
+        createStateProxy(component);
         component.props = props ?? {};
         if (component.init) {
             component.destroy =
                 component.init({ state: component.state, props }) ?? undefined;
         }
-        const stack = instance.getRenderStack();
-        stack.push(component);
+        instance.renderStack.push(component);
         const node = component.render({
             state: component.state,
             props,
         });
-        stack.pop();
+        instance.renderStack.pop();
         component.node = node;
-        instance.getComponentMap().set(component, node);
-        if (node)
-            instance.getNodeMap().set(node, component);
         return node;
     }
     const el = document.createElement(tag);

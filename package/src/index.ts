@@ -1,69 +1,57 @@
 import { str_internal } from "./constants"
+import { diffMerge } from "./diffMerge"
+//import { diffMerge } from "./diffMerge"
 import type {
   ComponentState,
   Component,
   JSXTag,
   IComponentDefinition,
   ComponentProps,
-  NodeToComponentMap,
-  ComponentToNodeMap,
 } from "./types"
 
 export class ReflexDOM {
   private static instance = new ReflexDOM()
-  private nodeMap: NodeToComponentMap = new WeakMap()
-  private componentMap: ComponentToNodeMap = new WeakMap()
-
   private updateQueued = false
   private updateQueue: Component[] = []
-  private _app?: Component
-  private renderStack: Component[] = []
+  private _stateDepsMap = new WeakMap<ComponentState, Set<Component>>()
+
+  private _root?: Element | null
+
+  // @ts-expect-error
+  private app?: Component
+  private _renderStack: Component[] = []
 
   get root() {
-    return this.app?.node as Element | null
+    return this._root
   }
-
-  get app() {
-    return this._app
+  get renderStack() {
+    return this._renderStack
   }
-  set app(app: Component | undefined) {
-    this._app = app
-  }
-
-  getRenderStack() {
-    return this.renderStack
-  }
-
-  getNodeMap() {
-    return this.nodeMap
-  }
-
-  getComponentMap() {
-    return this.componentMap
+  get stateDepsMap() {
+    return this._stateDepsMap
   }
 
   public static mount(
     root: Element,
-    appFunc: (props: ComponentProps) => Component
+    appFunc: (props: ComponentProps, children: unknown[]) => Component
   ) {
     const instance = ReflexDOM.getInstance()
+    instance._root = root
     // @ts-expect-error
-    const app = appFunc()
-    app.state = createStateProxy(app)
-    instance.app = app
+    const app = (instance.app = appFunc())
+    createStateProxy(app)
+    const { state, props } = app
 
     if (app.init) {
-      app.destroy = app.init({ state: app.state, props: null }) ?? undefined
+      app.destroy = app.init({ state, props }) ?? undefined
     }
 
     instance.renderStack.push(app)
-    const node = app.render({ state: app.state, props: null }) as Node | null
+    const node = app.render({ state, props }) as Node | null
     instance.renderStack.pop()
-    instance.componentMap.set(app, node)
 
     if (node === null) return
-    instance.nodeMap.set(node, app)
-    root.appendChild(node)
+    app.node = root.appendChild(node)
 
     return ReflexDOM.getInstance()
   }
@@ -75,15 +63,17 @@ export class ReflexDOM {
     return this.instance
   }
 
-  queueUpdate(component: Component) {
+  static queueUpdate(component: Component) {
+    if (component.dirty) return
     component.dirty = true
-    this.updateQueue.push(component)
+    const instance = ReflexDOM.getInstance()
+    instance.updateQueue.push(component)
 
-    if (this.updateQueued) return
-    this.updateQueued = true
+    if (instance.updateQueued) return
+    instance.updateQueued = true
     queueMicrotask(() => {
-      this.updateQueued = false
-      this.update()
+      instance.updateQueued = false
+      instance.update()
     })
   }
 
@@ -92,45 +82,60 @@ export class ReflexDOM {
     this.updateQueue = []
     for (const component of queue) {
       if (!component.dirty) continue
-
-      const parent = this.renderStack[this.renderStack.length - 1]
-
       component.dirty = false
-      const node = this.componentMap.get(component) as Element | null
+
+      const deps = this.stateDepsMap.get(component.state)
+      console.log("deps", deps)
+
+      if (deps) {
+        for (const dep of deps) {
+          if (dep != component && dep.destroy) {
+            dep.destroy({ state: dep.state, props: dep.props })
+          }
+        }
+      }
 
       this.renderStack.push(component)
       const newNode = component.render({
         state: component.state,
-        props: null,
+        props: component.props,
       }) as Element | null
       this.renderStack.pop()
 
-      if (node === null && newNode === null) continue
+      const node = component.node as Element | null
+      component.node = node
+
+      if (!node && newNode === null) continue
       if (node && newNode) {
-        node.replaceWith(newNode)
-        this.nodeMap.set(newNode, component)
-        this.componentMap.set(component, newNode)
+        diffMerge(node, newNode)
+        //node.replaceWith(newNode)
       } else if (node && !newNode) {
         node.remove()
-        this.nodeMap.delete(node)
-        this.componentMap.delete(component)
       } else if (!node && newNode) {
-        this.nodeMap.set(newNode, component)
-        this.componentMap.set(component, newNode)
       }
     }
   }
 }
 
-function createStateProxy<T extends ComponentState>(
-  component: Component<T>
-): T {
+function createStateProxy<T extends ComponentState>(component: Component<T>) {
   const state = component.state ?? {}
-  return new Proxy(state, {
+  const instance = ReflexDOM.getInstance()
+
+  component.state = new Proxy(state, {
     set(target, key, value) {
       target[key as keyof T] = value
-      ReflexDOM.getInstance().queueUpdate(component)
+      ReflexDOM.queueUpdate(component)
       return true
+    },
+    get(target, p, receiver) {
+      const stack = instance.renderStack
+      if (stack.length === 0) return Reflect.get(target, p, receiver)
+
+      const current = stack[stack.length - 1]
+      const deps = instance.stateDepsMap.get(receiver)
+      if (deps) deps.add(current)
+      else instance.stateDepsMap.set(receiver, new Set([current]))
+      return Reflect.get(target, p, receiver)
     },
   })
 }
@@ -141,10 +146,9 @@ export function defineComponent<
 >(defs: IComponentDefinition<T, U>) {
   const initial = {
     [str_internal]: true,
-    node: null,
     dirty: false,
     state: defs.state ?? ({} as T),
-    props: null,
+    props: {},
     render: defs.render,
     init: defs.init,
   } as Component<T, U>
@@ -161,9 +165,10 @@ export function h(
   ...children: unknown[]
 ): JSX.Element | null {
   const instance = ReflexDOM.getInstance()
+
   if (typeof tag === "function") {
     const component = tag(props, children)
-    component.state = createStateProxy(component)
+    createStateProxy(component)
     component.props = props ?? ({} as ComponentProps)
 
     if (component.init) {
@@ -171,17 +176,14 @@ export function h(
         component.init({ state: component.state, props }) ?? undefined
     }
 
-    const stack = instance.getRenderStack()
-    stack.push(component)
+    instance.renderStack.push(component)
     const node = component.render({
       state: component.state,
       props,
     }) as Node | null
-    stack.pop()
-
+    instance.renderStack.pop()
     component.node = node
-    instance.getComponentMap().set(component, node)
-    if (node) instance.getNodeMap().set(node, component)
+
     return node
   }
 

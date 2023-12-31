@@ -6,15 +6,17 @@ interface Props {
 }
 
 export const UserDetails = defineComponent<{}, Props>({
-  render({ props: { name, setName } }) {
+  render({ props }) {
+    console.log("render", props)
     return (
       <div>
         <input
           type="text"
-          value={name}
-          oninput={(e: KeyboardEvent) =>
-            setName((e.target as HTMLInputElement).value)
-          }
+          value={props.name}
+          oninput={(e: KeyboardEvent) => {
+            //debugger
+            props.setName((e.target as HTMLInputElement).value)
+          }}
         />
       </div>
     )
