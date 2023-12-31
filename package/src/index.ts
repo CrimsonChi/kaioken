@@ -1,4 +1,5 @@
 // https://pomb.us/build-your-own-react/
+// https://www.youtube.com/watch?v=YfnPk3nzWts
 import type { VNode } from "./types"
 
 export function createElement(
@@ -10,9 +11,11 @@ export function createElement(
     type,
     props: {
       ...props,
-      children: children.map((child) =>
-        typeof child === "object" ? child : createTextElement(child)
-      ),
+      children: children
+        .flat()
+        .map((child) =>
+          typeof child === "object" ? child : createTextElement(child)
+        ),
     },
     hooks: [],
   }
@@ -93,8 +96,7 @@ function commitRoot() {
   deletions.forEach(commitWork)
   commitWork(wipRoot?.child)
   currentRoot = wipRoot
-  pendingEffects.forEach((cb) => cb())
-  pendingEffects = []
+  while (pendingEffects.length) pendingEffects.pop()?.()
   wipRoot = undefined
 }
 
@@ -201,9 +203,9 @@ function updateFunctionComponent(vNode: VNode) {
 
 export function useState<T>(initial: T) {
   const oldHook =
-    wipNode?.alternate &&
-    wipNode.alternate.hooks &&
-    wipNode.alternate.hooks[hookIndex]
+    wipNode!.alternate &&
+    wipNode!.alternate.hooks &&
+    wipNode!.alternate.hooks[hookIndex]
 
   const hook = {
     state: oldHook ? oldHook.state : initial,

@@ -3,7 +3,9 @@ export function createElement(type, props = {}, ...children) {
         type,
         props: {
             ...props,
-            children: children.map((child) => typeof child === "object" ? child : createTextElement(child)),
+            children: children
+                .flat()
+                .map((child) => typeof child === "object" ? child : createTextElement(child)),
         },
         hooks: [],
     };
@@ -67,8 +69,8 @@ function commitRoot() {
     deletions.forEach(commitWork);
     commitWork(wipRoot?.child);
     currentRoot = wipRoot;
-    pendingEffects.forEach((cb) => cb());
-    pendingEffects = [];
+    while (pendingEffects.length)
+        pendingEffects.pop()?.();
     wipRoot = undefined;
 }
 function commitWork(vNode) {
@@ -162,7 +164,7 @@ function updateFunctionComponent(vNode) {
     reconcileChildren(vNode, children);
 }
 export function useState(initial) {
-    const oldHook = wipNode?.alternate &&
+    const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
     const hook = {

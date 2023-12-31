@@ -1,26 +1,17 @@
-import { useState, useEffect } from "reflex-ui"
+import { useEffect } from "reflex-ui"
 import { CountDisplay } from "./components/CountDisplay"
+import { UserDetails } from "./components/UserDetails"
 
 export const App = () => {
-  const [count, setCount] = useState(0)
-  console.log("App", count)
-
   useEffect(() => {
-    console.log("App useEffect", count)
+    console.log("App useEffect")
   })
 
   return (
     <div>
       <h1>App</h1>
-      {count}
-      <button
-        onclick={() => {
-          setCount(count + 1)
-        }}
-      >
-        Increment
-      </button>
       <CountDisplay />
+      <UserDetails />
     </div>
   )
 }
