@@ -1,6 +1,43 @@
 import { str_internal } from "./constants";
 import { diffMerge } from "./diffMerge";
 let currentInstance = null;
+class RenderStack {
+    constructor() {
+        Object.defineProperty(this, "stack", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        Object.defineProperty(this, "_recording", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "observed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+    }
+    push(component) {
+        this.stack.push(component);
+        if (this._recording) {
+            this.observed.push(component);
+        }
+    }
+    pop() {
+        this.stack.pop();
+    }
+    setRecording(vaL = true) {
+        this._recording = vaL;
+    }
+    get top() {
+        return this.stack[this.stack.length - 1];
+    }
+}
 export class ReflexDOM {
     constructor(root) {
         Object.defineProperty(this, "root", {
@@ -32,7 +69,7 @@ export class ReflexDOM {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: []
+            value: new RenderStack()
         });
         if (currentInstance) {
             throw new Error("Only one instance of ReflexDOM is allowed");
@@ -48,7 +85,12 @@ export class ReflexDOM {
             app.destroy = app.init({ state, props }) ?? undefined;
         }
         this.renderStack.push(app);
+        this.renderStack.setRecording(true);
         const node = app.render({ state, props });
+        this.renderStack.setRecording(false);
+        app.children = this.renderStack.observed;
+        this.renderStack.observed = [];
+        console.log("app", app);
         this.renderStack.pop();
         if (node === null)
             return;
@@ -75,18 +117,24 @@ export class ReflexDOM {
             if (!component.dirty)
                 continue;
             component.dirty = false;
-            this.renderStack.push(component);
+            for (const child of component.children ?? []) {
+                if (isComponent(child) && child.destroy) {
+                    child.destroy({ state: child.state, props: child.props });
+                }
+            }
+            this.renderStack.setRecording(true);
             const newNode = component.render({
                 state: component.state,
                 props: component.props,
             });
-            this.renderStack.pop();
+            this.renderStack.setRecording(false);
+            component.children = this.renderStack.observed;
+            this.renderStack.observed = [];
             const node = component.node;
             if (!node && newNode === null)
                 continue;
             if (node && newNode) {
                 diffMerge(node, newNode);
-                //node.replaceWith(newNode)
             }
             else if (node && !newNode) {
                 node.remove();
@@ -107,6 +155,9 @@ function createStateProxy(component) {
             return Reflect.get(target, p, receiver);
         },
     });
+}
+function isComponent(component) {
+    return !!component && component instanceof Object && str_internal in component;
 }
 export function defineComponent(defs) {
     const initial = {

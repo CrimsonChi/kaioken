@@ -12,6 +12,7 @@ export type Component<
   props: U
   dirty?: boolean
   destroy?: ComponentFunc<T, U, void>
+  children?: unknown[]
   [str_internal]: true
 }
 

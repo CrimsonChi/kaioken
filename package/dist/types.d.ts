@@ -9,6 +9,7 @@ export type Component<T extends ComponentState = any, U extends ComponentProps =
     props: U;
     dirty?: boolean;
     destroy?: ComponentFunc<T, U, void>;
+    children?: unknown[];
     [str_internal]: true;
 };
 export interface IComponentDefinition<T extends ComponentState, U extends ComponentProps> {

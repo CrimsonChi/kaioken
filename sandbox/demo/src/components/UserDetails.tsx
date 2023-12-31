@@ -7,7 +7,7 @@ interface Props {
 
 export const UserDetails = defineComponent<{}, Props>({
   render({ props }) {
-    console.log("render", props)
+    //console.log("render", props)
     return (
       <div>
         <input

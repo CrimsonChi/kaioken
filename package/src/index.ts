@@ -11,12 +11,37 @@ import type {
 
 let currentInstance: ReflexDOM | null = null
 
+class RenderStack {
+  private stack: Component[] = []
+  private _recording: boolean = false
+  observed: Component[] = []
+
+  push(component: Component) {
+    this.stack.push(component)
+    if (this._recording) {
+      this.observed.push(component)
+    }
+  }
+
+  pop() {
+    this.stack.pop()
+  }
+
+  setRecording(vaL: boolean = true) {
+    this._recording = vaL
+  }
+
+  get top() {
+    return this.stack[this.stack.length - 1]
+  }
+}
+
 export class ReflexDOM {
   // @ts-expect-error
   private app?: Component
   private updateQueued = false
   private updateQueue: Component[] = []
-  renderStack: Component[] = []
+  renderStack: RenderStack = new RenderStack()
 
   constructor(private root: Element | null) {
     if (currentInstance) {
@@ -38,7 +63,12 @@ export class ReflexDOM {
     }
 
     this.renderStack.push(app)
+    this.renderStack.setRecording(true)
     const node = app.render({ state, props }) as Node | null
+    this.renderStack.setRecording(false)
+    app.children = this.renderStack.observed
+    this.renderStack.observed = []
+    console.log("app", app)
     this.renderStack.pop()
 
     if (node === null) return
@@ -67,19 +97,25 @@ export class ReflexDOM {
       if (!component.dirty) continue
       component.dirty = false
 
-      this.renderStack.push(component)
+      for (const child of component.children ?? []) {
+        if (isComponent(child) && child.destroy) {
+          child.destroy({ state: child.state, props: child.props })
+        }
+      }
+      this.renderStack.setRecording(true)
       const newNode = component.render({
         state: component.state,
         props: component.props,
       }) as Element | null
-      this.renderStack.pop()
+      this.renderStack.setRecording(false)
+      component.children = this.renderStack.observed
+      this.renderStack.observed = []
 
       const node = component.node as Element | null
 
       if (!node && newNode === null) continue
       if (node && newNode) {
         diffMerge(node, newNode)
-        //node.replaceWith(newNode)
       } else if (node && !newNode) {
         node.remove()
       } else if (!node && newNode) {
@@ -99,6 +135,12 @@ function createStateProxy<T extends ComponentState>(component: Component<T>) {
       return Reflect.get(target, p, receiver)
     },
   })
+}
+
+function isComponent<T extends ComponentState>(
+  component: Component<T> | unknown
+): component is Component<T> {
+  return !!component && component instanceof Object && str_internal in component
 }
 
 export function defineComponent<

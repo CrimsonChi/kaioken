@@ -18,7 +18,7 @@ export const CountDisplay = defineComponent({
   },
 
   render({ state }) {
-    console.log("render", state)
+    //console.log("render", state)
     return (
       <div>
         <p>{state.count}</p>
