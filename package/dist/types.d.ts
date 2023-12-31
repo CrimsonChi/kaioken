@@ -30,5 +30,5 @@ export type Fiber = {
     sibling?: Fiber;
     alternate?: Fiber;
     effectTag?: string;
-    hooks?: any[];
+    hooks: any[];
 };

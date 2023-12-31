@@ -14,6 +14,7 @@ export function createElement(
         typeof child === "object" ? child : createTextElement(child)
       ),
     },
+    hooks: [],
   }
 }
 
@@ -24,6 +25,7 @@ function createTextElement(text: string): Fiber {
       nodeValue: text,
       children: [],
     },
+    hooks: [],
   }
 }
 
@@ -91,6 +93,8 @@ function commitRoot() {
   deletions.forEach(commitWork)
   commitWork(wipRoot?.child)
   currentRoot = wipRoot
+  pendingEffects.forEach((cb) => cb())
+  pendingEffects = []
   wipRoot = undefined
 }
 
@@ -145,6 +149,7 @@ let nextUnitOfWork: Fiber | undefined = undefined
 let currentRoot: Fiber | undefined = undefined
 let wipRoot: Fiber | undefined = undefined
 let deletions: Fiber[] = []
+let pendingEffects: Function[] = []
 
 function workLoop(deadline: IdleDeadline) {
   let shouldYield = false
@@ -188,6 +193,7 @@ let hookIndex: number = -1
 function updateFunctionComponent(fiber: Fiber) {
   wipFiber = fiber
   hookIndex = 0
+
   wipFiber.hooks = []
   const children = [(fiber.type as Function)(fiber.props)]
   reconcileChildren(fiber, children)
@@ -216,14 +222,36 @@ export function useState<T>(initial: T) {
       dom: currentRoot.dom,
       props: currentRoot.props,
       alternate: currentRoot,
+      hooks: [],
     }
     nextUnitOfWork = wipRoot
     deletions = []
   }
 
-  wipFiber?.hooks!.push(hook)
+  wipFiber?.hooks.push(hook)
   hookIndex++
   return [hook.state, setState] as const
+}
+
+export function useEffect(callback: Function, deps: any[] = []) {
+  const oldHook =
+    wipFiber?.alternate &&
+    wipFiber.alternate.hooks &&
+    wipFiber.alternate.hooks[hookIndex]
+
+  const hasChangedDeps =
+    deps.length === 0 ||
+    (!!oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]))
+
+  if (hasChangedDeps) {
+    pendingEffects.push(callback)
+  }
+
+  wipFiber?.hooks.push({
+    deps,
+    callback,
+  })
+  hookIndex++
 }
 
 function updateHostComponent(fiber: Fiber) {
@@ -253,6 +281,7 @@ function reconcileChildren(wipFiber: Fiber, children: Fiber[]) {
         parent: wipFiber,
         alternate: oldFiber,
         effectTag: "UPDATE",
+        hooks: oldFiber!.hooks,
       }
     }
     if (child && !sameType) {
@@ -263,6 +292,7 @@ function reconcileChildren(wipFiber: Fiber, children: Fiber[]) {
         parent: wipFiber,
         alternate: undefined,
         effectTag: "PLACEMENT",
+        hooks: [],
       }
     }
     if (oldFiber && !sameType) {
