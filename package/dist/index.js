@@ -49,7 +49,7 @@ function createElement(type, props = {}, ...children) {
 function useState(initial) {
     // @ts-ignore
     if (!mounted)
-        return;
+        return [];
     if (!wipNode) {
         console.error("no wipNode");
         // @ts-ignore

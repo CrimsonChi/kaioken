@@ -1,6 +1,5 @@
 import { useEffect } from "reflex-ui"
-import { CountDisplay } from "./components/CountDisplay"
-import { UserDetails } from "./components/UserDetails"
+import { Todos } from "./components/ToDos"
 
 export const App = () => {
   useEffect(() => {
@@ -10,8 +9,7 @@ export const App = () => {
   return (
     <div>
       <h1>App</h1>
-      <CountDisplay />
-      <UserDetails />
+      <Todos />
     </div>
   )
 }

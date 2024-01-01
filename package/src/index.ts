@@ -66,7 +66,7 @@ function useState<T>(
   initial: T
 ): [T, (action: T | ((oldVal: T) => T)) => void] {
   // @ts-ignore
-  if (!mounted) return
+  if (!mounted) return []
   if (!wipNode) {
     console.error("no wipNode")
     // @ts-ignore
