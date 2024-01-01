@@ -208,7 +208,12 @@ function commitWork(vNode) {
 }
 function commitDeletion(vNode, domParent) {
     if (vNode.dom) {
-        domParent.removeChild(vNode.dom);
+        if (vNode.dom === domParent) {
+            vNode.dom.remove();
+        }
+        else {
+            domParent.removeChild(vNode.dom);
+        }
     }
     else if (vNode.child) {
         commitDeletion(vNode.child, domParent);

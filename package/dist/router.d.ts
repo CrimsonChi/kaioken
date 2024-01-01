@@ -3,7 +3,7 @@ interface RouterProps {
     basePath?: string;
     children?: JSX.Element[];
 }
-export declare function Router({ basePath, children }: RouterProps): any;
+export declare function Router({ basePath, children }: RouterProps): import("./types").VNode | null;
 type ComponentFunc = ({ params }: {
     params: Rec;
 }) => JSX.Element;

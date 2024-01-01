@@ -16,7 +16,7 @@ export function Router({ basePath = "", children = [] }) {
             child.props.path = basePath + child.props.path;
             const match = matchPath(route, child.props.path);
             if (match.routeMatch) {
-                return child.props.element({ params: match.params, query: match.query });
+                return createElement("x-router", {}, child.props.element({ params: match.params, query: match.query }));
             }
         }
     }
