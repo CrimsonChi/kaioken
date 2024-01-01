@@ -11,15 +11,13 @@ export const App = () => {
 
   return (
     <div>
-      <h1>App</h1>
-      {/* <Todos /> */}
       <nav>
         <ul>
           <li>
             <Link to="/">Home</Link>
           </li>
           <li>
-            <Link to="/test">Test</Link>
+            <Link to="/test/asdasd">Test</Link>
           </li>
           <li>
             <Link to="/todos">Todos</Link>
@@ -29,7 +27,7 @@ export const App = () => {
       <Router>
         {/* <Route path="/" element={lazy(() => import("./components/HomePage"))} /> */}
         <Route path="/" element={HomePage} />
-        <Route path="/test" element={TestPage} />
+        <Route path="/test/:thing" element={TestPage} />
         <Route path="/todos" element={Todos} />
       </Router>
     </div>
@@ -38,9 +36,10 @@ export const App = () => {
 
 const HomePage = ({ params }: { params: Rec }) => {
   console.log("HomePage", params)
-  return <div>Home</div>
+  return <h1>Home</h1>
 }
 
-const TestPage = () => {
-  return <div>Test</div>
+const TestPage = ({ params }: { params: Rec }) => {
+  console.log("TestPage", params)
+  return <h1>Test</h1>
 }

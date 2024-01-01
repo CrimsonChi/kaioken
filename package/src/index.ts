@@ -212,11 +212,15 @@ function commitWork(vNode?: VNode) {
     return
   }
 
-  let domParentNode = vNode.parent
+  let domParentNode = vNode.parent ?? vNode.alternate?.parent ?? wipRoot
   let domParent = domParentNode?.dom
   while (domParentNode && !domParent) {
     domParentNode = domParentNode.parent ?? domParentNode.alternate?.parent
     domParent = domParentNode?.dom ?? domParentNode?.alternate?.dom
+    // if (domParent && domParent === vNode.dom) {
+    //   debugger
+    //   domParent = vNode.dom.parentElement ?? undefined
+    // }
   }
 
   if (!domParent) {
@@ -258,11 +262,11 @@ function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
   }
 }
 
-function workLoop(_deadline: IdleDeadline) {
+function workLoop(deadline: IdleDeadline) {
   let shouldYield = false
   while (nextUnitOfWork && !shouldYield) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork)
-    shouldYield = false
+    shouldYield = deadline.timeRemaining() < 1
   }
 
   if (!nextUnitOfWork && wipRoot) {

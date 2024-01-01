@@ -1,4 +1,4 @@
-import type { Rec, VNode } from "./types";
+import type { Rec } from "./types";
 interface RouterProps {
     basePath?: string;
     children?: JSX.Element[];
@@ -23,5 +23,5 @@ export declare function Route({ path, element }: RouteProps): {
 export declare function Link({ to, children }: {
     to: string;
     children?: JSX.Element;
-}): VNode;
+}): import("./types").VNode;
 export {};

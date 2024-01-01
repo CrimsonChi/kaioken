@@ -168,11 +168,15 @@ function commitWork(vNode) {
     if (!vNode) {
         return;
     }
-    let domParentNode = vNode.parent;
+    let domParentNode = vNode.parent ?? vNode.alternate?.parent ?? wipRoot;
     let domParent = domParentNode?.dom;
     while (domParentNode && !domParent) {
         domParentNode = domParentNode.parent ?? domParentNode.alternate?.parent;
         domParent = domParentNode?.dom ?? domParentNode?.alternate?.dom;
+        // if (domParent && domParent === vNode.dom) {
+        //   debugger
+        //   domParent = vNode.dom.parentElement ?? undefined
+        // }
     }
     if (!domParent) {
         console.error("no domParent");
@@ -210,11 +214,11 @@ function commitDeletion(vNode, domParent) {
         commitDeletion(vNode.child, domParent);
     }
 }
-function workLoop(_deadline) {
+function workLoop(deadline) {
     let shouldYield = false;
     while (nextUnitOfWork && !shouldYield) {
         nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
-        shouldYield = false;
+        shouldYield = deadline.timeRemaining() < 1;
     }
     if (!nextUnitOfWork && wipRoot) {
         commitRoot();
