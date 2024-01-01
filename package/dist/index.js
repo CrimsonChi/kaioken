@@ -55,6 +55,7 @@ function useState(initial) {
         // @ts-ignore
         return;
     }
+    const wn = wipNode;
     const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
@@ -65,10 +66,11 @@ function useState(initial) {
         hook.state =
             typeof action === "function" ? action(hook.state) : action;
         wipRoot = {
-            dom: currentRoot.dom,
-            props: currentRoot.props,
-            alternate: currentRoot,
+            dom: wn.child.dom,
+            props: wn.props,
+            alternate: wn,
             hooks: [],
+            type: wn.type,
         };
         nextUnitOfWork = wipRoot;
         deletions = [];
@@ -88,8 +90,9 @@ function useEffect(callback, deps = []) {
     const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
-    const hasChangedDeps = deps.length === 0 ||
-        (!!oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]));
+    const hasChangedDeps = !oldHook ||
+        deps.length === 0 ||
+        (oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]));
     if (hasChangedDeps) {
         pendingEffects.push(callback);
     }

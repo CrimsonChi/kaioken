@@ -1,7 +1,11 @@
-import { useState } from "reflex-ui"
+import { useEffect, useState } from "reflex-ui"
 
 export const CountDisplay = () => {
   const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    console.log("count changed: ", count)
+  }, [count])
   return (
     <div>
       <p>{count}</p>
