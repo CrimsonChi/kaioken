@@ -1,4 +1,4 @@
-export { mount, createElement, useEffect, useState };
+export { mount, createElement, useEffect, useState, globalState };
 let mounted = false;
 let nextUnitOfWork = undefined;
 let currentRoot = undefined;
@@ -7,8 +7,8 @@ let deletions = [];
 let pendingEffects = [];
 let wipNode = null;
 let hookIndex = -1;
-function logGlobal(str = "global") {
-    console.log(str, Object.assign({}, {
+function globalState() {
+    return {
         mounted,
         nextUnitOfWork,
         currentRoot,
@@ -17,7 +17,7 @@ function logGlobal(str = "global") {
         pendingEffects,
         wipNode,
         hookIndex,
-    }));
+    };
 }
 function mount(appFunc, container) {
     const app = appFunc();
@@ -86,7 +86,6 @@ function useEffect(callback, deps = []) {
         console.error("no wipNode");
         return;
     }
-    logGlobal();
     const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
