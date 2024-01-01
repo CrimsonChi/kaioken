@@ -2,7 +2,18 @@
 // https://www.youtube.com/watch?v=YfnPk3nzWts
 import type { VNode } from "./types"
 
-export function createElement(
+export { render, createElement, fragment, useEffect, useState }
+
+let nextUnitOfWork: VNode | undefined = undefined
+let currentRoot: VNode | undefined = undefined
+let wipRoot: VNode | undefined = undefined
+let deletions: VNode[] = []
+let pendingEffects: Function[] = []
+
+let wipNode: VNode | null = null
+let hookIndex: number = -1
+
+function createElement(
   type: string | Function,
   props = {},
   ...children: VNode[]
@@ -132,7 +143,7 @@ function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
   }
 }
 
-export function render(appFunc: () => VNode, container: HTMLElement) {
+function render(appFunc: () => VNode, container: HTMLElement) {
   const app = appFunc()
   app.type = appFunc
   wipRoot = {
@@ -146,12 +157,6 @@ export function render(appFunc: () => VNode, container: HTMLElement) {
   deletions = []
   nextUnitOfWork = wipRoot
 }
-
-let nextUnitOfWork: VNode | undefined = undefined
-let currentRoot: VNode | undefined = undefined
-let wipRoot: VNode | undefined = undefined
-let deletions: VNode[] = []
-let pendingEffects: Function[] = []
 
 function workLoop(deadline: IdleDeadline) {
   let shouldYield = false
@@ -189,9 +194,6 @@ function performUnitOfWork(vNode: VNode): VNode | undefined {
   return
 }
 
-let wipNode: VNode | null = null
-let hookIndex: number = -1
-
 function updateFunctionComponent(vNode: VNode) {
   wipNode = vNode
   hookIndex = 0
@@ -201,7 +203,7 @@ function updateFunctionComponent(vNode: VNode) {
   reconcileChildren(vNode, children)
 }
 
-export function useState<T>(initial: T) {
+function useState<T>(initial: T) {
   const oldHook =
     wipNode?.alternate &&
     wipNode.alternate.hooks &&
@@ -209,17 +211,17 @@ export function useState<T>(initial: T) {
 
   const hook = {
     state: oldHook ? oldHook.state : initial,
-    queue: [] as Function[],
+    //queue: [] as Function[],
   }
 
-  const actions = oldHook ? oldHook.queue : []
-  actions.forEach((action: Function) => {
-    hook.state = action(hook.state)
-  })
+  // const actions = oldHook ? oldHook.queue : []
+  // actions.forEach((action: Function) => {
+  //   hook.state = action(hook.state)
+  // })
 
   const setState = (action: T | ((oldVal: T) => T)) => {
     if (!currentRoot) throw new Error("currentRoot is undefined, why???")
-    hook.queue.push(typeof action === "function" ? action : () => action)
+    //hook.queue.push(typeof action === "function" ? action : () => action)
     hook.state =
       typeof action === "function" ? (action as Function)(hook.state) : action
 
@@ -238,7 +240,7 @@ export function useState<T>(initial: T) {
   return [hook.state, setState] as const
 }
 
-export function useEffect(callback: Function, deps: any[] = []) {
+function useEffect(callback: Function, deps: any[] = []) {
   const oldHook =
     wipNode?.alternate &&
     wipNode.alternate.hooks &&
@@ -319,18 +321,9 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
   }
 }
 
-export function fragment(props: { children: VNode[] }) {
+function fragment(props: { children: VNode[] }) {
   return {
     type: "fragment",
     props,
   }
 }
-
-/** @jsx Didact.createElement */
-// function Counter() {
-//   const [state, setState] = Didact.useState(1)
-//   return <h1 onClick={() => setState((c) => c + 1)}>Count: {state}</h1>
-// }
-// const element = <Counter />
-// const container = document.getElementById("root")
-// Didact.render(element, container)

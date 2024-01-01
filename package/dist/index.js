@@ -1,4 +1,12 @@
-export function createElement(type, props = {}, ...children) {
+export { render, createElement, fragment, useEffect, useState };
+let nextUnitOfWork = undefined;
+let currentRoot = undefined;
+let wipRoot = undefined;
+let deletions = [];
+let pendingEffects = [];
+let wipNode = null;
+let hookIndex = -1;
+function createElement(type, props = {}, ...children) {
     return {
         type,
         props: {
@@ -103,7 +111,7 @@ function commitDeletion(vNode, domParent) {
         commitDeletion(vNode.child, domParent);
     }
 }
-export function render(appFunc, container) {
+function render(appFunc, container) {
     const app = appFunc();
     app.type = appFunc;
     wipRoot = {
@@ -117,11 +125,6 @@ export function render(appFunc, container) {
     deletions = [];
     nextUnitOfWork = wipRoot;
 }
-let nextUnitOfWork = undefined;
-let currentRoot = undefined;
-let wipRoot = undefined;
-let deletions = [];
-let pendingEffects = [];
 function workLoop(deadline) {
     let shouldYield = false;
     while (nextUnitOfWork && !shouldYield) {
@@ -154,8 +157,6 @@ function performUnitOfWork(vNode) {
     }
     return;
 }
-let wipNode = null;
-let hookIndex = -1;
 function updateFunctionComponent(vNode) {
     wipNode = vNode;
     hookIndex = 0;
@@ -163,22 +164,22 @@ function updateFunctionComponent(vNode) {
     const children = [vNode.type(vNode.props)];
     reconcileChildren(vNode, children);
 }
-export function useState(initial) {
+function useState(initial) {
     const oldHook = wipNode?.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
     const hook = {
         state: oldHook ? oldHook.state : initial,
-        queue: [],
+        //queue: [] as Function[],
     };
-    const actions = oldHook ? oldHook.queue : [];
-    actions.forEach((action) => {
-        hook.state = action(hook.state);
-    });
+    // const actions = oldHook ? oldHook.queue : []
+    // actions.forEach((action: Function) => {
+    //   hook.state = action(hook.state)
+    // })
     const setState = (action) => {
         if (!currentRoot)
             throw new Error("currentRoot is undefined, why???");
-        hook.queue.push(typeof action === "function" ? action : () => action);
+        //hook.queue.push(typeof action === "function" ? action : () => action)
         hook.state =
             typeof action === "function" ? action(hook.state) : action;
         wipRoot = {
@@ -194,7 +195,7 @@ export function useState(initial) {
     hookIndex++;
     return [hook.state, setState];
 }
-export function useEffect(callback, deps = []) {
+function useEffect(callback, deps = []) {
     const oldHook = wipNode?.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
@@ -262,17 +263,9 @@ function reconcileChildren(wipNode, children) {
         index++;
     }
 }
-export function fragment(props) {
+function fragment(props) {
     return {
         type: "fragment",
         props,
     };
 }
-/** @jsx Didact.createElement */
-// function Counter() {
-//   const [state, setState] = Didact.useState(1)
-//   return <h1 onClick={() => setState((c) => c + 1)}>Count: {state}</h1>
-// }
-// const element = <Counter />
-// const container = document.getElementById("root")
-// Didact.render(element, container)
