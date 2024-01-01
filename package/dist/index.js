@@ -164,6 +164,26 @@ function commitRoot() {
         pendingEffects.pop()?.();
     wipRoot = undefined;
 }
+function getMountLocation(vNode, start = -1) {
+    if (!vNode.parent)
+        return { element: null, idx: -1 };
+    for (let i = 0; i < vNode.parent.props.children.length; i++) {
+        const c = vNode.parent.props.children[i];
+        if (vNode === c) {
+            debugger;
+            break;
+        }
+        start += getRenderedNodeCount(c);
+    }
+    if (vNode.parent.dom)
+        return { element: vNode.parent.dom, idx: start };
+    return getMountLocation(vNode.parent, start);
+}
+function getRenderedNodeCount(vNode) {
+    if (vNode.props.children.length === 0)
+        return 1;
+    return vNode.props.children.reduce((acc, c) => acc + getRenderedNodeCount(c), 0);
+}
 function commitWork(vNode) {
     if (!vNode) {
         return;
@@ -174,7 +194,16 @@ function commitWork(vNode) {
     }
     const domParent = domParentNode.dom;
     if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-        domParent.appendChild(vNode.dom);
+        const { idx } = getMountLocation(vNode);
+        const sibling = vNode.parent?.sibling?.child?.dom ??
+            domParent.childNodes[idx > 0 ? idx : 0];
+        if (sibling && domParent.contains(sibling)) {
+            domParent.insertBefore(vNode.dom, sibling);
+        }
+        else {
+            domParent.appendChild(vNode.dom);
+        }
+        //domParent.appendChild(vNode.dom)
     }
     else if (vNode.effectTag === "UPDATE" && vNode.dom != null) {
         updateDom(vNode.dom, vNode.alternate?.props ?? {}, vNode.props);
@@ -231,6 +260,9 @@ function updateFunctionComponent(vNode) {
     hookIndex = 0;
     wipNode.hooks = [];
     const children = [vNode.type(vNode.props)];
+    // for (const c of children) {
+    //   if (c === null) debugger
+    // }
     reconcileChildren(vNode, children);
 }
 function updateHostComponent(vNode) {
