@@ -70,6 +70,7 @@ function useState<T>(
   hookIndex++
   return [hook.state, setState] as const
 }
+
 function useEffect(callback: Function, deps: any[] = []) {
   if (!mounted) return
   if (!wipNode) {
@@ -82,19 +83,31 @@ function useEffect(callback: Function, deps: any[] = []) {
     wipNode.alternate.hooks &&
     wipNode.alternate.hooks[hookIndex]
 
+  if (oldHook && oldHook.cleanup) {
+    oldHook.cleanup()
+  }
+
   const hasChangedDeps =
     !oldHook ||
     deps.length === 0 ||
     (oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]))
 
-  if (hasChangedDeps) {
-    pendingEffects.push(callback)
-  }
-
-  wipNode.hooks.push({
+  const hook = {
     deps,
     callback,
-  })
+    cleanup: undefined,
+  }
+
+  if (hasChangedDeps) {
+    pendingEffects.push(() => {
+      const cleanup = callback()
+      if (cleanup && typeof cleanup === "function") {
+        hook.cleanup = cleanup
+      }
+    })
+  }
+
+  wipNode.hooks.push(hook)
   hookIndex++
 }
 //#endregion
@@ -200,10 +213,16 @@ function commitWork(vNode?: VNode) {
   }
 
   let domParentNode = vNode.parent
-  while (!domParentNode?.dom) {
-    domParentNode = domParentNode?.parent
+  let domParent = domParentNode?.dom
+  while (domParentNode && !domParent) {
+    domParentNode = domParentNode.parent ?? domParentNode.alternate?.parent
+    domParent = domParentNode?.dom ?? domParentNode?.alternate?.dom
   }
-  const domParent = domParentNode.dom
+
+  if (!domParent) {
+    console.error("no domParent")
+    return
+  }
 
   if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
     let sibling = vNode.parent?.sibling?.child?.dom
@@ -239,11 +258,11 @@ function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
   }
 }
 
-function workLoop(deadline: IdleDeadline) {
+function workLoop(_deadline: IdleDeadline) {
   let shouldYield = false
   while (nextUnitOfWork && !shouldYield) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork)
-    shouldYield = deadline.timeRemaining() < 1
+    shouldYield = false
   }
 
   if (!nextUnitOfWork && wipRoot) {

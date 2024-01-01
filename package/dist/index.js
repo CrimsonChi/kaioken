@@ -66,16 +66,26 @@ function useEffect(callback, deps = []) {
     const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
+    if (oldHook && oldHook.cleanup) {
+        oldHook.cleanup();
+    }
     const hasChangedDeps = !oldHook ||
         deps.length === 0 ||
         (oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]));
-    if (hasChangedDeps) {
-        pendingEffects.push(callback);
-    }
-    wipNode.hooks.push({
+    const hook = {
         deps,
         callback,
-    });
+        cleanup: undefined,
+    };
+    if (hasChangedDeps) {
+        pendingEffects.push(() => {
+            const cleanup = callback();
+            if (cleanup && typeof cleanup === "function") {
+                hook.cleanup = cleanup;
+            }
+        });
+    }
+    wipNode.hooks.push(hook);
     hookIndex++;
 }
 //#endregion
@@ -159,10 +169,15 @@ function commitWork(vNode) {
         return;
     }
     let domParentNode = vNode.parent;
-    while (!domParentNode?.dom) {
-        domParentNode = domParentNode?.parent;
+    let domParent = domParentNode?.dom;
+    while (domParentNode && !domParent) {
+        domParentNode = domParentNode.parent ?? domParentNode.alternate?.parent;
+        domParent = domParentNode?.dom ?? domParentNode?.alternate?.dom;
     }
-    const domParent = domParentNode.dom;
+    if (!domParent) {
+        console.error("no domParent");
+        return;
+    }
     if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
         let sibling = vNode.parent?.sibling?.child?.dom;
         if (!sibling) {
@@ -195,11 +210,11 @@ function commitDeletion(vNode, domParent) {
         commitDeletion(vNode.child, domParent);
     }
 }
-function workLoop(deadline) {
+function workLoop(_deadline) {
     let shouldYield = false;
     while (nextUnitOfWork && !shouldYield) {
         nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
-        shouldYield = deadline.timeRemaining() < 1;
+        shouldYield = false;
     }
     if (!nextUnitOfWork && wipRoot) {
         commitRoot();

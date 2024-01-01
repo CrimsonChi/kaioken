@@ -102,6 +102,18 @@ button:focus-visible {
   }
 }
 
+nav ul {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  gap: 1rem;
+}
+
+
 .todos {
   display: flex;
   flex-direction: column;
