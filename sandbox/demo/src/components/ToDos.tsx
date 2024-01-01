@@ -29,6 +29,14 @@ export const Todos = () => {
     setTodos(newTodos)
   }
 
+  const handleDelete = (id: string, e: MouseEvent) => {
+    e.preventDefault()
+
+    const newTodos = todos.filter((todo) => todo.id !== id)
+    saveTodos(newTodos)
+    setTodos(newTodos)
+  }
+
   const handleAdd = () => {
     const newTodos = [
       ...todos,
@@ -51,8 +59,18 @@ export const Todos = () => {
       <input value={newTodo} oninput={handleInput} />
       <button onclick={handleAdd}>Add</button>
 
-      <ToDoList name="Completed" items={completed} toggleItem={handleToggle} />
-      <ToDoList name="Pending" items={pending} toggleItem={handleToggle} />
+      <ToDoList
+        name="Completed"
+        items={completed}
+        toggleItem={handleToggle}
+        handleDelete={handleDelete}
+      />
+      <ToDoList
+        name="Pending"
+        items={pending}
+        toggleItem={handleToggle}
+        handleDelete={handleDelete}
+      />
     </div>
   )
 }
@@ -61,10 +79,12 @@ const ToDoList = ({
   name,
   items,
   toggleItem,
+  handleDelete,
 }: {
   name: string
   items: ToDoItem[]
   toggleItem: (id: string, e: MouseEvent) => void
+  handleDelete: (id: string, e: MouseEvent) => void
 }) => {
   if (!items.length) return null
   return (
@@ -79,6 +99,9 @@ const ToDoList = ({
               checked={todo.done}
               onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
             />
+            <button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
+              Delete
+            </button>
           </li>
         ))}
       </ul>
