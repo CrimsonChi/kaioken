@@ -2,7 +2,7 @@
 // https://www.youtube.com/watch?v=YfnPk3nzWts
 import type { VNode } from "./types"
 
-export { mount, createElement, fragment, useEffect, useState }
+export { mount, createElement, useEffect, useState }
 
 let mounted = false
 let nextUnitOfWork: VNode | undefined = undefined
@@ -13,6 +13,25 @@ let pendingEffects: Function[] = []
 
 let wipNode: VNode | null = null
 let hookIndex: number = -1
+
+function logGlobal(str: string = "global") {
+  console.log(
+    str,
+    Object.assign(
+      {},
+      {
+        mounted,
+        nextUnitOfWork,
+        currentRoot,
+        wipRoot,
+        deletions,
+        pendingEffects,
+        wipNode,
+        hookIndex,
+      }
+    )
+  )
+}
 
 function mount(appFunc: () => VNode, container: HTMLElement) {
   const app = appFunc()
@@ -49,13 +68,6 @@ function createElement(
   }
 }
 
-function fragment(props: { children: VNode[] }) {
-  return {
-    type: "fragment",
-    props,
-  }
-}
-
 function useState<T>(
   initial: T
 ): [T, (action: T | ((oldVal: T) => T)) => void] {
@@ -68,7 +80,7 @@ function useState<T>(
   }
 
   const oldHook =
-    wipNode?.alternate &&
+    wipNode.alternate &&
     wipNode.alternate.hooks &&
     wipNode.alternate.hooks[hookIndex]
 
@@ -100,8 +112,11 @@ function useEffect(callback: Function, deps: any[] = []) {
     console.error("no wipNode")
     return
   }
+
+  logGlobal()
+
   const oldHook =
-    wipNode?.alternate &&
+    wipNode.alternate &&
     wipNode.alternate.hooks &&
     wipNode.alternate.hooks[hookIndex]
 

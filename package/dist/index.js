@@ -1,4 +1,4 @@
-export { mount, createElement, fragment, useEffect, useState };
+export { mount, createElement, useEffect, useState };
 let mounted = false;
 let nextUnitOfWork = undefined;
 let currentRoot = undefined;
@@ -7,6 +7,18 @@ let deletions = [];
 let pendingEffects = [];
 let wipNode = null;
 let hookIndex = -1;
+function logGlobal(str = "global") {
+    console.log(str, Object.assign({}, {
+        mounted,
+        nextUnitOfWork,
+        currentRoot,
+        wipRoot,
+        deletions,
+        pendingEffects,
+        wipNode,
+        hookIndex,
+    }));
+}
 function mount(appFunc, container) {
     const app = appFunc();
     app.type = appFunc;
@@ -34,12 +46,6 @@ function createElement(type, props = {}, ...children) {
         hooks: [],
     };
 }
-function fragment(props) {
-    return {
-        type: "fragment",
-        props,
-    };
-}
 function useState(initial) {
     // @ts-ignore
     if (!mounted)
@@ -49,7 +55,7 @@ function useState(initial) {
         // @ts-ignore
         return;
     }
-    const oldHook = wipNode?.alternate &&
+    const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
     const hook = oldHook ?? { state: initial };
@@ -78,7 +84,8 @@ function useEffect(callback, deps = []) {
         console.error("no wipNode");
         return;
     }
-    const oldHook = wipNode?.alternate &&
+    logGlobal();
+    const oldHook = wipNode.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
     const hasChangedDeps = deps.length === 0 ||
