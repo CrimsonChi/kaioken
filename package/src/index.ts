@@ -217,10 +217,6 @@ function commitWork(vNode?: VNode) {
   while (domParentNode && !domParent) {
     domParentNode = domParentNode.parent ?? domParentNode.alternate?.parent
     domParent = domParentNode?.dom ?? domParentNode?.alternate?.dom
-    // if (domParent && domParent === vNode.dom) {
-    //   debugger
-    //   domParent = vNode.dom.parentElement ?? undefined
-    // }
   }
 
   if (!domParent) {
