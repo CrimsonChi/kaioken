@@ -1,4 +1,5 @@
-export { render, createElement, fragment, useEffect, useState };
+export { mount, createElement, fragment, useEffect, useState };
+let mounted = false;
 let nextUnitOfWork = undefined;
 let currentRoot = undefined;
 let wipRoot = undefined;
@@ -6,6 +7,21 @@ let deletions = [];
 let pendingEffects = [];
 let wipNode = null;
 let hookIndex = -1;
+function mount(appFunc, container) {
+    const app = appFunc();
+    app.type = appFunc;
+    wipRoot = {
+        dom: container,
+        props: {
+            children: [app],
+        },
+        alternate: currentRoot,
+        hooks: [],
+    };
+    deletions = [];
+    nextUnitOfWork = wipRoot;
+    mounted = true;
+}
 function createElement(type, props = {}, ...children) {
     return {
         type,
@@ -13,10 +29,68 @@ function createElement(type, props = {}, ...children) {
             ...props,
             children: children
                 .flat()
-                .map((child) => typeof child === "object" ? child : createTextElement(child)),
+                .map((child) => typeof child === "object" ? child : createTextElement(String(child))),
         },
         hooks: [],
     };
+}
+function fragment(props) {
+    return {
+        type: "fragment",
+        props,
+    };
+}
+function useState(initial) {
+    // @ts-ignore
+    if (!mounted)
+        return;
+    if (!wipNode) {
+        console.error("no wipNode");
+        // @ts-ignore
+        return;
+    }
+    const oldHook = wipNode?.alternate &&
+        wipNode.alternate.hooks &&
+        wipNode.alternate.hooks[hookIndex];
+    const hook = oldHook ?? { state: initial };
+    const setState = (action) => {
+        if (!currentRoot)
+            throw new Error("currentRoot is undefined, why???");
+        hook.state =
+            typeof action === "function" ? action(hook.state) : action;
+        wipRoot = {
+            dom: currentRoot.dom,
+            props: currentRoot.props,
+            alternate: currentRoot,
+            hooks: [],
+        };
+        nextUnitOfWork = wipRoot;
+        deletions = [];
+    };
+    wipNode.hooks.push(hook);
+    hookIndex++;
+    return [hook.state, setState];
+}
+function useEffect(callback, deps = []) {
+    if (!mounted)
+        return;
+    if (!wipNode) {
+        console.error("no wipNode");
+        return;
+    }
+    const oldHook = wipNode?.alternate &&
+        wipNode.alternate.hooks &&
+        wipNode.alternate.hooks[hookIndex];
+    const hasChangedDeps = deps.length === 0 ||
+        (!!oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]));
+    if (hasChangedDeps) {
+        pendingEffects.push(callback);
+    }
+    wipNode.hooks.push({
+        deps,
+        callback,
+    });
+    hookIndex++;
 }
 function createTextElement(text) {
     return {
@@ -111,20 +185,6 @@ function commitDeletion(vNode, domParent) {
         commitDeletion(vNode.child, domParent);
     }
 }
-function render(appFunc, container) {
-    const app = appFunc();
-    app.type = appFunc;
-    wipRoot = {
-        dom: container,
-        props: {
-            children: [app],
-        },
-        alternate: currentRoot,
-        hooks: [],
-    };
-    deletions = [];
-    nextUnitOfWork = wipRoot;
-}
 function workLoop(deadline) {
     let shouldYield = false;
     while (nextUnitOfWork && !shouldYield) {
@@ -163,52 +223,6 @@ function updateFunctionComponent(vNode) {
     wipNode.hooks = [];
     const children = [vNode.type(vNode.props)];
     reconcileChildren(vNode, children);
-}
-function useState(initial) {
-    const oldHook = wipNode?.alternate &&
-        wipNode.alternate.hooks &&
-        wipNode.alternate.hooks[hookIndex];
-    const hook = {
-        state: oldHook ? oldHook.state : initial,
-        //queue: [] as Function[],
-    };
-    // const actions = oldHook ? oldHook.queue : []
-    // actions.forEach((action: Function) => {
-    //   hook.state = action(hook.state)
-    // })
-    const setState = (action) => {
-        if (!currentRoot)
-            throw new Error("currentRoot is undefined, why???");
-        //hook.queue.push(typeof action === "function" ? action : () => action)
-        hook.state =
-            typeof action === "function" ? action(hook.state) : action;
-        wipRoot = {
-            dom: currentRoot.dom,
-            props: currentRoot.props,
-            alternate: currentRoot,
-            hooks: [],
-        };
-        nextUnitOfWork = wipRoot;
-        deletions = [];
-    };
-    wipNode?.hooks.push(hook);
-    hookIndex++;
-    return [hook.state, setState];
-}
-function useEffect(callback, deps = []) {
-    const oldHook = wipNode?.alternate &&
-        wipNode.alternate.hooks &&
-        wipNode.alternate.hooks[hookIndex];
-    const hasChangedDeps = deps.length === 0 ||
-        (!!oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]));
-    if (hasChangedDeps) {
-        pendingEffects.push(callback);
-    }
-    wipNode?.hooks.push({
-        deps,
-        callback,
-    });
-    hookIndex++;
 }
 function updateHostComponent(vNode) {
     if (!vNode.dom) {
@@ -262,10 +276,4 @@ function reconcileChildren(wipNode, children) {
         prevSibling = newNode;
         index++;
     }
-}
-function fragment(props) {
-    return {
-        type: "fragment",
-        props,
-    };
 }

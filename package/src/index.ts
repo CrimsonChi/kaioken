@@ -2,8 +2,9 @@
 // https://www.youtube.com/watch?v=YfnPk3nzWts
 import type { VNode } from "./types"
 
-export { render, createElement, fragment, useEffect, useState }
+export { mount, createElement, fragment, useEffect, useState }
 
+let mounted = false
 let nextUnitOfWork: VNode | undefined = undefined
 let currentRoot: VNode | undefined = undefined
 let wipRoot: VNode | undefined = undefined
@@ -13,10 +14,26 @@ let pendingEffects: Function[] = []
 let wipNode: VNode | null = null
 let hookIndex: number = -1
 
+function mount(appFunc: () => VNode, container: HTMLElement) {
+  const app = appFunc()
+  app.type = appFunc
+  wipRoot = {
+    dom: container,
+    props: {
+      children: [app],
+    },
+    alternate: currentRoot,
+    hooks: [],
+  }
+  deletions = []
+  nextUnitOfWork = wipRoot
+  mounted = true
+}
+
 function createElement(
   type: string | Function,
   props = {},
-  ...children: VNode[]
+  ...children: (VNode | unknown)[]
 ): VNode {
   return {
     type,
@@ -25,11 +42,82 @@ function createElement(
       children: children
         .flat()
         .map((child) =>
-          typeof child === "object" ? child : createTextElement(child)
-        ),
+          typeof child === "object" ? child : createTextElement(String(child))
+        ) as VNode[],
     },
     hooks: [],
   }
+}
+
+function fragment(props: { children: VNode[] }) {
+  return {
+    type: "fragment",
+    props,
+  }
+}
+
+function useState<T>(
+  initial: T
+): [T, (action: T | ((oldVal: T) => T)) => void] {
+  // @ts-ignore
+  if (!mounted) return
+  if (!wipNode) {
+    console.error("no wipNode")
+    // @ts-ignore
+    return
+  }
+
+  const oldHook =
+    wipNode?.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
+
+  const hook = oldHook ?? { state: initial }
+
+  const setState = (action: T | ((oldVal: T) => T)) => {
+    if (!currentRoot) throw new Error("currentRoot is undefined, why???")
+    hook.state =
+      typeof action === "function" ? (action as Function)(hook.state) : action
+
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alternate: currentRoot,
+      hooks: [],
+    }
+    nextUnitOfWork = wipRoot
+    deletions = []
+  }
+
+  wipNode.hooks.push(hook)
+  hookIndex++
+  return [hook.state, setState] as const
+}
+
+function useEffect(callback: Function, deps: any[] = []) {
+  if (!mounted) return
+  if (!wipNode) {
+    console.error("no wipNode")
+    return
+  }
+  const oldHook =
+    wipNode?.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
+
+  const hasChangedDeps =
+    deps.length === 0 ||
+    (!!oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]))
+
+  if (hasChangedDeps) {
+    pendingEffects.push(callback)
+  }
+
+  wipNode.hooks.push({
+    deps,
+    callback,
+  })
+  hookIndex++
 }
 
 function createTextElement(text: string): VNode {
@@ -143,21 +231,6 @@ function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
   }
 }
 
-function render(appFunc: () => VNode, container: HTMLElement) {
-  const app = appFunc()
-  app.type = appFunc
-  wipRoot = {
-    dom: container,
-    props: {
-      children: [app],
-    },
-    alternate: currentRoot,
-    hooks: [],
-  }
-  deletions = []
-  nextUnitOfWork = wipRoot
-}
-
 function workLoop(deadline: IdleDeadline) {
   let shouldYield = false
   while (nextUnitOfWork && !shouldYield) {
@@ -201,64 +274,6 @@ function updateFunctionComponent(vNode: VNode) {
   wipNode.hooks = []
   const children = [(vNode.type as Function)(vNode.props)]
   reconcileChildren(vNode, children)
-}
-
-function useState<T>(initial: T) {
-  const oldHook =
-    wipNode?.alternate &&
-    wipNode.alternate.hooks &&
-    wipNode.alternate.hooks[hookIndex]
-
-  const hook = {
-    state: oldHook ? oldHook.state : initial,
-    //queue: [] as Function[],
-  }
-
-  // const actions = oldHook ? oldHook.queue : []
-  // actions.forEach((action: Function) => {
-  //   hook.state = action(hook.state)
-  // })
-
-  const setState = (action: T | ((oldVal: T) => T)) => {
-    if (!currentRoot) throw new Error("currentRoot is undefined, why???")
-    //hook.queue.push(typeof action === "function" ? action : () => action)
-    hook.state =
-      typeof action === "function" ? (action as Function)(hook.state) : action
-
-    wipRoot = {
-      dom: currentRoot.dom,
-      props: currentRoot.props,
-      alternate: currentRoot,
-      hooks: [],
-    }
-    nextUnitOfWork = wipRoot
-    deletions = []
-  }
-
-  wipNode?.hooks.push(hook)
-  hookIndex++
-  return [hook.state, setState] as const
-}
-
-function useEffect(callback: Function, deps: any[] = []) {
-  const oldHook =
-    wipNode?.alternate &&
-    wipNode.alternate.hooks &&
-    wipNode.alternate.hooks[hookIndex]
-
-  const hasChangedDeps =
-    deps.length === 0 ||
-    (!!oldHook && !deps.every((dep, i) => dep === oldHook.deps[i]))
-
-  if (hasChangedDeps) {
-    pendingEffects.push(callback)
-  }
-
-  wipNode?.hooks.push({
-    deps,
-    callback,
-  })
-  hookIndex++
 }
 
 function updateHostComponent(vNode: VNode) {
@@ -318,12 +333,5 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
 
     prevSibling = newNode
     index++
-  }
-}
-
-function fragment(props: { children: VNode[] }) {
-  return {
-    type: "fragment",
-    props,
   }
 }
