@@ -203,9 +203,9 @@ function updateFunctionComponent(vNode: VNode) {
 
 export function useState<T>(initial: T) {
   const oldHook =
-    wipNode!.alternate &&
-    wipNode!.alternate.hooks &&
-    wipNode!.alternate.hooks[hookIndex]
+    wipNode?.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
 
   const hook = {
     state: oldHook ? oldHook.state : initial,
@@ -220,6 +220,9 @@ export function useState<T>(initial: T) {
   const setState = (action: T | ((oldVal: T) => T)) => {
     if (!currentRoot) throw new Error("currentRoot is undefined, why???")
     hook.queue.push(typeof action === "function" ? action : () => action)
+    hook.state =
+      typeof action === "function" ? (action as Function)(hook.state) : action
+
     wipRoot = {
       dom: currentRoot.dom,
       props: currentRoot.props,

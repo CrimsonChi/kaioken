@@ -164,7 +164,7 @@ function updateFunctionComponent(vNode) {
     reconcileChildren(vNode, children);
 }
 export function useState(initial) {
-    const oldHook = wipNode.alternate &&
+    const oldHook = wipNode?.alternate &&
         wipNode.alternate.hooks &&
         wipNode.alternate.hooks[hookIndex];
     const hook = {
@@ -179,6 +179,8 @@ export function useState(initial) {
         if (!currentRoot)
             throw new Error("currentRoot is undefined, why???");
         hook.queue.push(typeof action === "function" ? action : () => action);
+        hook.state =
+            typeof action === "function" ? action(hook.state) : action;
         wipRoot = {
             dom: currentRoot.dom,
             props: currentRoot.props,
