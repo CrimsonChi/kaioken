@@ -338,8 +338,8 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
 
     if (index === 0) {
       wipNode.child = newNode
-    } else if (child) {
-      prevSibling!.sibling = newNode
+    } else if (child && prevSibling) {
+      prevSibling.sibling = newNode
     }
 
     prevSibling = newNode

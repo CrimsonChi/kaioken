@@ -283,7 +283,7 @@ function reconcileChildren(wipNode, children) {
         if (index === 0) {
             wipNode.child = newNode;
         }
-        else if (child) {
+        else if (child && prevSibling) {
             prevSibling.sibling = newNode;
         }
         prevSibling = newNode;
