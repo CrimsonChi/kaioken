@@ -56,8 +56,10 @@ export const Todos = () => {
 
   return (
     <div className="todos">
-      <input value={newTodo} oninput={handleInput} />
-      <button onclick={handleAdd}>Add</button>
+      <div>
+        <input value={newTodo} oninput={handleInput} />
+        <button onclick={handleAdd}>Add</button>
+      </div>
 
       <ToDoList
         name="Completed"
