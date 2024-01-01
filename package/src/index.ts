@@ -1,6 +1,6 @@
 // https://pomb.us/build-your-own-react/
 // https://www.youtube.com/watch?v=YfnPk3nzWts
-import type { VNode } from "./types"
+import type { VNode, Rec } from "./types"
 
 export { mount, createElement, useEffect, useState, globalState }
 
@@ -13,19 +13,6 @@ let pendingEffects: Function[] = []
 
 let wipNode: VNode | null = null
 let hookIndex: number = -1
-
-function globalState() {
-  return {
-    mounted,
-    nextUnitOfWork,
-    currentRoot,
-    wipRoot,
-    deletions,
-    pendingEffects,
-    wipNode,
-    hookIndex,
-  }
-}
 
 function mount(appFunc: () => VNode, container: HTMLElement) {
   const app = appFunc()
@@ -43,25 +30,7 @@ function mount(appFunc: () => VNode, container: HTMLElement) {
   mounted = true
 }
 
-function createElement(
-  type: string | Function,
-  props = {},
-  ...children: (VNode | unknown)[]
-): VNode {
-  return {
-    type,
-    props: {
-      ...props,
-      children: children
-        .flat()
-        .map((child) =>
-          typeof child === "object" ? child : createTextElement(String(child))
-        ) as VNode[],
-    },
-    hooks: [],
-  }
-}
-
+//#region hooks
 function useState<T>(
   initial: T
 ): [T, (action: T | ((oldVal: T) => T)) => void] {
@@ -101,7 +70,6 @@ function useState<T>(
   hookIndex++
   return [hook.state, setState] as const
 }
-
 function useEffect(callback: Function, deps: any[] = []) {
   if (!mounted) return
   if (!wipNode) {
@@ -129,7 +97,26 @@ function useEffect(callback: Function, deps: any[] = []) {
   })
   hookIndex++
 }
+//#endregion
 
+function createElement(
+  type: string | Function,
+  props = {},
+  ...children: (VNode | unknown)[]
+): VNode {
+  return {
+    type,
+    props: {
+      ...props,
+      children: children
+        .flat()
+        .map((child) =>
+          typeof child === "object" ? child : createTextElement(String(child))
+        ) as VNode[],
+    },
+    hooks: [],
+  }
+}
 function createTextElement(text: string): VNode {
   return {
     type: "TEXT_ELEMENT",
@@ -141,6 +128,11 @@ function createTextElement(text: string): VNode {
   }
 }
 
+const isEvent = (key: string) => key.startsWith("on")
+const isProperty = (key: string) => key !== "children" && !isEvent(key)
+const isNew = (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key]
+const isGone = (_prev: Rec, next: Rec) => (key: string) => !(key in next)
+
 function createDom(vNode: VNode): HTMLElement | Text {
   const dom =
     vNode.type == "TEXT_ELEMENT"
@@ -151,13 +143,6 @@ function createDom(vNode: VNode): HTMLElement | Text {
 
   return dom
 }
-
-type Rec = Record<string, any>
-
-const isEvent = (key: string) => key.startsWith("on")
-const isProperty = (key: string) => key !== "children" && !isEvent(key)
-const isNew = (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key]
-const isGone = (_prev: Rec, next: Rec) => (key: string) => !(key in next)
 
 function updateDom(
   dom: HTMLElement | Text,
@@ -209,38 +194,6 @@ function commitRoot() {
   wipRoot = undefined
 }
 
-function getMountLocation(
-  vNode: VNode,
-  start = -1
-): {
-  element: HTMLElement | Text | SVGSVGElement | null
-  idx: number
-} {
-  if (!vNode.parent) return { element: null, idx: -1 }
-
-  for (let i = 0; i < vNode.parent.props.children.length; i++) {
-    const c = vNode.parent.props.children[i]
-    if (vNode === c) {
-      debugger
-      break
-    }
-
-    start += getRenderedNodeCount(c)
-  }
-
-  if (vNode.parent.dom) return { element: vNode.parent.dom, idx: start }
-
-  return getMountLocation(vNode.parent, start)
-}
-
-function getRenderedNodeCount(vNode: VNode): number {
-  if (vNode.props.children.length === 0) return 1
-  return vNode.props.children.reduce(
-    (acc, c) => acc + getRenderedNodeCount(c),
-    0
-  )
-}
-
 function commitWork(vNode?: VNode) {
   if (!vNode) {
     return
@@ -253,10 +206,12 @@ function commitWork(vNode?: VNode) {
   const domParent = domParentNode.dom
 
   if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-    const { idx } = getMountLocation(vNode)
-    const sibling =
-      vNode.parent?.sibling?.child?.dom ??
-      domParent.childNodes[idx > 0 ? idx : 0]
+    let sibling = vNode.parent?.sibling?.child?.dom
+
+    if (!sibling) {
+      const { idx } = getMountLocation(vNode)
+      sibling = domParent.childNodes[idx > 0 ? idx : 0] as HTMLElement
+    }
 
     if (sibling && domParent.contains(sibling)) {
       domParent.insertBefore(vNode.dom, sibling)
@@ -391,3 +346,51 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
     index++
   }
 }
+
+//#region utils
+
+function getMountLocation(
+  vNode: VNode,
+  start = -1
+): {
+  element: HTMLElement | Text | SVGSVGElement | null
+  idx: number
+} {
+  if (!vNode.parent) return { element: null, idx: -1 }
+
+  for (let i = 0; i < vNode.parent.props.children.length; i++) {
+    const c = vNode.parent.props.children[i]
+    if (vNode === c) {
+      break
+    }
+
+    start += getRenderedNodeCount(c)
+  }
+
+  if (vNode.parent.dom) return { element: vNode.parent.dom, idx: start }
+
+  return getMountLocation(vNode.parent, start)
+}
+
+function getRenderedNodeCount(vNode: VNode): number {
+  if (vNode.props.children.length === 0) return 1
+  return vNode.props.children.reduce(
+    (acc, c) => acc + getRenderedNodeCount(c),
+    0
+  )
+}
+
+function globalState() {
+  return {
+    mounted,
+    nextUnitOfWork,
+    currentRoot,
+    wipRoot,
+    deletions,
+    pendingEffects,
+    wipNode,
+    hookIndex,
+  }
+}
+
+//#endregion

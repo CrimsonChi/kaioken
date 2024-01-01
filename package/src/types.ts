@@ -1,23 +1,15 @@
 declare global {
   namespace JSX {
-    interface IntrinsicElements {
-      [key: string]: any
-    }
+    interface IntrinsicElements extends IntrinsicElementMap {}
 
-    interface ElementAttributesProperty {
-      props: {}
-    }
-
-    interface ElementChildrenAttribute {
-      children: {}
-    }
-
-    interface IntrinsicAttributes {
-      [key: string]: any
-    }
-
-    interface IntrinsicClassAttributes<T> {
-      [key: string]: any
+    type IntrinsicElementMap = {
+      [K in keyof HTMLElementTagNameMap]:
+        | {
+            [P in keyof HTMLElementTagNameMap[K]]?:
+              | HTMLElementTagNameMap[K][P]
+              | string
+              | number
+          }
     }
 
     type Element = string | Node | VNode
@@ -38,3 +30,5 @@ export type VNode = {
   effectTag?: string
   hooks: any[]
 }
+
+export type Rec = Record<string, any>

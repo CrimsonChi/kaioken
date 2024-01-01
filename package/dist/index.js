@@ -7,18 +7,6 @@ let deletions = [];
 let pendingEffects = [];
 let wipNode = null;
 let hookIndex = -1;
-function globalState() {
-    return {
-        mounted,
-        nextUnitOfWork,
-        currentRoot,
-        wipRoot,
-        deletions,
-        pendingEffects,
-        wipNode,
-        hookIndex,
-    };
-}
 function mount(appFunc, container) {
     const app = appFunc();
     app.type = appFunc;
@@ -34,18 +22,7 @@ function mount(appFunc, container) {
     nextUnitOfWork = wipRoot;
     mounted = true;
 }
-function createElement(type, props = {}, ...children) {
-    return {
-        type,
-        props: {
-            ...props,
-            children: children
-                .flat()
-                .map((child) => typeof child === "object" ? child : createTextElement(String(child))),
-        },
-        hooks: [],
-    };
-}
+//#region hooks
 function useState(initial) {
     // @ts-ignore
     if (!mounted)
@@ -101,6 +78,19 @@ function useEffect(callback, deps = []) {
     });
     hookIndex++;
 }
+//#endregion
+function createElement(type, props = {}, ...children) {
+    return {
+        type,
+        props: {
+            ...props,
+            children: children
+                .flat()
+                .map((child) => typeof child === "object" ? child : createTextElement(String(child))),
+        },
+        hooks: [],
+    };
+}
 function createTextElement(text) {
     return {
         type: "TEXT_ELEMENT",
@@ -111,6 +101,10 @@ function createTextElement(text) {
         hooks: [],
     };
 }
+const isEvent = (key) => key.startsWith("on");
+const isProperty = (key) => key !== "children" && !isEvent(key);
+const isNew = (prev, next) => (key) => prev[key] !== next[key];
+const isGone = (_prev, next) => (key) => !(key in next);
 function createDom(vNode) {
     const dom = vNode.type == "TEXT_ELEMENT"
         ? document.createTextNode("")
@@ -118,10 +112,6 @@ function createDom(vNode) {
     updateDom(dom, {}, vNode.props);
     return dom;
 }
-const isEvent = (key) => key.startsWith("on");
-const isProperty = (key) => key !== "children" && !isEvent(key);
-const isNew = (prev, next) => (key) => prev[key] !== next[key];
-const isGone = (_prev, next) => (key) => !(key in next);
 function updateDom(dom, prevProps, nextProps = {}) {
     //Remove old or changed event listeners
     Object.keys(prevProps)
@@ -164,26 +154,6 @@ function commitRoot() {
         pendingEffects.pop()?.();
     wipRoot = undefined;
 }
-function getMountLocation(vNode, start = -1) {
-    if (!vNode.parent)
-        return { element: null, idx: -1 };
-    for (let i = 0; i < vNode.parent.props.children.length; i++) {
-        const c = vNode.parent.props.children[i];
-        if (vNode === c) {
-            debugger;
-            break;
-        }
-        start += getRenderedNodeCount(c);
-    }
-    if (vNode.parent.dom)
-        return { element: vNode.parent.dom, idx: start };
-    return getMountLocation(vNode.parent, start);
-}
-function getRenderedNodeCount(vNode) {
-    if (vNode.props.children.length === 0)
-        return 1;
-    return vNode.props.children.reduce((acc, c) => acc + getRenderedNodeCount(c), 0);
-}
 function commitWork(vNode) {
     if (!vNode) {
         return;
@@ -194,9 +164,11 @@ function commitWork(vNode) {
     }
     const domParent = domParentNode.dom;
     if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-        const { idx } = getMountLocation(vNode);
-        const sibling = vNode.parent?.sibling?.child?.dom ??
-            domParent.childNodes[idx > 0 ? idx : 0];
+        let sibling = vNode.parent?.sibling?.child?.dom;
+        if (!sibling) {
+            const { idx } = getMountLocation(vNode);
+            sibling = domParent.childNodes[idx > 0 ? idx : 0];
+        }
         if (sibling && domParent.contains(sibling)) {
             domParent.insertBefore(vNode.dom, sibling);
         }
@@ -318,3 +290,36 @@ function reconcileChildren(wipNode, children) {
         index++;
     }
 }
+//#region utils
+function getMountLocation(vNode, start = -1) {
+    if (!vNode.parent)
+        return { element: null, idx: -1 };
+    for (let i = 0; i < vNode.parent.props.children.length; i++) {
+        const c = vNode.parent.props.children[i];
+        if (vNode === c) {
+            break;
+        }
+        start += getRenderedNodeCount(c);
+    }
+    if (vNode.parent.dom)
+        return { element: vNode.parent.dom, idx: start };
+    return getMountLocation(vNode.parent, start);
+}
+function getRenderedNodeCount(vNode) {
+    if (vNode.props.children.length === 0)
+        return 1;
+    return vNode.props.children.reduce((acc, c) => acc + getRenderedNodeCount(c), 0);
+}
+function globalState() {
+    return {
+        mounted,
+        nextUnitOfWork,
+        currentRoot,
+        wipRoot,
+        deletions,
+        pendingEffects,
+        wipNode,
+        hookIndex,
+    };
+}
+//#endregion

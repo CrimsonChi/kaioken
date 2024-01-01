@@ -6,20 +6,17 @@ type ToDoItem = {
   done: boolean
 }
 
-function loadFromStorage(): ToDoItem[] {
-  const todos = localStorage.getItem("todos")
-  if (!todos) return []
-  return JSON.parse(todos) as ToDoItem[]
-}
-function saveToStorage(todos: ToDoItem[]) {
+function saveTodos(todos: ToDoItem[]) {
   localStorage.setItem("todos", JSON.stringify(todos))
 }
 
 export const Todos = () => {
-  const [todos, setTodos] = useState(loadFromStorage())
+  const [todos, setTodos] = useState(
+    JSON.parse(localStorage.getItem("todos") || "[]") as ToDoItem[]
+  )
   const [newTodo, setNewTodo] = useState("")
 
-  const handleInput = (e: KeyboardEvent) =>
+  const handleInput = (e: Event) =>
     setNewTodo((e.target as HTMLInputElement).value)
 
   const handleToggle = (id: string, e: MouseEvent) => {
@@ -28,8 +25,8 @@ export const Todos = () => {
     const newTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, done: !todo.done } : todo
     )
+    saveTodos(newTodos)
     setTodos(newTodos)
-    saveToStorage(newTodos)
   }
 
   const handleAdd = () => {
@@ -41,8 +38,8 @@ export const Todos = () => {
         done: false,
       },
     ]
+    saveTodos(newTodos)
     setTodos(newTodos)
-    saveToStorage(newTodos)
     setNewTodo("")
   }
 
@@ -50,7 +47,7 @@ export const Todos = () => {
   const pending = todos.filter((t) => !t.done)
 
   return (
-    <div>
+    <div className="todos">
       <input value={newTodo} oninput={handleInput} />
       <button onclick={handleAdd}>Add</button>
 
