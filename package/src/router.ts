@@ -1,6 +1,6 @@
 import { useState, useEffect, createElement } from "../src"
 import { isVNode } from "./utils"
-import type { Rec } from "./types"
+import type { Rec, RouteChildProps } from "./types"
 
 interface RouterProps {
   basePath?: string
@@ -9,9 +9,11 @@ interface RouterProps {
 
 export function Router({ basePath = "", children = [] }: RouterProps) {
   const [route, setRoute] = useState(basePath + window.location.pathname)
+  const [query, setQuery] = useState(window.location.search)
 
   useEffect(() => {
     const handler = () => {
+      setQuery(window.location.search)
       setRoute(basePath + window.location.pathname)
     }
     window.addEventListener("popstate", handler)
@@ -24,7 +26,7 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
   for (const child of children) {
     if (isVNode(child)) {
       child.props.path = basePath + child.props.path
-      const match = matchPath(route, child.props.path)
+      const match = matchPath(route, query, child.props.path)
       if (match.routeMatch) {
         return createElement(
           "x-router",
@@ -38,14 +40,14 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
   return null
 }
 
-type ComponentFunc = ({ params }: { params: Rec }) => JSX.Element
+type RouteComponentFunc = (props: RouteChildProps) => JSX.Element
 
-interface RouteProps {
+interface RouteComponentProps {
   path: string
-  element: ComponentFunc
+  element: RouteComponentFunc
 }
 
-export function Route({ path, element }: RouteProps) {
+export function Route({ path, element }: RouteComponentProps) {
   return {
     type: "Route",
     props: {
@@ -75,6 +77,7 @@ export function Link({ to, children }: { to: string; children?: JSX.Element }) {
 
 function matchPath(
   value: string,
+  query: string,
   routePath: string
 ): {
   params: any
@@ -82,7 +85,7 @@ function matchPath(
   routeMatch: RegExpMatchArray | null
 } {
   let paramNames: any[] = []
-  let query: any = {}
+  let _query: any = {}
 
   const cPath: string = routePath
   let regexPath =
@@ -92,14 +95,16 @@ function matchPath(
     }) + "(?:/|$)"
 
   // match query params
-  const queryMatch = value.match(/\?(.*)/)
-  if (queryMatch) {
-    query = queryMatch[1].split("&").reduce((str, value) => {
-      if (str === null) query = {}
-      const [key, val] = value.split("=")
-      query[key] = val
-      return query
-    }, null)
+  if (query.length) {
+    _query = query
+      .split("?")[1]
+      .split("&")
+      .reduce((str, value) => {
+        if (str === null) _query = {}
+        const [key, val] = value.split("=")
+        _query[key] = val
+        return _query
+      }, null)
   }
 
   let params: any = {}
@@ -110,5 +115,5 @@ function matchPath(
       return acc
     }, {} as Rec)
   }
-  return { params, query, routeMatch }
+  return { params, query: _query, routeMatch }
 }

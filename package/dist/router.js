@@ -2,8 +2,10 @@ import { useState, useEffect, createElement } from "../src";
 import { isVNode } from "./utils";
 export function Router({ basePath = "", children = [] }) {
     const [route, setRoute] = useState(basePath + window.location.pathname);
+    const [query, setQuery] = useState(window.location.search);
     useEffect(() => {
         const handler = () => {
+            setQuery(window.location.search);
             setRoute(basePath + window.location.pathname);
         };
         window.addEventListener("popstate", handler);
@@ -14,7 +16,7 @@ export function Router({ basePath = "", children = [] }) {
     for (const child of children) {
         if (isVNode(child)) {
             child.props.path = basePath + child.props.path;
-            const match = matchPath(route, child.props.path);
+            const match = matchPath(route, query, child.props.path);
             if (match.routeMatch) {
                 return createElement("x-router", {}, child.props.element({ params: match.params, query: match.query }));
             }
@@ -44,23 +46,25 @@ export function Link({ to, children }) {
         },
     }, children);
 }
-function matchPath(value, routePath) {
+function matchPath(value, query, routePath) {
     let paramNames = [];
-    let query = {};
+    let _query = {};
     const cPath = routePath;
     let regexPath = cPath.replace(/([:*])(\w+)/g, (_full, _colon, name) => {
         paramNames.push(name);
         return "([^/]+)";
     }) + "(?:/|$)";
     // match query params
-    const queryMatch = value.match(/\?(.*)/);
-    if (queryMatch) {
-        query = queryMatch[1].split("&").reduce((str, value) => {
+    if (query.length) {
+        _query = query
+            .split("?")[1]
+            .split("&")
+            .reduce((str, value) => {
             if (str === null)
-                query = {};
+                _query = {};
             const [key, val] = value.split("=");
-            query[key] = val;
-            return query;
+            _query[key] = val;
+            return _query;
         }, null);
     }
     let params = {};
@@ -71,5 +75,5 @@ function matchPath(value, routePath) {
             return acc;
         }, {});
     }
-    return { params, query, routeMatch };
+    return { params, query: _query, routeMatch };
 }

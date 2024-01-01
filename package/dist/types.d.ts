@@ -25,3 +25,7 @@ export type VNode = {
     hooks: any[];
 };
 export type Rec = Record<string, any>;
+export interface RouteChildProps {
+    params: Rec;
+    query: Rec;
+}

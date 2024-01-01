@@ -1,8 +1,6 @@
 import { Link, Route, Router, useEffect } from "reflex-ui"
 import { Todos } from "./components/ToDos"
-import { Rec } from "reflex-ui/src/types"
-
-declare function lazy<T extends () => Promise<any>>(factory: T): T
+import { RouteChildProps } from "reflex-ui/src/types"
 
 export const App = () => {
   useEffect(() => {
@@ -34,12 +32,12 @@ export const App = () => {
   )
 }
 
-const HomePage = ({ params }: { params: Rec }) => {
+const HomePage = ({ params }: RouteChildProps) => {
   console.log("HomePage", params)
   return <h1>Home</h1>
 }
 
-const TestPage = ({ params }: { params: Rec }) => {
-  console.log("TestPage", params)
-  return <h1>Test</h1>
+const TestPage = ({ params, query }: RouteChildProps) => {
+  console.log("TestPage", params, query)
+  return <h1>{params.thing}</h1>
 }

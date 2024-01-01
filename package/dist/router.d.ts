@@ -1,21 +1,19 @@
-import type { Rec } from "./types";
+import type { RouteChildProps } from "./types";
 interface RouterProps {
     basePath?: string;
     children?: JSX.Element[];
 }
 export declare function Router({ basePath, children }: RouterProps): import("./types").VNode | null;
-type ComponentFunc = ({ params }: {
-    params: Rec;
-}) => JSX.Element;
-interface RouteProps {
+type RouteComponentFunc = (props: RouteChildProps) => JSX.Element;
+interface RouteComponentProps {
     path: string;
-    element: ComponentFunc;
+    element: RouteComponentFunc;
 }
-export declare function Route({ path, element }: RouteProps): {
+export declare function Route({ path, element }: RouteComponentProps): {
     type: string;
     props: {
         path: string;
-        element: ComponentFunc;
+        element: RouteComponentFunc;
         children: never[];
     };
     hooks: never[];
