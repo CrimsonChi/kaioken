@@ -9,6 +9,8 @@ declare global {
               | HTMLElementTagNameMap[K][P]
               | string
               | number
+          } & {
+            ref?: Ref<HTMLElementTagNameMap[K]>
           }
     }
 
@@ -37,3 +39,5 @@ export interface RouteChildProps {
   params: Rec
   query: Rec
 }
+
+export type Ref<T> = { current: T | null }

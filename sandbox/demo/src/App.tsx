@@ -1,4 +1,4 @@
-import { Link, Route, Router, useEffect } from "reflex-ui"
+import { Link, Route, Router, useEffect, useRef } from "reflex-ui"
 import { Todos } from "./components/ToDos"
 import { RouteChildProps } from "reflex-ui/src/types"
 
@@ -34,10 +34,33 @@ export const App = () => {
 
 const HomePage = ({ params }: RouteChildProps) => {
   console.log("HomePage", params)
-  return <h1>Home</h1>
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    console.log("HomePage useEffect")
+    //debugger
+    inputRef.current?.focus()
+  })
+  return (
+    <div>
+      <h1>Home</h1>
+      <input type="text" ref={inputRef} />
+    </div>
+  )
 }
 
-const TestPage = ({ params, query }: RouteChildProps) => {
-  console.log("TestPage", params, query)
-  return <h1>{params.thing}</h1>
+const TestPage = ({ params }: RouteChildProps) => {
+  console.log("TestPage", params)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    console.log("TestPage useEffect")
+    inputRef.current?.focus()
+  })
+  return (
+    <div>
+      <h1>Test</h1>
+      <input type="text" ref={inputRef} />
+    </div>
+  )
 }

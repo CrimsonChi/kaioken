@@ -5,6 +5,8 @@ declare global {
         type IntrinsicElementMap = {
             [K in keyof HTMLElementTagNameMap]: {
                 [P in keyof HTMLElementTagNameMap[K]]?: HTMLElementTagNameMap[K][P] | string | number;
+            } & {
+                ref?: Ref<HTMLElementTagNameMap[K]>;
             };
         };
         type Element = string | Node | VNode;
@@ -29,3 +31,6 @@ export interface RouteChildProps {
     params: Rec;
     query: Rec;
 }
+export type Ref<T> = {
+    current: T | null;
+};

@@ -10,10 +10,14 @@ function saveTodos(todos: ToDoItem[]) {
   localStorage.setItem("todos", JSON.stringify(todos))
 }
 
+function loadTodos(): ToDoItem[] {
+  const res = JSON.parse(localStorage.getItem("todos") || "[]")
+  console.log("loadTodos", res)
+  return res
+}
+
 export const Todos = () => {
-  const [todos, setTodos] = useState(
-    JSON.parse(localStorage.getItem("todos") || "[]") as ToDoItem[]
-  )
+  const [todos, setTodos] = useState(loadTodos())
   const [newTodo, setNewTodo] = useState("")
 
   const handleInput = (e: Event) =>

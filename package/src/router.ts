@@ -1,4 +1,4 @@
-import { useState, useEffect, createElement } from "../src"
+import { useState, useEffect, createElement, setWipNode } from "../src"
 import { isVNode } from "./utils"
 import type { Rec, RouteChildProps } from "./types"
 
@@ -8,13 +8,13 @@ interface RouterProps {
 }
 
 export function Router({ basePath = "", children = [] }: RouterProps) {
-  const [route, setRoute] = useState(basePath + window.location.pathname)
-  const [query, setQuery] = useState(window.location.search)
+  const [path, setPath] = useState(window.location.pathname)
+  const [search, setSearch] = useState(window.location.search)
 
   useEffect(() => {
     const handler = () => {
-      setQuery(window.location.search)
-      setRoute(basePath + window.location.pathname)
+      setSearch(window.location.search)
+      setPath(basePath + window.location.pathname)
     }
     window.addEventListener("popstate", handler)
 
@@ -25,13 +25,18 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
 
   for (const child of children) {
     if (isVNode(child)) {
-      child.props.path = basePath + child.props.path
-      const match = matchPath(route, query, child.props.path)
-      if (match.routeMatch) {
+      const { routeMatch, params, query } = matchPath(
+        path,
+        search,
+        basePath + child.props.path
+      )
+      if (routeMatch) {
+        //debugger
+        setWipNode(child)
         return createElement(
           "x-router",
           {},
-          child.props.element({ params: match.params, query: match.query })
+          child.props.element({ params, query })
         )
       }
     }

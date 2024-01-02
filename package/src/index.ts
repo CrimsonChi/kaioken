@@ -1,8 +1,16 @@
 // https://pomb.us/build-your-own-react/
 // https://www.youtube.com/watch?v=YfnPk3nzWts
-import type { VNode, Rec } from "./types"
+import type { VNode, Rec, Ref } from "./types"
 
-export { mount, createElement, useEffect, useState, globalState }
+export {
+  mount,
+  createElement,
+  useEffect,
+  useState,
+  useRef,
+  globalState,
+  setWipNode,
+}
 
 let mounted = false
 let nextUnitOfWork: VNode | undefined = undefined
@@ -28,6 +36,11 @@ function mount(appFunc: () => VNode, container: HTMLElement) {
   deletions = []
   nextUnitOfWork = wipRoot
   mounted = true
+}
+
+function setWipNode(vNode: VNode) {
+  wipNode = vNode
+  hookIndex = 0
 }
 
 //#region hooks
@@ -83,7 +96,7 @@ function useEffect(callback: Function, deps: any[] = []) {
     wipNode.alternate.hooks &&
     wipNode.alternate.hooks[hookIndex]
 
-  if (oldHook && oldHook.cleanup) {
+  if (oldHook?.cleanup) {
     oldHook.cleanup()
   }
 
@@ -109,6 +122,37 @@ function useEffect(callback: Function, deps: any[] = []) {
 
   wipNode.hooks.push(hook)
   hookIndex++
+}
+
+function isRef(v: any): v is Ref<any> {
+  return v && v.current !== undefined
+}
+
+function setRef(vNode: VNode, dom: HTMLElement | Text) {
+  if (isRef(vNode.props.ref)) vNode.props.ref.current = dom
+}
+
+function clearRef(vNode: VNode) {
+  if (isRef(vNode.props.ref)) vNode.props.ref.current = null
+}
+
+function useRef<T>(initial: T | null): Ref<T> {
+  if (!mounted) return { current: initial }
+  if (!wipNode) {
+    console.error("no wipNode")
+    return { current: initial }
+  }
+
+  const oldHook =
+    wipNode.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
+
+  const hook = oldHook ?? { current: initial }
+
+  wipNode.hooks.push(hook)
+  hookIndex++
+  return hook as Ref<T>
 }
 //#endregion
 
@@ -141,10 +185,14 @@ function createTextElement(text: string): VNode {
   }
 }
 
-const isEvent = (key: string) => key.startsWith("on")
-const isProperty = (key: string) => key !== "children" && !isEvent(key)
-const isNew = (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key]
-const isGone = (_prev: Rec, next: Rec) => (key: string) => !(key in next)
+const filters = {
+  internalProps: ["children", "ref"],
+  isEvent: (key: string) => key.startsWith("on"),
+  isProperty: (key: string) =>
+    !filters.internalProps.includes(key) && !filters.isEvent(key),
+  isNew: (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key],
+  isGone: (_prev: Rec, next: Rec) => (key: string) => !(key in next),
+}
 
 function createDom(vNode: VNode): HTMLElement | Text {
   const dom =
@@ -152,7 +200,7 @@ function createDom(vNode: VNode): HTMLElement | Text {
       ? document.createTextNode("")
       : document.createElement(vNode.type as string)
 
-  updateDom(dom, {}, vNode.props)
+  updateDom(dom, {}, vNode.props, vNode)
 
   return dom
 }
@@ -160,12 +208,15 @@ function createDom(vNode: VNode): HTMLElement | Text {
 function updateDom(
   dom: HTMLElement | Text,
   prevProps: Rec,
-  nextProps: Rec = {}
+  nextProps: Rec = {},
+  vNode: VNode
 ) {
   //Remove old or changed event listeners
   Object.keys(prevProps)
-    .filter(isEvent)
-    .filter((key) => !(key in nextProps) || isNew(prevProps, nextProps)(key))
+    .filter(filters.isEvent)
+    .filter(
+      (key) => !(key in nextProps) || filters.isNew(prevProps, nextProps)(key)
+    )
     .forEach((name) => {
       const eventType = name.toLowerCase().substring(2)
       dom.removeEventListener(eventType, prevProps[name])
@@ -173,8 +224,8 @@ function updateDom(
 
   // Remove old properties
   Object.keys(prevProps)
-    .filter(isProperty)
-    .filter(isGone(prevProps, nextProps))
+    .filter(filters.isProperty)
+    .filter(filters.isGone(prevProps, nextProps))
     .forEach((name) => {
       // @ts-ignore
       dom[name] = ""
@@ -182,8 +233,8 @@ function updateDom(
 
   // Set new or changed properties
   Object.keys(nextProps)
-    .filter(isProperty)
-    .filter(isNew(prevProps, nextProps))
+    .filter(filters.isProperty)
+    .filter(filters.isNew(prevProps, nextProps))
     .forEach((name) => {
       // @ts-ignore
       dom[name] = nextProps[name]
@@ -191,19 +242,21 @@ function updateDom(
 
   // Add event listeners
   Object.keys(nextProps)
-    .filter(isEvent)
-    .filter(isNew(prevProps, nextProps))
+    .filter(filters.isEvent)
+    .filter(filters.isNew(prevProps, nextProps))
     .forEach((name) => {
       const eventType = name.toLowerCase().substring(2)
       dom.addEventListener(eventType, nextProps[name])
     })
+
+  setRef(vNode, dom)
 }
 
 function commitRoot() {
   deletions.forEach(commitWork)
   commitWork(wipRoot?.child)
   currentRoot = wipRoot
-  while (pendingEffects.length) pendingEffects.pop()?.()
+  while (pendingEffects.length) pendingEffects.shift()?.()
   wipRoot = undefined
 }
 
@@ -240,7 +293,7 @@ function commitWork(vNode?: VNode) {
 
     //domParent.appendChild(vNode.dom)
   } else if (vNode.effectTag === "UPDATE" && vNode.dom != null) {
-    updateDom(vNode.dom, vNode.alternate?.props ?? {}, vNode.props)
+    updateDom(vNode.dom, vNode.alternate?.props ?? {}, vNode.props, vNode)
   } else if (vNode.effectTag === "DELETION") {
     commitDeletion(vNode, domParent)
     return
@@ -252,6 +305,7 @@ function commitWork(vNode?: VNode) {
 
 function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
   if (vNode.dom) {
+    clearRef(vNode)
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {
     commitDeletion(vNode.child, domParent)
@@ -313,9 +367,9 @@ function updateHostComponent(vNode: VNode) {
   reconcileChildren(vNode, vNode.props.children)
 }
 
-function reconcileChildren(wipNode: VNode, children: VNode[]) {
+function reconcileChildren(vNode: VNode, children: VNode[]) {
   let index = 0
-  let oldNode: VNode | undefined = wipNode.alternate && wipNode.alternate.child
+  let oldNode: VNode | undefined = vNode.alternate && vNode.alternate.child
   let prevSibling: VNode | undefined = undefined
 
   while (index < children.length || oldNode != null) {
@@ -329,7 +383,7 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
         type: oldNode!.type,
         props: child.props,
         dom: oldNode!.dom,
-        parent: wipNode,
+        parent: vNode,
         alternate: oldNode,
         effectTag: "UPDATE",
         hooks: oldNode!.hooks,
@@ -340,7 +394,7 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
         type: child.type,
         props: child.props,
         dom: undefined,
-        parent: wipNode,
+        parent: vNode,
         alternate: undefined,
         effectTag: "PLACEMENT",
         hooks: [],
@@ -356,7 +410,7 @@ function reconcileChildren(wipNode: VNode, children: VNode[]) {
     }
 
     if (index === 0) {
-      wipNode.child = newNode
+      vNode.child = newNode
     } else if (child && prevSibling) {
       prevSibling.sibling = newNode
     }
@@ -391,7 +445,8 @@ function getMountLocation(
   return getMountLocation(vNode.parent, start)
 }
 
-function getRenderedNodeCount(vNode: VNode): number {
+function getRenderedNodeCount(vNode?: VNode): number {
+  if (!vNode) return 0
   if (vNode.props.children.length === 0) return 1
   return vNode.props.children.reduce(
     (acc, c) => acc + getRenderedNodeCount(c),

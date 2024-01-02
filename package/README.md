@@ -6,7 +6,9 @@
 
 ### Todos
 
-- [ ] Router
+- [x] Router
+- [ ] ref / useRef
+- [ ] Portal
 - [ ] Lazy
 - [ ] PWA
 - [ ] Testing
