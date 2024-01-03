@@ -1,14 +1,43 @@
-import { Link, Route, Router, useEffect, useRef } from "reflex-ui"
+import {
+  Link,
+  Route,
+  Router,
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+} from "reflex-ui"
 import { Todos } from "./components/ToDos"
 import { RouteChildProps } from "reflex-ui/src/types"
 
+const ThemeContext = createContext<"dark" | "light">(null)
+const ThemeDispatchContext =
+  createContext<(action: { type: "toggle" }) => void>(null)
+
+function themeReducer(state: "dark" | "light", action: { type: "toggle" }) {
+  switch (action.type) {
+    case "toggle": {
+      return state === "dark" ? "light" : "dark"
+    }
+    default: {
+      throw new Error(`Unhandled action type: ${action.type}`)
+    }
+  }
+}
+
 export const App = () => {
+  const [theme, dispatch] = useReducer(themeReducer, "dark")
+
   useEffect(() => {
     console.log("App useEffect")
   })
 
   return (
+    // <ThemeContext.Provider value={theme}>
+    //   <ThemeDispatchContext.Provider value={dispatch}>
     <div>
+      <>Test</>
       <nav>
         <ul>
           <li>
@@ -28,13 +57,20 @@ export const App = () => {
         <Route path="/test/:thing" element={TestPage} />
         <Route path="/todos" element={Todos} />
       </Router>
+      {/* {createPortal(
+          <div>Portal</div>,
+          document.getElementById("portal-root")!
+        )} */}
     </div>
+    //   </ThemeDispatchContext.Provider>
+    // </ThemeContext.Provider>
   )
 }
 
-const HomePage = ({ params }: RouteChildProps) => {
-  console.log("HomePage", params)
+const HomePage = () => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const theme = useContext(ThemeContext)
+  const dispatch = useContext(ThemeDispatchContext)
 
   useEffect(() => {
     console.log("HomePage useEffect")
@@ -44,7 +80,9 @@ const HomePage = ({ params }: RouteChildProps) => {
   return (
     <div>
       <h1>Home</h1>
+      {theme}
       <input type="text" ref={inputRef} />
+      <button onclick={() => dispatch({ type: "toggle" })}>Toggle Theme</button>
     </div>
   )
 }

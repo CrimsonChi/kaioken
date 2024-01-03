@@ -34,3 +34,11 @@ export interface RouteChildProps {
 export type Ref<T> = {
     current: T | null;
 };
+export type Context<T> = {
+    Provider: ({ value, children }: ProviderProps<T>) => JSX.Element;
+    value: () => T;
+};
+export type ProviderProps<T> = {
+    value: T;
+    children?: JSX.Element[];
+};

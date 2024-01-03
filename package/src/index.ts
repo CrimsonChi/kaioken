@@ -1,13 +1,18 @@
 // https://pomb.us/build-your-own-react/
 // https://www.youtube.com/watch?v=YfnPk3nzWts
-import type { VNode, Rec, Ref } from "./types"
+import type { VNode, Rec, Ref, Context, ProviderProps } from "./types"
 
 export {
   mount,
   createElement,
+  fragment,
   useEffect,
   useState,
   useRef,
+  useReducer,
+  useContext,
+  createContext,
+  createPortal,
   globalState,
   setWipNode,
 }
@@ -83,7 +88,6 @@ function useState<T>(
   hookIndex++
   return [hook.state, setState] as const
 }
-
 function useEffect(callback: Function, deps: any[] = []) {
   if (!mounted) return
   if (!wipNode) {
@@ -124,18 +128,12 @@ function useEffect(callback: Function, deps: any[] = []) {
   hookIndex++
 }
 
-function isRef(v: any): v is Ref<any> {
-  return v && v.current !== undefined
+const refHelpers = {
+  isRef: (v: any): v is Ref<any> => v && v.current !== undefined,
+  setRef: (vNode: VNode, dom: HTMLElement | Text | null) => {
+    if (refHelpers.isRef(vNode.props.ref)) vNode.props.ref.current = dom
+  },
 }
-
-function setRef(vNode: VNode, dom: HTMLElement | Text) {
-  if (isRef(vNode.props.ref)) vNode.props.ref.current = dom
-}
-
-function clearRef(vNode: VNode) {
-  if (isRef(vNode.props.ref)) vNode.props.ref.current = null
-}
-
 function useRef<T>(initial: T | null): Ref<T> {
   if (!mounted) return { current: initial }
   if (!wipNode) {
@@ -154,8 +152,111 @@ function useRef<T>(initial: T | null): Ref<T> {
   hookIndex++
   return hook as Ref<T>
 }
+
+function useReducer<T, A>(
+  reducer: (state: T, action: A) => T,
+  initial: T
+): [T, (action: A) => void] {
+  if (!mounted) return [initial, () => initial]
+  if (!wipNode) {
+    console.error("no wipNode")
+    return [initial, () => initial]
+  }
+
+  const wn = wipNode
+
+  const oldHook =
+    wipNode.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
+
+  const hook = oldHook ?? { state: initial }
+
+  const dispatch = (action: A) => {
+    if (!currentRoot) throw new Error("currentRoot is undefined, why???")
+    hook.state = reducer(hook.state, action)
+
+    wipRoot = {
+      dom: wn.child!.dom,
+      props: wn.props,
+      alternate: wn,
+      hooks: [],
+      type: wn.type,
+    }
+    nextUnitOfWork = wipRoot
+    deletions = []
+  }
+
+  wipNode.hooks.push(hook)
+  hookIndex++
+  return [hook.state, dispatch]
+}
+
+function useContext<T>(context: Context<T>): T {
+  if (!mounted) return {} as T
+  if (!wipNode) {
+    throw new Error("no wipNode")
+  }
+
+  const oldHook =
+    wipNode.alternate &&
+    wipNode.alternate.hooks &&
+    wipNode.alternate.hooks[hookIndex]
+
+  const hook = oldHook ?? { state: context.value() }
+
+  wipNode.hooks.push(hook)
+  hookIndex++
+  return hook.state as T
+}
+
 //#endregion
 
+function createContext<T>(initial: T | null): Context<T> {
+  let context = initial
+
+  return {
+    Provider: ({ value, children = [] }: ProviderProps<T>) => {
+      context = value
+      return fragment({ children })
+    },
+    value: () => context as T,
+  }
+}
+
+function createPortal(
+  element: JSX.Element,
+  container: HTMLElement | Text
+): JSX.Element | undefined {
+  const el = element as VNode
+
+  return {
+    type: container.nodeName,
+    props: {
+      children: [el],
+    },
+    dom: container,
+    hooks: [],
+    parent: undefined,
+  }
+}
+function fragment({
+  children = [],
+}: {
+  children: (VNode | unknown)[]
+}): JSX.Element {
+  return {
+    type: "x-fragment",
+    props: {
+      children: children
+        .flat()
+        .map((child) =>
+          typeof child === "object" ? child : createTextElement(String(child))
+        ) as VNode[],
+    },
+    hooks: [],
+  }
+}
 function createElement(
   type: string | Function,
   props = {},
@@ -249,7 +350,7 @@ function updateDom(
       dom.addEventListener(eventType, nextProps[name])
     })
 
-  setRef(vNode, dom)
+  refHelpers.setRef(vNode, dom)
 }
 
 function commitRoot() {
@@ -305,7 +406,7 @@ function commitWork(vNode?: VNode) {
 
 function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
   if (vNode.dom) {
-    clearRef(vNode)
+    refHelpers.setRef(vNode, null)
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {
     commitDeletion(vNode.child, domParent)

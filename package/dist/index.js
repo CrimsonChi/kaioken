@@ -1,4 +1,4 @@
-export { mount, createElement, useEffect, useState, useRef, globalState, setWipNode, };
+export { mount, createElement, fragment, useEffect, useState, useRef, useReducer, useContext, createContext, createPortal, globalState, setWipNode, };
 let mounted = false;
 let nextUnitOfWork = undefined;
 let currentRoot = undefined;
@@ -92,17 +92,13 @@ function useEffect(callback, deps = []) {
     wipNode.hooks.push(hook);
     hookIndex++;
 }
-function isRef(v) {
-    return v && v.current !== undefined;
-}
-function setRef(vNode, dom) {
-    if (isRef(vNode.props.ref))
-        vNode.props.ref.current = dom;
-}
-function clearRef(vNode) {
-    if (isRef(vNode.props.ref))
-        vNode.props.ref.current = null;
-}
+const refHelpers = {
+    isRef: (v) => v && v.current !== undefined,
+    setRef: (vNode, dom) => {
+        if (refHelpers.isRef(vNode.props.ref))
+            vNode.props.ref.current = dom;
+    },
+};
 function useRef(initial) {
     if (!mounted)
         return { current: initial };
@@ -118,7 +114,84 @@ function useRef(initial) {
     hookIndex++;
     return hook;
 }
+function useReducer(reducer, initial) {
+    if (!mounted)
+        return [initial, () => initial];
+    if (!wipNode) {
+        console.error("no wipNode");
+        return [initial, () => initial];
+    }
+    const wn = wipNode;
+    const oldHook = wipNode.alternate &&
+        wipNode.alternate.hooks &&
+        wipNode.alternate.hooks[hookIndex];
+    const hook = oldHook ?? { state: initial };
+    const dispatch = (action) => {
+        if (!currentRoot)
+            throw new Error("currentRoot is undefined, why???");
+        hook.state = reducer(hook.state, action);
+        wipRoot = {
+            dom: wn.child.dom,
+            props: wn.props,
+            alternate: wn,
+            hooks: [],
+            type: wn.type,
+        };
+        nextUnitOfWork = wipRoot;
+        deletions = [];
+    };
+    wipNode.hooks.push(hook);
+    hookIndex++;
+    return [hook.state, dispatch];
+}
+function useContext(context) {
+    if (!mounted)
+        return {};
+    if (!wipNode) {
+        throw new Error("no wipNode");
+    }
+    const oldHook = wipNode.alternate &&
+        wipNode.alternate.hooks &&
+        wipNode.alternate.hooks[hookIndex];
+    const hook = oldHook ?? { state: context.value() };
+    wipNode.hooks.push(hook);
+    hookIndex++;
+    return hook.state;
+}
 //#endregion
+function createContext(initial) {
+    let context = initial;
+    return {
+        Provider: ({ value, children = [] }) => {
+            context = value;
+            return fragment({ children });
+        },
+        value: () => context,
+    };
+}
+function createPortal(element, container) {
+    const el = element;
+    return {
+        type: container.nodeName,
+        props: {
+            children: [el],
+        },
+        dom: container,
+        hooks: [],
+        parent: undefined,
+    };
+}
+function fragment({ children = [], }) {
+    return {
+        type: "x-fragment",
+        props: {
+            children: children
+                .flat()
+                .map((child) => typeof child === "object" ? child : createTextElement(String(child))),
+        },
+        hooks: [],
+    };
+}
 function createElement(type, props = {}, ...children) {
     return {
         type,
@@ -188,7 +261,7 @@ function updateDom(dom, prevProps, nextProps = {}, vNode) {
         const eventType = name.toLowerCase().substring(2);
         dom.addEventListener(eventType, nextProps[name]);
     });
-    setRef(vNode, dom);
+    refHelpers.setRef(vNode, dom);
 }
 function commitRoot() {
     deletions.forEach(commitWork);
@@ -238,7 +311,7 @@ function commitWork(vNode) {
 }
 function commitDeletion(vNode, domParent) {
     if (vNode.dom) {
-        clearRef(vNode);
+        refHelpers.setRef(vNode, null);
         domParent.removeChild(vNode.dom);
     }
     else if (vNode.child) {
