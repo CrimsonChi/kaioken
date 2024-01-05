@@ -1,13 +1,12 @@
-type KbEv = KeyboardEvent
-
-export const UserDetails = ({
+export function UserDetails({
   name,
   setName,
 }: {
   name: string
   setName: (name: string) => void
-}) => {
-  const handleInput = (e: KbEv) => setName((e.target as HTMLInputElement).value)
+}) {
+  const handleInput = (e: Event) =>
+    setName((e.target as HTMLInputElement).value)
   return (
     <div>
       <h3>{name}</h3>

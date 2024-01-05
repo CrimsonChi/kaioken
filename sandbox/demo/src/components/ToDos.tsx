@@ -16,7 +16,7 @@ function loadTodos(): ToDoItem[] {
   return (todos = res)
 }
 
-export const Todos = () => {
+export function Todos() {
   const [todos, setTodos] = useState(loadTodos())
   const [newTodo, setNewTodo] = useState("")
 
@@ -64,7 +64,6 @@ export const Todos = () => {
         <input value={newTodo} oninput={handleInput} />
         <button onclick={handleAdd}>Add</button>
       </div>
-
       <ToDoList
         name="Pending"
         items={pending}
