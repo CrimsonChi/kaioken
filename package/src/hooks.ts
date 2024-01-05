@@ -1,6 +1,7 @@
 import { globalState as g } from "./globalState.js"
+import { Context } from "./types.js"
 
-export { useState, useEffect, useReducer }
+export { useState, useEffect, useReducer, useContext }
 
 type StateSetter<T> = T | ((prev: T) => T)
 
@@ -72,4 +73,16 @@ function useReducer<T, A>(
   node.hooks[g.hookIndex++] = hook
 
   return [hook.state, dispatch]
+}
+
+function useContext<T>(context: Context<T>): T {
+  if (!g.mounted) return {} as T
+  const node = g.curNode
+  if (!node) throw new Error("useContext must be called in a component")
+
+  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
+  const hook = oldHook ?? { state: context.value() }
+  node.hooks[g.hookIndex++] = hook
+
+  return hook.state as T
 }

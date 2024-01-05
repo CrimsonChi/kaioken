@@ -1,5 +1,5 @@
 import type { Rec, VNode } from "./types"
-import { globalState } from "./globalState.js"
+import { globalState as g } from "./globalState.js"
 
 export { performUnitOfWork, commitWork, commitRoot }
 
@@ -24,10 +24,10 @@ function performUnitOfWork(vNode: VNode): VNode | undefined {
 }
 
 function updateFunctionComponent(vNode: VNode) {
-  globalState.hookIndex = 0
+  g.hookIndex = 0
 
-  globalState.curNode = vNode
-  globalState.curNode.hooks = []
+  g.curNode = vNode
+  g.curNode.hooks = []
 
   const children = [(vNode.type as Function)(vNode.props)].flat()
 
@@ -139,7 +139,7 @@ function reconcileChildren(vNode: VNode, children: VNode[]) {
     }
     if (oldNode && !sameType) {
       oldNode.effectTag = "DELETION"
-      globalState.deletions.push(oldNode)
+      g.deletions.push(oldNode)
     }
 
     if (oldNode) {
@@ -158,25 +158,20 @@ function reconcileChildren(vNode: VNode, children: VNode[]) {
 }
 
 function commitRoot() {
-  globalState.deletions.forEach(commitWork)
-  commitWork(globalState.wipNode)
-  while (globalState.pendingEffects.length)
-    globalState.pendingEffects.shift()?.()
-  globalState.wipNode = undefined
+  g.deletions.forEach(commitWork)
+  commitWork(g.wipNode)
+  while (g.pendingEffects.length) g.pendingEffects.shift()?.()
+  g.wipNode = undefined
 }
 
 function commitWork(vNode?: VNode) {
   if (!vNode) return
 
-  let domParentNode = vNode.parent ?? vNode.prev?.parent ?? globalState.wipNode
+  let domParentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
   let domParent = domParentNode?.dom
   while (domParentNode && !domParent) {
     domParentNode = domParentNode.parent ?? domParentNode.prev?.parent
     domParent = domParentNode?.dom ?? domParentNode?.prev?.dom
-    if (domParent && domParent === vNode.dom) {
-      debugger
-      domParent = undefined
-    }
   }
 
   if (!domParent) {

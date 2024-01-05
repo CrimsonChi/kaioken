@@ -35,7 +35,15 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
         return createElement(
           "x-router",
           {},
-          child.props.element({ params, query })
+          {
+            type: child.props.element,
+            props: {
+              ...child.props,
+              params,
+              query,
+            },
+            hooks: [],
+          }
         ) as JSX.Element
       }
     }

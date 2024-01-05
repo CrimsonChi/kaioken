@@ -1,5 +1,5 @@
-import { App } from "./App"
 import "./style.css"
+import { App } from "./App"
 import { mount } from "reflex-ui"
 
 const root = document.querySelector<HTMLDivElement>("#app")!
