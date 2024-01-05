@@ -1,22 +1,33 @@
 import type { VNode } from "./types"
+import { useState } from "./hooks.js"
 
-interface Props {
+type Props = {
   children?: JSX.Element
 }
+type StyleRule = {
+  selector: string
+  body: string
+}
 
-function generateSlug() {
-  const val = Math.random().toString(36).substring(2, 8)
-  return `s-${val}`
+let slugOffset = 0
+function useSlug() {
+  const [slug] = useState(
+    Math.random().toString(36).substring(2, 8) + slugOffset++
+  )
+  return slug
 }
 
 export function StyleScope({ children }: Props) {
+  const slug = useSlug()
+
   if (!children) return null
 
   const asArr = children as VNode[]
   const style = asArr.find((v) => v.type === "style")
   if (!style) return children
 
-  const scopeId = generateSlug()
+  const scopeId = `s-${slug}`
+
   const styleContent = style?.props?.children[0]?.props.nodeValue
   const rules = styleContent ? parseCSS(styleContent) : []
   transformStyles(style, scopeId, rules)
@@ -53,11 +64,6 @@ function applyStyles(node: VNode, rules: StyleRule[], scopeId: string) {
   if (node.props.children) {
     node.props.children.forEach((child) => applyStyles(child, rules, scopeId))
   }
-}
-
-type StyleRule = {
-  selector: string
-  body: string
 }
 
 function parseCSS(css: string): StyleRule[] {
