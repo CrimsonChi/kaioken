@@ -7,6 +7,6 @@ export default defineConfig({
     jsxFactory: "reflex.createElement",
     jsxFragment: "reflex.fragment",
     loader: "tsx",
-    include: ["**/*.tsx", "**/*.ts"],
+    include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/*.svelte"],
   },
 })

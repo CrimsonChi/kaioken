@@ -14,7 +14,7 @@ declare global {
           }
     }
 
-    type Element = string | Node | VNode
+    type Element = string | Node | VNode | VNode[]
   }
 }
 
@@ -28,7 +28,7 @@ export type VNode = {
   parent?: VNode
   child?: VNode
   sibling?: VNode
-  alternate?: VNode
+  prev?: VNode
   effectTag?: string
   hooks: any[]
 }

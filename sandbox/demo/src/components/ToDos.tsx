@@ -9,11 +9,11 @@ type ToDoItem = {
 function saveTodos(todos: ToDoItem[]) {
   localStorage.setItem("todos", JSON.stringify(todos))
 }
-
+let todos: ToDoItem[] = []
 function loadTodos(): ToDoItem[] {
+  if (todos.length) return todos
   const res = JSON.parse(localStorage.getItem("todos") || "[]")
-  console.log("loadTodos", res)
-  return res
+  return (todos = res)
 }
 
 export const Todos = () => {
@@ -66,14 +66,14 @@ export const Todos = () => {
       </div>
 
       <ToDoList
-        name="Completed"
-        items={completed}
+        name="Pending"
+        items={pending}
         toggleItem={handleToggle}
         handleDelete={handleDelete}
       />
       <ToDoList
-        name="Pending"
-        items={pending}
+        name="Completed"
+        items={completed}
         toggleItem={handleToggle}
         handleDelete={handleDelete}
       />

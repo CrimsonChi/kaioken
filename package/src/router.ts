@@ -1,6 +1,7 @@
-import { useState, useEffect, createElement, setWipNode } from "../src"
-import { isVNode } from "./utils"
 import type { Rec, RouteChildProps } from "./types"
+import { createElement } from "./index.js"
+import { isVNode } from "./utils.js"
+import { useEffect, useState } from "./hooks.js"
 
 interface RouterProps {
   basePath?: string
@@ -31,13 +32,11 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
         basePath + child.props.path
       )
       if (routeMatch) {
-        //debugger
-        setWipNode(child)
         return createElement(
           "x-router",
           {},
           child.props.element({ params, query })
-        )
+        ) as JSX.Element
       }
     }
   }
