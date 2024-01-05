@@ -1,4 +1,4 @@
-import { useState, useEffect, Router, Route, Link } from "reflex-ui"
+import { useState, useEffect, Router, Route, Link, StyleScope } from "reflex-ui"
 import { Todos } from "./components/ToDos"
 
 export const App = () => {
@@ -28,10 +28,25 @@ function Counter() {
       console.log("cleanup", count)
     }
   }, [count])
+
   return (
-    <div>
-      Counter <>{count}</>
-      <button onclick={() => setCount(count + 1)}>+</button>
-    </div>
+    <StyleScope>
+      <div>
+        Counter <>{count}</>
+        <button onclick={() => setCount(count + 1)}>+</button>
+      </div>
+      <style>
+        {`
+        div {
+          display: flex;
+          align-items: center;
+        }
+        button {
+          margin-left: 1rem;
+          color: ${count % 2 ? "red" : "blue"};
+        }
+      `}
+      </style>
+    </StyleScope>
   )
 }
