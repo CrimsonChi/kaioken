@@ -38,7 +38,7 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
           {
             type: child.props.element,
             props: {
-              ...child.props,
+              children: [],
               params,
               query,
             },

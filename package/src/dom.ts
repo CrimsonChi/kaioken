@@ -210,6 +210,11 @@ function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {
     commitDeletion(vNode.child, domParent)
+    let sibling = vNode.child.sibling
+    while (sibling) {
+      commitDeletion(sibling, domParent)
+      sibling = sibling.sibling
+    }
   }
 }
 

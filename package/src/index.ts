@@ -1,7 +1,7 @@
-import { VNode } from "./types"
+import { Context, ProviderProps, VNode } from "./types"
 import { globalState as g } from "./globalState"
 
-export { mount, createElement, fragment }
+export { mount, createElement, fragment, createContext }
 
 function mount(appFunc: () => VNode, container: HTMLElement) {
   console.log("mounting", appFunc, container)
@@ -59,4 +59,16 @@ function createTextElement(text: string): VNode {
 
 function fragment({ children }: { children: JSX.Element[] }) {
   return children
+}
+
+function createContext<T>(initial: T | null): Context<T> {
+  let context = initial as T
+
+  return {
+    Provider: ({ value, children = [] }: ProviderProps<T>) => {
+      context = value
+      return fragment({ children }) as JSX.Element
+    },
+    value: () => context,
+  }
 }

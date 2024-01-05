@@ -14,15 +14,17 @@ export function Theme() {
       <div>
         <button onclick={handleClick}>Toggle theme</button>
         <p>Current theme: {theme}</p>
-        <style>
-          {`
+      </div>
+      <p>Test</p>
+      <style>
+        {`
         button {
           margin-left: 1rem;
           color: ${theme === "dark" ? "#ddd" : "#222"};
+          background-color: ${theme === "dark" ? "#222" : "#ddd"};
         }
       `}
-        </style>
-      </div>
+      </style>
     </StyleScope>
   )
 }
