@@ -1,0 +1,13 @@
+{
+  "name": "ssr",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {},
+  "dependencies": {
+    "reflex-ui": "workspace:^"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
