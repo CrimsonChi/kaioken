@@ -5,22 +5,12 @@ export { mount, createElement, fragment, createContext }
 
 function mount(appFunc: () => VNode, container: HTMLElement) {
   console.log("mounting", appFunc, container)
-  g.wipNode = {
-    type: container.nodeName.toLowerCase(),
-    dom: container,
-    props: {
-      children: [
-        {
-          type: appFunc,
-          props: {
-            children: [],
-          },
-          hooks: [],
-        },
-      ],
-    },
-    hooks: [],
-  }
+  g.wipNode = createElement(
+    container.nodeName.toLowerCase(),
+    {},
+    createElement(appFunc, {})
+  )
+  g.wipNode.dom = container
   g.deletions = []
   g.nextUnitOfWork = g.wipNode
   g.mounted = true

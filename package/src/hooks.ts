@@ -76,13 +76,5 @@ function useReducer<T, A>(
 }
 
 function useContext<T>(context: Context<T>): T {
-  if (!g.mounted) return {} as T
-  const node = g.curNode
-  if (!node) throw new Error("useContext must be called in a component")
-
-  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
-  const hook = oldHook ?? { state: context.value() }
-  node.hooks[g.hookIndex++] = hook
-
-  return hook.state as T
+  return context.value()
 }

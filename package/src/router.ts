@@ -61,7 +61,7 @@ interface RouteComponentProps {
 
 export function Route({ path, element }: RouteComponentProps) {
   return {
-    type: "Route",
+    type: "x-route",
     props: {
       path,
       element,

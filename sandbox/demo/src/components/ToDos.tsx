@@ -9,11 +9,8 @@ type ToDoItem = {
 function saveTodos(todos: ToDoItem[]) {
   localStorage.setItem("todos", JSON.stringify(todos))
 }
-let todos: ToDoItem[] = []
 function loadTodos(): ToDoItem[] {
-  if (todos.length) return todos
-  const res = JSON.parse(localStorage.getItem("todos") || "[]")
-  return (todos = res)
+  return JSON.parse(localStorage.getItem("todos") || "[]")
 }
 
 export function Todos() {

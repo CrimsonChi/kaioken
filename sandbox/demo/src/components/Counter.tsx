@@ -17,13 +17,15 @@ export function Counter() {
   }
 
   return (
-    <StyleScope>
-      <div>
-        Counter <>{count}</>
-        <button onclick={handleClick}>+</button>
-      </div>
-      <style>
-        {`
+    <div>
+      <StyleScope>
+        <div>
+          Counter <>{count}</>
+          <button onclick={handleClick}>+</button>
+        </div>
+
+        <style>
+          {`
         div {
           display: flex;
           align-items: center;
@@ -34,7 +36,8 @@ export function Counter() {
           background-color: ${theme === "dark" ? "#222" : "#ddd"};
         }
       `}
-      </style>
-    </StyleScope>
+        </style>
+      </StyleScope>
+    </div>
   )
 }

@@ -10,21 +10,22 @@ export function Theme() {
   }
 
   return (
-    <StyleScope>
-      <div>
-        <button onclick={handleClick}>Toggle theme</button>
-        <p>Current theme: {theme}</p>
-      </div>
-      <p>Test</p>
-      <style>
-        {`
+    <article>
+      <StyleScope>
+        <div>
+          <button onclick={handleClick}>Toggle theme</button>
+          <p>Current theme: {theme}</p>
+        </div>
+        <style>
+          {`
         button {
           margin-left: 1rem;
           color: ${theme === "dark" ? "#ddd" : "#222"};
           background-color: ${theme === "dark" ? "#222" : "#ddd"};
         }
       `}
-      </style>
-    </StyleScope>
+        </style>
+      </StyleScope>
+    </article>
   )
 }

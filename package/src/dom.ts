@@ -25,9 +25,8 @@ function performUnitOfWork(vNode: VNode): VNode | undefined {
 
 function updateFunctionComponent(vNode: VNode) {
   g.hookIndex = 0
-
+  vNode.hooks = []
   g.curNode = vNode
-  g.curNode.hooks = []
 
   const children = [(vNode.type as Function)(vNode.props)].flat()
 
@@ -109,6 +108,10 @@ function reconcileChildren(vNode: VNode, children: VNode[]) {
   let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
   let prevSibling: VNode | undefined = undefined
 
+  if (vNode.type === "article") {
+    console.log(vNode)
+  }
+
   while (index < children.length || oldNode != null) {
     const child = children[index]
     let newNode = undefined
@@ -166,7 +169,6 @@ function commitRoot() {
 
 function commitWork(vNode?: VNode) {
   if (!vNode) return
-
   let domParentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
   let domParent = domParentNode?.dom
   while (domParentNode && !domParent) {
@@ -192,8 +194,6 @@ function commitWork(vNode?: VNode) {
     } else {
       domParent.appendChild(vNode.dom)
     }
-
-    //domParent.appendChild(vNode.dom)
   } else if (vNode.effectTag === "UPDATE" && vNode.dom != null) {
     updateDom(vNode.dom, vNode.prev?.props ?? {}, vNode.props)
   } else if (vNode.effectTag === "DELETION") {
