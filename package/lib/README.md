@@ -14,7 +14,8 @@
 - [x] StyleScope
 - [x] useRef
 - [x] useMemo
-- [ ] useQuery
+- [x] useQuery
+- [ ] useSyncExternalStore
 - [ ] useCallback
 - [ ] Portal
 - [ ] SSR
