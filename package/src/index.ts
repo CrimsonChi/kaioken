@@ -1,4 +1,4 @@
-import { VNode } from "./types"
+import type { VNode } from "./types"
 import { g } from "./globalState.js"
 
 export { mount, createElement, fragment }
