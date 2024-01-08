@@ -1,9 +1,5 @@
 import type { VNode } from "./types"
-import {
-  commitRoot,
-  updateFunctionComponent,
-  updateHostComponent,
-} from "./dom.js"
+import { commitWork, createDom } from "./dom.js"
 
 export { g, type GlobalState }
 
@@ -17,6 +13,16 @@ class GlobalState {
   nextUnitOfWork: VNode | undefined = undefined
   mounted = false
 
+  mount(node: VNode, container: HTMLElement) {
+    this.wipNode = node
+    this.wipNode.dom = container
+    this.deletions = []
+    this.nextUnitOfWork = this.wipNode
+    this.mounted = true
+    this.workLoop()
+    return node
+  }
+
   workLoop(deadline?: IdleDeadline) {
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
@@ -27,11 +33,19 @@ class GlobalState {
     }
 
     if (!this.nextUnitOfWork && this.wipNode) {
-      commitRoot(this)
+      this.commitRoot(this.wipNode)
+      this.wipNode?.prev && (this.wipNode.prev.child = this.wipNode)
+      this.wipNode = undefined
     }
 
     if (!this.mounted) this.mounted = true
     requestIdleCallback(this.workLoop.bind(this))
+  }
+
+  commitRoot(node: VNode) {
+    this.deletions.forEach((d) => commitWork(this, d))
+    commitWork(this, node)
+    while (this.pendingEffects.length) this.pendingEffects.shift()?.()
   }
 
   setWipNode(node: VNode) {
@@ -50,9 +64,9 @@ class GlobalState {
   private performUnitOfWork(vNode: VNode): VNode | undefined {
     const isFunctionComponent = vNode.type instanceof Function
     if (isFunctionComponent) {
-      updateFunctionComponent(this, vNode)
+      this.updateFunctionComponent(vNode)
     } else {
-      updateHostComponent(this, vNode)
+      this.updateHostComponent(vNode)
     }
     if (vNode.child) {
       return vNode.child
@@ -65,6 +79,76 @@ class GlobalState {
       nextNode = nextNode.parent
     }
     return
+  }
+
+  private updateFunctionComponent(vNode: VNode) {
+    vNode.hooks = []
+    this.hookIndex = 0
+    this.curNode = vNode
+
+    const children = [(vNode.type as Function)(vNode.props)].flat()
+    this.reconcileChildren(vNode, children)
+  }
+
+  private updateHostComponent(vNode: VNode) {
+    if (!vNode.dom) {
+      vNode.dom = createDom(vNode)
+    }
+    this.reconcileChildren(vNode, vNode.props.children)
+  }
+
+  private reconcileChildren(vNode: VNode, children: VNode[]) {
+    let index = 0
+    let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
+    let prevSibling: VNode | undefined = undefined
+
+    while (index < children.length || oldNode) {
+      const child = children[index]
+      let newNode = undefined
+
+      const sameType = oldNode && child && child.type == oldNode.type
+
+      if (sameType) {
+        const old = oldNode as VNode
+        newNode = {
+          type: old.type,
+          props: child.props,
+          dom: old!.dom,
+          parent: vNode,
+          prev: old,
+          effectTag: "UPDATE",
+          hooks: old!.hooks,
+        }
+      }
+      if (child && !sameType) {
+        newNode = {
+          type: child.type,
+          props: child.props,
+          dom: undefined,
+          parent: vNode,
+          prev: undefined,
+          effectTag: "PLACEMENT",
+          hooks: [],
+        }
+      }
+      if (oldNode && !sameType) {
+        oldNode.effectTag = "DELETION"
+        this.deletions.push(oldNode)
+      }
+
+      if (oldNode) {
+        oldNode = oldNode.sibling
+      }
+
+      if (index === 0) {
+        vNode.child = newNode
+      } else if (prevSibling) {
+        prevSibling.sibling = newNode
+      }
+
+      prevSibling = newNode
+      index++
+    }
   }
 }
 

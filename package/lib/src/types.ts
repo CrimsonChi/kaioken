@@ -24,7 +24,7 @@ export type VNode = {
     [key: string]: any
     children: VNode[]
   }
-  dom?: HTMLElement | Text
+  dom?: HTMLElement | SVGElement | Text
   parent?: VNode
   child?: VNode
   sibling?: VNode

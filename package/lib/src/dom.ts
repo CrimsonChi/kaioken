@@ -1,44 +1,23 @@
 import type { Rec, VNode } from "./types"
 import type { GlobalState } from "./globalState.js"
+import { propFilters } from "./utils.js"
 
-export { commitWork, commitRoot, updateFunctionComponent, updateHostComponent }
+export { commitWork, createDom }
 
-function updateFunctionComponent(g: GlobalState, vNode: VNode) {
-  vNode.hooks = []
-  g.hookIndex = 0
-  g.curNode = vNode
-
-  const children = [(vNode.type as Function)(vNode.props)].flat()
-  reconcileChildren(vNode, children, g)
-}
-
-function updateHostComponent(g: GlobalState, vNode: VNode) {
-  if (!vNode.dom) {
-    vNode.dom = createDom(vNode)
-  }
-  reconcileChildren(vNode, vNode.props.children, g)
-}
-
-function createDom(vNode: VNode): HTMLElement | Text {
+function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
+  const t = vNode.type as string
   const dom =
-    vNode.type == "TEXT_ELEMENT"
+    t == "TEXT_ELEMENT"
       ? document.createTextNode("")
-      : document.createElement(vNode.type as string)
+      : ["svg", "path"].includes(t)
+      ? document.createElementNS("http://www.w3.org/2000/svg", t)
+      : document.createElement(t)
 
-  updateDom(dom, {}, vNode.props)
+  return updateDom(dom, {}, vNode.props)
+}
 
-  return dom
-}
-const propFilters = {
-  internalProps: ["children", "ref"],
-  isEvent: (key: string) => key.startsWith("on"),
-  isProperty: (key: string) =>
-    !propFilters.internalProps.includes(key) && !propFilters.isEvent(key),
-  isNew: (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key],
-  isGone: (_prev: Rec, next: Rec) => (key: string) => !(key in next),
-}
 function updateDom(
-  dom: HTMLElement | Text,
+  dom: HTMLElement | SVGElement | Text,
   prevProps: Rec,
   nextProps: Rec = {}
 ) {
@@ -80,73 +59,11 @@ function updateDom(
       const eventType = name.toLowerCase().substring(2)
       dom.addEventListener(eventType, nextProps[name])
     })
+
+  return dom
 }
 
-function reconcileChildren(vNode: VNode, children: VNode[], g: GlobalState) {
-  let index = 0
-  let oldNode: VNode | undefined = (vNode.prev && vNode.prev.child) ?? undefined
-  let prevSibling: VNode | undefined = undefined
-
-  while (index < children.length || oldNode) {
-    const child = children[index]
-    let newNode = undefined
-
-    const sameType = oldNode && child && child.type == oldNode.type
-
-    if (sameType) {
-      const old = oldNode as VNode
-      newNode = {
-        type: old.type,
-        props: child.props,
-        dom: old!.dom,
-        parent: vNode,
-        prev: old,
-        effectTag: "UPDATE",
-        hooks: old!.hooks,
-      }
-    }
-    if (child && !sameType) {
-      newNode = {
-        type: child.type,
-        props: child.props,
-        dom: undefined,
-        parent: vNode,
-        prev: undefined,
-        effectTag: "PLACEMENT",
-        hooks: [],
-      }
-    }
-    if (oldNode && !sameType) {
-      oldNode.effectTag = "DELETION"
-      g.deletions.push(oldNode)
-    }
-
-    if (oldNode) {
-      oldNode = oldNode.sibling
-    }
-
-    if (index === 0) {
-      vNode.child = newNode
-    } else if (prevSibling) {
-      prevSibling.sibling = newNode
-    }
-
-    prevSibling = newNode
-    index++
-  }
-}
-
-function commitRoot(g: GlobalState) {
-  g.deletions.forEach((d) => commitWork(g, d))
-  commitWork(g, g.wipNode)
-  while (g.pendingEffects.length) g.pendingEffects.shift()?.()
-  g.wipNode?.prev && (g.wipNode.prev.child = g.wipNode)
-  g.wipNode = undefined
-}
-
-function commitWork(g: GlobalState, vNode?: VNode) {
-  if (!vNode) return
-
+function commitWork(g: GlobalState, vNode: VNode) {
   let parentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
   let domParent = parentNode?.dom
   while (parentNode && !domParent) {
@@ -182,11 +99,14 @@ function commitWork(g: GlobalState, vNode?: VNode) {
 
   vNode.effectTag = undefined
 
-  commitWork(g, vNode.child)
-  commitWork(g, vNode.sibling)
+  vNode.child && commitWork(g, vNode.child)
+  vNode.sibling && commitWork(g, vNode.sibling)
 }
 
-function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
+function commitDeletion(
+  vNode: VNode,
+  domParent: HTMLElement | SVGElement | Text
+) {
   if (vNode.dom && vNode.dom.isConnected) {
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {

@@ -64,14 +64,14 @@ export function Todos() {
           <Button onclick={handleAdd}>Add</Button>
         </div>
         <ToDoList
-          name="Pending"
-          items={pending}
+          name="Completed"
+          items={completed}
           toggleItem={handleToggle}
           handleDelete={handleDelete}
         />
         <ToDoList
-          name="Completed"
-          items={completed}
+          name="Pending"
+          items={pending}
           toggleItem={handleToggle}
           handleDelete={handleDelete}
         />

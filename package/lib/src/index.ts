@@ -4,17 +4,12 @@ import { g } from "./globalState.js"
 export { mount, createElement, fragment }
 
 function mount(appFunc: () => VNode, container: HTMLElement) {
-  console.log("mounting", appFunc, container)
-  g.wipNode = createElement(
+  const node = createElement(
     container.nodeName.toLowerCase(),
     {},
     createElement(appFunc, {})
   )
-  g.wipNode.dom = container
-  g.deletions = []
-  g.nextUnitOfWork = g.wipNode
-  g.mounted = true
-  g.workLoop()
+  return g.mount(node, container)
 }
 
 function createElement(
