@@ -16,7 +16,7 @@
 - [x] useMemo
 - [x] useQuery
 - [x] useSyncExternalStore
-- [ ] useCallback
+- [x] useCallback
 - [ ] Portal
 - [ ] SSR
 - [ ] Suspense
