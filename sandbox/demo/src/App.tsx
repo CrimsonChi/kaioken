@@ -3,6 +3,7 @@ import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ThemeSettings } from "./components/ThemeSettings"
 import { ThemeContextProvider } from "./ThemeContext"
+import { Product } from "./components/Product"
 
 export const App = () => {
   return (
@@ -14,6 +15,7 @@ export const App = () => {
         <Link to="/counter">Counter</Link>
         <Link to="/theme">Theme</Link>
         <Link to="/memo">Memo</Link>
+        <Link to="/query">Query</Link>
       </nav>
       <Router>
         <Route path="/" element={() => <h2>Home</h2>} />
@@ -21,6 +23,7 @@ export const App = () => {
         <Route path="/counter" element={Counter} />
         <Route path="/theme" element={ThemeSettings} />
         <Route path="/memo" element={UseMemoDemo} />
+        <Route path="/query" element={Product} />
       </Router>
     </ThemeContextProvider>
   )
