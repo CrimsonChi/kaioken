@@ -8,14 +8,23 @@ interface RouterProps {
   children?: JSX.Element[]
 }
 
-export function Router({ basePath = "", children = [] }: RouterProps) {
-  const [path, setPath] = useState(window.location.pathname)
-  const [search, setSearch] = useState(window.location.search)
+type RouterState = {
+  path: string
+  search: string
+}
+
+export function Router(props: RouterProps) {
+  const [state, setState] = useState({
+    path: window.location.pathname,
+    search: window.location.search,
+  } as RouterState)
 
   useEffect(() => {
     const handler = () => {
-      setSearch(window.location.search)
-      setPath(basePath + window.location.pathname)
+      setState({
+        path: window.location.pathname,
+        search: window.location.search,
+      })
     }
     window.addEventListener("popstate", handler)
 
@@ -24,27 +33,20 @@ export function Router({ basePath = "", children = [] }: RouterProps) {
     }
   }, [])
 
-  for (const child of children) {
+  for (const child of props.children ?? []) {
     if (isVNode(child)) {
       const { routeMatch, params, query } = matchPath(
-        path,
-        search,
-        basePath + child.props.path
+        state.path,
+        state.search,
+        (props.basePath || "") + child.props.path
       )
       if (routeMatch) {
+        // return child.props.element({ params, query })
         return createElement(
           "x-router",
           {},
-          {
-            type: child.props.element,
-            props: {
-              children: [],
-              params,
-              query,
-            },
-            hooks: [],
-          }
-        ) as JSX.Element
+          createElement(child.props.element, { params, query })
+        )
       }
     }
   }
@@ -60,15 +62,7 @@ interface RouteComponentProps {
 }
 
 export function Route({ path, element }: RouteComponentProps) {
-  return {
-    type: "x-route",
-    props: {
-      path,
-      element,
-      children: [],
-    },
-    hooks: [],
-  }
+  return createElement("x-route", { path, element })
 }
 
 export function Link({ to, children }: { to: string; children?: JSX.Element }) {

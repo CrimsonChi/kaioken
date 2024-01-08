@@ -179,7 +179,8 @@ function commitWork(vNode?: VNode) {
   }
 
   if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-    let sibling = vNode.parent?.sibling?.child?.dom
+    //let sibling = vNode.parent?.sibling?.child?.dom
+    let sibling = vNode.parent?.sibling?.dom
 
     if (!sibling) {
       const { idx } = getMountLocation(vNode)
