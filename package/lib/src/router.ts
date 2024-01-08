@@ -50,7 +50,7 @@ function Router(props: RouterProps) {
   return null
 }
 
-type RouteComponentFunc = (props: RouteChildProps) => JSX.Element
+type RouteComponentFunc = (props: RouteChildProps) => JSX.Element | null
 
 interface RouteComponentProps {
   path: string
