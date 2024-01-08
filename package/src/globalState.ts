@@ -1,6 +1,8 @@
 import type { VNode } from "./types"
 import { commitRoot, performUnitOfWork } from "./dom.js"
 
+export { g }
+
 class GlobalState {
   curNode: VNode | undefined = undefined
   wipNode: VNode | undefined = undefined
@@ -42,4 +44,4 @@ class GlobalState {
   }
 }
 
-export const globalState = new GlobalState()
+const g = new GlobalState()

@@ -1,6 +1,8 @@
 import type { VNode } from "./types"
 import { useState } from "./hooks.js"
 
+export { StyleScope }
+
 type Props = {
   children?: JSX.Element
 }
@@ -17,7 +19,7 @@ function useSlug() {
   return slug
 }
 
-export function StyleScope({ children }: Props) {
+function StyleScope({ children }: Props) {
   const slug = useSlug()
 
   if (!children) return null

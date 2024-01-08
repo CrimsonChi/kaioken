@@ -3,6 +3,8 @@ import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useEffect, useState } from "./hooks.js"
 
+export { Router, Route, Link }
+
 interface RouterProps {
   basePath?: string
   children?: JSX.Element[]
@@ -13,7 +15,7 @@ type RouterState = {
   search: string
 }
 
-export function Router(props: RouterProps) {
+function Router(props: RouterProps) {
   const [state, setState] = useState({
     path: window.location.pathname,
     search: window.location.search,
@@ -41,11 +43,6 @@ export function Router(props: RouterProps) {
         return fragment({
           children: [createElement(child.props.element, { params, query })],
         }) as JSX.Element
-        // return createElement(
-        //   "x-router",
-        //   {},
-        //   createElement(child.props.element, { params, query })
-        // )
       }
     }
   }
@@ -66,11 +63,11 @@ function isRoute(
   return isVNode(thing) && thing.type === Route
 }
 
-export function Route({ path, element }: RouteComponentProps) {
-  return createElement("x-route", { path, element })
+function Route({ path, element }: RouteComponentProps) {
+  return createElement(Route, { path, element })
 }
 
-export function Link({ to, children }: { to: string; children?: JSX.Element }) {
+function Link({ to, children }: { to: string; children?: JSX.Element }) {
   return createElement(
     "a",
     {

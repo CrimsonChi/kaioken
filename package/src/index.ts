@@ -1,5 +1,5 @@
 import { VNode } from "./types"
-import { globalState as g } from "./globalState"
+import { g } from "./globalState.js"
 
 export { mount, createElement, fragment }
 

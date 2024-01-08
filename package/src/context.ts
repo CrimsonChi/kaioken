@@ -1,5 +1,5 @@
-import { fragment } from "./index.js"
 import type { Context, ProviderProps } from "./types"
+import { fragment } from "./index.js"
 
 export function createContext<T>(initial: T | null): Context<T> {
   let context = initial as T
