@@ -1,5 +1,5 @@
 import type { Rec, VNode } from "./types"
-import { globalState as g } from "./globalState.js"
+import { g } from "./globalState.js"
 
 export { performUnitOfWork, commitWork, commitRoot }
 

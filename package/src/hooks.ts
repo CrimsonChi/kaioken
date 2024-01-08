@@ -1,4 +1,4 @@
-import { globalState as g } from "./globalState.js"
+import { g } from "./globalState.js"
 import { Context } from "./types.js"
 
 export { useState, useEffect, useReducer, useContext }
