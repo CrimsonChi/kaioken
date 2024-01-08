@@ -1,5 +1,5 @@
 import { StyleScope, useContext, useEffect, useState } from "reflex-ui"
-import { ThemeContext } from "../context.js"
+import { ThemeContext } from "../ThemeContext"
 
 export function Counter() {
   const [count, setCount] = useState(0)

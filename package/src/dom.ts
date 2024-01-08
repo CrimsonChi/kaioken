@@ -24,6 +24,7 @@ function performUnitOfWork(vNode: VNode): VNode | undefined {
 }
 
 function updateFunctionComponent(vNode: VNode) {
+  // if ("test" in (vNode.type as {})) debugger
   g.hookIndex = 0
   vNode.hooks = []
   g.curNode = vNode
@@ -107,10 +108,6 @@ function reconcileChildren(vNode: VNode, children: VNode[]) {
   let index = 0
   let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
   let prevSibling: VNode | undefined = undefined
-
-  if (vNode.type === "article") {
-    console.log(vNode)
-  }
 
   while (index < children.length || oldNode != null) {
     const child = children[index]

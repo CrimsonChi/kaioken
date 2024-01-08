@@ -1,4 +1,4 @@
-import { createContext } from "reflex-ui"
+import { createContext, useReducer } from "reflex-ui"
 
 export const ThemeContext = createContext<"dark" | "light">(null)
 export const ThemeDispatchContext =
@@ -16,4 +16,15 @@ export function themeReducer(
       throw new Error(`Unhandled action type: ${action.type}`)
     }
   }
+}
+
+export function ThemeContextProvider({ children }: { children?: any }) {
+  const [theme, dispatch] = useReducer(themeReducer, "dark")
+  return (
+    <ThemeContext.Provider value={theme}>
+      <ThemeDispatchContext.Provider value={dispatch}>
+        {children}
+      </ThemeDispatchContext.Provider>
+    </ThemeContext.Provider>
+  )
 }

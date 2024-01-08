@@ -1,19 +1,8 @@
-import { Router, Route, Link, useReducer } from "reflex-ui"
+import { Router, Route, Link } from "reflex-ui"
 import { Todos } from "./components/ToDos"
-import { ThemeContext, ThemeDispatchContext, themeReducer } from "./context"
 import { Counter } from "./components/Counter"
 import { Theme } from "./components/Theme"
-
-function ThemeContextProvider({ children }: { children?: any }) {
-  const [theme, dispatch] = useReducer(themeReducer, "dark")
-  return (
-    <ThemeContext.Provider value={theme}>
-      <ThemeDispatchContext.Provider value={dispatch}>
-        {children}
-      </ThemeDispatchContext.Provider>
-    </ThemeContext.Provider>
-  )
-}
+import { ThemeContextProvider } from "./ThemeContext"
 
 export const App = () => {
   return (

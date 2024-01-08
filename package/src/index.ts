@@ -57,7 +57,14 @@ function createContext<T>(initial: T | null): Context<T> {
   return {
     Provider: ({ value, children = [] }: ProviderProps<T>) => {
       context = value
-      return fragment({ children }) as JSX.Element
+      //return fragment({ children }) as JSX.Element
+      return {
+        type: "x-context",
+        props: {
+          children,
+        },
+        hooks: [],
+      } as VNode
     },
     value: () => context,
   }
