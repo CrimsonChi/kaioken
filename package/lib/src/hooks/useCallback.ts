@@ -1,0 +1,26 @@
+import { arrayChanged, getCurrentNode, getHook, setHook } from "./utils.js"
+
+type useCallbackHook<T extends (...args: any[]) => any> = {
+  callback: T
+  deps: any[]
+}
+
+export function useCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  deps: any[]
+): T {
+  const node = getCurrentNode("useCallback must be called in a component")
+  if (!node) return callback
+
+  const { hook, oldHook } = getHook<useCallbackHook<T>>(node, {
+    callback,
+    deps,
+  })
+
+  if (arrayChanged(deps, oldHook?.deps)) {
+    hook.callback = callback
+  }
+
+  setHook(node, hook)
+  return hook.callback
+}

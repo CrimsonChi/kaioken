@@ -1,3 +1,4 @@
+export * from "./useCallback.js"
 export * from "./useContext.js"
 export * from "./useEffect.js"
 export * from "./useMemo.js"
