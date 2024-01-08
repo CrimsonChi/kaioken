@@ -1,5 +1,5 @@
 import type { Rec, RouteChildProps, VNode } from "./types"
-import { createElement } from "./index.js"
+import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useEffect, useState } from "./hooks.js"
 
@@ -38,14 +38,14 @@ export function Router(props: RouterProps) {
         (props.basePath || "") + child.props.path
       )
       if (match) {
-        // return fragment({
-        //   children: [createElement(child.props.element, { params, query })],
-        // })
-        return createElement(
-          "x-router",
-          {},
-          createElement(child.props.element, { params, query })
-        )
+        return fragment({
+          children: [createElement(child.props.element, { params, query })],
+        }) as JSX.Element
+        // return createElement(
+        //   "x-router",
+        //   {},
+        //   createElement(child.props.element, { params, query })
+        // )
       }
     }
   }

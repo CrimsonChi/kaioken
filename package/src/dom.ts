@@ -169,24 +169,27 @@ function commitRoot() {
 
 function commitWork(vNode?: VNode) {
   if (!vNode) return
-  // if (vNode.type instanceof Function && "test" in (vNode.type as {})) debugger
+
   let parentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
   let domParent = parentNode?.dom
   while (parentNode && !domParent) {
-    parentNode = parentNode.parent ?? parentNode.prev?.parent
-    domParent = parentNode?.dom ?? parentNode?.prev?.dom
+    parentNode = parentNode.parent
+    domParent = parentNode?.dom
   }
 
   if (!domParent) {
-    console.error("no domParent")
+    console.error("no domParent", vNode)
     return
   }
 
   if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-    const siblingDom =
-      vNode.sibling?.dom ??
-      vNode.parent?.sibling?.dom ??
-      vNode.parent?.sibling?.child?.dom
+    let siblingDom = vNode.sibling?.dom
+    let parent = vNode.parent
+
+    while (!siblingDom && parent) {
+      siblingDom = parent.sibling?.dom ?? parent.sibling?.child?.dom
+      parent = parent.parent
+    }
 
     if (siblingDom && domParent.contains(siblingDom)) {
       domParent.insertBefore(vNode.dom, siblingDom)
