@@ -51,3 +51,11 @@ export type ProviderProps<T> = {
   value: T
   children?: JSX.Element[]
 }
+
+export type ElementProps<
+  T extends string extends keyof JSX.IntrinsicElements
+    ? string
+    : keyof JSX.IntrinsicElements
+> = JSX.IntrinsicElements[T] & {
+  children?: JSX.Element[]
+}

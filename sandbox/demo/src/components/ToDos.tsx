@@ -1,4 +1,5 @@
-import { useState } from "reflex-ui"
+import { StyleScope, useState } from "reflex-ui"
+import { Button } from "./Button"
 
 type ToDoItem = {
   id: string
@@ -56,24 +57,26 @@ export function Todos() {
   const pending = todos.filter((t) => !t.done)
 
   return (
-    <div className="todos">
-      <div>
-        <input value={newTodo} oninput={handleInput} />
-        <button onclick={handleAdd}>Add</button>
+    <StyleScope>
+      <div className="todos">
+        <div>
+          <input value={newTodo} oninput={handleInput} />
+          <Button onclick={handleAdd}>Add</Button>
+        </div>
+        <ToDoList
+          name="Pending"
+          items={pending}
+          toggleItem={handleToggle}
+          handleDelete={handleDelete}
+        />
+        <ToDoList
+          name="Completed"
+          items={completed}
+          toggleItem={handleToggle}
+          handleDelete={handleDelete}
+        />
       </div>
-      <ToDoList
-        name="Pending"
-        items={pending}
-        toggleItem={handleToggle}
-        handleDelete={handleDelete}
-      />
-      <ToDoList
-        name="Completed"
-        items={completed}
-        toggleItem={handleToggle}
-        handleDelete={handleDelete}
-      />
-    </div>
+    </StyleScope>
   )
 }
 
@@ -101,9 +104,9 @@ const ToDoList = ({
               checked={todo.done}
               onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
             />
-            <button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
+            <Button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
               Delete
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

@@ -38,6 +38,9 @@ export function Router(props: RouterProps) {
         (props.basePath || "") + child.props.path
       )
       if (match) {
+        // return fragment({
+        //   children: [createElement(child.props.element, { params, query })],
+        // })
         return createElement(
           "x-router",
           {},
