@@ -1,5 +1,6 @@
 import type { VNode } from "./types"
 import { g } from "./globalState.js"
+import { isValidChild } from "./utils.js"
 
 export { mount, createElement, fragment }
 
@@ -23,6 +24,7 @@ function createElement(
       ...props,
       children: children
         .flat()
+        .filter(isValidChild)
         .map((child) =>
           typeof child === "object" ? child : createTextElement(String(child))
         ) as VNode[],

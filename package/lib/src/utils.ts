@@ -4,6 +4,10 @@ export function isVNode(node: any): node is VNode {
   return node && node.type !== undefined && node.props !== undefined
 }
 
+export function isValidChild(child: unknown) {
+  return child !== null && child !== undefined && child !== false
+}
+
 export const propFilters = {
   internalProps: ["children", "ref"],
   isEvent: (key: string) => key.startsWith("on"),
