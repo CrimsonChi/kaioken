@@ -1,5 +1,5 @@
 import { g } from "../globalState.js"
-import { getCurrentNode, getHook, setHook } from "./utils.js"
+import { arrayChanged, getCurrentNode, getHook, setHook } from "./utils.js"
 
 type useQueryHook<T> = {
   data?: T
@@ -20,10 +20,8 @@ export function useQuery<T>(
     loading: false,
   })
 
-  if (oldHook) {
-    if (keys.length === 0 || keys.some((key, i) => key !== oldHook.keys[i])) {
-      hook.data = undefined
-    }
+  if (arrayChanged(keys, oldHook?.keys)) {
+    hook.data = undefined
   }
 
   if (hook.data === undefined && !hook.loading) {

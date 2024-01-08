@@ -1,4 +1,4 @@
-import { getCurrentNode, getHook, setHook } from "./utils.js"
+import { arrayChanged, getCurrentNode, getHook, setHook } from "./utils.js"
 
 export function useMemo<T>(factory: () => T, deps: any[]): T {
   const node = getCurrentNode("useMemo must be called in a component")
@@ -6,11 +6,9 @@ export function useMemo<T>(factory: () => T, deps: any[]): T {
 
   const { hook, oldHook } = getHook(node, { deps, value: undefined as T })
 
-  if (oldHook) {
-    if (deps.length === 0 || deps.some((dep, i) => dep !== oldHook.deps[i])) {
-      hook.value = factory()
-      hook.deps = deps
-    }
+  if (arrayChanged(deps, oldHook?.deps)) {
+    hook.value = factory()
+    hook.deps = deps
   } else {
     hook.value = factory()
   }

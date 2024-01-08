@@ -1,7 +1,7 @@
 import type { VNode } from "../types.js"
 import { g } from "../globalState.js"
 
-export { getCurrentNode, getHook, setHook, cleanupHook }
+export { getCurrentNode, getHook, setHook, cleanupHook, arrayChanged }
 
 function getCurrentNode(message: string): VNode | undefined {
   if (!g.mounted) return
@@ -30,4 +30,12 @@ function cleanupHook(hook: any) {
     hook.cleanup()
     hook.cleanup = undefined
   }
+}
+
+function arrayChanged(newItems: any[], oldItems?: any[]) {
+  return (
+    !oldItems ||
+    newItems.length === 0 ||
+    (oldItems && newItems.some((dep, i) => dep !== oldItems[i]))
+  )
 }
