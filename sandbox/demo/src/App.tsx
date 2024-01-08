@@ -15,7 +15,7 @@ export const App = () => {
         <Link to="/counter">Counter</Link>
         <Link to="/theme">Theme</Link>
         <Link to="/memo">Memo</Link>
-        <Link to="/query">Query</Link>
+        <Link to="/query?id=1">Query</Link>
       </nav>
       <Router>
         <Route path="/" element={() => <h2>Home</h2>} />

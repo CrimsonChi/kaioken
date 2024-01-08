@@ -1,4 +1,4 @@
-import { useQuery } from "reflex-ui"
+import { Link, RouteChildProps, useCallback, useQuery } from "reflex-ui"
 import { Spinner } from "./Spinner"
 
 interface Product {
@@ -10,30 +10,36 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const fetchProduct = (id: string) =>
-  fetch(`https://dummyjson.com/products/${id}`)
-    .then((res) => res.json())
-    .then(async (data) => {
-      await sleep(1000)
-      return data
-    })
+export function Product({ query }: RouteChildProps) {
+  const { id } = query
+  const handleFetchProduct = useCallback(async () => {
+    return fetch(`https://dummyjson.com/products/${id}`)
+      .then((res) => res.json())
+      .then(async (data) => {
+        await sleep(1000)
+        return data as Product
+      })
+  }, [id])
 
-export function Product() {
-  const { data, error, loading } = useQuery<Product>(
-    () => fetchProduct("1"),
-    ["products", "1"]
-  )
+  const { loading, error, data } = useQuery<Product>(handleFetchProduct, [
+    "products",
+    id,
+  ])
+
+  if (loading) return <Spinner />
+  if (error) return <div>{error.message}</div>
+  if (!data) return null
 
   return (
     <>
-      {loading && <Spinner />}
-      {error && <div>{error.message}</div>}
-      {data && (
-        <div>
-          <h3>{data.title}</h3>
-          <img src={data.thumbnail} />
-        </div>
-      )}
+      <div>
+        <h3>{data.title}</h3>
+        <img src={data.thumbnail} />
+      </div>
+      <div>
+        {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}
+        <Link to={`/query?id=${Number(id) + 1}`}>Next</Link>
+      </div>
     </>
   )
 }
