@@ -64,14 +64,14 @@ export function Todos() {
           <Button onclick={handleAdd}>Add</Button>
         </div>
         <ToDoList
-          name="Completed"
-          items={completed}
+          name="Pending"
+          items={pending}
           toggleItem={handleToggle}
           handleDelete={handleDelete}
         />
         <ToDoList
-          name="Pending"
-          items={pending}
+          name="Completed"
+          items={completed}
           toggleItem={handleToggle}
           handleDelete={handleDelete}
         />
@@ -93,23 +93,25 @@ const ToDoList = ({
 }) => {
   if (!items.length) return null
   return (
-    <div>
-      <h4>{name}</h4>
-      <ul>
-        {items.map((todo) => (
-          <li>
-            <span>{todo.text}</span>
-            <input
-              type="checkbox"
-              checked={todo.done}
-              onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
-            />
-            <Button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
-              Delete
-            </Button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <>
+      <>
+        <h4>{name}</h4>
+        <ul>
+          {items.map((todo) => (
+            <li>
+              <span>{todo.text}</span>
+              <input
+                type="checkbox"
+                checked={todo.done}
+                onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
+              />
+              <Button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
+                Delete
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </>
+    </>
   )
 }

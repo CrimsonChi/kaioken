@@ -77,11 +77,11 @@ function commitWork(g: GlobalState, vNode: VNode) {
   }
 
   if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-    let siblingDom = vNode.sibling?.dom
+    let siblingDom = vNode.sibling?.dom?.isConnected && vNode.sibling?.dom
     let parent = vNode.parent
 
     while (!siblingDom && parent) {
-      siblingDom = parent.sibling?.dom ?? parent.sibling?.child?.dom
+      siblingDom = findDomRecursive(parent.sibling)
       parent = parent.parent
     }
 
@@ -101,6 +101,20 @@ function commitWork(g: GlobalState, vNode: VNode) {
 
   vNode.child && commitWork(g, vNode.child)
   vNode.sibling && commitWork(g, vNode.sibling)
+}
+
+function findDomRecursive(
+  vNode?: VNode
+): HTMLElement | SVGElement | Text | undefined {
+  if (vNode?.dom) {
+    return vNode.dom
+  } else if (vNode?.child) {
+    return findDomRecursive(vNode.child)
+  } else if (vNode?.sibling) {
+    return findDomRecursive(vNode.sibling)
+  } else {
+    return
+  }
 }
 
 function commitDeletion(
