@@ -1,4 +1,4 @@
-import { Router, Route, Link } from "reflex-ui"
+import { Router, Route, Link, useState, useMemo } from "reflex-ui"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ThemeSettings } from "./components/ThemeSettings"
@@ -13,13 +13,35 @@ export const App = () => {
         <Link to="/todos">Todos</Link>
         <Link to="/counter">Counter</Link>
         <Link to="/theme">Theme</Link>
+        <Link to="/memo">Memo</Link>
       </nav>
       <Router>
         <Route path="/" element={() => <h2>Home</h2>} />
         <Route path="/todos" element={Todos} />
         <Route path="/counter" element={Counter} />
         <Route path="/theme" element={ThemeSettings} />
+        <Route path="/memo" element={UseMemoDemo} />
       </Router>
     </ThemeContextProvider>
+  )
+}
+
+const UseMemoDemo = () => {
+  const [count, setCount] = useState(0)
+  const [count2, setCount2] = useState(0)
+
+  const memoizedValue = useMemo(() => {
+    console.log("useMemo")
+    return count + 1
+  }, [count])
+
+  return (
+    <div>
+      <div>count: {count}</div>
+      <div>count2: {count2}</div>
+      <div>memoizedValue: {memoizedValue}</div>
+      <button onclick={() => setCount(count + 1)}>+1</button>
+      <button onclick={() => setCount2(count2 + 1)}>+1</button>
+    </div>
   )
 }

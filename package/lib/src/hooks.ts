@@ -1,14 +1,14 @@
 import { g } from "./globalState.js"
-import { Context, Ref } from "./types.js"
+import type { Context, Ref } from "./types.js"
 
-export { useState, useEffect, useReducer, useContext, useRef }
+export { useState, useEffect, useReducer, useContext, useRef, useMemo }
 
 type StateSetter<T> = T | ((prev: T) => T)
 
 function useState<T>(initial: T): [T, (value: StateSetter<T>) => void] {
-  if (!g.mounted) return [initial, () => {}]
-  const node = g.curNode
-  if (!node) throw new Error("useState must be called in a component")
+  const node = g.getCurrentNode("useState must be called in a component")
+  if (!node) return [initial, () => {}]
+
   const oldHook = node.prev && node.prev.hooks[g.hookIndex]
   const hook = oldHook ?? { state: initial }
 
@@ -22,9 +22,8 @@ function useState<T>(initial: T): [T, (value: StateSetter<T>) => void] {
 }
 
 function useEffect(callback: Function, deps: any[] = []) {
-  if (!g.mounted) return
-  const node = g.curNode
-  if (!node) throw new Error("useEffect must be called in a component")
+  const node = g.getCurrentNode("useEffect must be called in a component")
+  if (!node) return
 
   const oldHook = node.prev && node.prev.hooks[g.hookIndex]
 
@@ -59,9 +58,9 @@ function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
   initial: T
 ): [T, (action: A) => void] {
-  if (!g.mounted) return [initial, () => initial]
-  const node = g.curNode
-  if (!node) throw new Error("useState must be called in a component")
+  const node = g.getCurrentNode("useReducer must be called in a component")
+  if (!node) return [initial, () => initial]
+
   const oldHook = node.prev && node.prev.hooks[g.hookIndex]
   const hook = oldHook ?? { state: initial }
 
@@ -80,12 +79,29 @@ function useContext<T>(context: Context<T>): T {
 }
 
 function useRef<T>(current: T | null): Ref<T> {
-  if (!g.mounted) return { current }
-  const node = g.curNode
-  if (!node) throw new Error("useRef must be called in a component")
+  const node = g.getCurrentNode("useRef must be called in a component")
+  if (!node) return { current }
+
   const oldHook = node.prev && node.prev.hooks[g.hookIndex]
   const hook = oldHook ?? { current }
 
   node.hooks[g.hookIndex++] = hook
   return hook
+}
+
+function useMemo<T>(factory: () => T, deps: any[]): T {
+  const node = g.getCurrentNode("useMemo must be called in a component")
+  if (!node) return factory()
+  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
+
+  const hook = oldHook ?? { deps, value: factory() }
+
+  if (oldHook) {
+    if (deps.length === 0 || !deps.every((dep, i) => dep === oldHook.deps[i])) {
+      hook.value = factory()
+    }
+  }
+
+  node.hooks[g.hookIndex++] = hook
+  return hook.value
 }

@@ -159,6 +159,13 @@ class GlobalState {
       index++
     }
   }
+
+  getCurrentNode(message: string): VNode | undefined {
+    if (!this.mounted) return
+    const node = this.curNode
+    if (!node) throw new Error(message)
+    return node
+  }
 }
 
 const g = new GlobalState()
