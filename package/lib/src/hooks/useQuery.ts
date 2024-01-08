@@ -4,7 +4,7 @@ import { getCurrentNode, getHook, setHook } from "./utils.js"
 type useQueryHook<T> = {
   data?: T
   error?: Error
-  isLoading: boolean
+  loading: boolean
   keys: string[]
 }
 
@@ -13,11 +13,11 @@ export function useQuery<T>(
   keys: string[] = []
 ): useQueryHook<T> {
   const node = getCurrentNode("useQuery must be called in a component")
-  if (!node) return { isLoading: false, keys }
+  if (!node) return { loading: false, keys }
 
   const { hook, oldHook } = getHook<useQueryHook<T>>(node, {
     keys,
-    isLoading: false,
+    loading: false,
   })
 
   if (oldHook) {
@@ -26,22 +26,21 @@ export function useQuery<T>(
     }
   }
 
-  if (hook.data === undefined) {
+  if (hook.data === undefined && !hook.loading) {
+    hook.loading = true
     queryFn()
       .then((data) => {
         hook.data = data
+        hook.loading = false
         g.setWipNode(node)
       })
       .catch((error) => {
         hook.error = error
+        hook.loading = false
         g.setWipNode(node)
       })
   }
 
   setHook(node, hook)
-  return {
-    ...hook,
-    isLoading: hook.data === undefined,
-    error: hook.error,
-  }
+  return hook
 }
