@@ -8,12 +8,14 @@ type useQueryHook<T> = {
   keys: string[]
 }
 
+type useQueryHookData<T> = Omit<useQueryHook<T>, "keys">
+
 export function useQuery<T>(
   queryFn: () => Promise<T>,
   keys: string[] = []
-): useQueryHook<T> {
+): useQueryHookData<T> {
   const node = getCurrentNode("useQuery must be called in a component")
-  if (!node) return { loading: false, keys }
+  if (!node) return { loading: true }
 
   const { hook, oldHook } = getHook<useQueryHook<T>>(node, {
     keys,
@@ -21,13 +23,11 @@ export function useQuery<T>(
   })
 
   if (arrayChanged(keys, oldHook?.keys)) {
-    hook.data = undefined
-  }
-
-  if (hook.data === undefined && !hook.loading) {
+    hook.keys = keys
     hook.loading = true
     queryFn()
       .then((data) => {
+        hook.error = undefined
         hook.data = data
         hook.loading = false
         g.setWipNode(node)
@@ -35,10 +35,11 @@ export function useQuery<T>(
       .catch((error) => {
         hook.error = error
         hook.loading = false
+        hook.data = undefined
         g.setWipNode(node)
       })
   }
-
   setHook(node, hook)
-  return hook
+  const { keys: k, ...rest } = hook
+  return rest
 }
