@@ -1,9 +1,13 @@
 import type { VNode } from "./types"
-import { commitRoot, performUnitOfWork } from "./dom.js"
+import {
+  commitRoot,
+  updateFunctionComponent,
+  updateHostComponent,
+} from "./dom.js"
 
 export { g }
 
-class GlobalState {
+export class GlobalState {
   curNode: VNode | undefined = undefined
   wipNode: VNode | undefined = undefined
   hookIndex = 0
@@ -16,14 +20,14 @@ class GlobalState {
   workLoop(deadline?: IdleDeadline) {
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
-      this.nextUnitOfWork = performUnitOfWork(this.nextUnitOfWork)
+      this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
       shouldYield =
         (deadline && deadline.timeRemaining() < 1) ??
         (!deadline && !this.nextUnitOfWork)
     }
 
     if (!this.nextUnitOfWork && this.wipNode) {
-      commitRoot()
+      commitRoot(this)
     }
 
     if (!this.mounted) this.mounted = true
@@ -41,6 +45,26 @@ class GlobalState {
     }
     this.nextUnitOfWork = this.wipNode
     this.deletions = []
+  }
+
+  private performUnitOfWork(vNode: VNode): VNode | undefined {
+    const isFunctionComponent = vNode.type instanceof Function
+    if (isFunctionComponent) {
+      updateFunctionComponent(this, vNode)
+    } else {
+      updateHostComponent(this, vNode)
+    }
+    if (vNode.child) {
+      return vNode.child
+    }
+    let nextNode: VNode | undefined = vNode
+    while (nextNode) {
+      if (nextNode.sibling) {
+        return nextNode.sibling
+      }
+      nextNode = nextNode.parent
+    }
+    return
   }
 }
 

@@ -1,44 +1,22 @@
 import type { Rec, VNode } from "./types"
-import { g } from "./globalState.js"
+import type { GlobalState } from "./globalState.js"
 
-export { performUnitOfWork, commitWork, commitRoot }
+export { commitWork, commitRoot, updateFunctionComponent, updateHostComponent }
 
-function performUnitOfWork(vNode: VNode): VNode | undefined {
-  const isFunctionComponent = vNode.type instanceof Function
-  if (isFunctionComponent) {
-    updateFunctionComponent(vNode)
-  } else {
-    updateHostComponent(vNode)
-  }
-  if (vNode.child) {
-    return vNode.child
-  }
-  let nextNode: VNode | undefined = vNode
-  while (nextNode) {
-    if (nextNode.sibling) {
-      return nextNode.sibling
-    }
-    nextNode = nextNode.parent
-  }
-  return
-}
-
-function updateFunctionComponent(vNode: VNode) {
-  // if ("test" in (vNode.type as {})) debugger
-  g.hookIndex = 0
+function updateFunctionComponent(g: GlobalState, vNode: VNode) {
   vNode.hooks = []
+  g.hookIndex = 0
   g.curNode = vNode
 
   const children = [(vNode.type as Function)(vNode.props)].flat()
-
-  reconcileChildren(vNode, children)
+  reconcileChildren(vNode, children, g)
 }
 
-function updateHostComponent(vNode: VNode) {
+function updateHostComponent(g: GlobalState, vNode: VNode) {
   if (!vNode.dom) {
     vNode.dom = createDom(vNode)
   }
-  reconcileChildren(vNode, vNode.props.children)
+  reconcileChildren(vNode, vNode.props.children, g)
 }
 
 function createDom(vNode: VNode): HTMLElement | Text {
@@ -104,8 +82,7 @@ function updateDom(
     })
 }
 
-function reconcileChildren(vNode: VNode, children: VNode[]) {
-  // if (vNode.type === "ul") debugger
+function reconcileChildren(vNode: VNode, children: VNode[], g: GlobalState) {
   let index = 0
   let oldNode: VNode | undefined = (vNode.prev && vNode.prev.child) ?? undefined
   let prevSibling: VNode | undefined = undefined
@@ -159,15 +136,15 @@ function reconcileChildren(vNode: VNode, children: VNode[]) {
   }
 }
 
-function commitRoot() {
-  g.deletions.forEach(commitWork)
-  commitWork(g.wipNode)
+function commitRoot(g: GlobalState) {
+  g.deletions.forEach((d) => commitWork(g, d))
+  commitWork(g, g.wipNode)
   while (g.pendingEffects.length) g.pendingEffects.shift()?.()
   g.wipNode?.prev && (g.wipNode.prev.child = g.wipNode)
   g.wipNode = undefined
 }
 
-function commitWork(vNode?: VNode) {
+function commitWork(g: GlobalState, vNode?: VNode) {
   if (!vNode) return
 
   let parentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
@@ -205,8 +182,8 @@ function commitWork(vNode?: VNode) {
 
   vNode.effectTag = undefined
 
-  commitWork(vNode.child)
-  commitWork(vNode.sibling)
+  commitWork(g, vNode.child)
+  commitWork(g, vNode.sibling)
 }
 
 function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
