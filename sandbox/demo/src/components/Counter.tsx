@@ -1,13 +1,14 @@
-import { useEffect, useState } from "reflex-ui"
+import { useEffect, useRef, useState } from "reflex-ui"
 import { Button } from "./Button"
 
 export function Counter() {
+  const ref = useRef<HTMLButtonElement>(null)
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    console.log("count", count)
+    console.log("count", count, ref.current)
     return () => {
-      console.log("cleanup", count)
+      console.log("cleanup", count, ref.current)
     }
   }, [count])
 
@@ -15,7 +16,9 @@ export function Counter() {
     <div>
       <div>
         Counter <>{count}</>
-        <Button onclick={() => setCount((prev) => prev + 1)}>+</Button>
+        <Button ref={ref} onclick={() => setCount((prev) => prev + 1)}>
+          +
+        </Button>
       </div>
     </div>
   )

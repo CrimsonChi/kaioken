@@ -117,10 +117,29 @@ function findDomRecursive(
   }
 }
 
+function callRecursiveCleanup(vNode: VNode) {
+  if (vNode.child) {
+    callRecursiveCleanup(vNode.child)
+  }
+  if (vNode.sibling) {
+    callRecursiveCleanup(vNode.sibling)
+  }
+  if (vNode.hooks.length > 0) {
+    vNode.hooks.forEach((hook) => {
+      if (hook.cleanup) {
+        hook.cleanup()
+        hook.cleanup = undefined
+      }
+    })
+    vNode.hooks = []
+  }
+}
+
 function commitDeletion(
   vNode: VNode,
   domParent: HTMLElement | SVGElement | Text
 ) {
+  callRecursiveCleanup(vNode)
   if (vNode.dom && vNode.dom.isConnected) {
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {

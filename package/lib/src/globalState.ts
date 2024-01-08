@@ -33,19 +33,17 @@ class GlobalState {
     }
 
     if (!this.nextUnitOfWork && this.wipNode) {
-      this.commitRoot(this.wipNode)
+      this.deletions.forEach((d) => commitWork(this, d))
+      commitWork(this, this.wipNode)
+
+      while (this.pendingEffects.length) this.pendingEffects.shift()?.()
+
       this.wipNode?.prev && (this.wipNode.prev.child = this.wipNode)
       this.wipNode = undefined
     }
 
     if (!this.mounted) this.mounted = true
     requestIdleCallback(this.workLoop.bind(this))
-  }
-
-  commitRoot(node: VNode) {
-    this.deletions.forEach((d) => commitWork(this, d))
-    commitWork(this, node)
-    while (this.pendingEffects.length) this.pendingEffects.shift()?.()
   }
 
   setWipNode(node: VNode) {
@@ -82,6 +80,11 @@ class GlobalState {
   }
 
   private updateFunctionComponent(vNode: VNode) {
+    if (vNode.hooks.length) {
+      for (const h of vNode.hooks) {
+        if (h.cleanup) h.cleanup()
+      }
+    }
     vNode.hooks = []
     this.hookIndex = 0
     this.curNode = vNode
@@ -93,6 +96,9 @@ class GlobalState {
   private updateHostComponent(vNode: VNode) {
     if (!vNode.dom) {
       vNode.dom = createDom(vNode)
+    }
+    if (vNode.props.ref) {
+      vNode.props.ref.current = vNode.dom
     }
     this.reconcileChildren(vNode, vNode.props.children)
   }
@@ -133,6 +139,9 @@ class GlobalState {
       }
       if (oldNode && !sameType) {
         oldNode.effectTag = "DELETION"
+        if (oldNode.props.ref) {
+          oldNode.props.ref.current = null
+        }
         this.deletions.push(oldNode)
       }
 

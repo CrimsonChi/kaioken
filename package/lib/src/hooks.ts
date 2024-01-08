@@ -1,7 +1,7 @@
 import { g } from "./globalState.js"
-import { Context } from "./types.js"
+import { Context, Ref } from "./types.js"
 
-export { useState, useEffect, useReducer, useContext }
+export { useState, useEffect, useReducer, useContext, useRef }
 
 type StateSetter<T> = T | ((prev: T) => T)
 
@@ -28,10 +28,6 @@ function useEffect(callback: Function, deps: any[] = []) {
 
   const oldHook = node.prev && node.prev.hooks[g.hookIndex]
 
-  if (oldHook?.cleanup) {
-    oldHook.cleanup()
-  }
-
   const hasChangedDeps =
     !oldHook ||
     deps.length === 0 ||
@@ -44,6 +40,10 @@ function useEffect(callback: Function, deps: any[] = []) {
   }
 
   if (hasChangedDeps) {
+    if (oldHook && oldHook.cleanup) {
+      oldHook.cleanup()
+      oldHook.cleanup = undefined
+    }
     g.pendingEffects.push(() => {
       const cleanup = callback()
       if (cleanup && typeof cleanup === "function") {
@@ -77,4 +77,15 @@ function useReducer<T, A>(
 
 function useContext<T>(context: Context<T>): T {
   return context.value()
+}
+
+function useRef<T>(current: T | null): Ref<T> {
+  if (!g.mounted) return { current }
+  const node = g.curNode
+  if (!node) throw new Error("useRef must be called in a component")
+  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
+  const hook = oldHook ?? { current }
+
+  node.hooks[g.hookIndex++] = hook
+  return hook
 }

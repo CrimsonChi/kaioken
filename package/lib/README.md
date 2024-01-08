@@ -12,6 +12,11 @@
 - [x] useReducer
 - [x] Router
 - [x] StyleScope
+- [x] useRef
+- [ ] useMemo
+- [ ] Portal
+- [ ] SSR
+- [ ] Suspense
 
 <br />
 
