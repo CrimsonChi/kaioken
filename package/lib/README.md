@@ -13,7 +13,7 @@
 - [x] Router
 - [x] StyleScope
 - [x] useRef
-- [ ] useMemo
+- [x] useMemo
 - [ ] Portal
 - [ ] SSR
 - [ ] Suspense
