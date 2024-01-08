@@ -5,9 +5,9 @@ import {
   updateHostComponent,
 } from "./dom.js"
 
-export { g }
+export { g, type GlobalState }
 
-export class GlobalState {
+class GlobalState {
   curNode: VNode | undefined = undefined
   wipNode: VNode | undefined = undefined
   hookIndex = 0
