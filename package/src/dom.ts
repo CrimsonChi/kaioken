@@ -183,16 +183,13 @@ function commitWork(vNode?: VNode) {
   }
 
   if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
-    //let sibling = vNode.parent?.sibling?.child?.dom
-    let sibling = vNode.parent?.sibling?.dom
+    const siblingDom =
+      vNode.sibling?.dom ??
+      vNode.parent?.sibling?.dom ??
+      vNode.parent?.sibling?.child?.dom
 
-    if (!sibling) {
-      const { idx } = getMountLocation(vNode)
-      sibling = domParent.childNodes[idx > 0 ? idx : 0] as HTMLElement
-    }
-
-    if (sibling && domParent.contains(sibling)) {
-      domParent.insertBefore(vNode.dom, sibling)
+    if (siblingDom && domParent.contains(siblingDom)) {
+      domParent.insertBefore(vNode.dom, siblingDom)
     } else {
       domParent.appendChild(vNode.dom)
     }
@@ -220,36 +217,4 @@ function commitDeletion(vNode: VNode, domParent: HTMLElement | Text) {
       sibling = sibling.sibling
     }
   }
-}
-
-function getMountLocation(
-  vNode: VNode,
-  start = -1
-): {
-  element: HTMLElement | Text | SVGSVGElement | null
-  idx: number
-} {
-  if (!vNode.parent) return { element: null, idx: -1 }
-
-  for (let i = 0; i < vNode.parent.props.children.length; i++) {
-    const c = vNode.parent.props.children[i]
-    if (vNode === c) {
-      break
-    }
-
-    start += getRenderedNodeCount(c)
-  }
-
-  if (vNode.parent.dom) return { element: vNode.parent.dom, idx: start }
-
-  return getMountLocation(vNode.parent, start)
-}
-
-function getRenderedNodeCount(vNode?: VNode): number {
-  if (!vNode) return 0
-  if (vNode.props.children.length === 0) return 1
-  return vNode.props.children.reduce(
-    (acc, c) => acc + getRenderedNodeCount(c),
-    0
-  )
 }
