@@ -1,7 +1,8 @@
 import { g } from "../globalState.js"
 import { getCurrentNode, getHook, cleanupHook, setHook } from "./utils.js"
 
-type StoreSubscriber<T> = (callback: (val: T) => void) => () => void
+type StoreUnsubscriber = () => void
+type StoreSubscriber<T> = (callback: (val: T) => void) => StoreUnsubscriber
 
 export function useSyncExternalStore<T>(
   subscribeFunc: StoreSubscriber<T>,
@@ -12,18 +13,19 @@ export function useSyncExternalStore<T>(
   )
   if (!node) return getDataFunc()
 
-  const { hook, oldHook } = getHook<{ data?: T; cleanup?: () => void }>(node)
+  const { hook, oldHook } = getHook<{ data?: T; cleanup?: () => void }>(node, {
+    data: undefined,
+    cleanup: undefined,
+  })
   if (oldHook) {
     cleanupHook(oldHook)
   }
 
-  if (hook.data === undefined) {
-    hook.data = getDataFunc()
-    hook.cleanup = subscribeFunc((data) => {
-      hook.data = data
-      g.setWipNode(node)
-    })
-  }
+  hook.data = getDataFunc()
+  hook.cleanup = subscribeFunc((data) => {
+    hook.data = data
+    g.setWipNode(node)
+  })
 
   setHook(node, hook)
   return hook.data
