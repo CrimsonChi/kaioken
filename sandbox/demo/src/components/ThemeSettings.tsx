@@ -1,7 +1,8 @@
 import { StyleScope, useContext } from "reflex-ui"
-import { ThemeContext, ThemeDispatchContext } from "../ThemeContext.js"
+import { ThemeContext, ThemeDispatchContext } from "../ThemeContext.jsx"
 
-function Theme() {
+export function ThemeSettings() {
+  console.log("ThemeSettings", ...arguments)
   const theme = useContext(ThemeContext)
   const dispatch = useContext(ThemeDispatchContext)
 
@@ -29,6 +30,3 @@ function Theme() {
     </article>
   )
 }
-Object.assign(Theme, { test: true })
-
-export { Theme }

@@ -1,7 +1,7 @@
 import { Router, Route, Link } from "reflex-ui"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
-import { Theme } from "./components/Theme"
+import { ThemeSettings } from "./components/ThemeSettings"
 import { ThemeContextProvider } from "./ThemeContext"
 
 export const App = () => {
@@ -18,7 +18,7 @@ export const App = () => {
         <Route path="/" element={() => <h2>Home</h2>} />
         <Route path="/todos" element={Todos} />
         <Route path="/counter" element={Counter} />
-        <Route path="/theme" element={Theme} />
+        <Route path="/theme" element={ThemeSettings} />
       </Router>
     </ThemeContextProvider>
   )
