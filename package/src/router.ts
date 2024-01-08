@@ -1,4 +1,4 @@
-import type { Rec, RouteChildProps } from "./types"
+import type { Rec, RouteChildProps, VNode } from "./types"
 import { createElement } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useEffect, useState } from "./hooks.js"
@@ -27,21 +27,17 @@ export function Router(props: RouterProps) {
       })
     }
     window.addEventListener("popstate", handler)
-
-    return () => {
-      window.removeEventListener("popstate", handler)
-    }
+    return () => window.removeEventListener("popstate", handler)
   }, [])
 
   for (const child of props.children ?? []) {
-    if (isVNode(child)) {
-      const { routeMatch, params, query } = matchPath(
+    if (isRoute(child)) {
+      const { match, params, query } = matchPath(
         state.path,
         state.search,
         (props.basePath || "") + child.props.path
       )
-      if (routeMatch) {
-        // return child.props.element({ params, query })
+      if (match) {
         return createElement(
           "x-router",
           {},
@@ -59,6 +55,12 @@ type RouteComponentFunc = (props: RouteChildProps) => JSX.Element
 interface RouteComponentProps {
   path: string
   element: RouteComponentFunc
+}
+
+function isRoute(
+  thing: unknown
+): thing is VNode & { props: RouteComponentProps } {
+  return isVNode(thing) && thing.type === Route
 }
 
 export function Route({ path, element }: RouteComponentProps) {
@@ -86,9 +88,9 @@ function matchPath(
   query: string,
   routePath: string
 ): {
+  match: RegExpMatchArray | null
   params: any
   query: any
-  routeMatch: RegExpMatchArray | null
 } {
   let paramNames: any[] = []
   let _query: any = {}
@@ -114,12 +116,12 @@ function matchPath(
   }
 
   let params: any = {}
-  let routeMatch = value.split("?")[0].match(new RegExp(regexPath))
-  if (routeMatch !== null) {
-    params = routeMatch.slice(1).reduce((acc, value, index) => {
+  let match = value.split("?")[0].match(new RegExp(regexPath))
+  if (match !== null) {
+    params = match.slice(1).reduce((acc, value, index) => {
       acc[paramNames[index]] = value.split("?")[0] // ensure no query params
       return acc
     }, {} as Rec)
   }
-  return { params, query: _query, routeMatch }
+  return { match, params, query: _query }
 }

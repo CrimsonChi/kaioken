@@ -105,25 +105,27 @@ function updateDom(
 }
 
 function reconcileChildren(vNode: VNode, children: VNode[]) {
+  // if (vNode.type === "ul") debugger
   let index = 0
-  let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
+  let oldNode: VNode | undefined = (vNode.prev && vNode.prev.child) ?? undefined
   let prevSibling: VNode | undefined = undefined
 
-  while (index < children.length || oldNode != null) {
+  while (index < children.length || oldNode) {
     const child = children[index]
     let newNode = undefined
 
     const sameType = oldNode && child && child.type == oldNode.type
 
     if (sameType) {
+      const old = oldNode as VNode
       newNode = {
-        type: oldNode!.type,
+        type: old.type,
         props: child.props,
-        dom: oldNode!.dom,
+        dom: old!.dom,
         parent: vNode,
-        prev: oldNode,
+        prev: old,
         effectTag: "UPDATE",
-        hooks: oldNode!.hooks,
+        hooks: old!.hooks,
       }
     }
     if (child && !sameType) {
@@ -148,7 +150,7 @@ function reconcileChildren(vNode: VNode, children: VNode[]) {
 
     if (index === 0) {
       vNode.child = newNode
-    } else if (child && prevSibling) {
+    } else if (prevSibling) {
       prevSibling.sibling = newNode
     }
 
@@ -161,16 +163,18 @@ function commitRoot() {
   g.deletions.forEach(commitWork)
   commitWork(g.wipNode)
   while (g.pendingEffects.length) g.pendingEffects.shift()?.()
+  g.wipNode?.prev && (g.wipNode.prev.child = g.wipNode)
   g.wipNode = undefined
 }
 
 function commitWork(vNode?: VNode) {
   if (!vNode) return
-  let domParentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
-  let domParent = domParentNode?.dom
-  while (domParentNode && !domParent) {
-    domParentNode = domParentNode.parent ?? domParentNode.prev?.parent
-    domParent = domParentNode?.dom ?? domParentNode?.prev?.dom
+  // if (vNode.type instanceof Function && "test" in (vNode.type as {})) debugger
+  let parentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
+  let domParent = parentNode?.dom
+  while (parentNode && !domParent) {
+    parentNode = parentNode.parent ?? parentNode.prev?.parent
+    domParent = parentNode?.dom ?? parentNode?.prev?.dom
   }
 
   if (!domParent) {
@@ -198,6 +202,8 @@ function commitWork(vNode?: VNode) {
     commitDeletion(vNode, domParent)
     return
   }
+
+  vNode.effectTag = undefined
 
   commitWork(vNode.child)
   commitWork(vNode.sibling)
