@@ -1,6 +1,6 @@
-export * from "./src/types.ts"
+export type * from "./src/types.ts"
 export * from "./src/index.js"
-export * from "./src/hooks.js"
 export * from "./src/router.js"
 export * from "./src/styleScope.js"
 export * from "./src/context.js"
+export * from "./src/hooks/index.js"

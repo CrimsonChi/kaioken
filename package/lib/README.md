@@ -14,6 +14,8 @@
 - [x] StyleScope
 - [x] useRef
 - [x] useMemo
+- [ ] useQuery
+- [ ] useCallback
 - [ ] Portal
 - [ ] SSR
 - [ ] Suspense

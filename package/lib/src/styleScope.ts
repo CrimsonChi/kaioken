@@ -1,5 +1,5 @@
 import type { VNode } from "./types"
-import { useState } from "./hooks.js"
+import { useState } from "./hooks/index.js"
 
 export { StyleScope }
 

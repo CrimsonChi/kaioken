@@ -1,6 +1,7 @@
 import type { Rec, VNode } from "./types"
 import type { GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
+import { cleanupHook } from "./hooks/utils.js"
 
 export { commitWork, createDom }
 
@@ -125,12 +126,7 @@ function callRecursiveCleanup(vNode: VNode) {
     callRecursiveCleanup(vNode.sibling)
   }
   if (vNode.hooks.length > 0) {
-    vNode.hooks.forEach((hook) => {
-      if (hook.cleanup) {
-        hook.cleanup()
-        hook.cleanup = undefined
-      }
-    })
+    vNode.hooks.forEach(cleanupHook)
     vNode.hooks = []
   }
 }

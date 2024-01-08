@@ -1,7 +1,7 @@
 import type { Rec, RouteChildProps, VNode } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
-import { useEffect, useState } from "./hooks.js"
+import { useState, useEffect } from "./hooks/index.js"
 
 export { Router, Route, Link }
 
