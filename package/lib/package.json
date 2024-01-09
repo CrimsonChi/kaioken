@@ -1,20 +1,23 @@
 {
-  "name": "reflex-ui",
-  "version": "1.0.0",
+  "name": "kaioken",
+  "version": "0.0.01",
   "description": "An awesome new package",
   "main": "index.ts",
   "type": "module",
-  "types": "",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Robby6Strings/[repo-name]"
+    "url": "https://github.com/Robby6Strings/kaioken"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\"",
     "dev": "tsc --watch",
     "build": "pnpm i && tsc"
   },
-  "keywords": [],
+  "keywords": [
+    "kaioken",
+    "kaiokenjs",
+    "kaioken.js"
+  ],
   "author": "Robby6Strings",
   "license": "ISC"
 }

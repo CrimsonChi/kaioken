@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "reflex-ui": "workspace:^"
+    "kaioken": "workspace:^"
   },
   "devDependencies": {
     "typescript": "^5.2.2",

@@ -1,4 +1,4 @@
-import { Link, RouteChildProps, memo, useQuery, useState } from "reflex-ui"
+import { Link, RouteChildProps, memo, useQuery, useState } from "kaioken"
 import { Spinner } from "./Spinner"
 
 interface Product {

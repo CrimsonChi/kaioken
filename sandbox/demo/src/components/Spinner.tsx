@@ -1,4 +1,4 @@
-import { StyleScope } from "reflex-ui"
+import { StyleScope } from "kaioken"
 
 export function Spinner() {
   return (

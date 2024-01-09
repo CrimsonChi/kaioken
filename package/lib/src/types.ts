@@ -83,7 +83,4 @@ export type ProviderProps<T> = {
 }
 
 export type ElementProps<T extends keyof JSX.BasicElementProps> =
-  JSX.BasicElementProps[T]
-
-export type SVGElementProps<T extends keyof JSX.BasicSVGElementProps> =
-  JSX.BasicSVGElementProps[T]
+  JSX.IntrinsicElements[T]

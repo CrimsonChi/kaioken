@@ -1,6 +1,6 @@
 import "./style.css"
 import { App } from "./App"
-import { mount } from "reflex-ui"
+import { mount } from "kaioken"
 
 const root = document.querySelector<HTMLDivElement>("#app")!
 

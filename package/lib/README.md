@@ -1,4 +1,4 @@
-# **Package Name**
+# **Kaioken**
 
 #### _An awesome new package._
 
