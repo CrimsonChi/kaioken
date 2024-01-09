@@ -17,6 +17,8 @@
 - [x] useQuery
 - [x] useSyncExternalStore
 - [x] useCallback
+- [x] memo
+- [ ] useLayoutEffect
 - [ ] Portal
 - [ ] SSR
 - [ ] Suspense
