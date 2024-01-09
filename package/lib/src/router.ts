@@ -3,7 +3,7 @@ import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
 
-export { Router, Route, Link }
+export { Router, Route, Link, navigate }
 
 interface RouterProps {
   basePath?: string
@@ -67,6 +67,12 @@ function Route({ path, element }: RouteComponentProps) {
   return createElement(Route, { path, element })
 }
 
+function navigate(to: string) {
+  window.history.pushState({}, "", to)
+  var popStateEvent = new PopStateEvent("popstate", { state: {} })
+  dispatchEvent(popStateEvent)
+}
+
 function Link({ to, children }: { to: string; children?: JSX.Element }) {
   return createElement(
     "a",
@@ -74,9 +80,7 @@ function Link({ to, children }: { to: string; children?: JSX.Element }) {
       href: to,
       onClick: (e: Event) => {
         e.preventDefault()
-        window.history.pushState({}, "", to)
-        var popStateEvent = new PopStateEvent("popstate", { state: {} })
-        dispatchEvent(popStateEvent)
+        navigate(to)
       },
     },
     children
