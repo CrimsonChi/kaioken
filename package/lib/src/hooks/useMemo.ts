@@ -10,7 +10,7 @@ export function useMemo<T>(factory: () => T, deps: any[]): T {
     hook.value = factory()
     hook.deps = deps
   } else {
-    hook.value = factory()
+    if (!oldHook) hook.value = factory()
   }
 
   setHook(node, hook)
