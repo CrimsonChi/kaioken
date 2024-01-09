@@ -2,16 +2,36 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends IntrinsicElementMap {}
 
-    type IntrinsicElementMap = {
+    type BasicElementProps = {
       [K in keyof HTMLElementTagNameMap]:
         | {
             [P in keyof HTMLElementTagNameMap[K]]?:
               | HTMLElementTagNameMap[K][P]
               | string
               | number
-          } & {
-            ref?: Ref<HTMLElementTagNameMap[K]>
           }
+    }
+
+    type BasicSVGElementProps = {
+      [K in keyof SVGElementTagNameMap]:
+        | {
+            [P in keyof SVGElementTagNameMap[K]]?:
+              | SVGElementTagNameMap[K][P]
+              | string
+              | number
+          }
+    }
+
+    type FormElementProps = Omit<ElementProps<"form">, "action"> & {
+      action?: ElementProps<"form">["action"] | ((formData: FormData) => void)
+    }
+
+    type IntrinsicElementMap = {
+      [K in keyof HTMLElementTagNameMap]: K extends "form"
+        ? FormElementProps
+        : ElementProps<K>
+    } & {
+      [K in keyof SVGElementTagNameMap]: SVGElementProps<K>
     }
 
     type Element = string | Node | VNode | VNode[]
@@ -53,9 +73,17 @@ export type ProviderProps<T> = {
 }
 
 export type ElementProps<
-  T extends string extends keyof JSX.IntrinsicElements
+  T extends string extends keyof JSX.BasicElementProps
     ? string
-    : keyof JSX.IntrinsicElements
-> = JSX.IntrinsicElements[T] & {
+    : keyof JSX.BasicElementProps
+> = JSX.BasicElementProps[T] & {
+  children?: JSX.Element[]
+}
+
+export type SVGElementProps<
+  T extends string extends keyof JSX.BasicSVGElementProps
+    ? string
+    : keyof JSX.BasicSVGElementProps
+> = JSX.BasicSVGElementProps[T] & {
   children?: JSX.Element[]
 }
