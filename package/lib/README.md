@@ -1,6 +1,6 @@
 # **Kaioken**
 
-#### _An awesome new package._
+#### _A UI library not at all similar to react_
 
 <br />
 
