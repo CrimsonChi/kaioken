@@ -4,6 +4,7 @@ import { Counter } from "./components/Counter"
 import { ThemeSettings } from "./components/ThemeSettings"
 import { ThemeContextProvider } from "./ThemeContext"
 import { ProductPage } from "./components/Product"
+import { Messages } from "./components/Messages"
 
 export const App = () => {
   return (
@@ -16,6 +17,7 @@ export const App = () => {
         <Link to="/theme">Theme</Link>
         <Link to="/memo">Memo</Link>
         <Link to="/query?id=1">Query</Link>
+        <Link to="/messages">Messages</Link>
       </nav>
       <Router>
         <Route path="/" element={() => <h2>Home</h2>} />
@@ -24,6 +26,7 @@ export const App = () => {
         <Route path="/theme" element={ThemeSettings} />
         <Route path="/memo" element={UseMemoDemo} />
         <Route path="/query" element={ProductPage} />
+        <Route path="/messages" element={Messages} />
       </Router>
     </ThemeContextProvider>
   )
