@@ -22,7 +22,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
 }
 
 function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
-  if (vNode.props.onSubmit) return
+  if (vNode.props.onsubmit || vNode.props.onSubmit) return
   if (!vNode.props.action || !(vNode.props.action instanceof Function)) return
 
   const action = vNode.props.action

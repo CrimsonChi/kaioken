@@ -2,14 +2,22 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends IntrinsicElementMap {}
 
+    type FormElementProps = {
+      [K in keyof HTMLElementTagNameMap["form"]]?: K extends "action"
+        ? ((formData: FormData) => void) | string | undefined
+        : HTMLElementTagNameMap["form"][K]
+    }
+
     type BasicElementProps = {
-      [K in keyof HTMLElementTagNameMap]:
-        | {
-            [P in keyof HTMLElementTagNameMap[K]]?:
-              | HTMLElementTagNameMap[K][P]
-              | string
-              | number
-          }
+      [K in keyof HTMLElementTagNameMap]: K extends "form"
+        ? FormElementProps
+        :
+            | {
+                [P in keyof HTMLElementTagNameMap[K]]?:
+                  | HTMLElementTagNameMap[K][P]
+                  | string
+                  | number
+              }
     }
 
     type BasicSVGElementProps = {
@@ -22,16 +30,18 @@ declare global {
           }
     }
 
-    type FormElementProps = Omit<ElementProps<"form">, "action"> & {
-      action?: ElementProps<"form">["action"] | ((formData: FormData) => void)
-    }
+    type InternalElementProps<K> = K extends keyof HTMLElementTagNameMap
+      ? {
+          ref?: Ref<HTMLElementTagNameMap[K]>
+          children?: Element[]
+        }
+      : {}
 
     type IntrinsicElementMap = {
-      [K in keyof HTMLElementTagNameMap]: K extends "form"
-        ? FormElementProps
-        : ElementProps<K>
+      [K in keyof HTMLElementTagNameMap]: InternalElementProps<K> &
+        BasicElementProps[K]
     } & {
-      [K in keyof SVGElementTagNameMap]: SVGElementProps<K>
+      [K in keyof SVGElementTagNameMap]: BasicSVGElementProps[K]
     }
 
     type Element = string | Node | VNode | VNode[]
@@ -72,18 +82,8 @@ export type ProviderProps<T> = {
   children?: JSX.Element[]
 }
 
-export type ElementProps<
-  T extends string extends keyof JSX.BasicElementProps
-    ? string
-    : keyof JSX.BasicElementProps
-> = JSX.BasicElementProps[T] & {
-  children?: JSX.Element[]
-}
+export type ElementProps<T extends keyof JSX.BasicElementProps> =
+  JSX.BasicElementProps[T]
 
-export type SVGElementProps<
-  T extends string extends keyof JSX.BasicSVGElementProps
-    ? string
-    : keyof JSX.BasicSVGElementProps
-> = JSX.BasicSVGElementProps[T] & {
-  children?: JSX.Element[]
-}
+export type SVGElementProps<T extends keyof JSX.BasicSVGElementProps> =
+  JSX.BasicSVGElementProps[T]

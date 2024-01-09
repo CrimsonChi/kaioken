@@ -17,6 +17,7 @@ export function Messages() {
 
   async function sendMessage(formData: FormData) {
     const text = formData.get("message") as string
+    console.log("Sending message", text, formData)
     const sentMessage = await deliverMessage({ text })
     setMessages((messages) => [...messages, { text: sentMessage.text }])
   }
@@ -31,11 +32,12 @@ function Thread({
   messages: Message[]
   sendMessage: (formData: FormData) => Promise<void>
 }) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
-  async function formAction(formData: FormData) {
+  function formAction(formData: FormData) {
     addOptimisticMessage(formData.get("message") as string)
     formRef.current?.reset()
-    await sendMessage(formData)
+    sendMessage(formData)
   }
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
     messages,
@@ -61,8 +63,9 @@ function Thread({
           )}
         </div>
       ))}
+
       <form action={formAction} ref={formRef}>
-        <input type="text" name="message" placeholder="Hello!" />
+        <input ref={inputRef} type="text" name="message" placeholder="Hello!" />
         <button type="submit">Send</button>
       </form>
     </>
