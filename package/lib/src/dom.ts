@@ -14,7 +14,24 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
       : document.createElement(t)
 
+  if (t === "form") {
+    handleFormBindings(vNode, dom as HTMLFormElement)
+  }
+
   return updateDom(dom, {}, vNode.props)
+}
+
+function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
+  if (vNode.props.onSubmit) return
+  if (!vNode.props.action || !(vNode.props.action instanceof Function)) return
+
+  const action = vNode.props.action
+  vNode.props.onSubmit = (e: Event) => {
+    e.preventDefault()
+    const formData = new FormData(dom)
+    return action(formData)
+  }
+  vNode.props.action = undefined
 }
 
 function updateDom(
