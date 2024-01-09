@@ -18,6 +18,7 @@
 - [x] useSyncExternalStore
 - [x] useCallback
 - [x] memo
+- [x] useOptimistic
 - [ ] useLayoutEffect
 - [ ] Portal
 - [ ] SSR
