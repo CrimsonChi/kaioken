@@ -11,9 +11,7 @@ export const ProductPage = (props: RouteChildProps) => {
   const [count, setCount] = useState(0)
 
   const { loading, error, data } = useFetch<Product>(
-    `https://dummyjson.com/products/${id}`,
-    {},
-    ["products", id]
+    `https://dummyjson.com/products/${id}`
   )
 
   return (
@@ -22,13 +20,9 @@ export const ProductPage = (props: RouteChildProps) => {
         <div>count: {count}</div>
         <button onclick={() => setCount(count + 1)}>+1</button>
       </div>
-      {loading ? (
-        <Spinner />
-      ) : error ? (
-        <div>{error.message}</div>
-      ) : data ? (
-        <Product product={data} />
-      ) : null}
+      {loading && <Spinner />}
+      {error && <div>{error.message}</div>}
+      {data && <Product product={data} />}
       <div>
         {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}
         <Link to={`/query?id=${Number(id) + 1}`}>Next</Link>
