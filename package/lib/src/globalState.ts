@@ -35,10 +35,7 @@ class GlobalState {
     if (!this.nextUnitOfWork && this.wipNode) {
       this.deletions.forEach((d) => commitWork(this, d))
       commitWork(this, this.wipNode)
-
       while (this.pendingEffects.length) this.pendingEffects.shift()?.()
-
-      this.wipNode?.prev && (this.wipNode.prev.child = this.wipNode)
       this.wipNode = undefined
     }
 
@@ -47,16 +44,10 @@ class GlobalState {
   }
 
   setWipNode(node: VNode) {
-    this.wipNode = {
-      dom: node.child?.dom,
-      type: node.type,
-      props: node.props,
-      prev: node,
-      hooks: [],
-      parent: node.parent,
-    }
+    this.wipNode = node
+    this.wipNode.prev = { ...node, prev: undefined }
+
     this.nextUnitOfWork = this.wipNode
-    this.deletions = []
   }
 
   private performUnitOfWork(vNode: VNode): VNode | undefined {
@@ -121,7 +112,7 @@ class GlobalState {
           props: child.props,
           dom: old!.dom,
           parent: vNode,
-          prev: old,
+          prev: { ...old, prev: undefined },
           effectTag: "UPDATE",
           hooks: old!.hooks,
         }

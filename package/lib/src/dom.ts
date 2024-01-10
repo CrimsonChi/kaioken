@@ -1,4 +1,4 @@
-import type { Rec, VNode } from "./types"
+import type { VNode } from "./types"
 import type { GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
@@ -18,7 +18,8 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
     handleFormBindings(vNode, dom as HTMLFormElement)
   }
 
-  return updateDom(dom, {}, vNode.props)
+  vNode.dom = dom
+  return updateDom(vNode)
 }
 
 function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
@@ -34,11 +35,13 @@ function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
   vNode.props.action = undefined
 }
 
-function updateDom(
-  dom: HTMLElement | SVGElement | Text,
-  prevProps: Rec,
-  nextProps: Rec = {}
-) {
+function updateDom(node: VNode) {
+  const dom = node.dom as HTMLElement | SVGElement | Text
+  const prevProps = node.prev?.props ?? {}
+  const nextProps = node.props ?? {}
+  if (dom instanceof HTMLFormElement) {
+    handleFormBindings(node, dom)
+  }
   //Remove old or changed event listeners
   Object.keys(prevProps)
     .filter(propFilters.isEvent)
@@ -48,6 +51,7 @@ function updateDom(
     )
     .forEach((name) => {
       const eventType = name.toLowerCase().substring(2)
+      // @ts-ignore
       dom.removeEventListener(eventType, prevProps[name])
     })
 
@@ -109,7 +113,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
       domParent.appendChild(vNode.dom)
     }
   } else if (vNode.effectTag === "UPDATE" && vNode.dom != null) {
-    updateDom(vNode.dom, vNode.prev?.props ?? {}, vNode.props)
+    updateDom(vNode)
   } else if (vNode.effectTag === "DELETION") {
     commitDeletion(vNode, domParent)
     return
@@ -119,6 +123,11 @@ function commitWork(g: GlobalState, vNode: VNode) {
 
   vNode.child && commitWork(g, vNode.child)
   vNode.sibling && commitWork(g, vNode.sibling)
+
+  if (vNode.props.ref) {
+    vNode.props.ref.current = vNode.dom
+  }
+  vNode.prev = { ...vNode, prev: undefined }
 }
 
 function findDomRecursive(
@@ -135,24 +144,14 @@ function findDomRecursive(
   }
 }
 
-function callRecursiveCleanup(vNode: VNode) {
-  if (vNode.child) {
-    callRecursiveCleanup(vNode.child)
-  }
-  if (vNode.sibling) {
-    callRecursiveCleanup(vNode.sibling)
-  }
-  if (vNode.hooks.length > 0) {
-    vNode.hooks.forEach(cleanupHook)
-    vNode.hooks = []
-  }
-}
-
 function commitDeletion(
   vNode: VNode,
   domParent: HTMLElement | SVGElement | Text
 ) {
-  callRecursiveCleanup(vNode)
+  if (vNode.hooks.length > 0) {
+    vNode.hooks.forEach(cleanupHook)
+    vNode.hooks = []
+  }
   if (vNode.dom && vNode.dom.isConnected) {
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {

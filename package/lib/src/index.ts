@@ -45,5 +45,5 @@ function createTextElement(text: string): VNode {
 }
 
 function fragment({ children }: { children: JSX.Element[] }) {
-  return children
+  return children as JSX.Element
 }

@@ -42,7 +42,7 @@ function Router(props: RouterProps) {
       if (match) {
         return fragment({
           children: [createElement(child.props.element, { params, query })],
-        }) as JSX.Element
+        })
       }
     }
   }

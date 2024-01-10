@@ -1,7 +1,7 @@
-import { useOptimistic, useRef, useState } from "kaioken"
+import { useEffect, useOptimistic, useRef, useState } from "kaioken"
 
 type Message = {
-  text: string
+  message: string
   sending?: boolean
 }
 
@@ -10,57 +10,53 @@ async function deliverMessage(message: Message) {
   return message
 }
 
-export function Messages() {
+function _Messages() {
   const [messages, setMessages] = useState([
-    { text: "Hello there!", sending: false },
+    { message: "Hello there!", sending: false },
   ] as Message[])
 
-  async function sendMessage(formData: FormData) {
-    const text = formData.get("message") as string
-    console.log("Sending message", text, formData)
-    const sentMessage = await deliverMessage({ text })
-    setMessages((messages) => [...messages, { text: sentMessage.text }])
+  async function sendMessage(message: string) {
+    const sentMessage = await deliverMessage({ message })
+    setMessages((messages) => [...messages, { message: sentMessage.message }])
   }
 
   return <Thread messages={messages} sendMessage={sendMessage} />
 }
 
-function Thread({
+export const Messages = Object.assign(_Messages, {
+  // test: true,
+})
+
+function _Thread({
   messages,
   sendMessage,
 }: {
   messages: Message[]
-  sendMessage: (formData: FormData) => Promise<void>
+  sendMessage: (message: string) => Promise<void>
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   function formAction(formData: FormData) {
-    addOptimisticMessage(formData.get("message") as string)
+    const message = formData.get("message") as string
     formRef.current?.reset()
-    sendMessage(formData)
+    sendMessage(message)
+    addOptimisticMessage(message)
   }
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
     messages,
-    (state, newMessage: string) => [
-      ...state,
-      {
-        text: newMessage,
-        sending: true,
-      },
-    ]
+    (state, message: string) => [...state, { message, sending: true }]
   )
 
+  useEffect(() => {
+    inputRef.current?.focus()
+  })
+
   return (
-    <>
-      {optimisticMessages.map((message) => (
+    <div>
+      {optimisticMessages.map(({ message, sending }) => (
         <div>
-          {message.text}
-          {message.sending && (
-            <>
-              {" "}
-              <small>Sending...</small>
-            </>
-          )}
+          {message}
+          {sending && <small> Sending...</small>}
         </div>
       ))}
 
@@ -68,6 +64,10 @@ function Thread({
         <input ref={inputRef} type="text" name="message" placeholder="Hello!" />
         <button type="submit">Send</button>
       </form>
-    </>
+    </div>
   )
 }
+
+const Thread = Object.assign(_Thread, {
+  test: true,
+})
