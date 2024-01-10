@@ -4,11 +4,9 @@ import { g } from "../globalState.js"
 export { getCurrentNode, getHook, setHook, cleanupHook, arrayChanged }
 
 function getCurrentNode(hookName: string): VNode | undefined {
-  if (!g.mounted) return
-  const node = g.curNode
-  if (!node)
+  if (!g.curNode)
     throw new Error(`${hookName} must be used at the top level of a component.`)
-  return node
+  return g.curNode
 }
 
 function getHook<T extends unknown>(
