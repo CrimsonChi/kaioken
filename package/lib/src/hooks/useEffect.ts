@@ -6,7 +6,7 @@ export function useEffect(
   callback: () => undefined | (() => void),
   deps: any[] = []
 ) {
-  const node = getCurrentNode("useEffect must be called in a component")
+  const node = getCurrentNode("useEffect")
   if (!node) return
 
   const { hook, oldHook } = getHook(node, {

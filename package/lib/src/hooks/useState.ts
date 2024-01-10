@@ -4,7 +4,7 @@ import { g } from "../globalState.js"
 type StateSetter<T> = T | ((prev: T) => T)
 
 export function useState<T>(initial: T): [T, (value: StateSetter<T>) => void] {
-  const node = getCurrentNode("useState must be called in a component")
+  const node = getCurrentNode("useState")
   if (!node) return [initial, () => {}]
 
   const { hook } = getHook(node, { state: initial })

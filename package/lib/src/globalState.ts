@@ -39,7 +39,6 @@ class GlobalState {
       this.wipNode = undefined
     }
 
-    if (!this.mounted) this.mounted = true
     requestIdleCallback(this.workLoop.bind(this))
   }
 

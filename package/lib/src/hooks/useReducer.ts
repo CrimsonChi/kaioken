@@ -5,7 +5,7 @@ export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
   initial: T
 ): [T, (action: A) => void] {
-  const node = getCurrentNode("useReducer must be called in a component")
+  const node = getCurrentNode("useReducer")
   if (!node) return [initial, () => initial]
 
   const { hook } = getHook(node, { state: initial })

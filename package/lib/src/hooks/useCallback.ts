@@ -9,7 +9,7 @@ export function useCallback<T extends (...args: any[]) => any>(
   callback: T,
   deps: any[]
 ): T {
-  const node = getCurrentNode("useCallback must be called in a component")
+  const node = getCurrentNode("useCallback")
   if (!node) return callback
 
   const { hook, oldHook } = getHook<useCallbackHook<T>>(node, {

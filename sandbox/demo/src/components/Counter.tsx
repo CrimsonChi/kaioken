@@ -12,7 +12,14 @@ export function Counter() {
   const ref = useRef<HTMLButtonElement>(null)
   const [count, setCount] = useState(0)
   const _count = useSyncExternalStore(
-    externalStore.subscribe,
+    (fn: (value: number) => void) => {
+      console.log("useSyncExternalStore - subscribe")
+      const unsub = externalStore.subscribe(fn)
+      return () => {
+        console.log("useSyncExternalStore - unsubscribe")
+        unsub()
+      }
+    },
     () => externalStore.value
   )
 
@@ -27,6 +34,7 @@ export function Counter() {
     <div>
       <div>
         External: {_count}
+        <br />
         Counter: {count}
         <Button ref={ref} onclick={() => setCount((prev) => prev + 1)}>
           +

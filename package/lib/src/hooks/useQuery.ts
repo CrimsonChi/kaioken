@@ -14,7 +14,7 @@ export function useQuery<T>(
   queryFn: () => Promise<T>,
   keys: string[] = []
 ): useQueryHookData<T> {
-  const node = getCurrentNode("useQuery must be called in a component")
+  const node = getCurrentNode("useQuery")
   if (!node) return { loading: true }
 
   const { hook, oldHook } = getHook<useQueryHook<T>>(node, {

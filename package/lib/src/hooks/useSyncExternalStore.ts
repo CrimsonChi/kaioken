@@ -8,9 +8,7 @@ export function useSyncExternalStore<T>(
   subscribeFunc: StoreSubscriber<T>,
   getDataFunc: () => T
 ): T {
-  const node = getCurrentNode(
-    "useSyncExternalStore must be called in a component"
-  )
+  const node = getCurrentNode("useSyncExternalStore")
   if (!node) return getDataFunc()
 
   const { hook } = getHook<{ data?: T; cleanup?: () => void }>(node, {
