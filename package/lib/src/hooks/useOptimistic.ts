@@ -8,13 +8,11 @@ export function useOptimistic<T, U>(
   const node = getCurrentNode("useState must be called in a component")
   if (!node) return [initial, () => {}]
 
-  const { hook, oldHook } = getHook(node, {
+  const { hook } = getHook(node, {
     state: initial,
     isRenderTrigger: false,
     queue: [] as Function[],
   })
-
-  if (!oldHook) console.log("new hook")
 
   if (hook.isRenderTrigger) {
     hook.isRenderTrigger = false
