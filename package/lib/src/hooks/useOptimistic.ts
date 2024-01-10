@@ -5,7 +5,7 @@ export function useOptimistic<T, U>(
   initial: T,
   setter: (prev: T, newValue: U) => T
 ): [T, (value: U) => void] {
-  const node = getCurrentNode("useState must be called in a component")
+  const node = getCurrentNode("useOptimistic must be called in a component")
   if (!node) return [initial, () => {}]
 
   const { hook } = getHook(node, {
