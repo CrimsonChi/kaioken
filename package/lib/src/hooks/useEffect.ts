@@ -1,7 +1,7 @@
 import { g } from "../globalState.js"
 import {
-  arrayChanged,
   cleanupHook,
+  depsRequireChange,
   getCurrentNode,
   getHook,
   setHook,
@@ -20,7 +20,7 @@ export function useEffect(
     cleanup: undefined as undefined | (() => void),
   })
 
-  if (arrayChanged(oldHook?.deps, deps)) {
+  if (depsRequireChange(deps, oldHook?.deps)) {
     hook.deps = deps
     if (oldHook) {
       cleanupHook(oldHook)

@@ -1,4 +1,4 @@
-import { arrayChanged, getCurrentNode, getHook, setHook } from "./utils.js"
+import { depsRequireChange, getCurrentNode, getHook, setHook } from "./utils.js"
 
 type useCallbackHook<T extends (...args: any[]) => any> = {
   callback: T
@@ -17,7 +17,7 @@ export function useCallback<T extends (...args: any[]) => any>(
     deps,
   })
 
-  if (arrayChanged(oldHook?.deps, deps)) {
+  if (depsRequireChange(deps, oldHook?.deps)) {
     hook.callback = callback
   }
 

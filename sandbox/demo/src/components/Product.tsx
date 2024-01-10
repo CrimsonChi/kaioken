@@ -1,4 +1,4 @@
-import { Link, RouteChildProps, memo, useQuery, useState } from "kaioken"
+import { Link, RouteChildProps, memo, useFetch, useState } from "kaioken"
 import { Spinner } from "./Spinner"
 
 interface Product {
@@ -6,22 +6,13 @@ interface Product {
   thumbnail: string
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 export const ProductPage = (props: RouteChildProps) => {
   const { id } = props.query
   const [count, setCount] = useState(0)
 
-  const { loading, error, data } = useQuery<Product>(
-    () =>
-      fetch(`https://dummyjson.com/products/${id}`)
-        .then((res) => res.json())
-        .then(async (data) => {
-          await sleep(1000)
-          return data as Product
-        }),
+  const { loading, error, data } = useFetch<Product>(
+    `https://dummyjson.com/products/${id}`,
+    {},
     ["products", id]
   )
 

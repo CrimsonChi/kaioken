@@ -14,7 +14,7 @@
 - [x] StyleScope
 - [x] useRef
 - [x] useMemo
-- [x] useQuery
+- [x] useQuery -> useFetch
 - [x] useSyncExternalStore
 - [x] useCallback
 - [x] memo
