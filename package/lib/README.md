@@ -1,6 +1,6 @@
 # **Kaioken**
 
-#### _A UI library not at all similar to react_
+#### _A lightweight (less than 5Kb) react-like library for creating web apps with ease._
 
 <br />
 
@@ -14,18 +14,14 @@
 - [x] StyleScope
 - [x] useRef
 - [x] useMemo
-- [x] useQuery -> useFetch
+- [x] useFetch
 - [x] useSyncExternalStore
 - [x] useCallback
 - [x] memo
 - [x] useOptimistic
-- [ ] useLayoutEffect
-- [ ] Portal
-- [ ] SSR
-- [ ] Suspense
 
 <br />
 
 <small>
-  Credit is due to <a href="https://github.com/pomber/didact">pomber/didact</a> for providing a solid starting point 👌🏻
+  Credit to <a href="https://github.com/pomber/didact">pomber/didact</a> for providing a solid starting point 👌🏻
 </small>
