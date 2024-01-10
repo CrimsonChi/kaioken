@@ -5,24 +5,27 @@ import { EffectTag } from "./constants.js"
 export { g, type GlobalState }
 
 class GlobalState {
+  rootNode: VNode | undefined = undefined
   curNode: VNode | undefined = undefined
   wipNode: VNode | undefined = undefined
+  nextUnitOfWork: VNode | undefined = undefined
+
   hookIndex = 0
   deletions: VNode[] = []
   pendingEffects: Function[] = []
   updateDeferrals: VNode[] = []
 
-  nextUnitOfWork: VNode | undefined = undefined
   mounted = false
 
   mount(node: VNode, container: HTMLElement) {
-    this.wipNode = node
-    this.wipNode.dom = container
+    this.rootNode = node
+    this.rootNode.dom = container
+    this.wipNode = this.rootNode
     this.deletions = []
     this.nextUnitOfWork = this.wipNode
     this.mounted = true
     this.workLoop()
-    return node
+    return this.rootNode
   }
 
   requestUpdate(node: VNode, forceUpdate = false) {
