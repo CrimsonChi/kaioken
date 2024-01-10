@@ -1,7 +1,7 @@
 {
   "name": "kaioken",
   "version": "0.0.4",
-  "description": "An awesome new package",
+  "description": "A react-like library for creating web apps with ease.",
   "main": "index.ts",
   "type": "module",
   "repository": {
@@ -16,7 +16,8 @@
   "keywords": [
     "kaioken",
     "kaiokenjs",
-    "kaioken.js"
+    "kaioken.js",
+    "react"
   ],
   "author": "Robby6Strings",
   "license": "ISC"
