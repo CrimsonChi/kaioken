@@ -145,14 +145,27 @@ function findDomRecursive(
   }
 }
 
-function commitDeletion(
-  vNode: VNode,
-  domParent: HTMLElement | SVGElement | Text
-) {
+function cleanupHooks_Recurse(vNode: VNode) {
   if (vNode.hooks.length > 0) {
     vNode.hooks.forEach(cleanupHook)
     vNode.hooks = []
   }
+  if (vNode.child) {
+    cleanupHooks_Recurse(vNode.child)
+    let sibling = vNode.child.sibling
+    while (sibling) {
+      cleanupHooks_Recurse(sibling)
+      sibling = sibling.sibling
+    }
+  }
+}
+
+function commitDeletion(
+  vNode: VNode,
+  domParent: HTMLElement | SVGElement | Text
+) {
+  cleanupHooks_Recurse(vNode)
+
   if (vNode.dom && vNode.dom.isConnected) {
     domParent.removeChild(vNode.dom)
   } else if (vNode.child) {
