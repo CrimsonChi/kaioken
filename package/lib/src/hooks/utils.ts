@@ -24,8 +24,13 @@ function useHook<T, U>(
   hookData: Hook<T>,
   callback: (state: HookCallbackState<T>) => U
 ): U {
-  const node = getCurrentNode(hookName)
-  const { hook, oldHook } = getHook(node, hookData)
+  const node = g.curNode
+  if (!node)
+    throw new Error(
+      `hook "${hookName}" must be used at the top level of a component or inside another hook.`
+    )
+  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
+  const hook = oldHook ?? hookData
   const res = callback({
     hook,
     oldHook,
@@ -33,32 +38,8 @@ function useHook<T, U>(
     requestUpdate: g.requestUpdate.bind(g),
     queueEffect: g.queueEffect.bind(g),
   })
-  setHook(node, hook)
-  return res
-}
-
-function getCurrentNode(hookName: string): VNode {
-  if (!g.curNode)
-    throw new Error(`${hookName} must be used at the top level of a component.`)
-  return g.curNode
-}
-
-function getHook<T extends unknown>(
-  node: VNode,
-  fallback?: T
-): {
-  oldHook?: T & { cleanup?: () => void }
-  hook: T & { cleanup?: () => void }
-} {
-  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
-  return {
-    oldHook,
-    hook: oldHook ?? fallback,
-  }
-}
-
-function setHook<T extends unknown>(node: VNode, hook: T) {
   node.hooks[g.hookIndex++] = hook
+  return res
 }
 
 function cleanupHook(hook: { cleanup?: () => void }) {
