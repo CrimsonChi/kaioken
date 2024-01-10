@@ -25,29 +25,6 @@ class GlobalState {
     return node
   }
 
-  workLoop(deadline?: IdleDeadline) {
-    let shouldYield = false
-    while (this.nextUnitOfWork && !shouldYield) {
-      this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
-      shouldYield =
-        (deadline && deadline.timeRemaining() < 1) ??
-        (!deadline && !this.nextUnitOfWork)
-    }
-
-    if (!this.nextUnitOfWork && this.wipNode) {
-      this.deletions.forEach((d) => commitWork(this, d))
-      commitWork(this, this.wipNode)
-      while (this.pendingEffects.length) this.pendingEffects.shift()?.()
-      this.wipNode = undefined
-    }
-
-    if (!this.nextUnitOfWork && this.updateDeferrals.length) {
-      this.requestUpdate(this.updateDeferrals.shift()!)
-    }
-
-    requestIdleCallback(this.workLoop.bind(this))
-  }
-
   requestUpdate(node: VNode, forceUpdate = false) {
     if (node.effectTag === EffectTag.DELETION) return
 
@@ -72,7 +49,32 @@ class GlobalState {
   }
 
   isWorking() {
-    return this.wipNode || this.nextUnitOfWork || this.updateDeferrals.length
+    return (
+      !!this.wipNode || !!this.nextUnitOfWork || this.updateDeferrals.length > 0
+    )
+  }
+
+  private workLoop(deadline?: IdleDeadline) {
+    let shouldYield = false
+    while (this.nextUnitOfWork && !shouldYield) {
+      this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
+      shouldYield =
+        (deadline && deadline.timeRemaining() < 1) ??
+        (!deadline && !this.nextUnitOfWork)
+    }
+
+    if (!this.nextUnitOfWork && this.wipNode) {
+      this.deletions.forEach((d) => commitWork(this, d))
+      commitWork(this, this.wipNode)
+      while (this.pendingEffects.length) this.pendingEffects.shift()?.()
+      this.wipNode = undefined
+    }
+
+    if (!this.nextUnitOfWork && this.updateDeferrals.length) {
+      this.requestUpdate(this.updateDeferrals.shift()!)
+    }
+
+    requestIdleCallback(this.workLoop.bind(this))
   }
 
   private performUnitOfWork(vNode: VNode): VNode | undefined {
