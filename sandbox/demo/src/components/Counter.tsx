@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "kaioken"
+import { useEffect, useState, useSyncExternalStore } from "kaioken"
 import { Button } from "./Button"
 import { createSignal } from "../signal"
 
@@ -9,7 +9,6 @@ setInterval(() => {
 }, 1000)
 
 export function Counter() {
-  const ref = useRef<HTMLButtonElement>(null)
   const [count, setCount] = useState(0)
   const _count = useSyncExternalStore(
     (fn: (value: number) => void) => {
@@ -24,9 +23,9 @@ export function Counter() {
   )
 
   useEffect(() => {
-    console.log("count", count, ref.current)
+    console.log("count", count)
     return () => {
-      console.log("cleanup", count, ref.current)
+      console.log("cleanup", count)
     }
   }, [count])
 
@@ -36,9 +35,7 @@ export function Counter() {
         External: {_count}
         <br />
         Counter: {count}
-        <Button ref={ref} onclick={() => setCount((prev) => prev + 1)}>
-          +
-        </Button>
+        <Button onclick={() => setCount((prev) => prev + 1)}>+</Button>
       </div>
     </div>
   )
