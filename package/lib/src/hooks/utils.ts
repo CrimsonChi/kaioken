@@ -22,7 +22,7 @@ type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 function useHook<T, U>(
   hookName: string,
   hookData: Hook<T>,
-  callback: (state: HookCallbackState<T>) => U
+  callback: HookCallback<T, U>
 ): U {
   const node = g.curNode
   if (!node)
