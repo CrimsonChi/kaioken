@@ -31,10 +31,10 @@ function cleanupHook(hook: any) {
   }
 }
 
-function arrayChanged(newItems: any[], oldItems?: any[]) {
+function arrayChanged(oldItems: any[] = [], newItems: any[]) {
   return (
-    !oldItems ||
     newItems.length === 0 ||
-    (oldItems && newItems.some((dep, i) => dep !== oldItems[i]))
+    oldItems.length !== newItems.length ||
+    newItems.some((dep, i) => dep !== oldItems[i])
   )
 }

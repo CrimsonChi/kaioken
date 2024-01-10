@@ -1,5 +1,6 @@
 import type { VNode } from "./types"
 import { commitWork, createDom } from "./dom.js"
+import { EffectTag } from "./constants.js"
 
 export { g, type GlobalState }
 
@@ -9,6 +10,7 @@ class GlobalState {
   hookIndex = 0
   deletions: VNode[] = []
   pendingEffects: Function[] = []
+  updateDeferrals: VNode[] = []
 
   nextUnitOfWork: VNode | undefined = undefined
   mounted = false
@@ -39,14 +41,38 @@ class GlobalState {
       this.wipNode = undefined
     }
 
+    if (!this.nextUnitOfWork && this.updateDeferrals.length) {
+      this.requestUpdate(this.updateDeferrals.shift()!)
+    }
+
     requestIdleCallback(this.workLoop.bind(this))
   }
 
-  setWipNode(node: VNode) {
+  requestUpdate(node: VNode, forceUpdate = false) {
+    if (node.effectTag === EffectTag.DELETION) return
+
+    if (forceUpdate) {
+      if (node === this.wipNode) return
+      // remove from deferrals if it's there
+      const idx = this.updateDeferrals.indexOf(node)
+      idx > -1 && this.updateDeferrals.splice(idx, 1)
+      // if we have a wipNode, defer it
+      this.wipNode && this.updateDeferrals.push(this.wipNode)
+    } else if (this.isWorking()) {
+      if (!this.updateDeferrals.includes(node) && node !== this.wipNode) {
+        this.updateDeferrals.push(node)
+      }
+      return
+    }
+
     this.wipNode = node
     this.wipNode.prev = { ...node, prev: undefined }
 
     this.nextUnitOfWork = this.wipNode
+  }
+
+  isWorking() {
+    return this.wipNode || this.nextUnitOfWork || this.updateDeferrals.length
   }
 
   private performUnitOfWork(vNode: VNode): VNode | undefined {
@@ -107,7 +133,7 @@ class GlobalState {
           dom: old!.dom,
           parent: vNode,
           prev: { ...old, prev: undefined },
-          effectTag: "UPDATE",
+          effectTag: EffectTag.UPDATE,
           hooks: old!.hooks,
         }
       }
@@ -118,12 +144,12 @@ class GlobalState {
           dom: undefined,
           parent: vNode,
           prev: undefined,
-          effectTag: "PLACEMENT",
+          effectTag: EffectTag.PLACEMENT,
           hooks: [],
         }
       }
       if (oldNode && !sameType) {
-        oldNode.effectTag = "DELETION"
+        oldNode.effectTag = EffectTag.DELETION
         if (oldNode.props.ref) {
           oldNode.props.ref.current = null
         }

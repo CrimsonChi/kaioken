@@ -20,7 +20,7 @@ export function useSyncExternalStore<T>(
   if (!hook.cleanup) {
     hook.cleanup = subscribeFunc((data) => {
       hook.data = data
-      g.setWipNode(node)
+      g.requestUpdate(node)
     })
   }
 

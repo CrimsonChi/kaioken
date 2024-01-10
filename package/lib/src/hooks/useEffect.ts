@@ -1,6 +1,11 @@
-import { getCurrentNode, getHook, setHook, cleanupHook } from "./utils.js"
 import { g } from "../globalState.js"
-import { arrayChanged } from "./utils.js"
+import {
+  arrayChanged,
+  cleanupHook,
+  getCurrentNode,
+  getHook,
+  setHook,
+} from "./utils.js"
 
 export function useEffect(
   callback: () => undefined | (() => void),
@@ -15,7 +20,7 @@ export function useEffect(
     cleanup: undefined as undefined | (() => void),
   })
 
-  if (arrayChanged(deps, oldHook?.deps)) {
+  if (arrayChanged(oldHook?.deps, deps)) {
     hook.deps = deps
     if (oldHook) {
       cleanupHook(oldHook)

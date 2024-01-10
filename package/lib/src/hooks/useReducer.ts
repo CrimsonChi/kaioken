@@ -1,5 +1,5 @@
 import { g } from "../globalState.js"
-import { getHook, setHook, getCurrentNode } from "./utils.js"
+import { getCurrentNode, getHook, setHook } from "./utils.js"
 
 export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
@@ -12,7 +12,7 @@ export function useReducer<T, A>(
 
   const dispatch = (action: A) => {
     hook.state = reducer(hook.state, action)
-    g.setWipNode(node)
+    g.requestUpdate(node)
   }
 
   setHook(node, hook)

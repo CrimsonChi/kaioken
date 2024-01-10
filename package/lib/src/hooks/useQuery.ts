@@ -22,7 +22,7 @@ export function useQuery<T>(
     loading: false,
   })
 
-  if (arrayChanged(keys, oldHook?.keys)) {
+  if (arrayChanged(oldHook?.keys, keys)) {
     hook.keys = keys
     hook.loading = true
     queryFn()
@@ -30,13 +30,13 @@ export function useQuery<T>(
         hook.error = undefined
         hook.data = data
         hook.loading = false
-        g.setWipNode(node)
+        g.requestUpdate(node)
       })
       .catch((error) => {
         hook.error = error
         hook.loading = false
         hook.data = undefined
-        g.setWipNode(node)
+        g.requestUpdate(node)
       })
   }
   setHook(node, hook)

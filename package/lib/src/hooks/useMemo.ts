@@ -6,7 +6,7 @@ export function useMemo<T>(factory: () => T, deps: any[]): T {
 
   const { hook, oldHook } = getHook(node, { deps, value: undefined as T })
 
-  if (arrayChanged(deps, oldHook?.deps)) {
+  if (arrayChanged(oldHook?.deps, deps)) {
     hook.value = factory()
     hook.deps = deps
   } else {

@@ -1,3 +1,5 @@
+import { EffectTag } from "./constants"
+
 declare global {
   namespace JSX {
     interface IntrinsicElements extends IntrinsicElementMap {}
@@ -59,7 +61,7 @@ export type VNode = {
   child?: VNode
   sibling?: VNode
   prev?: VNode
-  effectTag?: string
+  effectTag?: EffectTag
   hooks: any[]
 }
 

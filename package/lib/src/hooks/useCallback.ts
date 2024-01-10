@@ -17,7 +17,7 @@ export function useCallback<T extends (...args: any[]) => any>(
     deps,
   })
 
-  if (arrayChanged(deps, oldHook?.deps)) {
+  if (arrayChanged(oldHook?.deps, deps)) {
     hook.callback = callback
   }
 

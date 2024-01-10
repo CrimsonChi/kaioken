@@ -1,5 +1,5 @@
 import type { Ref } from "../types"
-import { getHook, setHook, getCurrentNode } from "./utils.js"
+import { getCurrentNode, getHook, setHook } from "./utils.js"
 
 export function useRef<T>(current: T | null): Ref<T> {
   const node = getCurrentNode("useRef")

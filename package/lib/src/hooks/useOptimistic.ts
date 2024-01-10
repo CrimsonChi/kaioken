@@ -28,7 +28,7 @@ export function useOptimistic<T, U>(
     hook.state = setter(hook.state, newValue)
     hook.queue.push((state: T) => setter(state, newValue))
     hook.isRenderTrigger = true
-    g.setWipNode(node)
+    g.requestUpdate(node)
   }
 
   setHook(node, hook)

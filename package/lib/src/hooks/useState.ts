@@ -1,5 +1,5 @@
-import { getCurrentNode, getHook, setHook } from "./utils.js"
 import { g } from "../globalState.js"
+import { getCurrentNode, getHook, setHook } from "./utils.js"
 
 type StateSetter<T> = T | ((prev: T) => T)
 
@@ -11,7 +11,7 @@ export function useState<T>(initial: T): [T, (value: StateSetter<T>) => void] {
 
   const setState = (setter: StateSetter<T>) => {
     hook.state = setter instanceof Function ? setter(hook.state) : setter
-    g.setWipNode(node)
+    g.requestUpdate(node)
   }
 
   setHook(node, hook)

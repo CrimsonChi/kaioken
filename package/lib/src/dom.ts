@@ -2,6 +2,7 @@ import type { VNode } from "./types"
 import type { GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
+import { EffectTag } from "./constants.js"
 
 export { commitWork, createDom }
 
@@ -98,7 +99,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
     return
   }
 
-  if (vNode.effectTag === "PLACEMENT" && vNode.dom != null) {
+  if (vNode.effectTag === EffectTag.PLACEMENT && vNode.dom != null) {
     let siblingDom = vNode.sibling?.dom?.isConnected && vNode.sibling?.dom
     let parent = vNode.parent
 
@@ -112,9 +113,9 @@ function commitWork(g: GlobalState, vNode: VNode) {
     } else {
       domParent.appendChild(vNode.dom)
     }
-  } else if (vNode.effectTag === "UPDATE" && vNode.dom != null) {
+  } else if (vNode.effectTag === EffectTag.UPDATE && vNode.dom != null) {
     updateDom(vNode)
-  } else if (vNode.effectTag === "DELETION") {
+  } else if (vNode.effectTag === EffectTag.DELETION) {
     commitDeletion(vNode, domParent)
     return
   }
