@@ -1,6 +1,5 @@
-import { VNode } from "src/types.js"
-import { g } from "../globalState.js"
-import { depsRequireChange, getCurrentNode, getHook, setHook } from "./utils.js"
+import type { VNode } from "../types.js"
+import { depsRequireChange, useHook } from "./utils.js"
 
 type useFetchHook<T> = {
   keys: string[]
@@ -17,49 +16,57 @@ type useFetchHookData<T> = {
   loading: boolean
 }
 
-export function useFetch<T>(
+export function useFetch<T extends unknown>(
   url: string,
   options: RequestInit = {},
-  keys: string[] = []
+  keys?: string[]
 ): useFetchHookData<T> {
-  const node = getCurrentNode("useFetch")
-  if (!node) return { loading: true }
-
-  const { hook, oldHook } = getHook<useFetchHook<T>>(node, {
-    keys,
+  const defaultHook: useFetchHook<T> = {
+    keys: keys ?? [url, JSON.stringify(options)],
     data: { loading: true },
-    promise: undefined,
+    promise: undefined as Promise<Response> | undefined,
     options,
-  })
-
-  // create an abort signal if not provided
-  if (!hook.options.signal) {
-    const abortController = new AbortController()
-    hook.abortController = abortController
-    hook.options.signal = abortController.signal
+    abortController: undefined as AbortController | undefined,
   }
 
-  if (depsRequireChange(keys, oldHook?.keys)) {
-    if (hook.promise) {
-      Object.assign(hook.promise, { aborted: true })
-      hook.abortController?.abort()
-      hook.promise = undefined
-      hook.abortController = undefined
-      hook.options.signal = undefined
+  return useHook(
+    "useFetch",
+    defaultHook,
+    ({ hook, oldHook, node, requestUpdate }) => {
+      // create an abort signal if not provided
+      if (!hook.options.signal) {
+        const abortController = new AbortController()
+        hook.abortController = abortController
+        hook.options.signal = abortController.signal
+      }
+
+      const newKeys = keys ?? [url, JSON.stringify(options)]
+      if (depsRequireChange(newKeys, oldHook?.keys)) {
+        hook.keys = newKeys
+        if (hook.data.data) hook.data.data = undefined
+        if (hook.promise) {
+          Object.assign(hook.promise, { aborted: true })
+          hook.abortController?.abort()
+          hook.promise = undefined
+          hook.abortController = undefined
+          hook.options.signal = undefined
+        }
+
+        hook.data.loading = true
+        hook.promise = fetch(url, options)
+        handleFetch(node, hook, requestUpdate)
+      }
+
+      return hook.data
     }
-
-    hook.data.loading = true
-    hook.promise = fetch(url, options)
-    handleFetch(node, hook)
-  }
-
-  hook.keys = keys
-
-  setHook(node, hook)
-  return hook.data
+  )
 }
 
-async function handleFetch<T>(node: VNode, hook: useFetchHook<T>) {
+async function handleFetch<T extends unknown>(
+  node: VNode,
+  hook: useFetchHook<T>,
+  requestUpdate: (node: VNode) => void
+) {
   if (!hook.promise) return
   const { promise } = hook
   let aborted = false
@@ -83,7 +90,7 @@ async function handleFetch<T>(node: VNode, hook: useFetchHook<T>) {
     hook.data.error = error
     hook.data.loading = false
   } finally {
-    if (!aborted) g.requestUpdate(node)
+    if (!aborted) requestUpdate(node)
     hook.abortController = undefined
     hook.options.signal = undefined
   }

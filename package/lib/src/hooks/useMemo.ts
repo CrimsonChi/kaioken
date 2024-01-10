@@ -1,18 +1,15 @@
-import { depsRequireChange, getCurrentNode, getHook, setHook } from "./utils.js"
+import { depsRequireChange, useHook } from "./utils.js"
 
 export function useMemo<T>(factory: () => T, deps: any[]): T {
-  const node = getCurrentNode("useMemo")
-  if (!node) return factory()
-
-  const { hook, oldHook } = getHook(node, { deps, value: undefined as T })
-
-  if (depsRequireChange(deps, oldHook?.deps)) {
-    hook.value = factory()
-    hook.deps = deps
-  } else {
-    if (!oldHook) hook.value = factory()
-  }
-
-  setHook(node, hook)
-  return hook.value
+  return useHook(
+    "useMemo",
+    { deps, value: undefined as T },
+    ({ hook, oldHook }) => {
+      if (depsRequireChange(deps, oldHook?.deps)) {
+        hook.value = factory()
+        hook.deps = deps
+      }
+      return hook.value
+    }
+  )
 }

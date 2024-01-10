@@ -1,26 +1,13 @@
-import { depsRequireChange, getCurrentNode, getHook, setHook } from "./utils.js"
-
-type useCallbackHook<T extends (...args: any[]) => any> = {
-  callback: T
-  deps: any[]
-}
+import { depsRequireChange, useHook } from "./utils.js"
 
 export function useCallback<T extends (...args: any[]) => any>(
   callback: T,
   deps: any[]
 ): T {
-  const node = getCurrentNode("useCallback")
-  if (!node) return callback
-
-  const { hook, oldHook } = getHook<useCallbackHook<T>>(node, {
-    callback,
-    deps,
+  return useHook("useCallback", { callback, deps }, ({ hook, oldHook }) => {
+    if (depsRequireChange(deps, oldHook?.deps)) {
+      hook.callback = callback
+    }
+    return hook.callback
   })
-
-  if (depsRequireChange(deps, oldHook?.deps)) {
-    hook.callback = callback
-  }
-
-  setHook(node, hook)
-  return hook.callback
 }

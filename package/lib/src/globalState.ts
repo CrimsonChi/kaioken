@@ -51,6 +51,10 @@ class GlobalState {
     this.nextUnitOfWork = this.wipNode
   }
 
+  queueEffect(callback: Function) {
+    this.pendingEffects.push(callback)
+  }
+
   isWorking() {
     return (
       !!this.wipNode || !!this.nextUnitOfWork || this.updateDeferrals.length > 0
