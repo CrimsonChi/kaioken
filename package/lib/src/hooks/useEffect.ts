@@ -2,14 +2,17 @@ import { getCurrentNode, getHook, setHook, cleanupHook } from "./utils.js"
 import { g } from "../globalState.js"
 import { arrayChanged } from "./utils.js"
 
-export function useEffect(callback: Function, deps: any[] = []) {
+export function useEffect(
+  callback: () => undefined | (() => void),
+  deps: any[] = []
+) {
   const node = getCurrentNode("useEffect must be called in a component")
   if (!node) return
 
   const { hook, oldHook } = getHook(node, {
     deps,
     callback,
-    cleanup: undefined,
+    cleanup: undefined as undefined | (() => void),
   })
 
   if (arrayChanged(deps, oldHook?.deps)) {

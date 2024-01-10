@@ -71,11 +71,6 @@ class GlobalState {
   }
 
   private updateFunctionComponent(vNode: VNode) {
-    if (vNode.hooks.length) {
-      for (const h of vNode.hooks) {
-        if (h.cleanup) h.cleanup()
-      }
-    }
     vNode.hooks = []
     this.hookIndex = 0
     this.curNode = vNode
