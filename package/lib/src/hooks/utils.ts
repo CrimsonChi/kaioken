@@ -14,8 +14,8 @@ type HookCallbackState<T> = {
   hook: Hook<T>
   oldHook?: Hook<T>
   node: VNode
-  requestUpdate: (node: VNode) => void
-  queueEffect: (callback: () => void) => void
+  requestUpdate: typeof g.requestUpdate
+  queueEffect: typeof g.queueEffect
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
