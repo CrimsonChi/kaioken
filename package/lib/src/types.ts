@@ -56,13 +56,13 @@ export type VNode = {
     [key: string]: any
     children: VNode[]
   }
-  dom?: HTMLElement | SVGElement | Text
   parent?: VNode
   child?: VNode
   sibling?: VNode
   prev?: VNode
   effectTag?: EffectTag
   hooks: any[]
+  dt?: number
 }
 
 export type Rec = Record<string, any>

@@ -6,9 +6,11 @@ import { EffectTag } from "./constants.js"
 
 export { commitWork, createDom }
 
+export const domMap = new WeakMap<VNode, HTMLElement | SVGElement | Text>()
+
 function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   const t = vNode.type as string
-  const dom =
+  let dom =
     t == "TEXT_ELEMENT"
       ? document.createTextNode("")
       : ["svg", "path"].includes(t)
@@ -19,8 +21,9 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
     handleFormBindings(vNode, dom as HTMLFormElement)
   }
 
-  vNode.dom = dom
-  return updateDom(vNode)
+  dom = updateDom(vNode, dom)
+  domMap.set(vNode, dom)
+  return dom
 }
 
 function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
@@ -36,8 +39,7 @@ function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
   vNode.props.action = undefined
 }
 
-function updateDom(node: VNode) {
-  const dom = node.dom as HTMLElement | SVGElement | Text
+function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const prevProps = node.prev?.props ?? {}
   const nextProps = node.props ?? {}
   if (dom instanceof HTMLFormElement) {
@@ -87,20 +89,26 @@ function updateDom(node: VNode) {
 }
 
 function commitWork(g: GlobalState, vNode: VNode) {
-  let parentNode = vNode.parent ?? vNode.prev?.parent ?? g.wipNode
-  let domParent = parentNode?.dom
-  while (parentNode && !domParent) {
-    parentNode = parentNode.parent
-    domParent = parentNode?.dom
-  }
+  const dom = domMap.get(vNode)
 
-  if (!domParent) {
-    console.error("no domParent", vNode)
-    return
-  }
+  if (vNode.effectTag === EffectTag.PLACEMENT && dom) {
+    let parentNode: VNode | undefined =
+      vNode.parent ?? vNode.prev?.parent ?? g.treesInProgress[0]
+    let domParent = parentNode ? domMap.get(parentNode) : undefined
+    while (parentNode && !domParent) {
+      parentNode = parentNode.parent
+      domParent = parentNode ? domMap.get(parentNode) : undefined
+    }
 
-  if (vNode.effectTag === EffectTag.PLACEMENT && vNode.dom != null) {
-    let siblingDom = vNode.sibling?.dom?.isConnected && vNode.sibling?.dom
+    if (!domParent) {
+      console.error("no domParent", vNode)
+      return
+    }
+
+    let siblingDom: HTMLElement | SVGElement | Text | undefined = undefined
+    let tmp = vNode.sibling && domMap.get(vNode.sibling)
+    if (tmp && tmp.isConnected) siblingDom = tmp
+
     let parent = vNode.parent
 
     while (!siblingDom && parent) {
@@ -109,14 +117,16 @@ function commitWork(g: GlobalState, vNode: VNode) {
     }
 
     if (siblingDom && domParent.contains(siblingDom)) {
-      domParent.insertBefore(vNode.dom, siblingDom)
+      domParent.insertBefore(dom, siblingDom)
     } else {
-      domParent.appendChild(vNode.dom)
+      domParent.appendChild(dom)
     }
-  } else if (vNode.effectTag === EffectTag.UPDATE && vNode.dom != null) {
-    updateDom(vNode)
+    domMap.set(vNode, dom)
+  } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
+    updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
-    commitDeletion(vNode, domParent)
+    commitDeletion(vNode)
+    vNode.effectTag = undefined
     return
   }
 
@@ -126,23 +136,22 @@ function commitWork(g: GlobalState, vNode: VNode) {
   vNode.sibling && commitWork(g, vNode.sibling)
 
   if (vNode.props.ref) {
-    vNode.props.ref.current = vNode.dom
+    vNode.props.ref.current = dom
   }
+  // domMap.delete(vNode)
   vNode.prev = { ...vNode, prev: undefined }
+  // if (dom) domMap.set(vNode, dom)
 }
 
 function findDomRecursive(
   vNode?: VNode
 ): HTMLElement | SVGElement | Text | undefined {
-  if (vNode?.dom) {
-    return vNode.dom
-  } else if (vNode?.child) {
-    return findDomRecursive(vNode.child)
-  } else if (vNode?.sibling) {
-    return findDomRecursive(vNode.sibling)
-  } else {
-    return
-  }
+  if (!vNode) return
+  return (
+    domMap.get(vNode) ??
+    findDomRecursive(vNode.child) ??
+    findDomRecursive(vNode.sibling)
+  )
 }
 
 function cleanupHooks_Recurse(vNode: VNode) {
@@ -160,19 +169,18 @@ function cleanupHooks_Recurse(vNode: VNode) {
   }
 }
 
-function commitDeletion(
-  vNode: VNode,
-  domParent: HTMLElement | SVGElement | Text
-) {
+function commitDeletion(vNode: VNode) {
   cleanupHooks_Recurse(vNode)
-
-  if (vNode.dom && vNode.dom.isConnected) {
-    domParent.removeChild(vNode.dom)
-  } else if (vNode.child) {
-    commitDeletion(vNode.child, domParent)
+  const dom = domMap.get(vNode)
+  if (dom) {
+    if (dom.isConnected) dom.remove()
+    domMap.delete(vNode)
+  }
+  if (vNode.child) {
+    commitDeletion(vNode.child)
     let sibling = vNode.child.sibling
     while (sibling) {
-      commitDeletion(sibling, domParent)
+      commitDeletion(sibling)
       sibling = sibling.sibling
     }
   }
