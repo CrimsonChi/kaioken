@@ -4,46 +4,39 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends IntrinsicElementMap {}
 
-    type FormElementProps = {
-      [K in keyof HTMLElementTagNameMap["form"]]?: K extends "action"
-        ? ((formData: FormData) => void) | string | undefined
-        : HTMLElementTagNameMap["form"][K]
+    type IntrinsicElementMap = {
+      [K in keyof HTMLElementTagNameMap]: BasicElementProps[K] & {
+        ref?: Ref<HTMLElementTagNameMap[K]>
+        children?: Element[]
+      }
+    } & {
+      [K in keyof SVGElementTagNameMap]: BasicSVGElementProps[K] & {
+        ref?: Ref<SVGElementTagNameMap[K]>
+        children?: Element[]
+      }
     }
 
     type BasicElementProps = {
       [K in keyof HTMLElementTagNameMap]: K extends "form"
         ? FormElementProps
-        :
-            | {
-                [P in keyof HTMLElementTagNameMap[K]]?:
-                  | HTMLElementTagNameMap[K][P]
-                  | string
-                  | number
-              }
-    }
-
-    type BasicSVGElementProps = {
-      [K in keyof SVGElementTagNameMap]:
-        | {
-            [P in keyof SVGElementTagNameMap[K]]?:
-              | SVGElementTagNameMap[K][P]
+        : {
+            [P in keyof HTMLElementTagNameMap[K]]?:
+              | HTMLElementTagNameMap[K][P]
               | string
               | number
           }
     }
 
-    type InternalElementProps<K> = K extends keyof HTMLElementTagNameMap
-      ? {
-          ref?: Ref<HTMLElementTagNameMap[K]>
-          children?: Element[]
-        }
-      : {}
+    type BasicSVGElementProps = {
+      [K in keyof SVGElementTagNameMap]: {
+        [P in keyof SVGElementTagNameMap[K]]?: SVGElementTagNameMap[K][P]
+      }
+    }
 
-    type IntrinsicElementMap = {
-      [K in keyof HTMLElementTagNameMap]: InternalElementProps<K> &
-        BasicElementProps[K]
-    } & {
-      [K in keyof SVGElementTagNameMap]: BasicSVGElementProps[K]
+    type FormElementProps = {
+      [K in keyof HTMLElementTagNameMap["form"]]?: K extends "action"
+        ? ((formData: FormData) => void) | string | undefined
+        : HTMLElementTagNameMap["form"][K]
     }
 
     type Element = string | Node | VNode | VNode[]
