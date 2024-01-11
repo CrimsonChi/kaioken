@@ -6,7 +6,7 @@ interface Product {
   thumbnail: string
 }
 
-export const ProductPage = (props: RouteChildProps) => {
+export function ProductPage(props: RouteChildProps) {
   const { id } = props.query
   const [count, setCount] = useState(0)
 

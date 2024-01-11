@@ -80,7 +80,7 @@ export function Todos() {
   )
 }
 
-const ToDoList = ({
+function ToDoList({
   name,
   items,
   toggleItem,
@@ -90,7 +90,7 @@ const ToDoList = ({
   items: ToDoItem[]
   toggleItem: (id: string, e: MouseEvent) => void
   handleDelete: (id: string, e: MouseEvent) => void
-}) => {
+}) {
   if (!items.length) return null
   return (
     <>

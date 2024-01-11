@@ -10,7 +10,7 @@ async function deliverMessage(message: Message) {
   return message
 }
 
-function _Messages() {
+export function Messages() {
   const [messages, setMessages] = useState([
     { message: "Hello there!", sending: false },
   ] as Message[])
@@ -22,10 +22,6 @@ function _Messages() {
 
   return <Thread messages={messages} sendMessage={sendMessage} />
 }
-
-export const Messages = Object.assign(_Messages, {
-  // test: true,
-})
 
 function _Thread({
   messages,
@@ -61,7 +57,13 @@ function _Thread({
       ))}
 
       <form action={formAction} ref={formRef}>
-        <input ref={inputRef} type="text" name="message" placeholder="Hello!" />
+        <input
+          ref={inputRef}
+          type="text"
+          name="message"
+          placeholder="Hello!"
+          value={1}
+        />
         <button type="submit">Send</button>
       </form>
     </div>
