@@ -6,8 +6,8 @@ export function useMemo<T>(factory: () => T, deps: any[]): T {
     { deps, value: undefined as T },
     ({ hook, oldHook }) => {
       if (depsRequireChange(deps, oldHook?.deps)) {
-        hook.value = factory()
         hook.deps = deps
+        hook.value = factory()
       }
       return hook.value
     }

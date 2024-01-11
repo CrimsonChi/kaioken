@@ -8,12 +8,6 @@ export function useOptimistic<T, U>(
     "useOptimistic",
     { state: initial, isRenderTrigger: false, queue: [] as Function[] },
     ({ hook, node, requestUpdate }) => {
-      const setState = (newValue: U) => {
-        hook.state = setter(hook.state, newValue)
-        hook.queue.push((state: T) => setter(state, newValue))
-        hook.isRenderTrigger = true
-        requestUpdate(node)
-      }
       if (hook.isRenderTrigger) {
         hook.isRenderTrigger = false
       } else {
@@ -23,7 +17,16 @@ export function useOptimistic<T, U>(
           hook.state = f(hook.state)
         }
       }
-      return [hook.state, setState]
+
+      return [
+        hook.state,
+        (newValue: U) => {
+          hook.state = setter(hook.state, newValue)
+          hook.queue.push((state: T) => setter(state, newValue))
+          hook.isRenderTrigger = true
+          requestUpdate(node)
+        },
+      ]
     }
   )
 }
