@@ -626,13 +626,15 @@ type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
     GlobalAttributes &
     EventAttributes<K> &
-    JSX.InternalProps<K>
+    JSX.InternalProps<K> &
+    Partial<ARIAMixin>
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
     SvgGlobalAttributes &
     GlobalAttributes &
     EventAttributes<K> &
-    JSX.InternalProps<K>
+    JSX.InternalProps<K> &
+    Partial<ARIAMixin>
 }
 
 declare global {

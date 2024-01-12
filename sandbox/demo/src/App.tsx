@@ -14,11 +14,8 @@ function MdnSvgIcon() {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 694.9 104.4"
       style="fill: red"
-      // style="enable-background:new 0 0 694.9 104.4"
-      // fill="white"
       height={50}
-      // xml:space="preserve"
-      // role="img"
+      role="img"
     >
       <title>MDN Web Docs</title>
       <path
