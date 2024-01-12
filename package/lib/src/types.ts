@@ -2,7 +2,7 @@ import { EffectTag } from "./constants"
 
 type ValidUrl = `http${"s" | ""}://${string}`
 type ValidPath = `/${string}`
-type ValidUrlOrPath = ValidUrl | ValidPath
+type ValidUrlOrPath = ValidUrl | ValidPath | string
 type ListOfUrlsOrPaths = string
 type FileName = string
 
@@ -626,13 +626,13 @@ type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
     GlobalAttributes &
     EventAttributes<K> &
-    JSX.InternalProps
+    JSX.InternalProps<K>
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
     SvgGlobalAttributes &
     GlobalAttributes &
     EventAttributes<K> &
-    JSX.InternalProps
+    JSX.InternalProps<K>
 }
 
 declare global {
@@ -640,7 +640,16 @@ declare global {
     interface IntrinsicElements extends ElementMap {}
 
     type Element = VNode | string | number | null
-    type InternalProps = { children?: Element[] }
+    type InternalProps<
+      K extends keyof (HtmlElementAttributes & SvgElementAttributes)
+    > = {
+      children?: Element[]
+      ref?: K extends keyof HTMLElementTagNameMap
+        ? Ref<HTMLElementTagNameMap[K]>
+        : K extends keyof SVGElementTagNameMap
+        ? Ref<SVGElementTagNameMap[K]>
+        : never
+    }
   }
 }
 
