@@ -4,18 +4,18 @@ type StoreUnsubscriber = () => void
 type StoreSubscriber<T> = (callback: (val: T) => void) => StoreUnsubscriber
 
 export function useSyncExternalStore<T>(
-  subscribeFunc: StoreSubscriber<T>,
-  getDataFunc: () => T
+  subscriber: StoreSubscriber<T>,
+  getter: () => T
 ): T {
   return useHook(
     "useSyncExternalStore",
     { data: undefined as T },
-    ({ hook, node, requestUpdate }) => {
-      hook.data = getDataFunc()
+    ({ hook, update }) => {
+      hook.data = getter()
       if (!hook.cleanup) {
-        hook.cleanup = subscribeFunc((data) => {
+        hook.cleanup = subscriber((data) => {
           hook.data = data
-          requestUpdate(node)
+          update()
         })
       }
       return hook.data as T

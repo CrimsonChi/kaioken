@@ -1,4 +1,3 @@
-import type { VNode } from "../types.js"
 import { depsRequireChange, useHook } from "./utils.js"
 
 type useFetchHook<T> = {
@@ -29,43 +28,38 @@ export function useFetch<T extends unknown>(
     abortController: undefined as AbortController | undefined,
   }
 
-  return useHook(
-    "useFetch",
-    defaultHook,
-    ({ hook, oldHook, node, requestUpdate }) => {
-      // create an abort signal if not provided
-      if (!hook.options.signal) {
-        const abortController = new AbortController()
-        hook.abortController = abortController
-        hook.options.signal = abortController.signal
-      }
-
-      const newKeys = keys ?? [url, JSON.stringify(options)]
-      if (depsRequireChange(newKeys, oldHook?.keys)) {
-        hook.keys = newKeys
-        if (hook.data.data) hook.data.data = undefined
-        if (hook.promise) {
-          Object.assign(hook.promise, { aborted: true })
-          hook.abortController?.abort()
-          hook.promise = undefined
-          hook.abortController = undefined
-          hook.options.signal = undefined
-        }
-
-        hook.data.loading = true
-        hook.promise = fetch(url, options)
-        handleFetch(node, hook, requestUpdate)
-      }
-
-      return hook.data
+  return useHook("useFetch", defaultHook, ({ hook, oldHook, update }) => {
+    // create an abort signal if not provided
+    if (!hook.options.signal) {
+      const abortController = new AbortController()
+      hook.abortController = abortController
+      hook.options.signal = abortController.signal
     }
-  )
+
+    const newKeys = keys ?? [url, JSON.stringify(options)]
+    if (depsRequireChange(newKeys, oldHook?.keys)) {
+      hook.keys = newKeys
+      if (hook.data.data) hook.data.data = undefined
+      if (hook.promise) {
+        Object.assign(hook.promise, { aborted: true })
+        hook.abortController?.abort()
+        hook.promise = undefined
+        hook.abortController = undefined
+        hook.options.signal = undefined
+      }
+
+      hook.data.loading = true
+      hook.promise = fetch(url, options)
+      handleFetch(hook, update)
+    }
+
+    return hook.data
+  })
 }
 
 async function handleFetch<T extends unknown>(
-  node: VNode,
   hook: useFetchHook<T>,
-  requestUpdate: (node: VNode) => void
+  requestUpdate: () => void
 ) {
   if (!hook.promise) return
   const { promise } = hook
@@ -90,7 +84,7 @@ async function handleFetch<T extends unknown>(
     hook.data.error = error
     hook.data.loading = false
   } finally {
-    if (!aborted) requestUpdate(node)
+    if (!aborted) requestUpdate()
     hook.abortController = undefined
     hook.options.signal = undefined
   }

@@ -1,32 +1,31 @@
 import { useHook } from "./utils.js"
 
 export function useOptimistic<T, U>(
-  initial: T,
-  setter: (prev: T, newValue: U) => T
+  state: T,
+  setState: (prev: T, newValue: U) => T
 ): [T, (value: U) => void] {
   return useHook(
     "useOptimistic",
-    { state: initial, isRenderTrigger: false, queue: [] as Function[] },
-    ({ hook, node, requestUpdate }) => {
-      if (hook.isRenderTrigger) {
-        hook.isRenderTrigger = false
+    { state, isTrigger: false, queue: [] as Function[] },
+    ({ hook, update }) => {
+      if (hook.isTrigger) {
+        hook.isTrigger = false
       } else {
-        hook.state = initial
+        hook.state = state
         hook.queue.shift()?.(hook.state)
         for (const f of hook.queue) {
           hook.state = f(hook.state)
         }
       }
 
-      return [
-        hook.state,
-        (newValue: U) => {
-          hook.state = setter(hook.state, newValue)
-          hook.queue.push((state: T) => setter(state, newValue))
-          hook.isRenderTrigger = true
-          requestUpdate(node)
-        },
-      ]
+      const setter = (newValue: U) => {
+        hook.state = setState(hook.state, newValue)
+        hook.queue.push((state: T) => setState(state, newValue))
+        hook.isTrigger = true
+        update()
+      }
+
+      return [hook.state, setter]
     }
   )
 }

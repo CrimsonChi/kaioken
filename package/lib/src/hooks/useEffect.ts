@@ -6,7 +6,7 @@ export function useEffect(
 ): void {
   return useHook(
     "useEffect",
-    { deps, callback },
+    { callback, deps },
     ({ hook, oldHook, queueEffect }) => {
       if (depsRequireChange(deps, oldHook?.deps)) {
         hook.deps = deps

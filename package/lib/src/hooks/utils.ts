@@ -1,4 +1,3 @@
-import type { VNode } from "../types.js"
 import { g } from "../globalState.js"
 
 export {
@@ -13,8 +12,7 @@ type Hook<T> = T & { cleanup?: () => void }
 type HookCallbackState<T> = {
   hook: Hook<T>
   oldHook?: Hook<T>
-  node: VNode
-  requestUpdate: typeof g.requestUpdate
+  update: () => void
   queueEffect: typeof g.queueEffect
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
@@ -34,8 +32,7 @@ function useHook<T, U>(
   const res = callback({
     hook,
     oldHook,
-    node,
-    requestUpdate: g.requestUpdate.bind(g),
+    update: () => g.requestUpdate(node),
     queueEffect: g.queueEffect.bind(g),
   })
   node.hooks[g.hookIndex++] = hook
