@@ -1,4 +1,4 @@
-import type { Rec, VNode } from "./types"
+import type { ElementProps, Rec, VNode } from "./types"
 import { stateMap, type GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
@@ -34,7 +34,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
       : document.createElement(t)
 
   if (t === "form") {
-    handleFormBindings(vNode, dom as HTMLFormElement)
+    updateFormProps(vNode, dom as HTMLFormElement)
   }
 
   dom = updateDom(vNode, dom)
@@ -42,15 +42,14 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   return dom
 }
 
-function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
+function updateFormProps(vNode: VNode, dom: HTMLFormElement) {
   if (vNode.props.onsubmit || vNode.props.onSubmit) return
   if (!vNode.props.action || !(vNode.props.action instanceof Function)) return
 
   const action = vNode.props.action
-  vNode.props.onSubmit = (e: Event) => {
+  ;(vNode.props as ElementProps<"form">).onsubmit = (e) => {
     e.preventDefault()
-    const formData = new FormData(dom)
-    return action(formData)
+    return action(new FormData(dom))
   }
   vNode.props.action = undefined
 }
@@ -59,7 +58,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const prevProps: Rec = node.prev?.props ?? {}
   const nextProps: Rec = node.props ?? {}
   if (dom instanceof HTMLFormElement) {
-    handleFormBindings(node, dom)
+    updateFormProps(node, dom)
   }
   //Remove old or changed event listeners
   Object.keys(prevProps)
@@ -170,7 +169,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
   } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
-    commitDeletion(vNode)
+    commitDeletion(vNode, dom)
     return
   }
 
@@ -196,26 +195,26 @@ function findDomRecursive(
   )
 }
 
-function commitDeletion(vNode: VNode, isRoot = true) {
-  vNode.effectTag = undefined
-  const hooks = stateMap.get(vNode.id) ?? []
-  while (hooks.length > 0) cleanupHook(hooks.pop()!)
-  stateMap.delete(vNode.id)
+function commitDeletion(vNode: VNode, dom = domMap.get(vNode)) {
+  if (vNode.type instanceof Function) {
+    const hooks = stateMap.get(vNode.id) ?? []
+    while (hooks.length > 0) cleanupHook(hooks.pop()!)
+    stateMap.delete(vNode.id)
+  }
 
-  const dom = domMap.get(vNode)
   if (dom) {
     if (dom.isConnected) dom.remove()
     domMap.delete(vNode)
   }
   if (vNode.child) {
-    commitDeletion(vNode.child, false)
+    commitDeletion(vNode.child)
     let sibling = vNode.child.sibling
     while (sibling) {
       commitDeletion(sibling)
       sibling = sibling.sibling
     }
   }
-  if (!isRoot && vNode.sibling) {
-    commitDeletion(vNode.sibling, true)
+  if (vNode.sibling) {
+    commitDeletion(vNode.sibling)
   }
 }

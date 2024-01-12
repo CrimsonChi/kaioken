@@ -308,13 +308,14 @@ interface HtmlElementAttributes {
   footer: {}
   form: {
     acceptCharset?: string
-    action?: FormAction | ((data: FormData) => void)
     autocomplete?: AutoComplete
     enctype?: EncType
     method?: FormMethod
     name?: string
     novalidate?: boolean
     target?: string
+    onsubmit?: (e: Event) => void
+    action?: FormAction | ((data: FormData) => void)
   }
   h1: {}
   h2: {}
@@ -604,6 +605,9 @@ interface SvgElementAttributes {
     cy?: string | number
     rx?: string | number
     ry?: string | number
+  }
+  g: {
+    clipPath?: string
   }
   line: {
     x1?: string | number
