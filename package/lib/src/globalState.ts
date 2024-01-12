@@ -1,8 +1,12 @@
-import type { VNode } from "./types"
+import type { Hook, VNode } from "./types"
 import { commitWork, createDom, domMap } from "./dom.js"
 import { EffectTag } from "./constants.js"
 
-export { g, type GlobalState }
+export { g, stateMap, createId, type GlobalState }
+
+let id = 0
+const createId = () => ++id
+const stateMap = new Map<number, Hook<unknown>[]>()
 
 class GlobalState {
   rootNode: VNode | undefined = undefined
@@ -98,7 +102,6 @@ class GlobalState {
   }
 
   private updateFunctionComponent(vNode: VNode) {
-    vNode.hooks = []
     this.hookIndex = 0
     this.curNode = vNode
 
@@ -133,12 +136,12 @@ class GlobalState {
       }
       if (child && !sameType) {
         newNode = {
+          id: createId(),
           type: child.type,
           props: child.props,
           parent: vNode,
           prev: undefined,
           effectTag: EffectTag.PLACEMENT,
-          hooks: [],
         }
       }
       if (oldNode && !sameType) {

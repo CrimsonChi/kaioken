@@ -1,4 +1,5 @@
-import { g } from "../globalState.js"
+import type { Hook } from "../types.js"
+import { g, stateMap } from "../globalState.js"
 
 export {
   cleanupHook,
@@ -8,7 +9,6 @@ export {
   type HookCallbackState,
 }
 
-type Hook<T> = T & { cleanup?: () => void }
 type HookCallbackState<T> = {
   hook: Hook<T>
   oldHook?: Hook<T>
@@ -27,7 +27,8 @@ function useHook<T, U>(
     throw new Error(
       `hook "${hookName}" must be used at the top level of a component or inside another hook.`
     )
-  const oldHook = node.prev && node.prev.hooks[g.hookIndex]
+  const oldHook =
+    node.prev && (stateMap.get(node.prev.id)!.at(g.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
   const res = callback({
     hook,
@@ -35,7 +36,9 @@ function useHook<T, U>(
     update: () => g.requestUpdate(node),
     queueEffect: g.queueEffect.bind(g),
   })
-  node.hooks[g.hookIndex++] = hook
+  const hooks = stateMap.get(node.id) ?? []
+  hooks[g.hookIndex++] = hook
+  stateMap.set(node.id, hooks)
   return res
 }
 

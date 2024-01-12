@@ -1,10 +1,10 @@
 import type { VNode } from "./types"
-import { g } from "./globalState.js"
+import { createId, g } from "./globalState.js"
 import { isValidChild } from "./utils.js"
 
 export { mount, createElement, fragment }
 
-function mount(appFunc: () => VNode, container: HTMLElement) {
+function mount(appFunc: () => JSX.Element, container: HTMLElement) {
   const node = createElement(
     container.nodeName.toLowerCase(),
     {},
@@ -19,6 +19,7 @@ function createElement(
   ...children: (VNode | unknown)[]
 ): VNode {
   return {
+    id: createId(),
     type,
     props: {
       ...props,
@@ -29,19 +30,11 @@ function createElement(
           typeof child === "object" ? child : createTextElement(String(child))
         ) as VNode[],
     },
-    hooks: [],
   }
 }
 
-function createTextElement(text: string): VNode {
-  return {
-    type: "TEXT_ELEMENT",
-    props: {
-      nodeValue: text,
-      children: [],
-    },
-    hooks: [],
-  }
+function createTextElement(nodeValue: string): VNode {
+  return createElement("TEXT_ELEMENT", { nodeValue })
 }
 
 function fragment({ children }: { children: JSX.Element[] }) {

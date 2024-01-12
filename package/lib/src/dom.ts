@@ -1,5 +1,5 @@
 import type { Rec, VNode } from "./types"
-import type { GlobalState } from "./globalState.js"
+import { stateMap, type GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag } from "./constants.js"
@@ -171,7 +171,6 @@ function commitWork(g: GlobalState, vNode: VNode) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
     commitDeletion(vNode)
-    vNode.effectTag = undefined
     return
   }
 
@@ -183,9 +182,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
   if (vNode.props.ref) {
     vNode.props.ref.current = dom
   }
-  // domMap.delete(vNode)
   vNode.prev = { ...vNode, prev: undefined }
-  // if (dom) domMap.set(vNode, dom)
 }
 
 function findDomRecursive(
@@ -199,34 +196,26 @@ function findDomRecursive(
   )
 }
 
-function cleanupHooks_Recurse(vNode: VNode) {
-  if (vNode.hooks.length > 0) {
-    vNode.hooks.forEach(cleanupHook)
-    vNode.hooks = []
-  }
-  if (vNode.child) {
-    cleanupHooks_Recurse(vNode.child)
-    let sibling = vNode.child.sibling
-    while (sibling) {
-      cleanupHooks_Recurse(sibling)
-      sibling = sibling.sibling
-    }
-  }
-}
+function commitDeletion(vNode: VNode, isRoot = true) {
+  vNode.effectTag = undefined
+  const hooks = stateMap.get(vNode.id) ?? []
+  while (hooks.length > 0) cleanupHook(hooks.pop()!)
+  stateMap.delete(vNode.id)
 
-function commitDeletion(vNode: VNode) {
-  cleanupHooks_Recurse(vNode)
   const dom = domMap.get(vNode)
   if (dom) {
     if (dom.isConnected) dom.remove()
     domMap.delete(vNode)
   }
   if (vNode.child) {
-    commitDeletion(vNode.child)
+    commitDeletion(vNode.child, false)
     let sibling = vNode.child.sibling
     while (sibling) {
       commitDeletion(sibling)
       sibling = sibling.sibling
     }
+  }
+  if (!isRoot && vNode.sibling) {
+    commitDeletion(vNode.sibling, true)
   }
 }
