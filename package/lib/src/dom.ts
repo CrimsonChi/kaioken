@@ -195,7 +195,7 @@ function findDomRecursive(
   )
 }
 
-function commitDeletion(vNode: VNode, dom = domMap.get(vNode)) {
+function commitDeletion(vNode: VNode, dom = domMap.get(vNode), root = true) {
   if (vNode.type instanceof Function) {
     const hooks = stateMap.get(vNode.id) ?? []
     while (hooks.length > 0) cleanupHook(hooks.pop()!)
@@ -207,14 +207,14 @@ function commitDeletion(vNode: VNode, dom = domMap.get(vNode)) {
     domMap.delete(vNode)
   }
   if (vNode.child) {
-    commitDeletion(vNode.child)
+    commitDeletion(vNode.child, undefined, false)
     let sibling = vNode.child.sibling
     while (sibling) {
-      commitDeletion(sibling)
+      commitDeletion(sibling, undefined, false)
       sibling = sibling.sibling
     }
   }
-  if (vNode.sibling) {
-    commitDeletion(vNode.sibling)
+  if (vNode.sibling && !root) {
+    commitDeletion(vNode.sibling, undefined, false)
   }
 }
