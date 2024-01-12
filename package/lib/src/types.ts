@@ -641,7 +641,7 @@ declare global {
 
     type Element = VNode | string | number | null
     type InternalProps<
-      K extends keyof (HtmlElementAttributes & SvgElementAttributes)
+      K extends keyof HtmlElementAttributes | keyof SvgElementAttributes
     > = {
       children?: Element[]
       ref?: K extends keyof HTMLElementTagNameMap
