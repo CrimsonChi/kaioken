@@ -33,20 +33,19 @@ class GlobalState {
 
   requestUpdate(node: VNode) {
     if (!this.vNodeContains(this.rootNode!, node)) return
+    if (node.effectTag === EffectTag.DELETION) return
     if (this.isNodeBeingWorkedOn(node)) {
       const dt = performance.now()
       if (node.dt && dt >= node.dt) return // stale update request
       node.dt = dt
       return
     }
-    if (node.effectTag === EffectTag.DELETION) return
 
     if (!node.prev || node.prev?.prev) node.prev = { ...node, prev: undefined }
 
     node.dt = performance.now()
     this.treesInProgress.push(node)
     if (!this.nextUnitOfWork) this.nextUnitOfWork = node
-    return
   }
 
   queueEffect(callback: Function) {
@@ -81,8 +80,7 @@ class GlobalState {
   }
 
   private performUnitOfWork(vNode: VNode): VNode | undefined {
-    const isFunctionComponent = vNode.type instanceof Function
-    if (isFunctionComponent) {
+    if (vNode.type instanceof Function) {
       this.updateFunctionComponent(vNode)
     } else {
       this.updateHostComponent(vNode)
@@ -140,7 +138,6 @@ class GlobalState {
           type: child.type,
           props: child.props,
           parent: vNode,
-          prev: undefined,
           effectTag: EffectTag.PLACEMENT,
         }
       }
