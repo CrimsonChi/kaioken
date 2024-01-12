@@ -1,6 +1,6 @@
 import { depsRequireChange, useHook } from "./utils.js"
 
-export function useMemo<T>(factory: () => T, deps: any[]): T {
+export function useMemo<T>(factory: () => T, deps: unknown[]): T {
   return useHook(
     "useMemo",
     { deps, value: undefined as T },
