@@ -1,4 +1,4 @@
-import type { VNode } from "./types"
+import type { Rec, VNode } from "./types"
 import type { GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
@@ -8,13 +8,29 @@ export { commitWork, createDom }
 
 export const domMap = new WeakMap<VNode, HTMLElement | SVGElement | Text>()
 
+const svgTags = [
+  "svg",
+  "clipPath",
+  "circle",
+  "ellipse",
+  "g",
+  "line",
+  "path",
+  "polygon",
+  "polyline",
+  "rect",
+]
+
 function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   const t = vNode.type as string
   let dom =
     t == "TEXT_ELEMENT"
       ? document.createTextNode("")
-      : ["svg", "path"].includes(t)
-      ? document.createElementNS("http://www.w3.org/2000/svg", t)
+      : svgTags.includes(t)
+      ? (document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          t
+        ) as SVGElement)
       : document.createElement(t)
 
   if (t === "form") {
@@ -40,8 +56,8 @@ function handleFormBindings(vNode: VNode, dom: HTMLFormElement) {
 }
 
 function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
-  const prevProps = node.prev?.props ?? {}
-  const nextProps = node.props ?? {}
+  const prevProps: Rec = node.prev?.props ?? {}
+  const nextProps: Rec = node.props ?? {}
   if (dom instanceof HTMLFormElement) {
     handleFormBindings(node, dom)
   }
@@ -63,8 +79,25 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
     .filter(propFilters.isProperty)
     .filter(propFilters.isGone(prevProps, nextProps))
     .forEach((name) => {
-      // @ts-ignore
-      dom[name] = ""
+      if (
+        name === "style" &&
+        typeof nextProps[name] !== "string" &&
+        !(dom instanceof Text)
+      ) {
+        Object.keys(prevProps[name] as Partial<CSSStyleSheet>).forEach(
+          (styleName) => {
+            ;(dom.style as Rec)[styleName] = ""
+          }
+        )
+        return
+      }
+
+      if (dom instanceof SVGElement) {
+        dom.removeAttribute(name)
+        return
+      }
+
+      ;(dom as Rec)[name] = ""
     })
 
   // Set new or changed properties
@@ -72,8 +105,20 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
     .filter(propFilters.isProperty)
     .filter(propFilters.isNew(prevProps, nextProps))
     .forEach((name) => {
-      // @ts-ignore
-      dom[name] = nextProps[name]
+      if (
+        name === "style" &&
+        typeof nextProps[name] !== "string" &&
+        !(dom instanceof Text)
+      ) {
+        Object.assign(dom.style, nextProps[name])
+        return
+      }
+
+      if (dom instanceof SVGElement) {
+        dom.setAttribute(name, nextProps[name])
+        return
+      }
+      ;(dom as Rec)[name] = nextProps[name]
     })
 
   // Add event listeners

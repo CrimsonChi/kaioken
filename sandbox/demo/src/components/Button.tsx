@@ -5,7 +5,9 @@ export function Button(props: ElementProps<"button">) {
   const theme = useContext(ThemeContext)
   return (
     <StyleScope>
-      <button {...props}>{props.children}</button>
+      <button id="123" {...props}>
+        {props.children}
+      </button>
       <style>
         {`
         button {

@@ -18,7 +18,7 @@ export function themeReducer(
   }
 }
 
-export function ThemeContextProvider({ children }: { children?: any }) {
+export function ThemeContextProvider({ children }: { children?: JSX.Element }) {
   const [theme, dispatch] = useReducer(themeReducer, "dark")
   return (
     <ThemeContext.Provider value={theme}>
