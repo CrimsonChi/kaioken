@@ -115,6 +115,39 @@ type FormMethod = "get" | "post"
 
 type Direction = "ltr" | "rtl" | "auto"
 
+type FocussableElementTags =
+  | "a"
+  | "area"
+  | "audio"
+  | "button"
+  | "details"
+  | "dialog"
+  | "embed"
+  | "iframe"
+  | "input"
+  | "label"
+  | "menu"
+  | "meter"
+  | "object"
+  | "optgroup"
+  | "option"
+  | "output"
+  | "progress"
+  | "select"
+  | "summary"
+  | "textarea"
+  | "video"
+
+type LoadableElementTags =
+  | "img"
+  | "iframe"
+  | "link"
+  | "script"
+  | "source"
+  | "track"
+
+type ErrorableElementTags = "img" | "iframe" | "link" | "script" | "source"
+
 type GlobalAttributes = {
   accessKey?: string
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters"
@@ -138,18 +171,16 @@ type KeyboardEventAttributes = {
   onkeypress?: (e: KeyboardEvent) => void
 }
 
-type InputEventAttributes = {
+type FocusEventAttributes = {
   onblur?: (e: FocusEvent) => void
-  onchange?: (e: Event) => void
   onfocus?: (e: FocusEvent) => void
+}
+
+type InputEventAttributes = {
+  onchange?: (e: Event) => void
   oninput?: (e: Event) => void
   onreset?: (e: Event) => void
   onsubmit?: (e: Event) => void
-}
-
-type ImageEventAttributes = {
-  onload?: (e: Event) => void
-  onerror?: (e: Event) => void
 }
 
 type MouseEventAttributes = {
@@ -166,8 +197,10 @@ type MouseEventAttributes = {
 
 type EventAttributes<T extends string> = KeyboardEventAttributes &
   MouseEventAttributes &
-  (T extends "input" | "textarea" ? InputEventAttributes : {}) &
-  (T extends "img" ? ImageEventAttributes : {})
+  (T extends FocussableElementTags ? FocusEventAttributes : {}) &
+  (T extends "input" | "select" | "textarea" ? InputEventAttributes : {}) &
+  (T extends LoadableElementTags ? { onload?: (e: Event) => void } : {}) &
+  (T extends ErrorableElementTags ? { onerror?: (e: Event) => void } : {})
 
 type ElementReference<T extends HTMLElement> = T | null | string
 
