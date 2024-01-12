@@ -1,4 +1,4 @@
-import type { Rec, RouteChildProps, VNode } from "./types"
+import type { Rec, VNode } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
@@ -52,19 +52,22 @@ function Router(props: RouterProps) {
 
 type RouteComponentFunc = (props: RouteChildProps) => JSX.Element | null
 
-interface RouteComponentProps {
+interface RouteProps {
   path: string
   element: RouteComponentFunc
 }
 
-function isRoute(
-  thing: unknown
-): thing is VNode & { props: RouteComponentProps } {
-  return isVNode(thing) && thing.type === Route
+interface RouteChildProps {
+  params: Rec
+  query: Rec
 }
 
-function Route({ path, element }: RouteComponentProps) {
-  return createElement(Route, { path, element })
+function isRoute(thing: unknown): thing is VNode & { props: RouteProps } {
+  return isVNode(thing) && thing.type === "x-route"
+}
+
+function Route({ path, element }: RouteProps) {
+  return createElement("x-route", { path, element })
 }
 
 function navigate(to: string) {

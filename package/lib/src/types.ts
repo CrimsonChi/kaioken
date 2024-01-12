@@ -7,16 +7,7 @@ import type {
   SvgGlobalAttributes,
 } from "./types.dom"
 
-export type {
-  VNode,
-  Rec,
-  Ref,
-  RouteChildProps,
-  Context,
-  ProviderProps,
-  ElementProps,
-  Hook,
-}
+export type { VNode, Rec, Ref, Context, ProviderProps, ElementProps, Hook }
 
 type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
@@ -67,11 +58,6 @@ type VNode = {
 }
 
 type Rec = Record<string, any>
-
-type RouteChildProps = {
-  params: Rec
-  query: Rec
-}
 
 type Ref<T> = { current: T | null }
 
