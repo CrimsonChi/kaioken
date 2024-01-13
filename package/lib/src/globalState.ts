@@ -98,20 +98,20 @@ class GlobalState {
     }
   }
 
-  private createClassInstance(vNode: VNode) {
-    return new (vNode.type as { new (props: Rec): Component })(vNode.props)
-  }
-
   private updateClassComponent(vNode: VNode) {
     this.hookIndex = 0
     this.curNode = vNode
     if (!vNode.instance) {
-      const instance = this.createClassInstance(vNode)
+      const instance = new (vNode.type as { new (props: Rec): Component })(
+        vNode.props
+      )
       vNode.instance = instance
       instance.vNode = vNode
       if (instance.componentDidMount) {
         this.queueEffect(() => instance!.componentDidMount!())
       }
+    } else {
+      vNode.instance.props = vNode.props
     }
 
     const children = [vNode.instance.render()].flat() as VNode[]
