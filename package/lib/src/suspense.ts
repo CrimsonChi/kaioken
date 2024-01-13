@@ -1,5 +1,5 @@
-import { Component } from "./component"
-import { VNode } from "./types"
+import type { VNode } from "./types"
+import { Component } from "./component.js"
 
 export { Suspense }
 
@@ -22,29 +22,23 @@ class Suspense extends Component<SuspenseProps> {
   componentDidMount(): void {
     let newState = { ...this.state }
     ;(this.props.children as Array<VNode>).forEach((child, idx) => {
-      if (child == null) return
-
-      if (typeof child.type === "string") {
-        this.state.resolvedChildren[idx] = child
+      if (
+        child == null ||
+        typeof child.type === "string" ||
+        Component.isCtor(child.type)
+      ) {
+        newState.resolvedChildren[idx] = child
         return
       }
 
-      if (Component.isCtor(child.type)) {
-        const node = child.instance?.render()
-        if (node) this.state.resolvedChildren[idx] = node
-        return
-      }
-      if (child.type instanceof Function) {
-        const node = (child.type as Function)(child?.props)
-        if (node instanceof Promise) {
-          node.then((resolvedChild) => {
-            newState.resolvedChildren[idx] = resolvedChild
-            this.setState(newState)
-          })
-        } else {
-          newState.resolvedChildren[idx] = node
-        }
-        return
+      const node = child.type(child.props)
+      if (node instanceof Promise) {
+        node.then((resolvedChild) => {
+          newState.resolvedChildren[idx] = resolvedChild
+          this.setState(newState)
+        })
+      } else {
+        newState.resolvedChildren[idx] = node
       }
     })
     this.setState(newState)

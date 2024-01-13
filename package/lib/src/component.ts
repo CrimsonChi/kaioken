@@ -4,8 +4,6 @@ import { g } from "./globalState.js"
 
 export { Component }
 
-type ComponentCtor<T> = new (props: T) => Component<T>
-
 abstract class Component<T = Rec, U = Rec> {
   static [componentSymbol] = true
   state: U = {} as U
@@ -24,7 +22,7 @@ abstract class Component<T = Rec, U = Rec> {
     }
   }
 
-  static isCtor(type: any): type is ComponentCtor<unknown> {
+  static isCtor(type: any): type is typeof Component {
     return type[componentSymbol]
   }
   static isComponent(type: any): type is Component {

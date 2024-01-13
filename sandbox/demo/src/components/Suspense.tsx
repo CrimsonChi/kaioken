@@ -1,4 +1,5 @@
 import { Suspense } from "kaioken"
+import { MyClassComponent } from "./ClassComponent"
 
 type Props = {
   test: number
@@ -25,8 +26,12 @@ export function SuspenseExample() {
     <div>
       <Suspense fallback={() => <div>Loading...</div>}>
         <AnotherComponent />
+        <MyClassComponent data={123} />
         <h1>Something</h1>
         <Todos test={123} />
+        123
+        <br />
+        {456}
       </Suspense>
     </div>
   )
