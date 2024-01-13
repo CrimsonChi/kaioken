@@ -17,13 +17,8 @@ abstract class Component<T = Rec, U = Rec> {
   }
   abstract render(): JSX.Element
 
-  setState(
-    transformer: ((state: this["state"]) => this["state"]) | this["state"]
-  ) {
-    this.state =
-      transformer instanceof Function
-        ? transformer({ ...this.state })
-        : transformer
+  setState(setter: ((state: this["state"]) => this["state"]) | this["state"]) {
+    this.state = setter instanceof Function ? setter({ ...this.state }) : setter
     if (this.shouldComponentUpdate(this.props, this.state)) {
       g.requestUpdate(this.vNode!)
     }
