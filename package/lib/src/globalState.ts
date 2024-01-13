@@ -116,6 +116,7 @@ class GlobalState {
 
     const children = [vNode.instance.render()].flat() as VNode[]
     this.reconcileChildren(vNode, children)
+    vNode.instance.componentDidUpdate?.()
   }
 
   private updateFunctionComponent(vNode: VNode) {
@@ -123,6 +124,7 @@ class GlobalState {
     this.curNode = vNode
 
     const children = [(vNode.type as Function)(vNode.props)].flat()
+
     this.reconcileChildren(vNode, children)
   }
 

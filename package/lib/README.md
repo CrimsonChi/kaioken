@@ -20,9 +20,9 @@
 - [x] memo
 - [x] useOptimistic
 - [x] Class Components
+- [x] Suspense
 - [ ] Transitions / Animations
 - [ ] Portals
-- [ ] Suspense
 - [ ] Error Boundaries
 - [ ] lazy / dynamic imports
 - [ ] renderToString

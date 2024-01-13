@@ -18,7 +18,7 @@ export class MyClassComponent extends Component<Props> {
           Hello from Class Component {this.props.data + this.state.count}
         </div>
         <button
-          onclick={() => this.setState((prev) => ({ count: prev.count + 1 }))}
+          onclick={() => this.setState(({ count }) => ({ count: count + 1 }))}
         >
           +
         </button>
