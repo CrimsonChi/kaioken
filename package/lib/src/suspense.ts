@@ -20,28 +20,25 @@ class Suspense extends Component<SuspenseProps> {
   }
 
   componentDidMount(): void {
-    let newState = { ...this.state }
-    ;(this.props.children as Array<VNode>).forEach((child, idx) => {
-      if (
-        child == null ||
-        typeof child.type === "string" ||
-        Component.isCtor(child.type)
-      ) {
-        newState.resolvedChildren[idx] = child
-        return
+    const state = { ...this.state }
+    const children = this.props.children as Array<VNode | null>
+    for (let i = 0; i < children.length; i++) {
+      const c = children[i]
+      if (!c || typeof c.type === "string" || Component.isCtor(c.type)) {
+        state.resolvedChildren[i] = c
+        continue
       }
-
-      const node = child.type(child.props)
-      if (node instanceof Promise) {
-        node.then((resolvedChild) => {
-          newState.resolvedChildren[idx] = resolvedChild
-          this.setState(newState)
-        })
-      } else {
-        newState.resolvedChildren[idx] = node
+      const node = c.type(c.props)
+      if (!(node instanceof Promise)) {
+        state.resolvedChildren[i] = node
+        continue
       }
-    })
-    this.setState(newState)
+      node.then((resolvedChild) => {
+        state.resolvedChildren[i] = resolvedChild
+        this.setState(state)
+      })
+    }
+    this.setState(state)
   }
 
   render() {
