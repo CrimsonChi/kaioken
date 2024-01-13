@@ -1,6 +1,7 @@
 import type { VNode } from "./types"
 import { createId, g } from "./globalState.js"
 import { isValidChild } from "./utils.js"
+import { Component } from "./component.js"
 
 export { mount, createElement, fragment }
 
@@ -14,12 +15,12 @@ function mount(appFunc: () => JSX.Element, container: HTMLElement) {
 }
 
 function createElement(
-  type: string | Function,
+  type: string | Function | typeof Component,
   props = {},
   ...children: (VNode | unknown)[]
 ): VNode {
   return {
-    id: createId(),
+    id: typeof type === "string" ? -1 : createId(),
     type,
     props: {
       ...props,

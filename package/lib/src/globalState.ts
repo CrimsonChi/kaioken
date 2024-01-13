@@ -1,6 +1,7 @@
-import type { Hook, VNode } from "./types"
+import type { Hook, Rec, VNode } from "./types"
 import { commitWork, createDom, domMap } from "./dom.js"
 import { EffectTag } from "./constants.js"
+import { Component } from "./component.js"
 
 export { g, stateMap, createId, type GlobalState }
 
@@ -11,7 +12,7 @@ const stateMap = new Map<number, Hook<unknown>[]>()
 class GlobalState {
   rootNode: VNode | undefined = undefined
   curNode: VNode | undefined = undefined
-  nextUnitOfWork: VNode | undefined = undefined
+  nextUnitOfWork: VNode | void = undefined
   treesInProgress: VNode[] = []
   currentTreeIndex = 0
 
@@ -55,14 +56,12 @@ class GlobalState {
   private workLoop(deadline?: IdleDeadline) {
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
-      this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
+      this.nextUnitOfWork =
+        this.performUnitOfWork(this.nextUnitOfWork) ??
+        this.treesInProgress[++this.currentTreeIndex]
       shouldYield =
         (deadline && deadline.timeRemaining() < 1) ??
         (!deadline && !this.nextUnitOfWork)
-    }
-
-    if (!this.nextUnitOfWork) {
-      this.nextUnitOfWork = this.treesInProgress[++this.currentTreeIndex]
     }
 
     if (!this.nextUnitOfWork && this.treesInProgress.length) {
@@ -79,8 +78,10 @@ class GlobalState {
     requestIdleCallback(this.workLoop.bind(this))
   }
 
-  private performUnitOfWork(vNode: VNode): VNode | undefined {
-    if (vNode.type instanceof Function) {
+  private performUnitOfWork(vNode: VNode): VNode | void {
+    if (Component.isCtor(vNode.type)) {
+      this.updateClassComponent(vNode)
+    } else if (vNode.type instanceof Function) {
       this.updateFunctionComponent(vNode)
     } else {
       this.updateHostComponent(vNode)
@@ -95,8 +96,26 @@ class GlobalState {
       }
       nextNode = nextNode.parent
     }
+  }
 
-    return
+  private createClassInstance(vNode: VNode) {
+    return new (vNode.type as { new (props: Rec): Component })(vNode.props)
+  }
+
+  private updateClassComponent(vNode: VNode) {
+    this.hookIndex = 0
+    this.curNode = vNode
+    if (!vNode.instance) {
+      const instance = this.createClassInstance(vNode)
+      vNode.instance = instance
+      instance.vNode = vNode
+      if (instance.componentDidMount) {
+        this.queueEffect(() => instance!.componentDidMount!())
+      }
+    }
+
+    const children = [vNode.instance.render()].flat() as VNode[]
+    this.reconcileChildren(vNode, children)
   }
 
   private updateFunctionComponent(vNode: VNode) {
@@ -134,7 +153,7 @@ class GlobalState {
       }
       if (child && !sameType) {
         newNode = {
-          id: createId(),
+          id: typeof child.type === "string" ? -1 : createId(),
           type: child.type,
           props: child.props,
           parent: vNode,

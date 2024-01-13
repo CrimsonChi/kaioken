@@ -3,6 +3,7 @@ import { stateMap, type GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag } from "./constants.js"
+import { Component } from "./component.js"
 
 export { commitWork, createDom }
 
@@ -196,7 +197,9 @@ function findDomRecursive(
 }
 
 function commitDeletion(vNode: VNode, dom = domMap.get(vNode), root = true) {
-  if (vNode.type instanceof Function) {
+  if (Component.isCtor(vNode.type) && vNode.instance) {
+    vNode.instance.componentWillUnmount?.()
+  } else if (vNode.type instanceof Function) {
     const hooks = stateMap.get(vNode.id) ?? []
     while (hooks.length > 0) cleanupHook(hooks.pop()!)
     stateMap.delete(vNode.id)

@@ -1,3 +1,4 @@
+import { Component } from "./component"
 import type { EffectTag } from "./constants"
 import type {
   EventAttributes,
@@ -44,7 +45,8 @@ declare global {
 
 type VNode = {
   id: number
-  type: string | Function
+  type: string | Function | typeof Component
+  instance?: Component
   props: {
     [key: string]: any
     children: VNode[]

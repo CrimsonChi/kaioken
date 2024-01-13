@@ -1,4 +1,4 @@
-import { Link, RouteChildProps, memo, useFetch, useState } from "kaioken"
+import { Link, memo, useFetch, useState, type RouteChildProps } from "kaioken"
 import { Spinner } from "./Spinner"
 
 interface Product {

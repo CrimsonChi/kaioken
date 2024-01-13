@@ -3,7 +3,7 @@ import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
 
-export { Router, Route, Link, navigate }
+export { Router, Route, Link, navigate, type RouteChildProps }
 
 interface RouterProps {
   basePath?: string
@@ -63,11 +63,11 @@ interface RouteChildProps {
 }
 
 function isRoute(thing: unknown): thing is VNode & { props: RouteProps } {
-  return isVNode(thing) && thing.type === "x-route"
+  return isVNode(thing) && thing.type === Route
 }
 
 function Route({ path, element }: RouteProps) {
-  return createElement("x-route", { path, element })
+  return createElement(Route, { path, element })
 }
 
 function navigate(to: string) {

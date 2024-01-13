@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "kaioken"
 import { Button } from "./Button"
 import { createSignal } from "../signal"
+import { MyClassComponent } from "./ClassComponent"
 
 const externalStore = createSignal(0)
 
@@ -36,6 +37,7 @@ export function Counter() {
         <br />
         Counter: {count}
         <Button onclick={() => setCount((prev) => prev + 1)}>+</Button>
+        <MyClassComponent data={count} />
       </div>
     </div>
   )

@@ -19,6 +19,14 @@
 - [x] useCallback
 - [x] memo
 - [x] useOptimistic
+- [x] Class Components
+- [ ] Transitions / Animations
+- [ ] Portals
+- [ ] Suspense
+- [ ] Error Boundaries
+- [ ] lazy / dynamic imports
+- [ ] renderToString
+- [ ] Server Side Rendering / Hydration
 
 <br />
 
