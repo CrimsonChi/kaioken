@@ -208,11 +208,6 @@ function commitDeletion(vNode: VNode, dom = domMap.get(vNode), root = true) {
   }
   if (vNode.child) {
     commitDeletion(vNode.child, undefined, false)
-    let sibling = vNode.child.sibling
-    while (sibling) {
-      commitDeletion(sibling, undefined, false)
-      sibling = sibling.sibling
-    }
   }
   if (vNode.sibling && !root) {
     commitDeletion(vNode.sibling, undefined, false)
