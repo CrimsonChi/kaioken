@@ -42,6 +42,23 @@ function fragment({ children }: { children: JSX.Element[] }) {
   return children as JSX.Element
 }
 
+const selfClosingTags = [
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+]
+
 function renderToString(element: JSX.Element): string {
   if (element === null) return ""
   if (typeof element === "string") return element
@@ -56,13 +73,16 @@ function renderToString(element: JSX.Element): string {
     if (element.type === "form" && props.action) {
       delete props.action
     }
+    const isSelfClosing = selfClosingTags.includes(element.type)
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
       .map((key) => `${key}="${props[key]}"`)
       .join(" ")
-    return `<${element.type} ${attrs}>${children
-      .map(renderToString)
-      .join("")}</${element.type}>`
+    const open = `<${element.type}${attrs ? ` ${attrs}` : ""}${
+      isSelfClosing ? " /" : ""
+    }>`
+    if (isSelfClosing) return open
+    return `${open}${children.map(renderToString).join("")}</${element.type}>`
   }
 
   if (Component.isCtor(element.type)) {
