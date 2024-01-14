@@ -7,5 +7,8 @@ const root = document.querySelector<HTMLDivElement>("#app")!
 const instance = mount(App, root)
 console.log("mounted", instance)
 
-const html = renderToString(App())
-console.log("renderToString", html)
+let testRenderToString = false
+if (testRenderToString) {
+  const html = renderToString(App())
+  console.log("renderToString", html)
+}

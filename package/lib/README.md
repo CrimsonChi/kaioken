@@ -20,11 +20,11 @@
 - [x] memo
 - [x] useOptimistic
 - [x] Class Components
+- [x] renderToString
 - [ ] Transitions / Animations
 - [ ] Portals
 - [ ] Error Boundaries
 - [ ] lazy / dynamic imports
-- [ ] renderToString
 - [ ] Server Side Rendering / Hydration
 
 <br />

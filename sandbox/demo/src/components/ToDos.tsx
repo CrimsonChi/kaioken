@@ -1,4 +1,4 @@
-import { StyleScope, useState } from "kaioken"
+import { useState } from "kaioken"
 import { Button } from "./Button"
 
 type ToDoItem = {
@@ -57,26 +57,24 @@ export function Todos() {
   const pending = todos.filter((t) => !t.done)
 
   return (
-    <StyleScope>
-      <div className="todos">
-        <div>
-          <input value={newTodo} oninput={handleInput} />
-          <Button onclick={handleAdd}>Add</Button>
-        </div>
-        <ToDoList
-          name="Pending"
-          items={pending}
-          toggleItem={handleToggle}
-          handleDelete={handleDelete}
-        />
-        <ToDoList
-          name="Completed"
-          items={completed}
-          toggleItem={handleToggle}
-          handleDelete={handleDelete}
-        />
+    <div className="todos">
+      <div>
+        <input value={newTodo} oninput={handleInput} />
+        <Button onclick={handleAdd}>Add</Button>
       </div>
-    </StyleScope>
+      <ToDoList
+        name="Pending"
+        items={pending}
+        toggleItem={handleToggle}
+        handleDelete={handleDelete}
+      />
+      <ToDoList
+        name="Completed"
+        items={completed}
+        toggleItem={handleToggle}
+        handleDelete={handleDelete}
+      />
+    </div>
   )
 }
 
