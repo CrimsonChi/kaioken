@@ -134,15 +134,23 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 }
 
 function commitWork(g: GlobalState, vNode: VNode) {
-  const dom = domMap.get(vNode)
+  const dom = domMap.get(vNode) ?? vNode.instance?.rootDom
 
-  if (vNode.effectTag === EffectTag.PLACEMENT && dom) {
+  if (
+    vNode.effectTag === EffectTag.PLACEMENT &&
+    dom &&
+    !vNode.instance?.rootDom
+  ) {
     let parentNode: VNode | undefined =
       vNode.parent ?? vNode.prev?.parent ?? g.treesInProgress[0]
-    let domParent = parentNode ? domMap.get(parentNode) : undefined
+    let domParent = parentNode
+      ? parentNode.instance?.rootDom ?? domMap.get(parentNode)
+      : undefined
     while (parentNode && !domParent) {
       parentNode = parentNode.parent
-      domParent = parentNode ? domMap.get(parentNode) : undefined
+      domParent = parentNode
+        ? parentNode.instance?.rootDom ?? domMap.get(parentNode)
+        : undefined
     }
 
     if (!domParent) {
@@ -206,7 +214,7 @@ function commitDeletion(vNode: VNode, dom = domMap.get(vNode), root = true) {
   }
 
   if (dom) {
-    if (dom.isConnected) dom.remove()
+    if (dom.isConnected && vNode.instance?.rootDom !== dom) dom.remove()
     domMap.delete(vNode)
   }
   if (vNode.child) {

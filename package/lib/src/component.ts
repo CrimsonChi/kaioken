@@ -5,6 +5,7 @@ import { g } from "./globalState.js"
 export { Component }
 
 abstract class Component<T = Rec, U = Rec> {
+  rootDom?: HTMLElement
   static [componentSymbol] = true
   state: U = {} as U
   props: T

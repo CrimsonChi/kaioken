@@ -21,8 +21,8 @@
 - [x] useOptimistic
 - [x] Class Components
 - [x] renderToString
-- [ ] Transitions / Animations
 - [ ] Portals
+- [ ] Transitions / Animations
 - [ ] Error Boundaries
 - [ ] lazy / dynamic imports
 - [ ] Server Side Rendering / Hydration

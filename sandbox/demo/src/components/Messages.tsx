@@ -1,4 +1,4 @@
-import { useEffect, useOptimistic, useRef, useState } from "kaioken"
+import { Portal, useEffect, useOptimistic, useRef, useState } from "kaioken"
 
 type Message = {
   message: string
@@ -23,7 +23,7 @@ export function Messages() {
   return <Thread messages={messages} sendMessage={sendMessage} />
 }
 
-function _Thread({
+function Thread({
   messages,
   sendMessage,
 }: {
@@ -55,7 +55,6 @@ function _Thread({
           {sending && <small> Sending...</small>}
         </div>
       ))}
-
       <form action={formAction} ref={formRef}>
         <input
           ref={inputRef}
@@ -66,10 +65,11 @@ function _Thread({
         />
         <button type="submit">Send</button>
       </form>
+      {optimisticMessages.length % 2 === 0 && (
+        <Portal container={document.getElementById("portal-root")!}>
+          <h2>Portal</h2>
+        </Portal>
+      )}
     </div>
   )
 }
-
-const Thread = Object.assign(_Thread, {
-  test: true,
-})
