@@ -46,13 +46,9 @@ function StyleScope({ children }: Props) {
 function transformStyles(node: VNode, scopeId: string, rules: StyleRule[]) {
   node.props.children[0].props.nodeValue = rules.reduce((acc, rule) => {
     const selector = rule.selector
-    //const body = rule.body.replace(/(\r\n|\n|\r)/gm, "")
     const scopedSelector = rule.isKeyframe
       ? selector
-      : selector
-          .split(",")
-          .map((s) => (s ? s : `${s}.${scopeId}`))
-          .join(",")
+      : `${selector.startsWith(".") ? selector : ` ${selector}`}.${scopeId}`
     return `${acc}${scopedSelector}{${rule.body}}\n`
   }, "") as string
 }
