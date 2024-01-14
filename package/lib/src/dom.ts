@@ -5,9 +5,9 @@ import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { commitWork, createDom }
+export { commitWork, createDom, domMap }
 
-export const domMap = new WeakMap<VNode, HTMLElement | SVGElement | Text>()
+const domMap = new WeakMap<VNode, HTMLElement | SVGElement | Text>()
 
 const svgTags = [
   "svg",

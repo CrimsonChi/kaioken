@@ -20,7 +20,6 @@
 - [x] memo
 - [x] useOptimistic
 - [x] Class Components
-- [x] Suspense
 - [ ] Transitions / Animations
 - [ ] Portals
 - [ ] Error Boundaries

@@ -29,13 +29,7 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
 
-    type Element =
-      | VNode
-      | VNode[]
-      | string
-      | number
-      | null
-      | Promise<string | number | VNode | VNode[] | null>
+    type Element = VNode | VNode[] | string | number | null
 
     type InternalProps<
       K extends keyof HtmlElementAttributes | keyof SvgElementAttributes

@@ -6,7 +6,6 @@ import { ThemeContextProvider } from "./ThemeContext"
 import { ProductPage } from "./components/Product"
 import { Messages } from "./components/Messages"
 import { MemoCounter } from "./components/MemoCounter"
-import { SuspenseExample } from "./components/Suspense"
 
 export function App() {
   return (
@@ -21,7 +20,6 @@ export function App() {
         <Link to="/memo">Memo</Link>
         <Link to="/query?id=1">Query</Link>
         <Link to="/messages">Messages</Link>
-        <Link to="/suspense">Suspense</Link>
       </nav>
       <Router>
         <Route path="/" element={() => <h2>Home</h2>} />
@@ -31,7 +29,6 @@ export function App() {
         <Route path="/memo" element={MemoCounter} />
         <Route path="/query" element={ProductPage} />
         <Route path="/messages" element={Messages} />
-        <Route path="/suspense" element={SuspenseExample} />
       </Router>
     </ThemeContextProvider>
   )
