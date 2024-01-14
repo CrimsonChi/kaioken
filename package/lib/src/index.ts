@@ -53,6 +53,9 @@ function renderToString(element: JSX.Element): string {
   const props = element.props ?? {}
 
   if (typeof element.type === "string") {
+    if (element.type === "form" && props.action) {
+      delete props.action
+    }
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
       .map((key) => `${key}="${props[key]}"`)
@@ -71,5 +74,6 @@ function renderToString(element: JSX.Element): string {
     return renderToString(instance.render())
   }
 
+  g.curNode = element
   return renderToString(element.type(element.props))
 }
