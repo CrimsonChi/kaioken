@@ -168,3 +168,8 @@ nav {
   left: 0;
   width: 100%;
 }
+
+.modal-content>h2,
+.drawer-content>h2 {
+  margin-top: 0;
+}

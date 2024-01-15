@@ -4,7 +4,7 @@ export function MdnSvgIcon() {
       id="mdn-docs-logo"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 694.9 104.4"
-      style="fill: red"
+      style="fill:red;max-width:100%;"
       height="50"
       role="img"
     >
