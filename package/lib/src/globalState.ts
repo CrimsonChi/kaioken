@@ -20,14 +20,10 @@ class GlobalState {
   deletions: VNode[] = []
   pendingEffects: Function[] = []
 
-  mounted = false
-
   mount(node: VNode, container: HTMLElement) {
     this.rootNode = node
     domMap.set(node, container)
     this.requestUpdate(node)
-    this.deletions = []
-    this.mounted = true
     this.workLoop()
     return this.rootNode
   }
