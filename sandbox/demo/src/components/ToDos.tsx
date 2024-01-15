@@ -1,5 +1,6 @@
 import { useState } from "kaioken"
 import { Button } from "./Button"
+import { Input } from "./Input"
 
 type ToDoItem = {
   id: string
@@ -59,7 +60,7 @@ export function Todos() {
   return (
     <div className="todos">
       <div>
-        <input value={newTodo} oninput={handleInput} />
+        <Input value={newTodo} oninput={handleInput} />
         <Button onclick={handleAdd}>Add</Button>
       </div>
       <ToDoList

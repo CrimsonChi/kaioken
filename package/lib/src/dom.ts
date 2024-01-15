@@ -197,7 +197,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
     }
   }
 
-  if (vNode.props.ref) {
+  if (vNode.props.ref && dom) {
     vNode.props.ref.current = dom
   }
   vNode.prev = { ...vNode, prev: undefined }

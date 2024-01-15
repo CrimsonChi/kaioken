@@ -1,5 +1,6 @@
 import { useEffect, useOptimistic, useRef, useState } from "kaioken"
 import { Button } from "./Button"
+import { Input } from "./Input"
 
 type Message = {
   message: string
@@ -57,13 +58,7 @@ function Thread({
         </div>
       ))}
       <form action={formAction} ref={formRef}>
-        <input
-          ref={inputRef}
-          type="text"
-          name="message"
-          placeholder="Hello!"
-          value={1}
-        />
+        <Input ref={inputRef} type="text" name="message" placeholder="Hello!" />
         <Button type="submit">Send</Button>
       </form>
     </div>
