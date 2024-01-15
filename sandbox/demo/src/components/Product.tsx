@@ -1,5 +1,6 @@
 import { Link, memo, useFetch, useState, type RouteChildProps } from "kaioken"
 import { Spinner } from "./Spinner"
+import { Button } from "./Button"
 
 interface Product {
   title: string
@@ -18,7 +19,7 @@ export function ProductPage(props: RouteChildProps) {
     <>
       <div>
         <div>count: {count}</div>
-        <button onclick={() => setCount(count + 1)}>+1</button>
+        <Button onclick={() => setCount(count + 1)}>+1</Button>
       </div>
       {loading && <Spinner />}
       {error && <div>{error.message}</div>}

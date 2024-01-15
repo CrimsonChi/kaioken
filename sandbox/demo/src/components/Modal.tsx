@@ -28,7 +28,7 @@ function Modal({ state, close }: ModalProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   if (state == "exited") return null
   const opacity = state === "entered" ? 1 : 0
-  const scale = state === "entered" ? 1 : 0
+  const scale = state === "entered" ? 1 : 0.85
   return (
     <StyleScope>
       <div
@@ -52,27 +52,10 @@ function Modal({ state, close }: ModalProps) {
       <style>
         {`
           .modal-wrapper {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            transition: opacity 150ms ease-in-out;
             opacity: ${opacity};
           }
           .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
             transform: translate(-50%, -50%) scale(${scale});
-            transition: transform 150ms ease-in-out;
-            width: 500px;
-            height: 300px;
-            background-color: #222;
-            border-radius: 5px;
-            padding: 20px;
           }
         `}
       </style>

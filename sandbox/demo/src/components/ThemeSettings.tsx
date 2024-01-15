@@ -12,7 +12,7 @@ export function ThemeSettings() {
         <Button onclick={() => dispatch({ type: "toggle" })}>
           Toggle theme
         </Button>
-        <p>Current theme: {theme}</p>
+        <p>Current theme: {theme.darkMode ? "dark" : "light"}</p>
       </div>
     </article>
   )

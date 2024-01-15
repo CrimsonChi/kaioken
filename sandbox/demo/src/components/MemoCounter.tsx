@@ -1,4 +1,5 @@
 import { useState, useMemo } from "kaioken"
+import { Button } from "./Button"
 
 export function MemoCounter() {
   const [count, setCount] = useState(0)
@@ -14,8 +15,8 @@ export function MemoCounter() {
       <div>count: {count}</div>
       <div>count2: {count2}</div>
       <div>memoizedValue: {memoizedValue}</div>
-      <button onclick={() => setCount(count + 1)}>+1</button>
-      <button onclick={() => setCount2(count2 + 1)}>+1</button>
+      <Button onclick={() => setCount(count + 1)}>+1</Button>
+      <Button onclick={() => setCount2(count2 + 1)}>+1</Button>
     </div>
   )
 }

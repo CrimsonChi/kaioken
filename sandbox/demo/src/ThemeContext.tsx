@@ -1,16 +1,20 @@
 import { createContext, useReducer } from "kaioken"
+interface Theme {
+  darkMode: boolean
+  animationTime: string
+}
 
-export const ThemeContext = createContext<"dark" | "light">(null)
+export const ThemeContext = createContext<Theme>(null)
 export const ThemeDispatchContext =
   createContext<(action: { type: "toggle" }) => void>(null)
 
-export function themeReducer(
-  state: "dark" | "light",
-  action: { type: "toggle" }
-) {
+export function themeReducer(state: Theme, action: { type: "toggle" }): Theme {
   switch (action.type) {
     case "toggle": {
-      return state === "dark" ? "light" : "dark"
+      return {
+        ...state,
+        darkMode: !state.darkMode,
+      }
     }
     default: {
       throw new Error(`Unhandled action type: ${action.type}`)
@@ -19,7 +23,10 @@ export function themeReducer(
 }
 
 export function ThemeContextProvider({ children }: { children?: JSX.Element }) {
-  const [theme, dispatch] = useReducer(themeReducer, "dark")
+  const [theme, dispatch] = useReducer(themeReducer, {
+    darkMode: true,
+    animationTime: "0.3s",
+  } as Theme)
   return (
     <ThemeContext.Provider value={theme}>
       <ThemeDispatchContext.Provider value={dispatch}>

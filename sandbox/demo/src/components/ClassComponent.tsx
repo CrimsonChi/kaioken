@@ -1,4 +1,5 @@
 import { Component } from "kaioken"
+import { Button } from "./Button"
 
 interface Props {
   data: number
@@ -17,11 +18,11 @@ export class MyClassComponent extends Component<Props> {
         <div>
           Hello from Class Component {this.props.data + this.state.count}
         </div>
-        <button
+        <Button
           onclick={() => this.setState(({ count }) => ({ count: count + 1 }))}
         >
           +
-        </button>
+        </Button>
       </>
     )
   }
