@@ -24,14 +24,24 @@ function createElement(
     type,
     props: {
       ...props,
-      children: children
-        .flat()
-        .filter(isValidChild)
-        .map((child) =>
-          typeof child === "object" ? child : createTextElement(String(child))
-        ) as VNode[],
+      children: (
+        children.flat().filter(isValidChild) as (
+          | VNode
+          | string
+          | (() => VNode)
+        )[]
+      ).map((child) => createChildElement(child)) as VNode[],
     },
   }
+}
+
+function createChildElement(child: VNode | string | (() => VNode)): VNode {
+  if (typeof child === "object") return child
+  if (typeof child === "function") {
+    const node = child()
+    return createChildElement(node)
+  }
+  return createTextElement(String(child))
 }
 
 function createTextElement(nodeValue: string): VNode {
@@ -59,9 +69,10 @@ const selfClosingTags = [
   "wbr",
 ]
 
-function renderToString(element: JSX.Element): string {
-  if (element === null) return ""
+function renderToString(element: JSX.Element | (() => JSX.Element)): string {
+  if (!element) return ""
   if (typeof element === "string") return element
+  if (typeof element === "function") return renderToString(element())
   if (element instanceof Array) return element.map(renderToString).join("")
   if (typeof element === "number") return String(element)
   if (element.type === "TEXT_ELEMENT") return element.props.nodeValue ?? ""
