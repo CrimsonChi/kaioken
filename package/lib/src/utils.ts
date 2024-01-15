@@ -5,7 +5,7 @@ export function isVNode(node: any): node is VNode {
 }
 
 export function isValidChild(child: unknown) {
-  return child !== null && child !== undefined && child !== false
+  return child !== null && child !== undefined && typeof child !== "boolean"
 }
 
 export const propFilters = {
