@@ -98,21 +98,17 @@ class GlobalState {
     this.hookIndex = 0
     this.curNode = vNode
     if (!vNode.instance) {
-      const instance = new (vNode.type as { new (props: Rec): Component })(
-        vNode.props
-      )
+      const instance =
+        vNode.prev?.instance ??
+        new (vNode.type as { new (props: Rec): Component })(vNode.props)
       vNode.instance = instance
       instance.vNode = vNode
-      if (instance.componentDidMount) {
-        this.queueEffect(() => instance!.componentDidMount!())
-      }
     } else {
       vNode.instance.props = vNode.props
     }
 
     const children = [vNode.instance.render()].flat() as VNode[]
     this.reconcileChildren(vNode, children)
-    vNode.instance.componentDidUpdate?.()
   }
 
   private updateFunctionComponent(vNode: VNode) {
@@ -139,7 +135,7 @@ class GlobalState {
 
     while (index < children.length || oldNode) {
       const child = children[index]
-      let newNode = undefined
+      let newNode: VNode | undefined = undefined
 
       const sameType = oldNode && child && child.type == oldNode.type
 

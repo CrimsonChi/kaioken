@@ -186,6 +186,16 @@ function commitWork(g: GlobalState, vNode: VNode) {
 
   vNode.child && commitWork(g, vNode.child)
   vNode.sibling && commitWork(g, vNode.sibling)
+  const instance = vNode.instance
+  if (instance) {
+    const onMounted = instance.componentDidMount?.bind(instance)
+    if (!vNode.prev && onMounted) {
+      g.queueEffect(() => onMounted())
+    } else if (EffectTag.UPDATE) {
+      const onUpdated = instance.componentDidUpdate?.bind(instance)
+      if (onUpdated) g.queueEffect(() => onUpdated())
+    }
+  }
 
   if (vNode.props.ref) {
     vNode.props.ref.current = dom
