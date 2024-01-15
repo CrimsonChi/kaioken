@@ -1,4 +1,4 @@
-import { Portal, useEffect, useOptimistic, useRef, useState } from "kaioken"
+import { useEffect, useOptimistic, useRef, useState } from "kaioken"
 
 type Message = {
   message: string
@@ -65,11 +65,6 @@ function Thread({
         />
         <button type="submit">Send</button>
       </form>
-      {optimisticMessages.length % 2 === 0 && (
-        <Portal container={document.getElementById("portal-root")!}>
-          <h2>Portal</h2>
-        </Portal>
-      )}
     </div>
   )
 }

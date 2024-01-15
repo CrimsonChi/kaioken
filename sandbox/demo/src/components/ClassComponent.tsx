@@ -25,6 +25,9 @@ export class MyClassComponent extends Component<Props> {
       </>
     )
   }
+  componentDidUpdate(): void {
+    console.log("componentDidUpdate")
+  }
   componentDidMount(): void {
     console.log("componentDidMount")
   }
