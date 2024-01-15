@@ -55,13 +55,21 @@ function transformStyles(node: VNode, scopeId: string, rules: StyleRule[]) {
     .replace(/\s\s+/g, " ")
 }
 
-function applyStyles(node: VNode, rules: StyleRule[], scopeId: string) {
-  const rule = rules.find(
-    (r) =>
-      r.selector === node.type ||
-      (r.selector.startsWith(".") &&
-        r.selector.substring(1) === node.props.className)
+function nodeMatchesSelector(node: VNode, selector: string) {
+  if (node.type === selector) return true
+  if (
+    selector.startsWith(".") &&
+    ((node.props.className || "") as string)
+      .split(" ")
+      .some((c) => c === selector.substring(1))
   )
+    return true
+
+  return false
+}
+
+function applyStyles(node: VNode, rules: StyleRule[], scopeId: string) {
+  const rule = rules.find((r) => nodeMatchesSelector(node, r.selector))
   if (rule) {
     node.props.className = ((node.props.className || "") + " " + scopeId).trim()
   }
