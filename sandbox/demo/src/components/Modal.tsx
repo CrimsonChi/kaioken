@@ -37,7 +37,7 @@ function Modal({ state, close }: ModalProps) {
         onclick={(e) => e.target === wrapperRef.current && close()}
       >
         <div className="modal-content">
-          <h2>Modal</h2>
+          <h2 className="text-xl font-semibold">Modal</h2>
           <p>
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
             voluptatem, quas, quos, quod voluptate voluptates dolorum

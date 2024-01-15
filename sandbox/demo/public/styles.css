@@ -607,8 +607,17 @@ video {
   line-height: 2.25rem;
 }
 
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
 .font-bold {
   font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
 }
 
 .underline {
@@ -768,7 +777,7 @@ nav {
 .drawer-content {
   position: absolute;
   z-index: 1000;
-  max-width: calc(100% - 40px);
+  max-width: 100%;
   padding: 20px;
   background-color: #222;
   transition: transform 150ms ease-in-out;

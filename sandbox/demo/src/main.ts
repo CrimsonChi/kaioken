@@ -1,4 +1,4 @@
-// import "./index.css"
+import "./styles.css"
 import { App } from "./App"
 import { mount, renderToString } from "kaioken"
 

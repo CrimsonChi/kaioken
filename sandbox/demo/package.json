@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "tailwind": "pnpx tailwindcss -w -i ./src/styles.css -o ./public/styles.css",
     "dev": "vite",
     "test": "vite test",
     "build": "tsc && vite build",

@@ -29,7 +29,7 @@ function Drawer({ state, close }: DrawerProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   if (state == "exited") return null
   const opacity = state === "entered" ? 1 : 0
-  const offsetY = state === "entered" ? 0 : 100
+  const offsetY = state === "entered" ? 0 : 15
   return (
     <StyleScope>
       <div
@@ -38,7 +38,7 @@ function Drawer({ state, close }: DrawerProps) {
         onclick={(e) => e.target === wrapperRef.current && close()}
       >
         <div className="drawer-content">
-          <h2>Drawer</h2>
+          <h2 className="text-xl font-semibold pb-1 mb-2">Drawer</h2>
           <p>
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
             voluptatem, quas, quos, quod voluptate voluptates dolorum

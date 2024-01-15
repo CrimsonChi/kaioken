@@ -150,7 +150,7 @@ nav {
 .drawer-content {
   position: absolute;
   z-index: 1000;
-  max-width: calc(100% - 40px);
+  max-width: 100%;
   padding: 20px;
   background-color: #222;
   transition: transform 150ms ease-in-out;
