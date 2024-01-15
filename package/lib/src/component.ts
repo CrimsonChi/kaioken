@@ -16,10 +16,10 @@ abstract class Component<T = Rec, U = Rec> {
   }
   abstract render(): JSX.Element
 
-  setState(setter: ((state: this["state"]) => this["state"]) | this["state"]) {
-    this.state = setter instanceof Function ? setter({ ...this.state }) : setter
+  setState(setter: (state: this["state"]) => this["state"]) {
+    this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {
-      g.requestUpdate(this.vNode!)
+      queueMicrotask(() => g.requestUpdate(this.vNode))
     }
   }
 
