@@ -4,10 +4,10 @@ import { g } from "./globalState.js"
 
 export { Component }
 
-abstract class Component<T = Rec, U = Rec> {
+abstract class Component<T = Rec> {
   rootDom?: HTMLElement
   static [componentSymbol] = true
-  state: U = {} as U
+  state = {} as Rec
   props: T
   // @ts-ignore
   vNode: VNode
@@ -33,7 +33,7 @@ abstract class Component<T = Rec, U = Rec> {
   componentDidMount?(): void
   componentDidUpdate?(): void
   componentWillUnmount?(): void
-  shouldComponentUpdate(nextProps: T, nextState: U): boolean
+  shouldComponentUpdate(nextProps: T, nextState: this["state"]): boolean
   shouldComponentUpdate(): boolean {
     return true
   }
