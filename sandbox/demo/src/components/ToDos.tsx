@@ -23,9 +23,7 @@ export function Todos() {
   const completed = useMemo(() => todos.filter((t) => t.done), [todos])
   const pending = useMemo(() => todos.filter((t) => !t.done), [todos])
 
-  const handleToggle = (id: string, e: MouseEvent) => {
-    e.preventDefault()
-
+  const handleToggle = (id: string) => {
     const newTodos = todos.map((todo) =>
       todo.id === id ? { ...todo, done: !todo.done } : todo
     )
@@ -33,9 +31,7 @@ export function Todos() {
     setTodos(newTodos)
   }
 
-  const handleDelete = (id: string, e: MouseEvent) => {
-    e.preventDefault()
-
+  const handleDelete = (id: string) => {
     const newTodos = todos.filter((todo) => todo.id !== id)
     saveTodos(newTodos)
     setTodos(newTodos)
@@ -87,8 +83,8 @@ function ToDoList({
 }: {
   name: string
   items: ToDoItem[]
-  toggleItem: (id: string, e: MouseEvent) => void
-  handleDelete: (id: string, e: MouseEvent) => void
+  toggleItem: (id: string) => void
+  handleDelete: (id: string) => void
 }) {
   if (!items.length) return null
   return (
@@ -101,9 +97,13 @@ function ToDoList({
             <Input
               type="checkbox"
               checked={todo.done}
-              onclick={(e) => toggleItem(todo.id, e)}
+              onclick={(e) => (e.preventDefault(), toggleItem(todo.id))}
             />
-            <Button onclick={(e) => handleDelete(todo.id, e)}>Delete</Button>
+            <Button
+              onclick={(e) => (e.preventDefault(), handleDelete(todo.id))}
+            >
+              Delete
+            </Button>
           </li>
         ))}
       </ul>
