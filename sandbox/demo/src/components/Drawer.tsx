@@ -1,5 +1,5 @@
-import { Portal, StyleScope, Transition, useRef, useState } from "kaioken"
-import { Button } from "./Button"
+import { Portal, Transition, useRef, useState } from "kaioken"
+import { Button } from "./atoms/Button"
 
 export function DrawerDemo() {
   const [open, setOpen] = useState(false)
@@ -28,38 +28,30 @@ type DrawerProps = {
 function Drawer({ state, close }: DrawerProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   if (state == "exited") return null
-  const opacity = state === "entered" ? 1 : 0
+  const opacity = state === "entered" ? "1" : "0"
   const offsetY = state === "entered" ? 0 : 15
   return (
-    <StyleScope>
+    <div
+      ref={wrapperRef}
+      className="drawer-wrapper"
+      onclick={(e) => e.target === wrapperRef.current && close()}
+      style={{ opacity }}
+    >
       <div
-        ref={wrapperRef}
-        className="drawer-wrapper"
-        onclick={(e) => e.target === wrapperRef.current && close()}
+        className="drawer-content"
+        style={{ transform: `translateY(${offsetY}%)` }}
       >
-        <div className="drawer-content">
-          <h2 className="text-xl font-semibold pb-1 mb-2">Drawer</h2>
-          <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
-            voluptatem, quas, quos, quod voluptate voluptates dolorum
-            reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
-            voluptatem, quas, quos, quod voluptate voluptates dolorum
-            reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
-            voluptatem, quas, quos, quod voluptate voluptates dolorum
-            reprehenderit natus quibusdam ratione quia! Quisquam, quod.
-          </p>
-        </div>
+        <h2 className="text-xl font-semibold pb-1 mb-2">Drawer</h2>
+        <p>
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
+          voluptatem, quas, quos, quod voluptate voluptates dolorum
+          reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
+          voluptatem, quas, quos, quod voluptate voluptates dolorum
+          reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
+          voluptatem, quas, quos, quod voluptate voluptates dolorum
+          reprehenderit natus quibusdam ratione quia! Quisquam, quod.
+        </p>
       </div>
-      <style>
-        {`
-          .drawer-wrapper {
-            opacity: ${opacity};
-          }
-          .drawer-content {
-            transform: translateY(${offsetY}%);
-          }
-        `}
-      </style>
-    </StyleScope>
+    </div>
   )
 }

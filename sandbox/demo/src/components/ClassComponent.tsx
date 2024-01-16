@@ -1,5 +1,5 @@
 import { Component } from "kaioken"
-import { Button } from "./Button"
+import { Button } from "./atoms/Button"
 
 interface Props {
   data: number

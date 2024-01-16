@@ -1,6 +1,6 @@
 import { useEffect, useOptimistic, useRef, useState } from "kaioken"
-import { Button } from "./Button"
-import { Input } from "./Input"
+import { Button } from "./atoms/Button"
+import { Input } from "./atoms/Input"
 
 type Message = {
   message: string
@@ -50,17 +50,17 @@ function Thread({
   })
 
   return (
-    <div>
+    <>
+      <form action={formAction} ref={formRef} className="flex gap-2 mb-5">
+        <Input ref={inputRef} type="text" name="message" placeholder="Hello!" />
+        <Button type="submit">Send</Button>
+      </form>
       {optimisticMessages.map(({ message, sending }) => (
-        <div>
+        <div className="text-center">
           {message}
           {sending && <small> Sending...</small>}
         </div>
       ))}
-      <form action={formAction} ref={formRef}>
-        <Input ref={inputRef} type="text" name="message" placeholder="Hello!" />
-        <Button type="submit">Send</Button>
-      </form>
-    </div>
+    </>
   )
 }

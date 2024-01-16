@@ -1,11 +1,12 @@
-import { Portal, StyleScope, Transition, useRef, useState } from "kaioken"
+import { Portal, Transition, useRef, useState } from "kaioken"
+import { Button } from "./atoms/Button"
 
 export function ModalDemo() {
   const [open, setOpen] = useState(false)
 
   return (
     <>
-      <button onclick={() => setOpen((v) => !v)}>Toggle Modal</button>
+      <Button onclick={() => setOpen((v) => !v)}>Toggle Modal</Button>
       <Portal container={document.getElementById("portal-root")!}>
         <Transition
           in={open}
@@ -27,38 +28,33 @@ type ModalProps = {
 function Modal({ state, close }: ModalProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   if (state == "exited") return null
-  const opacity = state === "entered" ? 1 : 0
+  const opacity = state === "entered" ? "1" : "0"
   const scale = state === "entered" ? 1 : 0.85
+  const translateY = state === "entered" ? -50 : -75
   return (
-    <StyleScope>
+    <div
+      ref={wrapperRef}
+      className="modal-wrapper"
+      onclick={(e) => e.target === wrapperRef.current && close()}
+      style={{ opacity }}
+    >
       <div
-        ref={wrapperRef}
-        className="modal-wrapper"
-        onclick={(e) => e.target === wrapperRef.current && close()}
+        className="modal-content"
+        style={{
+          transform: `translate(-50%, ${translateY}%) scale(${scale})`,
+        }}
       >
-        <div className="modal-content">
-          <h2 className="text-xl font-semibold">Modal</h2>
-          <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
-            voluptatem, quas, quos, quod voluptate voluptates dolorum
-            reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
-            voluptatem, quas, quos, quod voluptate voluptates dolorum
-            reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
-            voluptatem, quas, quos, quod voluptate voluptates dolorum
-            reprehenderit natus quibusdam ratione quia! Quisquam, quod.
-          </p>
-        </div>
+        <h2 className="text-xl font-semibold">Modal</h2>
+        <p>
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
+          voluptatem, quas, quos, quod voluptate voluptates dolorum
+          reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
+          voluptatem, quas, quos, quod voluptate voluptates dolorum
+          reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
+          voluptatem, quas, quos, quod voluptate voluptates dolorum
+          reprehenderit natus quibusdam ratione quia! Quisquam, quod.
+        </p>
       </div>
-      <style>
-        {`
-          .modal-wrapper {
-            opacity: ${opacity};
-          }
-          .modal-content {
-            transform: translate(-50%, -50%) scale(${scale});
-          }
-        `}
-      </style>
-    </StyleScope>
+    </div>
   )
 }

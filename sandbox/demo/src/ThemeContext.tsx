@@ -1,7 +1,6 @@
 import { createContext, useReducer } from "kaioken"
 interface Theme {
   darkMode: boolean
-  animationTime: string
 }
 
 export const ThemeContext = createContext<Theme>(null)
@@ -25,7 +24,6 @@ export function themeReducer(state: Theme, action: { type: "toggle" }): Theme {
 export function ThemeContextProvider({ children }: { children?: JSX.Element }) {
   const [theme, dispatch] = useReducer(themeReducer, {
     darkMode: true,
-    animationTime: "0.3s",
   } as Theme)
   return (
     <ThemeContext.Provider value={theme}>

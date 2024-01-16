@@ -1,6 +1,8 @@
 import { useState } from "kaioken"
-import { Button } from "./Button"
-import { Input } from "./Input"
+import { Button } from "./atoms/Button"
+import { Input } from "./atoms/Input"
+import { Container } from "./atoms/Container"
+import { H4 } from "./atoms/Heading"
 
 type ToDoItem = {
   id: string
@@ -58,8 +60,8 @@ export function Todos() {
   const pending = todos.filter((t) => !t.done)
 
   return (
-    <div className="todos">
-      <div>
+    <Container>
+      <div className="flex gap-2 mb-5">
         <Input value={newTodo} oninput={handleInput} />
         <Button onclick={handleAdd}>Add</Button>
       </div>
@@ -75,7 +77,7 @@ export function Todos() {
         toggleItem={handleToggle}
         handleDelete={handleDelete}
       />
-    </div>
+    </Container>
   )
 }
 
@@ -92,25 +94,23 @@ function ToDoList({
 }) {
   if (!items.length) return null
   return (
-    <>
-      <>
-        <h4>{name}</h4>
-        <ul>
-          {items.map((todo) => (
-            <li>
-              <span>{todo.text}</span>
-              <input
-                type="checkbox"
-                checked={todo.done}
-                onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
-              />
-              <Button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
-                Delete
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </>
-    </>
+    <Container className="mb-5">
+      <H4>{name}</H4>
+      <ul>
+        {items.map((todo) => (
+          <li className="w-full flex justify-between items-center gap-2">
+            <span className="w-full">{todo.text}</span>
+            <Input
+              type="checkbox"
+              checked={todo.done}
+              onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
+            />
+            <Button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
+              Delete
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </Container>
   )
 }

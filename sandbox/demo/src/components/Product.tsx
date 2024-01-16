@@ -1,30 +1,25 @@
-import { Link, memo, useFetch, useState, type RouteChildProps } from "kaioken"
+import { memo, useFetch, type RouteChildProps } from "kaioken"
 import { Spinner } from "./Spinner"
-import { Button } from "./Button"
+import { Link } from "./atoms/Link"
+import { H3 } from "./atoms/Heading"
+import { Container } from "./atoms/Container"
 
 interface Product {
   title: string
   thumbnail: string
 }
 
-export function ProductPage(props: RouteChildProps) {
-  const { id } = props.query
-  const [count, setCount] = useState(0)
-
+export function ProductPage({ query: { id } }: RouteChildProps) {
   const { loading, error, data } = useFetch<Product>(
     `https://dummyjson.com/products/${id}`
   )
 
   return (
     <>
-      <div>
-        <div>count: {count}</div>
-        <Button onclick={() => setCount(count + 1)}>+1</Button>
-      </div>
       {loading && <Spinner />}
       {error && <div>{error.message}</div>}
       {data && <Product product={data} />}
-      <div>
+      <div className="flex items-center justify-center">
         {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}
         <Link to={`/query?id=${Number(id) + 1}`}>Next</Link>
       </div>
@@ -34,11 +29,9 @@ export function ProductPage(props: RouteChildProps) {
 
 const Product = memo(function Product({ product }: { product: Product }) {
   return (
-    <>
-      <div>
-        <h3>{product.title}</h3>
-        <img src={product.thumbnail} />
-      </div>
-    </>
+    <Container>
+      <H3 className="text-center">{product.title}</H3>
+      <img src={product.thumbnail} />
+    </Container>
   )
 })
