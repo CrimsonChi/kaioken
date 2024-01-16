@@ -36,7 +36,8 @@ function Thread({
   const formRef = useRef<HTMLFormElement>(null)
   function formAction(formData: FormData) {
     const message = formData.get("message") as string
-    formRef.current?.reset()
+    if (!message) return
+    // formRef.current?.reset()
     sendMessage(message)
     addOptimisticMessage(message)
   }
