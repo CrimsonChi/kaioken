@@ -35,8 +35,12 @@ function createElement(
   }
 }
 
+function isVNode(node: unknown): node is VNode {
+  return typeof node === "object" && node !== null && "type" in node
+}
+
 function createChildElement(child: VNode | string | (() => VNode)): VNode {
-  if (typeof child === "object") return child
+  if (isVNode(child)) return child
   if (typeof child === "function") {
     const node = child()
     return createChildElement(node)
@@ -95,16 +99,15 @@ function renderToString(element: JSX.Element | (() => JSX.Element)): string {
     if (isSelfClosing) return open
     return `${open}${children.map(renderToString).join("")}</${element.type}>`
   }
+  g.curNode = element
 
   if (Component.isCtor(element.type)) {
     const instance = new (element.type as unknown as {
       new (props: Rec): Component
     })(element.props)
-    instance.vNode = element as VNode
     instance.componentDidMount?.()
     return renderToString(instance.render())
   }
 
-  g.curNode = element
   return renderToString(element.type(element.props))
 }

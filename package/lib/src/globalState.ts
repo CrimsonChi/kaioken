@@ -102,7 +102,6 @@ class GlobalState {
         vNode.prev?.instance ??
         new (vNode.type as { new (props: Rec): Component })(vNode.props)
       vNode.instance = instance
-      instance.vNode = vNode
     } else {
       vNode.instance.props = vNode.props
     }

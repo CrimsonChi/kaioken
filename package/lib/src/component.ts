@@ -9,10 +9,10 @@ abstract class Component<T = Rec> {
   static [componentSymbol] = true
   state = {} as Rec
   props: T
-  // @ts-ignore
   vNode: VNode
   constructor(props: T) {
     this.props = props
+    this.vNode = g.curNode!
   }
   abstract render(): JSX.Element
 
@@ -23,11 +23,8 @@ abstract class Component<T = Rec> {
     }
   }
 
-  static isCtor(type: any): type is typeof Component {
-    return type[componentSymbol]
-  }
-  static isComponent(type: any): type is Component {
-    return typeof type === "object" && type.constructor[componentSymbol]
+  static isCtor(type: unknown): type is typeof Component {
+    return !!type && typeof type === "function" && componentSymbol in type
   }
 
   componentDidMount?(): void
