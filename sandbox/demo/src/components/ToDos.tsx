@@ -1,4 +1,4 @@
-import { useState } from "kaioken"
+import { useMemo, useModel, useState } from "kaioken"
 import { Button } from "./atoms/Button"
 import { Input } from "./atoms/Input"
 import { Container } from "./atoms/Container"
@@ -18,11 +18,10 @@ function loadTodos(): ToDoItem[] {
 }
 
 export function Todos() {
-  const [todos, setTodos] = useState(loadTodos())
-  const [newTodo, setNewTodo] = useState("")
-
-  const handleInput = (e: Event) =>
-    setNewTodo((e.target as HTMLInputElement).value)
+  const [ref, text, setText] = useModel<HTMLInputElement, string>("")
+  const [todos, setTodos] = useState(loadTodos)
+  const completed = useMemo(() => todos.filter((t) => t.done), [todos])
+  const pending = useMemo(() => todos.filter((t) => !t.done), [todos])
 
   const handleToggle = (id: string, e: MouseEvent) => {
     e.preventDefault()
@@ -43,28 +42,27 @@ export function Todos() {
   }
 
   const handleAdd = () => {
+    if (!text) return
     const newTodos = [
       ...todos,
       {
-        id: crypto.randomUUID(),
-        text: newTodo,
+        id: crypto.randomUUID() as string,
+        text,
         done: false,
       },
     ]
     saveTodos(newTodos)
     setTodos(newTodos)
-    setNewTodo("")
+    setText("")
   }
-
-  const completed = todos.filter((t) => t.done)
-  const pending = todos.filter((t) => !t.done)
 
   return (
     <Container>
-      <div className="flex gap-2 mb-5 items-center">
-        <Input value={newTodo} oninput={handleInput} />
-        <Button onclick={handleAdd}>Add</Button>
-      </div>
+      <form action={handleAdd} className="flex gap-2 mb-5 items-center">
+        <Input ref={ref} />
+        <Button>Add</Button>
+      </form>
+      {{ x: 123 }}
       <ToDoList
         name="Pending"
         items={pending}
@@ -103,11 +101,9 @@ function ToDoList({
             <Input
               type="checkbox"
               checked={todo.done}
-              onclick={(e: MouseEvent) => toggleItem(todo.id, e)}
+              onclick={(e) => toggleItem(todo.id, e)}
             />
-            <Button onclick={(e: MouseEvent) => handleDelete(todo.id, e)}>
-              Delete
-            </Button>
+            <Button onclick={(e) => handleDelete(todo.id, e)}>Delete</Button>
           </li>
         ))}
       </ul>
