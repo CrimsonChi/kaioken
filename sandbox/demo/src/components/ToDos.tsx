@@ -61,7 +61,7 @@ export function Todos() {
 
   return (
     <Container>
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 mb-5 items-center">
         <Input value={newTodo} oninput={handleInput} />
         <Button onclick={handleAdd}>Add</Button>
       </div>
@@ -95,10 +95,10 @@ function ToDoList({
   if (!items.length) return null
   return (
     <Container className="mb-5">
-      <H4>{name}</H4>
+      <H4 className="mb-5">{name}</H4>
       <ul>
         {items.map((todo) => (
-          <li className="w-full flex justify-between items-center gap-2">
+          <li className="w-full flex justify-between items-center gap-2 mb-2">
             <span className="w-full">{todo.text}</span>
             <Input
               type="checkbox"

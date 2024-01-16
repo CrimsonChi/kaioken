@@ -1,5 +1,7 @@
 import { Portal, Transition, useRef, useState } from "kaioken"
-import { Button } from "./atoms/Button"
+import { Button } from "../atoms/Button"
+import { Backdrop } from "./Backdrop"
+import { Header } from "./Header"
 
 export function DrawerDemo() {
   const [open, setOpen] = useState(false)
@@ -31,9 +33,8 @@ function Drawer({ state, close }: DrawerProps) {
   const opacity = state === "entered" ? "1" : "0"
   const offsetY = state === "entered" ? 0 : 15
   return (
-    <div
+    <Backdrop
       ref={wrapperRef}
-      className="drawer-wrapper"
       onclick={(e) => e.target === wrapperRef.current && close()}
       style={{ opacity }}
     >
@@ -41,7 +42,7 @@ function Drawer({ state, close }: DrawerProps) {
         className="drawer-content"
         style={{ transform: `translateY(${offsetY}%)` }}
       >
-        <h2 className="text-xl font-semibold pb-1 mb-2">Drawer</h2>
+        <Header>Drawer</Header>
         <p>
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
           voluptatem, quas, quos, quod voluptate voluptates dolorum
@@ -52,6 +53,6 @@ function Drawer({ state, close }: DrawerProps) {
           reprehenderit natus quibusdam ratione quia! Quisquam, quod.
         </p>
       </div>
-    </div>
+    </Backdrop>
   )
 }

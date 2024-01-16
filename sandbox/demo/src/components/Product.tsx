@@ -1,5 +1,5 @@
 import { memo, useFetch, type RouteChildProps } from "kaioken"
-import { Spinner } from "./Spinner"
+import { Spinner } from "./atoms/Spinner"
 import { Link } from "./atoms/Link"
 import { H3 } from "./atoms/Heading"
 import { Container } from "./atoms/Container"

@@ -1,5 +1,13 @@
-import { Portal, Transition, useRef, useState } from "kaioken"
-import { Button } from "./atoms/Button"
+import {
+  Portal,
+  Transition,
+  useRef,
+  useState,
+  type TransitionState,
+} from "kaioken"
+import { Button } from "../atoms/Button"
+import { Backdrop } from "./Backdrop"
+import { Header } from "./Header"
 
 export function ModalDemo() {
   const [open, setOpen] = useState(false)
@@ -21,7 +29,7 @@ export function ModalDemo() {
 }
 
 type ModalProps = {
-  state: "entering" | "entered" | "exiting" | "exited"
+  state: TransitionState
   close: () => void
 }
 
@@ -30,11 +38,10 @@ function Modal({ state, close }: ModalProps) {
   if (state == "exited") return null
   const opacity = state === "entered" ? "1" : "0"
   const scale = state === "entered" ? 1 : 0.85
-  const translateY = state === "entered" ? -50 : -75
+  const translateY = state === "entered" ? -50 : -25
   return (
-    <div
+    <Backdrop
       ref={wrapperRef}
-      className="modal-wrapper"
       onclick={(e) => e.target === wrapperRef.current && close()}
       style={{ opacity }}
     >
@@ -44,17 +51,13 @@ function Modal({ state, close }: ModalProps) {
           transform: `translate(-50%, ${translateY}%) scale(${scale})`,
         }}
       >
-        <h2 className="text-xl font-semibold">Modal</h2>
+        <Header>Modal</Header>
         <p>
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
-          voluptatem, quas, quos, quod voluptate voluptates dolorum
-          reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
-          voluptatem, quas, quos, quod voluptate voluptates dolorum
-          reprehenderit natus quibusdam ratione quia! Quisquam, quod. Quisquam
           voluptatem, quas, quos, quod voluptate voluptates dolorum
           reprehenderit natus quibusdam ratione quia! Quisquam, quod.
         </p>
       </div>
-    </div>
+    </Backdrop>
   )
 }
