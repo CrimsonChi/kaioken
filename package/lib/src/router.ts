@@ -1,4 +1,4 @@
-import type { Rec, VNode } from "./types"
+import type { ElementProps, Rec, VNode } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
@@ -76,15 +76,20 @@ function navigate(to: string) {
   dispatchEvent(popStateEvent)
 }
 
-function Link({ to, children }: { to: string; children?: JSX.Element }) {
+export interface LinkProps extends ElementProps<"a"> {
+  to: string
+}
+
+function Link({ to, children, ...props }: LinkProps) {
   return createElement(
     "a",
     {
       href: to,
-      onClick: (e: Event) => {
+      onclick: (e: Event) => {
         e.preventDefault()
         navigate(to)
       },
+      ...props,
     },
     children
   )
