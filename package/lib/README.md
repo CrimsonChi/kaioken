@@ -1,6 +1,6 @@
 # **Kaioken**
 
-#### _A lightweight (less than 5Kb) react-like library for creating web apps with ease._
+#### _A lightweight (less than 6Kb) react-like library for creating web apps with ease._
 
 <br />
 
