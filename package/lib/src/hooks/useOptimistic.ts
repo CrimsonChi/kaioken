@@ -6,22 +6,19 @@ export function useOptimistic<T, U>(
 ): [T, (value: U) => void] {
   return useHook(
     "useOptimistic",
-    { state, isTrigger: false, queue: [] as Function[] },
-    ({ hook, update }) => {
-      if (hook.isTrigger) {
-        hook.isTrigger = false
-      } else {
-        hook.state = state
-        hook.queue.shift()?.(hook.state)
-        for (const f of hook.queue) {
-          hook.state = f(hook.state)
-        }
+    { prev: state, state, queue: [] as Function[] },
+    ({ hook, oldHook, update }) => {
+      if (!oldHook) hook.prev = state
+      if (state !== hook.prev) {
+        //new initial state, shift queue and re-mutate
+        hook.prev = state
+        hook.queue.shift()
+        hook.state = hook.queue.reduce((acc, fn) => fn(acc), hook.prev)
       }
 
       const setter = (newValue: U) => {
         hook.state = setState(hook.state, newValue)
         hook.queue.push((state: T) => setState(state, newValue))
-        hook.isTrigger = true
         update()
       }
 
