@@ -52,9 +52,20 @@ export function Todos() {
     setText("")
   }
 
+  const handleEdit = (id: string, text: string) => {
+    const newTodos = todos.map((todo) =>
+      todo.id === id ? { ...todo, text } : todo
+    )
+    saveTodos(newTodos)
+    setTodos(newTodos)
+  }
+
   return (
     <Container>
-      <form action={handleAdd} className="flex gap-2 mb-5 items-center">
+      <form
+        action={handleAdd}
+        className="flex gap-2 mb-5 items-center justify-center"
+      >
         <Input ref={ref} />
         <Button>Add</Button>
       </form>
@@ -63,12 +74,14 @@ export function Todos() {
         items={pending}
         toggleItem={handleToggle}
         handleDelete={handleDelete}
+        handleEdit={handleEdit}
       />
       <ToDoList
         name="Completed"
         items={completed}
         toggleItem={handleToggle}
         handleDelete={handleDelete}
+        handleEdit={handleEdit}
       />
     </Container>
   )
@@ -79,11 +92,13 @@ function ToDoList({
   items,
   toggleItem,
   handleDelete,
+  handleEdit,
 }: {
   name: string
   items: ToDoItem[]
   toggleItem: (id: string) => void
   handleDelete: (id: string) => void
+  handleEdit: (id: string, text: string) => void
 }) {
   if (!items.length) return null
   return (
@@ -92,7 +107,14 @@ function ToDoList({
       <ul>
         {items.map((todo) => (
           <li className="w-full flex justify-between items-center gap-2 mb-2">
-            <span className="w-full">{todo.text}</span>
+            <Input
+              className="w-full"
+              value={todo.text}
+              oninput={(e) =>
+                handleEdit(todo.id, (e.target as HTMLInputElement).value)
+              }
+            />
+
             <Input
               type="checkbox"
               checked={todo.done}
