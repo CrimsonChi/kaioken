@@ -58,7 +58,6 @@ export function Todos() {
         <Input ref={ref} />
         <Button>Add</Button>
       </form>
-      {{ x: 123 }}
       <ToDoList
         name="Pending"
         items={pending}
