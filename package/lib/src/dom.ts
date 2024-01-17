@@ -92,7 +92,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         return
       }
 
-      if (dom instanceof SVGElement) {
+      if (
+        dom instanceof SVGElement ||
+        (dom instanceof Element && name.includes("-"))
+      ) {
         dom.removeAttribute(name)
         return
       }
@@ -114,7 +117,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         return
       }
 
-      if (dom instanceof SVGElement) {
+      if (
+        dom instanceof SVGElement ||
+        (dom instanceof Element && name.includes("-"))
+      ) {
         dom.setAttribute(name, nextProps[name])
         return
       }
