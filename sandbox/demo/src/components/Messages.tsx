@@ -52,7 +52,12 @@ function Thread({
 
   return (
     <>
-      <form action={formAction} ref={formRef} className="flex gap-2 mb-5">
+      <form
+        autocomplete="off"
+        action={formAction}
+        ref={formRef}
+        className="flex gap-2 mb-5"
+      >
         <Input ref={inputRef} type="text" name="message" placeholder="Hello!" />
         <Button type="submit">Send</Button>
       </form>
