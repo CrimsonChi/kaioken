@@ -1,4 +1,5 @@
 import { defineConfig } from "vite"
+import kaioken from "vite-plugin-kaioken"
 
 export default defineConfig({
   esbuild: {
@@ -9,4 +10,5 @@ export default defineConfig({
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/*.svelte"],
   },
+  plugins: [kaioken()],
 })
