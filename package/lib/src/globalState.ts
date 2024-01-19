@@ -49,6 +49,17 @@ class GlobalState {
     this.pendingEffects.push(callback)
   }
 
+  findNodesByType(type: Function) {
+    const nodes: VNode[] = []
+    const find = (node: VNode) => {
+      if (node.type === type) nodes.push(node)
+      if (node.child) find(node.child)
+      if (node.sibling) find(node.sibling)
+    }
+    find(this.rootNode!)
+    return nodes
+  }
+
   private workLoop(deadline?: IdleDeadline) {
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
