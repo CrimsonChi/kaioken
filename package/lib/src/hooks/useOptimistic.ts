@@ -7,8 +7,7 @@ export function useOptimistic<T, U>(
   return useHook(
     "useOptimistic",
     { prev: state, state, queue: [] as Function[] },
-    ({ hook, oldHook, update }) => {
-      if (!oldHook) hook.prev = state
+    ({ hook, update }) => {
       if (state !== hook.prev) {
         //new initial state, shift queue and re-mutate
         hook.prev = state
