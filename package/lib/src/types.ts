@@ -33,13 +33,11 @@ declare global {
 
     type InternalProps<
       K extends keyof HtmlElementAttributes | keyof SvgElementAttributes
-    > = {
-      children?: Element[]
-    } & (K extends keyof HTMLElementTagNameMap
+    > = K extends keyof HTMLElementTagNameMap
       ? { ref?: Ref<HTMLElementTagNameMap[K]> }
       : K extends keyof SVGElementTagNameMap
       ? { ref?: Ref<SVGElementTagNameMap[K]> }
-      : {})
+      : {}
   }
 }
 
@@ -74,6 +72,8 @@ type ProviderProps<T> = {
 }
 
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
-  JSX.IntrinsicElements[T]
+  JSX.IntrinsicElements[T] & {
+    children?: JSX.Element[]
+  }
 
 type Hook<T> = T & { cleanup?: () => void }
