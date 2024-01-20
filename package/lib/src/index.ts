@@ -3,6 +3,16 @@ import { createId, g } from "./globalState.js"
 import { isValidChild, propFilters } from "./utils.js"
 import { Component } from "./component.js"
 
+export type * from "./types"
+export * from "./hooks"
+export * from "./component"
+export * from "./context"
+export * from "./globalState"
+export * from "./memo"
+export * from "./portal"
+export * from "./router"
+export * from "./transition"
+
 export { mount, createElement, fragment, renderToString }
 
 function mount(appFunc: () => JSX.Element, container: HTMLElement) {

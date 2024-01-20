@@ -11,7 +11,6 @@
 - [x] useContext
 - [x] useReducer
 - [x] Router
-- [x] StyleScope
 - [x] useRef
 - [x] useMemo
 - [x] useFetch
