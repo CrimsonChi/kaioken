@@ -18,7 +18,7 @@ export default function (): Plugin {
         const exports = findExports(ast.body as AstNode[])
         if (exports.length > 0) {
           code = `
-import {g} from "kaioken/src/globalState";\n
+import {g} from "kaioken/dist/globalState";\n
 ${code}\n
 if (import.meta.hot) {
   import.meta.hot.accept((newModule) => {
