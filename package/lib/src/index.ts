@@ -5,13 +5,13 @@ import { Component } from "./component.js"
 
 export type * from "./types"
 export * from "./hooks"
-export * from "./component"
-export * from "./context"
-export * from "./globalState"
-export * from "./memo"
-export * from "./portal"
-export * from "./router"
-export * from "./transition"
+export * from "./component.js"
+export * from "./context.js"
+export * from "./globalState.js"
+export * from "./memo.js"
+export * from "./portal.js"
+export * from "./router.js"
+export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }
 
