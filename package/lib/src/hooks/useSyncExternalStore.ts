@@ -11,11 +11,15 @@ export function useSyncExternalStore<T>(
     "useSyncExternalStore",
     { data: undefined as T },
     ({ hook, update }) => {
-      hook.data = getter()
+      const data = getter()
+      if (hook.data !== data) hook.data = data
+
       if (!hook.cleanup) {
         hook.cleanup = subscriber((data) => {
-          hook.data = data
-          update()
+          if (hook.data !== data) {
+            hook.data = data
+            update()
+          }
         })
       }
       return hook.data as T

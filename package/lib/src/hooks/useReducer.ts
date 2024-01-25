@@ -6,8 +6,11 @@ export function useReducer<T, A>(
 ): [T, (action: A) => void] {
   return useHook("useReducer", { state }, ({ hook, update }) => {
     const setter = (action: A) => {
-      hook.state = reducer(hook.state, action)
-      update()
+      const newState = reducer(hook.state, action)
+      if (newState !== hook.state) {
+        hook.state = newState
+        update()
+      }
     }
     return [hook.state, setter]
   })

@@ -16,9 +16,12 @@ export function useOptimistic<T, U>(
       }
 
       const setter = (newValue: U) => {
-        hook.state = setState(hook.state, newValue)
-        hook.queue.push((state: T) => setState(state, newValue))
-        update()
+        const newState = setState(hook.state, newValue)
+        if (newState !== hook.state) {
+          hook.state = newState
+          hook.queue.push((state: T) => setState(state, newValue))
+          update()
+        }
       }
 
       return [hook.state, setter]

@@ -10,11 +10,11 @@ export function useModel<
     { value: initial, ref: { current: null } as Ref<T> },
     ({ hook, oldHook, update, queueEffect }) => {
       const setValue = (value: U) => {
-        hook.value = value
-        if (hook.ref.current) {
-          setElementValue(hook.ref.current, value)
+        if (value !== hook.value) {
+          hook.value = value
+          if (hook.ref.current) setElementValue(hook.ref.current, value)
+          update()
         }
-        update()
       }
 
       queueEffect(() => {
@@ -24,9 +24,7 @@ export function useModel<
         }
         if (!oldHook) setElementValue(element, hook.value)
 
-        const listener = () => {
-          setValue(getElementValue(element) as U)
-        }
+        const listener = () => setValue(getElementValue(element) as U)
 
         element.addEventListener("input", listener)
         return () => {
