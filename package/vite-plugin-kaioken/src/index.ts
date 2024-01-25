@@ -28,9 +28,10 @@ if (import.meta.hot) {
           (name) => `
       if (newModule.${name}) {
         g.findNodesByType(${name}).forEach((node) => {
-          node.type = newModule.${name}
-          g.requestUpdate(node)
-        })
+          node.type = newModule.${name};
+          if (node.prev) node.prev.type = newModule.${name};
+          g.requestUpdate(node);
+        });
       }`
         )
         .join("")}
