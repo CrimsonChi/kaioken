@@ -169,7 +169,12 @@ type GlobalAttributes = {
   tabIndex?: number
   title?: string
   translate?: "yes" | "no"
-}
+} & Omit<
+  Partial<GlobalEventHandlers>,
+  | keyof InputEventAttributes
+  | keyof FocusEventAttributes
+  | keyof KeyboardEventAttributes
+>
 
 type KeyboardEventAttributes = {
   onkeyup?: (e: KeyboardEvent) => void
@@ -189,20 +194,20 @@ type InputEventAttributes = {
   onsubmit?: (e: Event) => void
 }
 
-type MouseEventAttributes = {
-  onclick?: (e: MouseEvent) => void
-  ondblclick?: (e: MouseEvent) => void
-  onmousedown?: (e: MouseEvent) => void
-  onmouseenter?: (e: MouseEvent) => void
-  onmouseleave?: (e: MouseEvent) => void
-  onmousemove?: (e: MouseEvent) => void
-  onmouseout?: (e: MouseEvent) => void
-  onmouseover?: (e: MouseEvent) => void
-  onmouseup?: (e: MouseEvent) => void
-}
+// type MouseEventAttributes = {
+//   onclick?: (e: MouseEvent) => void
+//   ondblclick?: (e: MouseEvent) => void
+//   onmousedown?: (e: MouseEvent) => void
+//   onmouseenter?: (e: MouseEvent) => void
+//   onmouseleave?: (e: MouseEvent) => void
+//   onmousemove?: (e: MouseEvent) => void
+//   onmouseout?: (e: MouseEvent) => void
+//   onmouseover?: (e: MouseEvent) => void
+//   onmouseup?: (e: MouseEvent) => void
+// }
 
 type EventAttributes<T extends string> = KeyboardEventAttributes &
-  MouseEventAttributes &
+  // MouseEventAttributes &
   (T extends FocussableElementTags ? FocusEventAttributes : {}) &
   (T extends "input" | "select" | "textarea" ? InputEventAttributes : {}) &
   (T extends LoadableElementTags ? { onload?: (e: Event) => void } : {}) &
