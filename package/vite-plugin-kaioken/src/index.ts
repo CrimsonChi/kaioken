@@ -15,8 +15,8 @@ export default function (): Plugin {
       if (!/\.(tsx|jsx)$/.test(id)) return
       const ast = this.parse(code) as AstNode
       try {
-        const exports = findExports(ast.body as AstNode[])
-        if (exports.length > 0) {
+        const componentNames = findExportedComponentNames(ast.body as AstNode[])
+        if (componentNames.length > 0) {
           code = `
 import {g} from "kaioken/dist/globalState";\n
 ${code}\n
@@ -39,7 +39,7 @@ if (import.meta.hot) {
 
   import.meta.hot.accept((newModule) => {
     if (newModule) {
-      ${exports
+      ${componentNames
         .map((name) => `handleUpdate(newModule, "${name}", ${name})`)
         .join(";")}
     }
@@ -76,9 +76,9 @@ interface AstNode {
   local?: AstNode & { name: string }
 }
 
-function findExports(nodes: AstNode[]): string[] {
-  const potentialExports: string[] = []
-  const exports: string[] = []
+function findExportedComponentNames(nodes: AstNode[]): string[] {
+  const exportNames: string[] = []
+  const componentNames: string[] = []
   for (const node of nodes) {
     if (
       node.type === "ExportNamedDeclaration" ||
@@ -88,7 +88,7 @@ function findExports(nodes: AstNode[]): string[] {
       if (!dec) {
         if (node.specifiers && node.specifiers.length) {
           for (const spec of node.specifiers) {
-            if (spec.local?.name) potentialExports.push(spec.local.name)
+            if (spec.local?.name) exportNames.push(spec.local.name)
           }
         }
         continue
@@ -97,18 +97,18 @@ function findExports(nodes: AstNode[]): string[] {
       if (!name || !/^[A-Z]/.test(name)) continue
 
       if (nodeContainsCreateElement(dec)) {
-        exports.push(name)
+        componentNames.push(name)
       }
     } else {
       if (nodeContainsCreateElement(node)) {
         const name = node.id?.name
-        if (name && potentialExports.includes(name)) {
-          exports.push(name)
+        if (name && exportNames.includes(name)) {
+          componentNames.push(name)
         }
       }
     }
   }
-  return exports
+  return componentNames
 }
 
 function nodeContainsCreateElement(node: AstNode): boolean {
