@@ -1,4 +1,4 @@
-import type { Plugin } from "vite"
+import type { ModuleNode, Plugin } from "vite"
 
 export default function (): Plugin {
   let isProduction = false
@@ -9,6 +9,26 @@ export default function (): Plugin {
     configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
+    },
+    handleHotUpdate(ctx) {
+      if (isProduction || isBuild) return
+      if (!/\.(tsx|jsx)$/.test(ctx.file)) return
+      const module = ctx.modules.find((m) => m.file === ctx.file)
+      if (!module) return
+
+      const importers: ModuleNode[] = []
+      const addImporters = (module: ModuleNode) => {
+        if (
+          module.file &&
+          /\.(tsx|jsx)$/.test(module.file) &&
+          !importers.includes(module)
+        ) {
+          importers.push(module)
+          module.importers.forEach(addImporters)
+        }
+      }
+      module.importers.forEach(addImporters)
+      return [module, ...importers]
     },
     transform(code, id) {
       if (isProduction || isBuild) return
@@ -23,16 +43,15 @@ ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
-        const fp = import.meta.url.split("?")[0];
-        const nodes = g.findNodes((n) => {
-          return n.type === funcRef
-        });
-        console.log("found nodes for funcRef", funcRef, nodes);
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          node.type = newModule[name];
-          g.requestUpdate(node);
-        }
+        g.applyRecursive((node) => {
+          if (node.type === funcRef) {
+            node.type = newModule[name];
+            if (node.prev) {
+              node.prev.type = newModule[name];
+            }
+            g.requestUpdate(node);
+          }
+        })
       }
   }
 
