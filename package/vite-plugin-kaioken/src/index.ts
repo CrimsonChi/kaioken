@@ -21,20 +21,27 @@ export default function (): Plugin {
 import {g} from "kaioken/dist/globalState";\n
 ${code}\n
 if (import.meta.hot) {
+  function handleUpdate(newModule, name, funcRef) {
+    if (newModule[name]) {
+        const fp = import.meta.url.split("?")[0];
+        const nodes = g.findNodes((n) => {
+          return n.type === funcRef
+        });
+        console.log("found nodes for funcRef", funcRef, nodes);
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          node.type = newModule[name];
+          g.requestUpdate(node);
+        }
+      }
+  }
+
+
   import.meta.hot.accept((newModule) => {
     if (newModule) {
       ${exports
-        .map(
-          (name) => `
-      if (newModule.${name}) {
-        g.findNodesByType(${name}).forEach((node) => {
-          node.type = newModule.${name};
-          if (node.prev) node.prev.type = newModule.${name};
-          g.requestUpdate(node);
-        });
-      }`
-        )
-        .join("")}
+        .map((name) => `handleUpdate(newModule, "${name}", ${name})`)
+        .join(";")}
     }
   })
 }`
@@ -53,8 +60,8 @@ interface AstNodeId {
 }
 
 interface AstNode {
-  end: number
   start: number
+  end: number
   type: string
   body?: AstNode | AstNode[]
   declaration?: AstNode
@@ -63,10 +70,14 @@ interface AstNode {
   property?: AstNodeId
   argument?: AstNode
   arguments?: AstNode[]
+  specifiers?: AstNode[]
   callee?: AstNode
+  exported?: AstNode & { name: string }
+  local?: AstNode & { name: string }
 }
 
 function findExports(nodes: AstNode[]): string[] {
+  const potentialExports: string[] = []
   const exports: string[] = []
   for (const node of nodes) {
     if (
@@ -74,10 +85,26 @@ function findExports(nodes: AstNode[]): string[] {
       node.type === "ExportDefaultDeclaration"
     ) {
       const dec = node.declaration as AstNode
-      if (!/^[A-Z]/.test(dec.id?.name ?? "")) continue
+      if (!dec) {
+        if (node.specifiers && node.specifiers.length) {
+          for (const spec of node.specifiers) {
+            if (spec.local?.name) potentialExports.push(spec.local.name)
+          }
+        }
+        continue
+      }
+      const name = dec.id?.name
+      if (!name || !/^[A-Z]/.test(name)) continue
 
       if (nodeContainsCreateElement(dec)) {
-        exports.push(dec.id?.name ?? "")
+        exports.push(name)
+      }
+    } else {
+      if (nodeContainsCreateElement(node)) {
+        const name = node.id?.name
+        if (name && potentialExports.includes(name)) {
+          exports.push(name)
+        }
       }
     }
   }
