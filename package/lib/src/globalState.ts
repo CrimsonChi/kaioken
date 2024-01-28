@@ -49,15 +49,13 @@ class GlobalState {
     this.pendingEffects.push(callback)
   }
 
-  findNodesByType(type: Function) {
-    const nodes: VNode[] = []
-    const find = (node: VNode) => {
-      if (node.type === type) nodes.push(node)
-      if (node.child) find(node.child)
-      if (node.sibling) find(node.sibling)
+  applyRecursive(func: (node: VNode) => void) {
+    const apply = (node: VNode) => {
+      func(node)
+      if (node.child) apply(node.child)
+      if (node.sibling) apply(node.sibling)
     }
-    find(this.rootNode!)
-    return nodes
+    apply(this.rootNode!)
   }
 
   private workLoop(deadline?: IdleDeadline) {
