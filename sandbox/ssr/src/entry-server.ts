@@ -1,9 +1,17 @@
 import { renderToString } from "kaioken"
 import { App } from "./App"
 
-export async function render(url: string) {
-  console.log("server render", url)
+async function pageTitle(path: string) {
+  switch (path) {
+    case "/":
+      return "Home"
+    default:
+      return "Page not found"
+  }
+}
 
-  const html = renderToString(App)
-  return { html }
+export async function render(path: string) {
+  console.log("server render", path)
+  const html = renderToString(() => App({ path }))
+  return { html, head: `<title>${await pageTitle(path)}</title>` }
 }

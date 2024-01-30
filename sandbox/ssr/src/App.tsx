@@ -1,9 +1,13 @@
 import { useState } from "kaioken"
 
-export function App() {
+interface AppProps {
+  path: string
+}
+
+export function App({ path }: AppProps) {
   return (
     <>
-      <h1>Hello world! 23</h1>
+      <h1>Hello world! {path}</h1>
       <Counter />
     </>
   )
