@@ -19,6 +19,6 @@
     "baseUrl": ".",
     "sourceMap": false
   },
-  "include": ["./src/*", "./src/tests", "src/types.ts"],
+  "include": ["./src/*", "./src/tests", "src/types.ts", "./src/ssr/*"],
   "exclude": ["dist"]
 }
