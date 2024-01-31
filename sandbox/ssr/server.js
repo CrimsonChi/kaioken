@@ -51,7 +51,7 @@ app.use("*", async (req, res) => {
       render = (await import("./dist/server/entry-server.js")).render
     }
 
-    const rendered = await render(url, ssrManifest)
+    const rendered = await render({ path: url }, ssrManifest)
 
     const html = template
       .replace(`<!--app-head-->`, rendered.head ?? "")

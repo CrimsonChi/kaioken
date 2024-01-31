@@ -1,1 +1,1 @@
-export { hydrate } from "./hydrate.js"
+export * from "./hydrate.js"

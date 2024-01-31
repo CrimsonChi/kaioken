@@ -1,7 +1,7 @@
 import { renderToString } from "kaioken"
 import { App } from "./App"
 
-async function pageTitle(path: string) {
+function pageTitle(path: string) {
   switch (path) {
     case "/":
       return "Home"
@@ -10,8 +10,22 @@ async function pageTitle(path: string) {
   }
 }
 
-export async function render(path: string) {
-  console.log("server render", path)
-  const html = renderToString(() => App({ path }))
-  return { html, head: `<title>${await pageTitle(path)}</title>` }
+interface ServerContext {
+  path: string
+}
+
+export function render({ path }: ServerContext) {
+  return {
+    html: renderToString(() => App({ request: { path } })),
+    head: `
+    <title>${pageTitle(path)}</title>
+    <script>
+      window.kaioken_ssr_props = {
+        request: {
+          path: "${path}",
+        },
+      };
+    </script>
+    `,
+  }
 }

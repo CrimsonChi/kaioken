@@ -1,13 +1,11 @@
 import { useState } from "kaioken"
+import type { SSRProps } from "kaioken/ssr"
 
-interface AppProps {
-  path: string
-}
-
-export function App({ path }: AppProps) {
+export function App({ request }: SSRProps) {
   return (
     <>
-      <h1>Hello world! {path}</h1>
+      <h1>Hello world!</h1>
+      <p>path: {request.path}</p>
       <Counter />
     </>
   )

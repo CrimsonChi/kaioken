@@ -15,11 +15,15 @@ export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }
 
-function mount(appFunc: () => JSX.Element, container: HTMLElement) {
+function mount<T extends Rec>(
+  appFunc: (props: T) => JSX.Element,
+  container: HTMLElement,
+  appProps = {} as T
+) {
   const node = createElement(
     container.nodeName.toLowerCase(),
     {},
-    createElement(appFunc, {})
+    createElement(appFunc, appProps)
   )
   return g.mount(node, container)
 }
