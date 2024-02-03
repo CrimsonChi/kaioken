@@ -498,6 +498,7 @@ interface HtmlElementAttributes {
     name?: string
     required?: boolean
     size?: string | number
+    value?: string | number
   }
   slot: {
     name?: string
