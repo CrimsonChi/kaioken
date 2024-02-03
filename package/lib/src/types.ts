@@ -44,11 +44,13 @@ declare global {
 type VNode = {
   id: number
   type: string | Function | typeof Component
+  dom?: HTMLElement | SVGElement | Text
   instance?: Component
   props: {
     [key: string]: any
     children: VNode[]
   }
+  hooks?: Hook<unknown>[]
   parent?: VNode
   child?: VNode
   sibling?: VNode

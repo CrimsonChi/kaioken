@@ -1,13 +1,12 @@
-import type { Hook, Rec, VNode } from "./types"
-import { commitWork, createDom, domMap } from "./dom.js"
+import type { Rec, VNode } from "./types"
+import { commitWork, createDom } from "./dom.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { g, stateMap, createId, type GlobalState }
+export { g, createId, type GlobalState }
 
 let id = 0
 const createId = () => ++id
-const stateMap = new Map<number, Hook<unknown>[]>()
 
 class GlobalState {
   rootNode: VNode | undefined = undefined
@@ -22,7 +21,7 @@ class GlobalState {
 
   mount(node: VNode, container: HTMLElement) {
     this.rootNode = node
-    domMap.set(node, container)
+    node.dom = container
     this.requestUpdate(node)
     this.workLoop()
     return this.rootNode
@@ -129,7 +128,7 @@ class GlobalState {
   }
 
   private updateHostComponent(vNode: VNode) {
-    const dom = domMap.get(vNode) ?? createDom(vNode)
+    const dom = vNode.dom ?? createDom(vNode)
     if (vNode.props.ref) {
       vNode.props.ref.current = dom
     }

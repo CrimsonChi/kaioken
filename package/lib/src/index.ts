@@ -99,7 +99,7 @@ function renderToString(element: JSX.Element | (() => JSX.Element)): string {
   const props = element.props ?? {}
 
   if (typeof element.type === "string") {
-    if (element.type === "form" && props.action) {
+    if (element.type === "form" && typeof props.action === "function") {
       delete props.action
     }
     const isSelfClosing = selfClosingTags.includes(element.type)

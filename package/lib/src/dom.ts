@@ -1,13 +1,11 @@
 import type { ElementProps, Rec, VNode } from "./types"
-import { stateMap, type GlobalState } from "./globalState.js"
+import { type GlobalState } from "./globalState.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { commitWork, createDom, domMap }
-
-const domMap = new WeakMap<VNode, HTMLElement | SVGElement | Text>()
+export { commitWork, createDom }
 
 const svgTags = [
   "svg",
@@ -39,7 +37,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   }
 
   dom = updateDom(vNode, dom)
-  domMap.set(vNode, dom)
+  vNode.dom = dom
   return dom
 }
 
@@ -140,7 +138,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 }
 
 function commitWork(g: GlobalState, vNode: VNode) {
-  const dom = domMap.get(vNode) ?? vNode.instance?.rootDom
+  const dom = vNode.dom ?? vNode.instance?.rootDom
 
   if (
     vNode.effectTag === EffectTag.PLACEMENT &&
@@ -150,12 +148,12 @@ function commitWork(g: GlobalState, vNode: VNode) {
     let parentNode: VNode | undefined =
       vNode.parent ?? vNode.prev?.parent ?? g.treesInProgress[0]
     let domParent = parentNode
-      ? parentNode.instance?.rootDom ?? domMap.get(parentNode)
+      ? parentNode.instance?.rootDom ?? parentNode.dom
       : undefined
     while (parentNode && !domParent) {
       parentNode = parentNode.parent
       domParent = parentNode
-        ? parentNode.instance?.rootDom ?? domMap.get(parentNode)
+        ? parentNode.instance?.rootDom ?? parentNode.dom
         : undefined
     }
 
@@ -165,7 +163,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
     }
 
     let siblingDom: HTMLElement | SVGElement | Text | undefined = undefined
-    let tmp = vNode.sibling && domMap.get(vNode.sibling)
+    let tmp = vNode.sibling && vNode.sibling.dom
     if (tmp && tmp.isConnected) siblingDom = tmp
 
     let parent = vNode.parent
@@ -180,7 +178,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
     } else {
       domParent.appendChild(dom)
     }
-    domMap.set(vNode, dom)
+    vNode.dom
   } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
@@ -214,24 +212,22 @@ function findDomRecursive(
 ): HTMLElement | SVGElement | Text | undefined {
   if (!vNode) return
   return (
-    domMap.get(vNode) ??
+    vNode.dom ??
     findDomRecursive(vNode.child) ??
     findDomRecursive(vNode.sibling)
   )
 }
 
-function commitDeletion(vNode: VNode, dom = domMap.get(vNode), root = true) {
+function commitDeletion(vNode: VNode, dom = vNode.dom, root = true) {
   if (Component.isCtor(vNode.type) && vNode.instance) {
     vNode.instance.componentWillUnmount?.()
   } else if (vNode.type instanceof Function) {
-    const hooks = stateMap.get(vNode.id) ?? []
-    while (hooks.length > 0) cleanupHook(hooks.pop()!)
-    stateMap.delete(vNode.id)
+    while (vNode.hooks?.length) cleanupHook(vNode.hooks.pop()!)
   }
 
   if (dom) {
     if (dom.isConnected && vNode.instance?.rootDom !== dom) dom.remove()
-    domMap.delete(vNode)
+    delete vNode.dom
   }
   if (vNode.child) {
     commitDeletion(vNode.child, undefined, false)

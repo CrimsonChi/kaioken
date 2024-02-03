@@ -1,5 +1,4 @@
 import { Component } from "./component.js"
-import { domMap } from "./dom.js"
 
 export { Portal }
 
@@ -14,7 +13,7 @@ class Portal extends Component<PortalProps> {
     this.rootDom = props.container
   }
   componentDidMount(): void {
-    domMap.set(this.vNode, this.props.container)
+    this.vNode.dom = this.props.container
   }
 
   render(): JSX.Element {
