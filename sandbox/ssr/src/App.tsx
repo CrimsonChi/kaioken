@@ -8,12 +8,13 @@ export function App({ request, data }: PageProps) {
     console.log("SSR!")
   }
   return (
-    <PageContext.Provider value={data}>
+    <PageContext.Provider value={{ request, data }}>
       <h1>Hello world!</h1>
       <p>path: {request.path}</p>
       <div>
         <p>Login creds</p>
         <span>Username: atuny0</span>
+        <br />
         <span>Password: 9uQFF1Lh</span>
       </div>
       <Counter />
@@ -38,6 +39,8 @@ function ProductView({ product }: { product: Product }) {
     <div>
       <h1>{product.title}</h1>
       <img src={product.thumbnail} />
+      {product.id > 1 && <a href={`/products/${product.id - 1}`}>Prev</a>}
+      <a href={`/products/${product.id + 1}`}>Next</a>
     </div>
   )
 }

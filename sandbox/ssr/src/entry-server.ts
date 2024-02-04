@@ -12,14 +12,16 @@ async function pageData(
     case "/products":
       return { title: "Products" }
     default:
-      if (path.startsWith("/products/")) {
-        const id = Number(path.substring("/products/".length))
-        const product = await loadProduct(id.toString())
-        return {
-          title: product.title,
-          data: { product },
+      try {
+        if (path.startsWith("/products/")) {
+          const id = Number(path.substring("/products/".length))
+          const product = await loadProduct(id.toString())
+          return {
+            title: product.title,
+            data: { product },
+          }
         }
-      }
+      } catch (e) {}
       return { title: "Page not found" }
   }
 }
