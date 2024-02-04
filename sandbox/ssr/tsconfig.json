@@ -17,7 +17,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "allowJs": true,
+    "checkJs": true,
     "jsx": "preserve"
   },
-  "include": ["src"]
+  "include": ["src", "server.js"]
 }

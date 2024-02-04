@@ -3,6 +3,7 @@ import { mount } from "../"
 export interface SSRProps {
   request: {
     path: string
+    query: string
   }
 }
 

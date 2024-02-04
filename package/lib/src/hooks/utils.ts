@@ -1,8 +1,7 @@
 import type { Hook } from "../types.js"
 import { ctx } from "../globalContext.js"
 
-//@ts-expect-error
-export const isSSR = !!import.meta.env?.SSR
+export const isSSR = !("window" in globalThis)
 
 export {
   cleanupHook,

@@ -95,14 +95,14 @@ function Link({ to, children, ...props }: LinkProps) {
   )
 }
 
-function matchPath(
+export function matchPath(
   value: string,
   query: string,
   routePath: string
 ): {
   match: RegExpMatchArray | null
-  params: any
-  query: any
+  params: Record<string, string>
+  query: Record<string, string>
 } {
   let paramNames: any[] = []
   let _query: any = {}

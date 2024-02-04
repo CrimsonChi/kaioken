@@ -1,41 +1,31 @@
 import { renderToString } from "kaioken"
 import { App } from "./App"
-import { loadProduct } from "./api"
 import { PageProps } from "./types"
+import { matchPath } from "kaioken"
+import { PageDataGetter, pages } from "./pageData"
 
-async function pageData(
+interface RequestData {
   path: string
-): Promise<{ title: string; data?: PageProps["data"] }> {
-  switch (path) {
-    case "/":
-      return { title: "Home" }
-    case "/products":
-      return { title: "Products" }
-    default:
-      try {
-        if (path.startsWith("/products/")) {
-          const id = Number(path.substring("/products/".length))
-          const product = await loadProduct(id.toString())
-          return {
-            title: product.title,
-            data: { product },
-          }
-        }
-      } catch (e) {}
-      return { title: "Page not found" }
-  }
+  query: string
 }
 
-interface ServerContext {
-  path: string
+async function loadPageData(req: RequestData): ReturnType<PageDataGetter> {
+  for (let i = 0; i < pages.length; i++) {
+    const [path, getter] = pages[i]
+    const { match, params, query } = matchPath(req.path, req.query, path)
+    if (!match) continue
+    try {
+      return await getter({ params, query })
+    } catch (error) {
+      return { title: "500 - Internal server error" }
+    }
+  }
+  return { title: "404 - Page not found" }
 }
 
-export async function render({ path }: ServerContext) {
-  const { title, data } = await pageData(path)
-  const props: PageProps = {
-    request: { path },
-    data,
-  }
+export async function render(request: RequestData) {
+  const { title, data } = await loadPageData(request)
+  const props: PageProps = { request, data }
 
   const head = `<title>${title}</title>
     <script>

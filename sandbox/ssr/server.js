@@ -18,6 +18,7 @@ const ssrManifest = isProduction
 const app = express()
 
 // Add Vite or respective production middlewares
+/** @type {import("vite").ViteDevServer | undefined} */
 let vite
 if (!isProduction) {
   const { createServer } = await import("vite")
@@ -37,11 +38,10 @@ if (!isProduction) {
 // Serve HTML
 app.use("*", async (req, res) => {
   try {
-    const url = req.originalUrl //.replace(base, "")
-
+    const url = req.originalUrl
     let template
     let render
-    if (!isProduction) {
+    if (!isProduction && vite) {
       // Always read fresh template in development
       template = await fs.readFile("./index.html", "utf-8")
       template = await vite.transformIndexHtml(url, template)
@@ -50,15 +50,15 @@ app.use("*", async (req, res) => {
       template = templateHtml
       render = (await import("./dist/server/entry-server.js")).render
     }
-
-    const rendered = await render({ path: url }, ssrManifest)
+    const [path, query] = url.split("?")
+    const rendered = await render({ path, query: query || "" }, ssrManifest)
 
     const html = template
       .replace(`<!--app-head-->`, rendered.head ?? "")
       .replace(`<!--app-html-->`, rendered.html ?? "")
 
     res.status(200).set({ "Content-Type": "text/html" }).end(html)
-  } catch (e) {
+  } catch (/** @type {any}*/ e) {
     vite?.ssrFixStacktrace(e)
     console.log(e.stack)
     res.status(500).end(e.stack)

@@ -28,6 +28,7 @@ export interface User {
 export interface PageProps extends SSRProps {
   request: {
     path: string
+    query: string
   }
   data?: {
     product?: Product
