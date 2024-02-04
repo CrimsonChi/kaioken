@@ -3,10 +3,7 @@ import { commitWork, createDom } from "./dom.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { g, createId, type GlobalState }
-
-let id = 0
-const createId = () => ++id
+export { g, type GlobalState }
 
 class GlobalState {
   rootNode: VNode | undefined = undefined
@@ -154,7 +151,6 @@ class GlobalState {
       }
       if (child && !sameType) {
         newNode = {
-          id: typeof child.type === "string" ? -1 : createId(),
           type: child.type,
           props: child.props,
           parent: vNode,

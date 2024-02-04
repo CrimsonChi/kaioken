@@ -1,5 +1,5 @@
 import type { Rec, VNode } from "./types"
-import { createId, g } from "./globalState.js"
+import { g } from "./globalState.js"
 import { isValidChild, propFilters } from "./utils.js"
 import { Component } from "./component.js"
 
@@ -34,7 +34,6 @@ function createElement(
   ...children: (VNode | unknown)[]
 ): VNode {
   return {
-    id: typeof type === "string" ? -1 : createId(),
     type,
     props: {
       ...props,
