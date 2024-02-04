@@ -1,0 +1,34 @@
+/* This CSS is common to all pages */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background-color: #222;
+  color: #eee;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
+}
+
+.navitem {
+  padding: 3px;
+}
+
+code {
+  font-family: monospace;
+  background-color: #eaeaea;
+  padding: 3px 5px;
+  border-radius: 4px;
+}

@@ -1,5 +1,6 @@
 import { defineConfig } from "vite"
-import kaioken from "vite-plugin-kaioken"
+import trpc from "./trpc/vite-plugin"
+import ssr from "vike/plugin"
 
 export default defineConfig({
   esbuild: {
@@ -9,7 +10,6 @@ export default defineConfig({
     jsxFragment: "kaioken.fragment",
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
-    sourcemap: false,
   },
-  plugins: [kaioken()],
+  plugins: [ssr(), trpc()],
 })
