@@ -3,9 +3,9 @@ import { commitWork, createDom } from "./dom.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { g, type GlobalState }
+export { GlobalContext, ctx, setGlobalCtx }
 
-class GlobalState {
+class GlobalContext {
   rootNode: VNode | undefined = undefined
   curNode: VNode | undefined = undefined
   nextUnitOfWork: VNode | void = undefined
@@ -192,4 +192,9 @@ class GlobalState {
   }
 }
 
-const g = new GlobalState()
+const g = new GlobalContext()
+let ctx = g
+
+function setGlobalCtx(newCtx: GlobalContext) {
+  ctx = newCtx
+}

@@ -1,5 +1,5 @@
 import type { ElementProps, Rec, VNode } from "./types"
-import { type GlobalState } from "./globalState.js"
+import { type GlobalContext } from "./globalContext.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag } from "./constants.js"
@@ -137,7 +137,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   return dom
 }
 
-function commitWork(g: GlobalState, vNode: VNode) {
+function commitWork(ctx: GlobalContext, vNode: VNode) {
   const dom = vNode.dom ?? vNode.instance?.rootDom
 
   if (
@@ -146,7 +146,7 @@ function commitWork(g: GlobalState, vNode: VNode) {
     !vNode.instance?.rootDom
   ) {
     let parentNode: VNode | undefined =
-      vNode.parent ?? vNode.prev?.parent ?? g.treesInProgress[0]
+      vNode.parent ?? vNode.prev?.parent ?? ctx.treesInProgress[0]
     let domParent = parentNode
       ? parentNode.instance?.rootDom ?? parentNode.dom
       : undefined
@@ -188,16 +188,16 @@ function commitWork(g: GlobalState, vNode: VNode) {
 
   vNode.effectTag = undefined
 
-  vNode.child && commitWork(g, vNode.child)
-  vNode.sibling && commitWork(g, vNode.sibling)
+  vNode.child && commitWork(ctx, vNode.child)
+  vNode.sibling && commitWork(ctx, vNode.sibling)
   const instance = vNode.instance
   if (instance) {
     const onMounted = instance.componentDidMount?.bind(instance)
     if (!vNode.prev && onMounted) {
-      g.queueEffect(() => onMounted())
+      ctx.queueEffect(() => onMounted())
     } else if (EffectTag.UPDATE) {
       const onUpdated = instance.componentDidUpdate?.bind(instance)
-      if (onUpdated) g.queueEffect(() => onUpdated())
+      if (onUpdated) ctx.queueEffect(() => onUpdated())
     }
   }
 

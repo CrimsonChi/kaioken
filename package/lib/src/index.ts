@@ -1,5 +1,5 @@
 import type { Rec, VNode } from "./types"
-import { g } from "./globalState.js"
+import { ctx } from "./globalContext.js"
 import { isValidChild, propFilters } from "./utils.js"
 import { Component } from "./component.js"
 
@@ -7,7 +7,7 @@ export type * from "./types"
 export * from "./hooks"
 export * from "./component.js"
 export * from "./context.js"
-export * from "./globalState.js"
+export * from "./globalContext.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
@@ -25,7 +25,7 @@ function mount<T extends Rec>(
     {},
     createElement(appFunc, appProps)
   )
-  return g.mount(node, container)
+  return ctx.mount(node, container)
 }
 
 function createElement(
@@ -112,7 +112,7 @@ function renderToString(element: JSX.Element | (() => JSX.Element)): string {
     if (isSelfClosing) return open
     return `${open}${children.map(renderToString).join("")}</${element.type}>`
   }
-  g.curNode = element
+  ctx.curNode = element
 
   if (Component.isCtor(element.type)) {
     const instance = new (element.type as unknown as {

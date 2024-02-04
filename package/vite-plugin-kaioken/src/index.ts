@@ -38,18 +38,18 @@ export default function (): Plugin {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
           code = `
-import {g} from "kaioken/dist/globalState";\n
+import {ctx} from "kaioken/dist/globalContext";\n
 ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
-        g.applyRecursive((node) => {
+        ctx.applyRecursive((node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];
             if (node.prev) {
               node.prev.type = newModule[name];
             }
-            g.requestUpdate(node);
+            ctx.requestUpdate(node);
           }
         })
       }
