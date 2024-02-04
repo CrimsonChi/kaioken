@@ -1,4 +1,4 @@
-import { renderToString } from "kaioken"
+import { GlobalContext, renderToString, setGlobalCtx } from "kaioken"
 import { App } from "./App"
 
 function pageTitle(path: string) {
@@ -15,8 +15,8 @@ interface ServerContext {
 }
 
 export function render({ path }: ServerContext) {
+  setGlobalCtx(new GlobalContext())
   return {
-    html: renderToString(() => App({ request: { path } })),
     head: `
     <title>${pageTitle(path)}</title>
     <script>
@@ -27,5 +27,6 @@ export function render({ path }: ServerContext) {
       };
     </script>
     `,
+    html: renderToString(() => App({ request: { path } })),
   }
 }
