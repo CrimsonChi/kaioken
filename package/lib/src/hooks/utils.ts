@@ -1,6 +1,9 @@
 import type { Hook } from "../types.js"
 import { g } from "../globalState.js"
 
+//@ts-expect-error
+export const isSSR = !!import.meta.env?.SSR
+
 export {
   cleanupHook,
   depsRequireChange,

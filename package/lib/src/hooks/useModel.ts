@@ -1,10 +1,13 @@
 import { Ref } from "src/types.js"
-import { useHook } from "./utils.js"
+import { isSSR, useHook } from "./utils.js"
 
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   U extends string | number | boolean
->(initial: U) {
+>(initial: U): [Ref<T>, U, (newValue: U) => void] {
+  if (isSSR) {
+    return [{ current: null }, initial, () => {}]
+  }
   return useHook(
     "useModel",
     { value: initial, ref: { current: null } as Ref<T> },
