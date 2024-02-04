@@ -1,5 +1,5 @@
 import type { Rec, VNode } from "./types"
-import { ctx } from "./globalContext.js"
+import { setGlobalCtx, GlobalContext } from "./globalContext.js"
 import { isValidChild, propFilters } from "./utils.js"
 import { Component } from "./component.js"
 
@@ -25,7 +25,7 @@ function mount<T extends Rec>(
     {},
     createElement(appFunc, appProps)
   )
-  return ctx.mount(node, container)
+  return setGlobalCtx(new GlobalContext()).mount(node, container)
 }
 
 function createElement(
@@ -86,11 +86,15 @@ const selfClosingTags = [
   "wbr",
 ]
 
-function renderToString(element: JSX.Element | (() => JSX.Element)): string {
+function renderToString(
+  element: JSX.Element | (() => JSX.Element),
+  ctx = setGlobalCtx(new GlobalContext())
+): string {
   if (!element) return ""
   if (typeof element === "string") return element
   if (typeof element === "function") return renderToString(element())
-  if (element instanceof Array) return element.map(renderToString).join("")
+  if (element instanceof Array)
+    return element.map((el) => renderToString(el, ctx)).join("")
   if (typeof element === "number") return String(element)
   if (element.type === "TEXT_ELEMENT") return element.props.nodeValue ?? ""
 
@@ -110,7 +114,9 @@ function renderToString(element: JSX.Element | (() => JSX.Element)): string {
       isSelfClosing ? " /" : ""
     }>`
     if (isSelfClosing) return open
-    return `${open}${children.map(renderToString).join("")}</${element.type}>`
+    return `${open}${children.map((el) => renderToString(el, ctx)).join("")}</${
+      element.type
+    }>`
   }
   ctx.curNode = element
 
