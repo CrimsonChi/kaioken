@@ -197,4 +197,5 @@ let ctx = g
 
 function setGlobalCtx(newCtx: GlobalContext) {
   ctx = newCtx
+  return newCtx
 }
