@@ -6,7 +6,7 @@
 export default {
   meta: {
     Page: {
-      env: { server: true, client: false },
+      env: { server: true, client: true },
     },
   },
 }

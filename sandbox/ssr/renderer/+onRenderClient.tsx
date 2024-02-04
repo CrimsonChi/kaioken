@@ -7,7 +7,6 @@ import { PageLayout } from "./PageLayout"
 
 const onRenderClient: OnRenderClientAsync = async (pageContext) => {
   const { Page } = pageContext
-  // const p = Page as JSX.Element[]
   hydrate(
     () => <PageLayout>{Page}</PageLayout>,
     document.getElementById("page-root")!

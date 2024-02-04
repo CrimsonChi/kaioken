@@ -1,16 +1,16 @@
-export { PageLayout }
+import "./index.css"
 
-import "./PageLayout.css"
+export { PageLayout }
 
 function PageLayout({ children }: { children?: JSX.Element[] }) {
   return (
     <Layout>
       <Sidebar>
         <a className="navitem" href="/">
-          SSR
+          HOME
         </a>
-        <a className="navitem" href="/spa">
-          SPA
+        <a className="navitem" href="/test">
+          TEST
         </a>
       </Sidebar>
       <Content>{children}</Content>
