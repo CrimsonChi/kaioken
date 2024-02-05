@@ -1,5 +1,5 @@
-import { Avatar } from "../../components/Avatar"
-import { PageTitle } from "../../components/PageTitle"
+import { Avatar } from "$/components/Avatar"
+import { PageTitle } from "$/components/PageTitle"
 import type { ServerProps, UserData } from "./+data"
 
 export default function ({ users, page }: ServerProps) {

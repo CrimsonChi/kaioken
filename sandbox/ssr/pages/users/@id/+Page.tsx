@@ -1,5 +1,5 @@
-import { Avatar } from "../../../components/Avatar"
-import { LocationIcon } from "../../../components/icons/LocationIcon"
+import { Avatar } from "$/components/Avatar"
+import { LocationIcon } from "$/components/icons/LocationIcon"
 import type { ServerProps, AddressData } from "./+data"
 
 export default function ({ user }: ServerProps) {
