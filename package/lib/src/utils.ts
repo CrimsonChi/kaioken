@@ -1,7 +1,7 @@
 import type { Rec, VNode } from "./types"
 
-export function isVNode(node: any): node is VNode {
-  return node && node.type !== undefined && node.props !== undefined
+export function isVNode(thing: unknown): thing is VNode {
+  return typeof thing === "object" && thing !== null && "type" in thing
 }
 
 export function isValidChild(child: unknown) {
@@ -16,3 +16,20 @@ export const propFilters = {
   isNew: (prev: Rec, next: Rec) => (key: string) => prev[key] !== next[key],
   isGone: (_prev: Rec, next: Rec) => (key: string) => !(key in next),
 }
+
+export const selfClosingTags = [
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+]

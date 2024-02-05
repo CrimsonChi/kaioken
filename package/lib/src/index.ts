@@ -1,6 +1,6 @@
 import type { Rec, VNode } from "./types"
 import { setGlobalCtx, GlobalContext } from "./globalContext.js"
-import { isValidChild, propFilters } from "./utils.js"
+import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
 
 export type * from "./types"
@@ -48,10 +48,6 @@ function createElement(
   }
 }
 
-function isVNode(node: unknown): node is VNode {
-  return typeof node === "object" && node !== null && "type" in node
-}
-
 function createChildElement(child: VNode | string | (() => VNode)): VNode {
   if (isVNode(child)) return child
   if (typeof child === "function") {
@@ -68,23 +64,6 @@ function createTextElement(nodeValue: string): VNode {
 function fragment({ children }: { children: JSX.Element[] }) {
   return children as JSX.Element
 }
-
-const selfClosingTags = [
-  "area",
-  "base",
-  "br",
-  "col",
-  "embed",
-  "hr",
-  "img",
-  "input",
-  "link",
-  "meta",
-  "param",
-  "source",
-  "track",
-  "wbr",
-]
 
 function renderToString(
   element: JSX.Element | (() => JSX.Element),
@@ -108,7 +87,10 @@ function renderToString(
     const isSelfClosing = selfClosingTags.includes(element.type)
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
-      .map((key) => `${key}="${props[key]}"`)
+      .map(
+        (key) =>
+          `${transformPropNameToHtmlAttr(key)}="${transformPropValueToHtmlAttrValue(key, props[key])}"`
+      )
       .join(" ")
     const open = `<${element.type}${attrs ? ` ${attrs}` : ""}${
       isSelfClosing ? " /" : ""
@@ -129,4 +111,33 @@ function renderToString(
   }
 
   return renderToString(element.type(element.props))
+}
+
+function transformPropNameToHtmlAttr(key: string) {
+  switch (key.toLowerCase()) {
+    case "classname":
+      return "class"
+    case "htmlfor":
+      return "for"
+    default:
+      return key
+  }
+}
+
+function styleObjectToCss(styleObject: Partial<CSSStyleDeclaration>) {
+  let cssString = ""
+  for (const key in styleObject) {
+    const cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase()
+    cssString += `${cssKey}:${styleObject[key]};`
+  }
+  return cssString
+}
+
+function transformPropValueToHtmlAttrValue(key: string, value: unknown) {
+  switch (key) {
+    case "style":
+      if (typeof value === "object" && !!value) return styleObjectToCss(value)
+    default:
+      return String(value)
+  }
 }
