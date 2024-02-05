@@ -1,8 +1,8 @@
 import { Avatar } from "../../../components/Avatar"
 import { LocationIcon } from "../../../components/icons/LocationIcon"
-import type { AddressData, UserData } from "./+data"
+import type { AddressData, ServerProps } from "./+data"
 
-export default function ({ data: user }: { data: UserData }) {
+export default function ({ data: { user } }: ServerProps) {
   return (
     <>
       <div className="flex gap-4 py-4 items-center ">

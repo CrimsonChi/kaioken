@@ -1,19 +1,19 @@
 import { Avatar } from "../../components/Avatar"
 import { PageTitle } from "../../components/PageTitle"
-import { PageProps, UserData } from "./+data"
+import { ServerProps, UserData } from "./+data"
 
-export default function ({ data }: { data: PageProps }) {
+export default function ({ data: { users, page } }: ServerProps) {
   return (
     <>
       <PageTitle>Users</PageTitle>
       <div>
-        {data.users.map((user) => (
+        {users.map((user) => (
           <UserCard user={user} />
         ))}
       </div>
       <div className="sticky bottom-0 flex justify-between">
-        {data.page > 1 && <a href={`users?page=${data.page - 1}`}>Prev</a>}
-        <a href={`users?page=${data.page + 1}`}>Next</a>
+        {page > 1 && <a href={`users?page=${page - 1}`}>Prev</a>}
+        <a href={`users?page=${page + 1}`}>Next</a>
       </div>
     </>
   )
