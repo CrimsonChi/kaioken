@@ -1,18 +1,17 @@
 // Environment: server
 import { dangerouslySkipEscape, escapeInject } from "vike/server"
-import type { OnRenderHtmlAsync, PageContextServer } from "vike/types"
+import type { OnRenderHtmlAsync } from "vike/types"
 import { renderToString } from "kaioken"
 import { PageLayout } from "./PageLayout"
+import { getTitle } from "$/pages/utils"
 
 export { onRenderHtml }
 
 const onRenderHtml: OnRenderHtmlAsync = async (
   pageContext
 ): ReturnType<OnRenderHtmlAsync> => {
-  const { Page, data = {} } = pageContext as PageContextServer & {
-    Page: (props: unknown) => JSX.Element
-    data?: Record<string, unknown>
-  }
+  const { Page, data = {} } = pageContext
+  const title = getTitle(pageContext)
   const pageHtml = renderToString(() => (
     <PageLayout>
       <Page {...data} />
@@ -24,7 +23,7 @@ const onRenderHtml: OnRenderHtmlAsync = async (
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
-        <title>My App</title>
+        <title>${title}</title>
       </head>
       <body>
         <div id="page-root">${dangerouslySkipEscape(pageHtml)}</div>
