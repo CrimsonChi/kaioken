@@ -8,11 +8,12 @@ export { onRenderClient }
 const onRenderClient: OnRenderClientAsync = async (pageContext) => {
   const { Page, data = {} } = pageContext as PageContextClient & {
     Page: (props: unknown) => JSX.Element
+    data?: Record<string, unknown>
   }
   hydrate(
     () => (
       <PageLayout>
-        <Page data={data} />
+        <Page {...data} />
       </PageLayout>
     ),
     document.getElementById("page-root")!

@@ -11,10 +11,11 @@ const onRenderHtml: OnRenderHtmlAsync = async (
 ): ReturnType<OnRenderHtmlAsync> => {
   const { Page, data = {} } = pageContext as PageContextServer & {
     Page: (props: unknown) => JSX.Element
+    data?: Record<string, unknown>
   }
   const pageHtml = renderToString(() => (
     <PageLayout>
-      <Page data={data} />
+      <Page {...data} />
     </PageLayout>
   ))
   const documentHtml = escapeInject`<!DOCTYPE html>

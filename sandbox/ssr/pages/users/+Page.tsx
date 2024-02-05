@@ -1,8 +1,8 @@
 import { Avatar } from "../../components/Avatar"
 import { PageTitle } from "../../components/PageTitle"
-import { ServerProps, UserData } from "./+data"
+import type { ServerProps, UserData } from "./+data"
 
-export default function ({ data: { users, page } }: ServerProps) {
+export default function ({ users, page }: ServerProps) {
   return (
     <>
       <PageTitle>Users</PageTitle>

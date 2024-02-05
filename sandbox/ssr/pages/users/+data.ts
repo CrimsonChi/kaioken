@@ -4,7 +4,7 @@ import { redirect } from "vike/abort"
 export type { ServerProps, UserData }
 export { data }
 
-const data: DataAsync<ServerProps["data"]> = async (pageContext) => {
+const data: DataAsync<ServerProps> = async (pageContext) => {
   const search = pageContext.urlParsed.search
 
   const pageSize = 20
@@ -24,9 +24,7 @@ const data: DataAsync<ServerProps["data"]> = async (pageContext) => {
   return { users, page }
 }
 
-type ServerProps = {
-  data: { users: UserData[]; page: number }
-}
+type ServerProps = { users: UserData[]; page: number }
 
 type UserData = {
   id: number
