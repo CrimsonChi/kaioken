@@ -24,16 +24,11 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@auth/core": "^0.25.0",
-    "@hattip/polyfills": "^0.0.41",
-    "@trpc/client": "^10.45.0",
-    "@trpc/server": "^10.45.0",
     "h3": "~1.10.1",
     "kaioken": "workspace:^",
     "serve-static": "^1.15.0",
     "tsx": "^4.7.0",
     "vike": "^0.4.160",
-    "vike-authjs": "^0.1.4",
     "vite": "^5.0.12"
   }
 }

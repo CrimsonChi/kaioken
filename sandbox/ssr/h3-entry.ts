@@ -1,19 +1,6 @@
-import {
-  createServer,
-  type IncomingMessage,
-  type ServerResponse,
-} from "node:http"
+import { createServer } from "node:http"
 import { dirname } from "node:path"
 import { fileURLToPath } from "node:url"
-import CredentialsProvider from "@auth/core/providers/credentials"
-import { appRouter } from "./trpc/server"
-import installCrypto from "@hattip/polyfills/crypto"
-import installGetSetCookie from "@hattip/polyfills/get-set-cookie"
-import installWhatwgNodeFetch from "@hattip/polyfills/whatwg-node"
-import {
-  nodeHTTPRequestHandler,
-  type NodeHTTPCreateContextFnOptions,
-} from "@trpc/server/adapters/node-http"
 import {
   createApp,
   createRouter,
@@ -22,15 +9,9 @@ import {
   setResponseHeaders,
   setResponseStatus,
   toNodeListener,
-  toWebRequest,
 } from "h3"
 import serveStatic from "serve-static"
-import { VikeAuth } from "vike-authjs"
 import { renderPage } from "vike/server"
-
-installWhatwgNodeFetch()
-installGetSetCookie()
-installCrypto()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -59,59 +40,6 @@ async function startServer() {
   }
 
   const router = createRouter()
-
-  const Auth = VikeAuth({
-    secret: "MY_SECRET",
-    providers: [
-      CredentialsProvider({
-        name: "Credentials",
-        credentials: {
-          username: { label: "Username", type: "text", placeholder: "jsmith" },
-          password: { label: "Password", type: "password" },
-        },
-        async authorize() {
-          // Add logic here to look up the user from the credentials supplied
-          const user = {
-            id: "1",
-            name: "J Smith",
-            email: "jsmith@example.com",
-          }
-
-          // Any object returned will be saved in `user` property of the JWT
-          // If you return null then an error will be displayed advising the user to check their details.
-          // You can also Reject this callback with an Error thus the user will be sent to the error page with the error message as a query parameter
-          return user ?? null
-        },
-      }),
-    ],
-  })
-
-  router.use(
-    "/api/auth/**",
-    eventHandler((event) =>
-      Auth({
-        request: toWebRequest(event),
-      })
-    )
-  )
-
-  router.use(
-    "/api/trpc/**:path",
-    eventHandler((event) =>
-      nodeHTTPRequestHandler({
-        req: event.node.req,
-        res: event.node.res,
-        path: event.context.params!.path,
-        router: appRouter,
-        createContext({
-          req,
-          res,
-        }: NodeHTTPCreateContextFnOptions<IncomingMessage, ServerResponse>) {
-          return { req, res }
-        },
-      })
-    )
-  )
 
   /**
    * Vike route

@@ -1,5 +1,4 @@
 import { defineConfig } from "vite"
-import trpc from "./trpc/vite-plugin"
 import ssr from "vike/plugin"
 
 export default defineConfig({
@@ -16,5 +15,5 @@ export default defineConfig({
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },
-  plugins: [ssr(), trpc()],
+  plugins: [ssr()],
 })
