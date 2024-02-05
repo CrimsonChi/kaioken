@@ -26,11 +26,11 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
     t == "TEXT_ELEMENT"
       ? document.createTextNode("")
       : svgTags.includes(t)
-      ? (document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          t
-        ) as SVGElement)
-      : document.createElement(t)
+        ? (document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            t
+          ) as SVGElement)
+        : document.createElement(t)
 
   if (t === "form") {
     updateFormProps(vNode, dom as HTMLFormElement)
@@ -94,7 +94,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         dom instanceof SVGElement ||
         (dom instanceof Element && name.includes("-"))
       ) {
-        dom.removeAttribute(name)
+        dom.removeAttribute(name.toLowerCase() === "classname" ? "class" : name)
         return
       }
 
@@ -119,7 +119,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         dom instanceof SVGElement ||
         (dom instanceof Element && name.includes("-"))
       ) {
-        dom.setAttribute(name, nextProps[name])
+        dom.setAttribute(
+          name.toLowerCase() === "classname" ? "class" : name,
+          nextProps[name]
+        )
         return
       }
       ;(dom as Rec)[name] = nextProps[name]
