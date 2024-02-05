@@ -1,12 +1,9 @@
-// Environment: config
+import type { Config } from "vike/types"
 
-/**
- * @see {@link https://vike.dev/render-modes#html-only}
- */
 export default {
   meta: {
     Page: {
       env: { server: true, client: true },
     },
   },
-}
+} satisfies Config

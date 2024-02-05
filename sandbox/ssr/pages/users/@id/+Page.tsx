@@ -1,6 +1,6 @@
 import { Avatar } from "$/components/Avatar"
 import { LocationIcon } from "$/components/icons/LocationIcon"
-import type { ServerProps, AddressData } from "./+data"
+import type { ServerProps } from "./+data"
 
 export default function ({ user }: ServerProps) {
   return (
@@ -22,16 +22,17 @@ export default function ({ user }: ServerProps) {
   )
 }
 
+type AddressData = ServerProps["user"]["address"]
+
 function AddressDisplay({ address }: { address: AddressData }) {
   return (
-    <div className="flex gap-2 p-2 justify-between items-center">
+    <div className="flex p-2 items-center">
       <div className="flex gap-2 items-center">
         <LocationIcon className="inline stroke-emerald-500" />
-        <span className="text-sm">{address.address}</span>
+        <span className="text-sm">
+          {address.address}, {address.city}, {address.state}
+        </span>
       </div>
-      <span className="text-sm">
-        {address.city} {address.state}
-      </span>
     </div>
   )
 }

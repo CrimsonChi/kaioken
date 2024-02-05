@@ -1,10 +1,11 @@
-import type { DataAsync } from "vike/types"
+import type { PageContextServer } from "vike/types"
 import { redirect } from "vike/abort"
 
-export type { ServerProps, UserData }
-export { data }
+export { data, type ServerProps }
 
-const data: DataAsync<ServerProps> = async (pageContext) => {
+type ServerProps = Awaited<ReturnType<typeof data>>
+
+const data = async (pageContext: PageContextServer) => {
   const search = pageContext.urlParsed.search
 
   const pageSize = 20
@@ -20,11 +21,11 @@ const data: DataAsync<ServerProps> = async (pageContext) => {
   const response = await fetch(
     `https://dummyjson.com/users?limit=${pageSize}&skip=${(page - 1) * pageSize}&select=id,firstName,lastName,image`
   )
-  const { users } = (await response.json()) as { users: UserData[] }
+  const { users } = (await response.json()) as {
+    users: UserData[]
+  }
   return { users, page }
 }
-
-type ServerProps = { users: UserData[]; page: number }
 
 type UserData = {
   id: number
