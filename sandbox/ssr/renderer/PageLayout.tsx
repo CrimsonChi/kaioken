@@ -9,10 +9,7 @@ function PageLayout({ children }: { children?: JSX.Element[] }) {
         <a className="navitem" href="/">
           home
         </a>
-        <a className="navitem" href="/test">
-          test
-        </a>
-        <a className="navitem" href="/users/1">
+        <a className="navitem" href="/users">
           users
         </a>
       </Sidebar>

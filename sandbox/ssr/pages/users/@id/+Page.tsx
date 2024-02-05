@@ -1,3 +1,4 @@
+import { Avatar } from "../../../components/Avatar"
 import { LocationIcon } from "../../../components/icons/LocationIcon"
 import type { AddressData, UserData } from "./+data"
 
@@ -5,10 +6,12 @@ export default function ({ data: user }: { data: UserData }) {
   return (
     <>
       <div className="flex gap-4 py-4 items-center ">
-        <Avatar url={user.image} />
-        <h1 className="text-xl font-bold flex w-full items-start">
-          {user.firstName} {user.lastName}
-          <span className="flex items-center px-2 py-1 bg-emerald-700 text-while rounded text-xs font-light ml-auto">
+        <Avatar url={user.image} size={200} />
+        <h1 className="text-xl font-bold">
+          <span className="block">
+            {user.firstName} {user.lastName}
+          </span>
+          <span className="flex-inline items-center px-2 py-1 bg-emerald-700 text-while rounded text-xs font-light">
             ({user.gender}, {user.age})
           </span>
         </h1>
@@ -29,14 +32,6 @@ function AddressDisplay({ address }: { address: AddressData }) {
       <span className="text-sm">
         {address.city} {address.state}
       </span>
-    </div>
-  )
-}
-
-function Avatar({ url }: { url: string }) {
-  return (
-    <div className="flex p-2 rounded-full bg-white bg-opacity-15 w-fit">
-      <img src={url} width={50} height={50} />
     </div>
   )
 }

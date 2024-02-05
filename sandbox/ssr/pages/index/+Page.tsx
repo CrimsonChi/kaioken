@@ -1,16 +1,10 @@
 import { Counter } from "../../components/Counter"
+import { PageTitle } from "../../components/PageTitle"
 
-export { Page }
-
-/**
- * An empty page
- * @see {@link https://vike.dev/render-modes#html-only}
- */
-function Page(): JSX.Element {
+export default function () {
   return (
     <div>
-      <h1>Hello World</h1>
-      <br />
+      <PageTitle>Home</PageTitle>
       <Counter />
     </div>
   )

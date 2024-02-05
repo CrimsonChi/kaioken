@@ -5,6 +5,7 @@ export type UserData = {
   id: number
   firstName: string
   lastName: string
+  image: string
 }
 export type PageProps = {
   users: UserData[]
@@ -25,7 +26,7 @@ export const data: DataAsync<PageProps> = async (pageContext) => {
   }
 
   const response = await fetch(
-    `https://dummyjson.com/users?limit=${pageSize}&skip=${(page - 1) * pageSize}&select=id,firstName,lastName`
+    `https://dummyjson.com/users?limit=${pageSize}&skip=${(page - 1) * pageSize}&select=id,firstName,lastName,image`
   )
   const { users } = (await response.json()) as { users: UserData[] }
   return {
