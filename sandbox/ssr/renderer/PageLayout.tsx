@@ -7,10 +7,13 @@ function PageLayout({ children }: { children?: JSX.Element[] }) {
     <Layout>
       <Sidebar>
         <a className="navitem" href="/">
-          HOME
+          home
         </a>
         <a className="navitem" href="/test">
-          TEST
+          test
+        </a>
+        <a className="navitem" href="/users/1">
+          users
         </a>
       </Sidebar>
       <Content>{children}</Content>
@@ -19,7 +22,7 @@ function PageLayout({ children }: { children?: JSX.Element[] }) {
 }
 
 function Layout({ children }: { children?: JSX.Element[] }) {
-  return <div className="flex max-w-[900px] m-auto">{children}</div>
+  return <div className="flex m-auto w-full">{children}</div>
 }
 
 function Sidebar({ children }: { children?: JSX.Element[] }) {
@@ -32,7 +35,7 @@ function Sidebar({ children }: { children?: JSX.Element[] }) {
 
 function Content({ children }: { children?: JSX.Element[] }) {
   return (
-    <div className="p-5 pb-10 border-l-2 border-gray-500 min-h-screen">
+    <div className="p-5 pb-10 border-l-2 border-gray-500 min-h-screen flex-grow">
       {children}
     </div>
   )

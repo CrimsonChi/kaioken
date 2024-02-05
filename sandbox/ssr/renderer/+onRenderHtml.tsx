@@ -1,7 +1,7 @@
 // Environment: server
 
 import { dangerouslySkipEscape, escapeInject } from "vike/server"
-import type { OnRenderHtmlAsync } from "vike/types"
+import type { OnRenderHtmlAsync, PageContextServer } from "vike/types"
 import { renderToString } from "kaioken"
 import { PageLayout } from "./PageLayout"
 
@@ -16,11 +16,16 @@ const onRenderHtml: OnRenderHtmlAsync = async (
 ): ReturnType<OnRenderHtmlAsync> => {
   // Retrieve contextual data here and call your rendering framework
 
-  // const { Page, pageProps } = pageContext;
-  const { Page } = pageContext
-  // const pageHtml = await renderToHtml(createElement(Page, pageProps));
-  // const pageHtml = (Page as () => string)();
-  const pageHtml = renderToString(() => <PageLayout>{Page}</PageLayout>)
+  /**
+   * @param {() => JSX.Element} Page
+   */
+  const { Page, data = {} } = pageContext as PageContextServer & {
+    Page: (props: unknown) => JSX.Element
+    data: Record<string, unknown>
+  }
+  const pageHtml = renderToString(() => (
+    <PageLayout>{<Page data={data} />}</PageLayout>
+  ))
   const documentHtml = escapeInject`<!DOCTYPE html>
     <html>
       <head>
