@@ -1,8 +1,10 @@
-import type { Config } from "vike/types"
+import type { Config, PageContextServer } from "vike/types"
 
 export default {
+  passToClient: ["routeParams"] as Array<keyof PageContextServer>,
+  // clientRouting: true,
   meta: {
-    Page: {
+    title: {
       env: { server: true, client: true },
     },
   },

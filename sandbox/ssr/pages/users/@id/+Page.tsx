@@ -1,8 +1,11 @@
 import { Avatar } from "$/components/Avatar"
 import { LocationIcon } from "$/components/icons/LocationIcon"
+import { usePageContext } from "$/renderer/pageContext"
 import type { ServerProps } from "./+data"
 
-export default function ({ user }: ServerProps) {
+export default function UserPage({ user }: ServerProps) {
+  const ctx = usePageContext()
+  console.log(ctx)
   return (
     <>
       <div className="flex gap-4 py-4 items-center ">

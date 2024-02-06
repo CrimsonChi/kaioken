@@ -1,18 +1,24 @@
 // https://vike.dev/onRenderClient
 import type { OnRenderClientAsync } from "vike/types"
 import { hydrate } from "kaioken/ssr"
-import { PageLayout } from "./PageLayout"
+import { PageShell } from "./PageShell"
+import { getTitle } from "./utils"
 
 export { onRenderClient }
 
 const onRenderClient: OnRenderClientAsync = async (pageContext) => {
   const { Page, data = {} } = pageContext
+  const container = document.getElementById("page-root")!
+
+  if (!pageContext.isHydration) {
+    document.title = getTitle(pageContext)
+  }
   hydrate(
     () => (
-      <PageLayout>
+      <PageShell pageContext={pageContext}>
         <Page {...data} />
-      </PageLayout>
+      </PageShell>
     ),
-    document.getElementById("page-root")!
+    container
   )
 }

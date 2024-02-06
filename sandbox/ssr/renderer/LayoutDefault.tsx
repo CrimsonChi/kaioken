@@ -1,10 +1,6 @@
-import "./index.css"
-
-export { PageLayout }
-
-function PageLayout({ children }: { children?: JSX.Element[] }) {
+export function LayoutDefault({ children }: { children?: JSX.Element[] }) {
   return (
-    <Layout>
+    <div className="flex m-auto w-full">
       <Sidebar>
         <a className="navitem" href="/">
           home
@@ -14,12 +10,8 @@ function PageLayout({ children }: { children?: JSX.Element[] }) {
         </a>
       </Sidebar>
       <Content>{children}</Content>
-    </Layout>
+    </div>
   )
-}
-
-function Layout({ children }: { children?: JSX.Element[] }) {
-  return <div className="flex m-auto w-full">{children}</div>
 }
 
 function Sidebar({ children }: { children?: JSX.Element[] }) {
