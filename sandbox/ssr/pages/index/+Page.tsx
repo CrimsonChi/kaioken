@@ -1,5 +1,5 @@
-import { Counter } from "../../components/Counter"
-import { PageTitle } from "../../components/PageTitle"
+import { Counter } from "$/components/Counter"
+import { PageTitle } from "$/components/PageTitle"
 
 export default function HomePage() {
   return (

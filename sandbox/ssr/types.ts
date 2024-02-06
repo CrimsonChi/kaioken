@@ -1,5 +1,7 @@
 //https://vike.dev/pageContext#custom
 
+import { UserModel } from "./drizzle/schema"
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Vike {
@@ -18,12 +20,12 @@ declare global {
 
       data: Record<string, unknown>
       // Type of pageContext.user
-      user?: {
-        name: string
-        id: string
-        isAdmin: boolean
-      }
+      user: UserModel | null
     }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface User extends UserModel {}
   }
 }
 

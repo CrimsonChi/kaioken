@@ -1,7 +1,9 @@
 import type { Config, PageContextServer } from "vike/types"
 
 export default {
-  passToClient: ["routeParams"] as Array<keyof PageContextServer>,
+  passToClient: ["routeParams", "user"] satisfies Array<
+    keyof PageContextServer
+  >,
   // clientRouting: true,
   meta: {
     title: {
