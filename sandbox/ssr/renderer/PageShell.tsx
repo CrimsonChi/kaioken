@@ -1,7 +1,7 @@
 import "./PageShell.css"
 import { LayoutDefault } from "./LayoutDefault"
-import { PageContextProvider } from "./pageContext"
 import { PageContext } from "vike/types"
+import { PageContextProvider } from "$/context/pageContext"
 
 export { PageShell }
 
