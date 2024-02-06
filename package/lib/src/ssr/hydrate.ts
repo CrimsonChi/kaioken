@@ -1,4 +1,4 @@
-import { mount } from "../"
+import { Rec, mount } from "../"
 
 export interface SSRProps {
   request: {
@@ -7,11 +7,12 @@ export interface SSRProps {
   }
 }
 
-export function hydrate(
-  appFunc: (props: SSRProps) => JSX.Element,
-  container: HTMLElement
+export function hydrate<T extends Rec>(
+  appFunc: (props: T) => JSX.Element,
+  container: HTMLElement,
+  appProps = {} as T
 ) {
   console.log("hydrate", appFunc, container)
   container.innerHTML = ""
-  mount(appFunc, container)
+  mount(appFunc, container, appProps)
 }
