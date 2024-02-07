@@ -65,13 +65,15 @@ function fragment({ children }: { children: JSX.Element[] }) {
   return children as JSX.Element
 }
 
-function renderToString(
-  element: JSX.Element | (() => JSX.Element),
+function renderToString<T extends Rec>(
+  element: JSX.Element | ((props: T) => JSX.Element),
+  elementProps = {} as T,
   ctx = setGlobalCtx(new GlobalContext())
 ): string {
   if (!element) return ""
   if (typeof element === "string") return element
-  if (typeof element === "function") return renderToString(element())
+  if (typeof element === "function")
+    return renderToString(element(elementProps))
   if (element instanceof Array)
     return element.map((el) => renderToString(el, ctx)).join("")
   if (typeof element === "number") return String(element)
