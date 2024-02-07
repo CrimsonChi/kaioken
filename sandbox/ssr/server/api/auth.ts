@@ -1,9 +1,18 @@
 import { FastifyInstance } from "fastify"
 import oauthPlugin from "@fastify/oauth2"
-import { cookieSettings } from "../cookies"
 import { userService } from "../services/userService"
 import { AuthProvider, authService } from "../services/authService"
 import { env } from "../env"
+
+type CookieSerializeOptions =
+  import("D:/kaioken/node_modules/.pnpm/cookie-es@1.0.0/node_modules/cookie-es/dist/index").CookieSerializeOptions
+
+export const cookieSettings = {
+  domain: env.domain || "localhost",
+  path: "/",
+  sameSite: "lax",
+  secure: env.isProduction,
+} satisfies CookieSerializeOptions
 
 export function configureAuthRoutes(app: FastifyInstance) {
   app.register(oauthPlugin, {
