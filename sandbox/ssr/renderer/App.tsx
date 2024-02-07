@@ -1,15 +1,8 @@
 import { PageContext } from "vike/types"
 import { PageShell } from "./PageShell"
 
-export function App<T extends Record<string, unknown>>({
-  Page,
-  data,
-  pageContext,
-}: {
-  Page: (props: T) => JSX.Element
-  data: T
-  pageContext: PageContext
-}) {
+export function App({ pageContext }: { pageContext: PageContext }) {
+  const { Page, data = {} } = pageContext
   return (
     <PageShell pageContext={pageContext}>
       <Page {...data} />
