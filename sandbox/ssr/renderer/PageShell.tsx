@@ -3,9 +3,7 @@ import { LayoutDefault } from "./LayoutDefault"
 import { PageContext } from "vike/types"
 import { PageContextProvider } from "$/context/pageContext"
 
-export { PageShell }
-
-function PageShell({
+export function PageShell({
   pageContext,
   children,
 }: {

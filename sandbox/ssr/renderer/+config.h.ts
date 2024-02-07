@@ -1,7 +1,7 @@
 import type { Config, PageContextServer } from "vike/types"
 
 export default {
-  passToClient: ["routeParams", "user"] satisfies Array<
+  passToClient: ["routeParams", "user", "Layout"] satisfies Array<
     keyof PageContextServer
   >,
   /* 

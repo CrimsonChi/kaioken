@@ -3,7 +3,7 @@ import { dangerouslySkipEscape, escapeInject } from "vike/server"
 import type { OnRenderHtmlAsync } from "vike/types"
 import { renderToString } from "kaioken"
 import { getTitle } from "./utils"
-import { PageShell } from "./PageShell"
+import { App } from "./App"
 
 export { onRenderHtml }
 
@@ -13,11 +13,7 @@ const onRenderHtml: OnRenderHtmlAsync = async (
   const { Page, data = {} } = pageContext
   const title = getTitle(pageContext)
 
-  const pageHtml = renderToString(() => (
-    <PageShell pageContext={pageContext}>
-      <Page {...data} />
-    </PageShell>
-  ))
+  const pageHtml = renderToString(App, { Page, pageContext, data })
   return escapeInject`<!DOCTYPE html>
     <html>
       <head>

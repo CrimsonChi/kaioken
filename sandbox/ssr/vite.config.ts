@@ -1,5 +1,6 @@
 import { defineConfig } from "vite"
 import ssr from "vike/plugin"
+import kaioken from "vite-plugin-kaioken"
 
 export default defineConfig({
   resolve: {
@@ -15,5 +16,5 @@ export default defineConfig({
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },
-  plugins: [ssr()],
+  plugins: [ssr(), kaioken()],
 })
