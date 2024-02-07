@@ -5,8 +5,9 @@ export function Counter() {
   return (
     <>
       <span>count: {count}</span>
+      <br />
       <button
-        className="px-2 py-1 bg-red-500"
+        className="px-2 py-1 bg-indigo-700"
         onclick={() => setCount((prev) => prev + 1)}
       >
         Increment

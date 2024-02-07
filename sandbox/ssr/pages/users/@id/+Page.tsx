@@ -11,7 +11,7 @@ export function Page({ user }: ServerProps) {
           <span className="block">
             {user.firstName} {user.lastName}
           </span>
-          <span className="flex-inline items-center px-2 py-1 bg-emerald-700 text-while rounded text-xs font-light">
+          <span className="flex-inline items-center px-2 py-1 bg-indigo-700 text-while rounded text-xs font-light">
             ({user.gender}, {user.age})
           </span>
         </h1>
@@ -28,7 +28,7 @@ function AddressDisplay({ address }: { address: AddressData }) {
   return (
     <div className="flex p-2 items-center">
       <div className="flex gap-2 items-center">
-        <LocationIcon className="inline stroke-emerald-500" />
+        <LocationIcon className="inline stroke-indigo-500" />
         <span className="text-sm">
           {address.address}, {address.city}, {address.state}
         </span>

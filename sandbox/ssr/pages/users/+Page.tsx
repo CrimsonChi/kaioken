@@ -10,7 +10,7 @@ export function Page({ users, page }: ServerProps) {
         {users.map((user) => (
           <div className="flex gap-2 mb-2 pb-2 items-center border-b-2 border-white border-opacity-5 last:border-b-0">
             <Avatar url={user.image} />
-            <a href={`/users/${user.id}`} className="text-emerald-500">
+            <a href={`/users/${user.id}`} className="text-indigo-400">
               {user.firstName} {user.lastName}
             </a>
           </div>
