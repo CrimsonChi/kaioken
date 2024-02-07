@@ -14,14 +14,15 @@ export default function (): Plugin {
       if (isProduction || isBuild) return
       if (!/\.(tsx|jsx)$/.test(ctx.file)) return
       const module = ctx.modules.find((m) => m.file === ctx.file)
-      if (!module) return
+      if (!module || !module.isSelfAccepting) return
 
       const importers: ModuleNode[] = []
       const addImporters = (module: ModuleNode) => {
         if (
           module.file &&
           /\.(tsx|jsx)$/.test(module.file) &&
-          !importers.includes(module)
+          !importers.includes(module) &&
+          module.isSelfAccepting
         ) {
           importers.push(module)
           module.importers.forEach(addImporters)
@@ -113,7 +114,8 @@ function findExportedComponentNames(nodes: AstNode[]): string[] {
         continue
       }
       const name = dec.id?.name
-      if (!name || !/^[A-Z]/.test(name)) continue
+      //if (!name || !/^[A-Z]/.test(name)) continue
+      if (!name) continue
 
       if (nodeContainsCreateElement(dec)) {
         componentNames.push(name)
