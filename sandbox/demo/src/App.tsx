@@ -21,7 +21,6 @@ export function App() {
         <Link to="/messages">Messages</Link>
         <Link to="/transitions">Transitions</Link>
       </nav>
-      <Counter />
       <main>
         <Router>
           <Route path="/" element={() => <h2>Home</h2>} />
