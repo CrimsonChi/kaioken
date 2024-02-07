@@ -20,7 +20,7 @@ export function UserAuth() {
               <Avatar
                 url={user.avatarUrl}
                 size={24}
-                className="p-0 rounded-full overflow-hidden"
+                className="px-0 py-0 rounded-full overflow-hidden border border-white border-opacity-30"
               />
             ) : (
               <UserIcon />

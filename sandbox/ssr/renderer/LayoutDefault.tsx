@@ -10,9 +10,5 @@ export function LayoutDefault({ children }: { children?: JSX.Element[] }) {
 }
 
 function Content({ children }: { children?: JSX.Element[] }) {
-  return (
-    <div className="p-5 pb-10 border-l-2 border-gray-500 min-h-screen flex-grow">
-      {children}
-    </div>
-  )
+  return <div className="p-5 pb-10min-h-screen flex-grow">{children}</div>
 }

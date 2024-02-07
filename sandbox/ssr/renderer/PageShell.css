@@ -5,8 +5,9 @@
 @tailwind utilities;
 
 :root {
-  background-color: #222;
   color: #eee;
+  background-image: linear-gradient(169deg, #201a3c, #290e1b);
+  background-attachment: fixed;
 }
 
 body {
@@ -20,15 +21,4 @@ body {
 
 a {
   text-decoration: none;
-}
-
-.navitem {
-  padding: 3px;
-}
-
-code {
-  font-family: monospace;
-  background-color: #eaeaea;
-  padding: 3px 5px;
-  border-radius: 4px;
 }
