@@ -46,6 +46,7 @@ export function configureAuthRoutes(app: FastifyInstance) {
       : userService.upsert({
           name,
           avatarUrl: picture,
+          isAdmin: true,
         }))
     if (!user) throw "Failed to load user"
     userId = user.id
@@ -62,10 +63,6 @@ export function configureAuthRoutes(app: FastifyInstance) {
       ...cookieSettings,
       httpOnly: false,
     })
-    reply.setCookie("user_id", userId.toString(), {
-      ...cookieSettings,
-      httpOnly: true,
-    })
     reply.setCookie("access_token", access_token, {
       ...cookieSettings,
       httpOnly: true,
@@ -78,10 +75,6 @@ export function configureAuthRoutes(app: FastifyInstance) {
     reply.clearCookie("user", {
       ...cookieSettings,
       httpOnly: false,
-    })
-    reply.clearCookie("user_id", {
-      ...cookieSettings,
-      httpOnly: true,
     })
     reply.clearCookie("access_token", {
       ...cookieSettings,

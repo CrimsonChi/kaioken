@@ -6,6 +6,10 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Vike {
     interface PageContext {
+      abortReason?: string | { notAdmin: true }
+      abortStatusCode?: number
+      is404?: boolean
+
       Page: () => JSX.Element
       Layout: () => JSX.Element
       title: string | ((ctx: PageContext) => string)
@@ -22,10 +26,6 @@ declare global {
       // Type of pageContext.user
       user: UserModel | null
     }
-  }
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface User extends UserModel {}
   }
 }
 

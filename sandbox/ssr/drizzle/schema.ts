@@ -10,6 +10,7 @@ const users = sqliteTable(
     id: integer("id").primaryKey(),
     name: text("name").notNull(),
     avatarUrl: text("avatar_url"),
+    isAdmin: integer("is_admin", { mode: "boolean" }),
   },
   (table) => ({ idIdx: index("id_idx").on(table.name) })
 )

@@ -62,7 +62,6 @@ export const authService = {
       ).at(0)
     } catch (error) {
       console.error(error)
-      return
     }
   },
 
