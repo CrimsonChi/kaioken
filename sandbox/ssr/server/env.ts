@@ -23,7 +23,7 @@ function validate<T>(obj: T, path: string = "", errors: string[] = []) {
 export const env = validate({
   port: Number(process.env.PORT || "5173"),
   url: process.env.URL || "http://localhost:5173",
-  domain: process.env.DOMAIN || "localhost",
+  host: process.env.HOST || "localhost",
   isProduction: process.env.NODE_ENV === "production",
   auth0: {
     google: {

@@ -24,8 +24,6 @@ declare module "fastify" {
 }
 
 const root = process.cwd()
-startServer()
-
 async function startServer() {
   const app = fastify()
     .register(cookie)
@@ -97,17 +95,14 @@ async function startServer() {
 }
 async function main() {
   const fastify = await startServer()
-
-  fastify.listen(
-    { port: env.port, host: "localhost" },
-    function (err, address) {
-      if (err) {
-        fastify.log.error(err)
-        process.exit(1)
-      }
-      console.log(`Server listening at ${address}`)
+  const { host, port } = env
+  fastify.listen({ host, port }, function (err) {
+    if (err) {
+      fastify.log.error(err)
+      process.exit(1)
     }
-  )
+    console.log(`Server listening at http://${host}:${port}`)
+  })
 }
 
 main()
