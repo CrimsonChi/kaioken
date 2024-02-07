@@ -42,7 +42,6 @@ declare global {
 }
 
 type VNode = {
-  id: number
   type: string | Function | typeof Component
   dom?: HTMLElement | SVGElement | Text
   instance?: Component

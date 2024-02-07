@@ -14,14 +14,15 @@ export default function (): Plugin {
       if (isProduction || isBuild) return
       if (!/\.(tsx|jsx)$/.test(ctx.file)) return
       const module = ctx.modules.find((m) => m.file === ctx.file)
-      if (!module) return
+      if (!module || !module.isSelfAccepting) return
 
       const importers: ModuleNode[] = []
       const addImporters = (module: ModuleNode) => {
         if (
           module.file &&
           /\.(tsx|jsx)$/.test(module.file) &&
-          !importers.includes(module)
+          !importers.includes(module) &&
+          module.isSelfAccepting
         ) {
           importers.push(module)
           module.importers.forEach(addImporters)
@@ -38,18 +39,18 @@ export default function (): Plugin {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
           code = `
-import {g} from "kaioken/dist/globalState";\n
+import {ctx} from "kaioken/dist/globalContext";\n
 ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
-        g.applyRecursive((node) => {
+        ctx.applyRecursive((node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];
             if (node.prev) {
               node.prev.type = newModule[name];
             }
-            g.requestUpdate(node);
+            ctx.requestUpdate(node);
           }
         })
       }
@@ -113,7 +114,8 @@ function findExportedComponentNames(nodes: AstNode[]): string[] {
         continue
       }
       const name = dec.id?.name
-      if (!name || !/^[A-Z]/.test(name)) continue
+      //if (!name || !/^[A-Z]/.test(name)) continue
+      if (!name) continue
 
       if (nodeContainsCreateElement(dec)) {
         componentNames.push(name)

@@ -1,5 +1,7 @@
 import type { Hook } from "../types.js"
-import { g } from "../globalState.js"
+import { ctx } from "../globalContext.js"
+
+export const isSSR = !("window" in globalThis)
 
 export {
   cleanupHook,
@@ -13,7 +15,7 @@ type HookCallbackState<T> = {
   hook: Hook<T>
   oldHook?: Hook<T>
   update: () => void
-  queueEffect: typeof g.queueEffect
+  queueEffect: typeof ctx.queueEffect
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
@@ -22,21 +24,21 @@ function useHook<T, U>(
   hookData: Hook<T>,
   callback: HookCallback<T, U>
 ): U {
-  const node = g.curNode
+  const node = ctx.curNode
   if (!node)
     throw new Error(
       `hook "${hookName}" must be used at the top level of a component or inside another hook.`
     )
-  const oldHook = node.prev && (node.prev.hooks?.at(g.hookIndex) as Hook<T>)
+  const oldHook = node.prev && (node.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
   const res = callback({
     hook,
     oldHook,
-    update: () => g.requestUpdate(node),
-    queueEffect: g.queueEffect.bind(g),
+    update: () => ctx.requestUpdate(node),
+    queueEffect: ctx.queueEffect.bind(ctx),
   })
   if (!node.hooks) node.hooks = []
-  node.hooks[g.hookIndex++] = hook
+  node.hooks[ctx.hookIndex++] = hook
   return res
 }
 

@@ -1,6 +1,6 @@
 import type { Rec, VNode } from "./types.js"
 import { componentSymbol } from "./constants.js"
-import { g } from "./globalState.js"
+import { ctx } from "./globalContext.js"
 
 export { Component }
 
@@ -12,14 +12,14 @@ abstract class Component<T = Rec> {
   vNode: VNode
   constructor(props: T) {
     this.props = props
-    this.vNode = g.curNode!
+    this.vNode = ctx.curNode!
   }
   abstract render(): JSX.Element
 
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {
-      queueMicrotask(() => g.requestUpdate(this.vNode))
+      queueMicrotask(() => ctx.requestUpdate(this.vNode))
     }
   }
 

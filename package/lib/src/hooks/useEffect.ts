@@ -1,9 +1,10 @@
-import { cleanupHook, depsRequireChange, useHook } from "./utils.js"
+import { cleanupHook, depsRequireChange, isSSR, useHook } from "./utils.js"
 
 export function useEffect(
   callback: () => void | (() => void),
   deps?: unknown[]
 ): void {
+  if (isSSR) return
   return useHook(
     "useEffect",
     { callback, deps },

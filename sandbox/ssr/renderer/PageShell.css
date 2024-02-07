@@ -1,0 +1,24 @@
+/* This CSS is common to all pages */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #eee;
+  background-image: linear-gradient(169deg, #201a3c, #290e1b);
+  background-attachment: fixed;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
+}

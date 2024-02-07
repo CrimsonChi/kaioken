@@ -1,9 +1,11 @@
-import { useHook } from "./utils.js"
+import { isSSR, useHook } from "./utils.js"
 
 export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
   state: T
 ): [T, (action: A) => void] {
+  if (isSSR) return [state, () => {}]
+
   return useHook("useReducer", { state }, ({ hook, update }) => {
     const setter = (action: A) => {
       const newState = reducer(hook.state, action)

@@ -1,10 +1,14 @@
-import { useHook } from "./utils.js"
+import { isSSR, useHook } from "./utils.js"
 
 type StateSetter<T> = T | ((prev: T) => T)
 
 export function useState<T>(
   initial: T | (() => T)
 ): [T, (value: StateSetter<T>) => void] {
+  if (isSSR) {
+    return [initial instanceof Function ? initial() : initial, () => {}]
+  }
+
   return useHook(
     "useState",
     { state: undefined as T },

@@ -1,20 +1,17 @@
-import { mount } from "../"
+import { Rec, mount } from "../"
 
 export interface SSRProps {
   request: {
     path: string
+    query: string
   }
 }
 
-export function hydrate(
-  appFunc: (ssrProps: SSRProps) => JSX.Element,
-  container: HTMLElement
+export function hydrate<T extends Rec>(
+  appFunc: (props: T) => JSX.Element,
+  container: HTMLElement,
+  appProps = {} as T
 ) {
-  console.log("hydrate", appFunc, container)
   container.innerHTML = ""
-
-  if (!("kaioken_ssr_props" in window)) throw new Error("")
-  const appProps = window.kaioken_ssr_props as SSRProps
-
-  mount(appFunc, container, appProps)
+  return mount(appFunc, container, appProps)
 }

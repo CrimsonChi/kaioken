@@ -1,4 +1,4 @@
-import { useHook } from "./utils.js"
+import { isSSR, useHook } from "./utils.js"
 
 type StoreUnsubscriber = () => void
 type StoreSubscriber<T> = (callback: (val: T) => void) => StoreUnsubscriber
@@ -7,6 +7,8 @@ export function useSyncExternalStore<T>(
   subscriber: StoreSubscriber<T>,
   getter: () => T
 ): T {
+  if (isSSR) return getter()
+
   return useHook(
     "useSyncExternalStore",
     { data: undefined as T },

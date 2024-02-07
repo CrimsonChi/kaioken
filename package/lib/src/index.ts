@@ -1,13 +1,13 @@
 import type { Rec, VNode } from "./types"
-import { createId, g } from "./globalState.js"
-import { isValidChild, propFilters } from "./utils.js"
+import { setGlobalCtx, GlobalContext } from "./globalContext.js"
+import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
 
 export type * from "./types"
 export * from "./hooks"
 export * from "./component.js"
 export * from "./context.js"
-export * from "./globalState.js"
+export * from "./globalContext.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
@@ -25,7 +25,7 @@ function mount<T extends Rec>(
     {},
     createElement(appFunc, appProps)
   )
-  return g.mount(node, container)
+  return setGlobalCtx(new GlobalContext()).mount(node, container)
 }
 
 function createElement(
@@ -34,7 +34,6 @@ function createElement(
   ...children: (VNode | unknown)[]
 ): VNode {
   return {
-    id: typeof type === "string" ? -1 : createId(),
     type,
     props: {
       ...props,
@@ -47,10 +46,6 @@ function createElement(
       ).map((child) => createChildElement(child)) as VNode[],
     },
   }
-}
-
-function isVNode(node: unknown): node is VNode {
-  return typeof node === "object" && node !== null && "type" in node
 }
 
 function createChildElement(child: VNode | string | (() => VNode)): VNode {
@@ -70,28 +65,17 @@ function fragment({ children }: { children: JSX.Element[] }) {
   return children as JSX.Element
 }
 
-const selfClosingTags = [
-  "area",
-  "base",
-  "br",
-  "col",
-  "embed",
-  "hr",
-  "img",
-  "input",
-  "link",
-  "meta",
-  "param",
-  "source",
-  "track",
-  "wbr",
-]
-
-function renderToString(element: JSX.Element | (() => JSX.Element)): string {
+function renderToString<T extends Rec>(
+  element: JSX.Element | ((props: T) => JSX.Element),
+  elementProps = {} as T,
+  ctx = setGlobalCtx(new GlobalContext())
+): string {
   if (!element) return ""
   if (typeof element === "string") return element
-  if (typeof element === "function") return renderToString(element())
-  if (element instanceof Array) return element.map(renderToString).join("")
+  if (typeof element === "function")
+    return renderToString(element(elementProps))
+  if (element instanceof Array)
+    return element.map((el) => renderToString(el, ctx)).join("")
   if (typeof element === "number") return String(element)
   if (element.type === "TEXT_ELEMENT") return element.props.nodeValue ?? ""
 
@@ -105,15 +89,20 @@ function renderToString(element: JSX.Element | (() => JSX.Element)): string {
     const isSelfClosing = selfClosingTags.includes(element.type)
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
-      .map((key) => `${key}="${props[key]}"`)
+      .map(
+        (key) =>
+          `${transformPropNameToHtmlAttr(key)}="${transformPropValueToHtmlAttrValue(key, props[key])}"`
+      )
       .join(" ")
     const open = `<${element.type}${attrs ? ` ${attrs}` : ""}${
       isSelfClosing ? " /" : ""
     }>`
     if (isSelfClosing) return open
-    return `${open}${children.map(renderToString).join("")}</${element.type}>`
+    return `${open}${children.map((el) => renderToString(el, ctx)).join("")}</${
+      element.type
+    }>`
   }
-  g.curNode = element
+  ctx.curNode = element
 
   if (Component.isCtor(element.type)) {
     const instance = new (element.type as unknown as {
@@ -124,4 +113,33 @@ function renderToString(element: JSX.Element | (() => JSX.Element)): string {
   }
 
   return renderToString(element.type(element.props))
+}
+
+function transformPropNameToHtmlAttr(key: string) {
+  switch (key.toLowerCase()) {
+    case "classname":
+      return "class"
+    case "htmlfor":
+      return "for"
+    default:
+      return key
+  }
+}
+
+function styleObjectToCss(styleObject: Partial<CSSStyleDeclaration>) {
+  let cssString = ""
+  for (const key in styleObject) {
+    const cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase()
+    cssString += `${cssKey}:${styleObject[key]};`
+  }
+  return cssString
+}
+
+function transformPropValueToHtmlAttrValue(key: string, value: unknown) {
+  switch (key) {
+    case "style":
+      if (typeof value === "object" && !!value) return styleObjectToCss(value)
+    default:
+      return String(value)
+  }
 }
