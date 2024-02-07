@@ -144,9 +144,9 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
   const dom = vNode.dom ?? vNode.instance?.rootDom
 
   if (
-    vNode.effectTag === EffectTag.PLACEMENT &&
     dom &&
-    !vNode.instance?.rootDom
+    (!dom.isConnected ||
+      (vNode.effectTag === EffectTag.PLACEMENT && !vNode.instance?.rootDom))
   ) {
     let parentNode: VNode | undefined =
       vNode.parent ?? vNode.prev?.parent ?? ctx.treesInProgress[0]
