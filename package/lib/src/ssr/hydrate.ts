@@ -12,7 +12,6 @@ export function hydrate<T extends Rec>(
   container: HTMLElement,
   appProps = {} as T
 ) {
-  console.log("hydrate", appFunc, container)
   container.innerHTML = ""
-  mount(appFunc, container, appProps)
+  return mount(appFunc, container, appProps)
 }
