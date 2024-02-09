@@ -34,7 +34,7 @@ export default function (): Plugin {
     transform(code, id) {
       if (isProduction || isBuild) return
       if (!/\.(tsx|jsx)$/.test(id)) return
-      const ast = this.parse(code) as AstNode
+      const ast = this.parse(code)
       try {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
