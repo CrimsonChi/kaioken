@@ -5,7 +5,7 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": ["node", "mocha"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -21,5 +21,5 @@
     "noFallthroughCasesInSwitch": true,
     "jsx": "preserve"
   },
-  "include": ["src", "cypress/support"]
+  "include": ["src", "cypress"]
 }
