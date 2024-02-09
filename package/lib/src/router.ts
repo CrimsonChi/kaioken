@@ -72,8 +72,7 @@ function Route({ path, element }: RouteProps) {
 
 function navigate(to: string) {
   window.history.pushState({}, "", to)
-  var popStateEvent = new PopStateEvent("popstate", { state: {} })
-  dispatchEvent(popStateEvent)
+  window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
 }
 
 export interface LinkProps extends ElementProps<"a"> {

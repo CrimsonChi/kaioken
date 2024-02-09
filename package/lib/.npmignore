@@ -3,3 +3,4 @@ node_modules
 tsconfig.json
 types.js
 types.dom.js
+tests

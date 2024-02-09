@@ -9,9 +9,9 @@
     "url": "https://github.com/Robby6Strings/kaioken"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\"",
-    "dev": "tsc --watch",
-    "build": "pnpm i && tsc"
+    "build": "rm -rf dist && pnpm i && tsc",
+    "mocha": "pnpm build && ts-mocha --jsx ./dist/tests/*/**.test.js",
+    "dev": "tsc --watch"
   },
   "types": "index.d.ts",
   "keywords": [
@@ -21,5 +21,13 @@
     "react"
   ],
   "author": "Robby6Strings",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/jsdom": "^21.1.6",
+    "@types/mocha": "^10.0.6",
+    "chai": "^5.0.3",
+    "mocha": "^10.3.0",
+    "ts-mocha": "^10.0.0"
+  }
 }
