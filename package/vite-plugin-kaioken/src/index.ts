@@ -93,6 +93,8 @@ interface AstNode {
   specifiers?: AstNode[]
   callee?: AstNode
   exported?: AstNode & { name: string }
+  consequent?: AstNode
+  alternate?: AstNode
   local?: AstNode & { name: string }
 }
 
@@ -114,7 +116,6 @@ function findExportedComponentNames(nodes: AstNode[]): string[] {
         continue
       }
       const name = dec.id?.name
-      //if (!name || !/^[A-Z]/.test(name)) continue
       if (!name) continue
 
       if (nodeContainsCreateElement(dec)) {
@@ -147,18 +148,17 @@ function nodeContainsCreateElement(node: AstNode): boolean {
     for (const child of node.body) {
       if (nodeContainsCreateElement(child)) return true
     }
-  } else if (node.body && nodeContainsCreateElement(node.body)) {
+  } else if (
+    (node.body && nodeContainsCreateElement(node.body)) ||
+    (node.argument && nodeContainsCreateElement(node.argument)) ||
+    (node.consequent && nodeContainsCreateElement(node.consequent)) ||
+    (node.alternate && nodeContainsCreateElement(node.alternate)) ||
+    (node.callee && nodeContainsCreateElement(node.callee)) ||
+    (node.arguments &&
+      node.arguments.some((arg) => nodeContainsCreateElement(arg)))
+  ) {
     return true
-  } else if (node.argument && nodeContainsCreateElement(node.argument)) {
-    return true
   }
-  if (node.arguments) {
-    for (const arg of node.arguments) {
-      if (nodeContainsCreateElement(arg)) return true
-    }
-  }
-  if (node.callee) {
-    return nodeContainsCreateElement(node.callee)
-  }
+
   return false
 }
