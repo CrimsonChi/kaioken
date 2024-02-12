@@ -621,18 +621,18 @@ interface SvgElementAttributes {
     x2?: string | number
     y2?: string | number
     points?: string
-    animatedPoints: string
+    animatedPoints?: string
   }
   path: {
     d?: string
   }
   polygon: {
     points?: string
-    animatedPoints: string
+    animatedPoints?: string
   }
   polyline: {
     points?: string
-    animatedPoints: string
+    animatedPoints?: string
   }
   rect: {
     x?: string | number
