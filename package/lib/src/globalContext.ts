@@ -11,6 +11,7 @@ class GlobalContext {
   nextUnitOfWork: VNode | void = undefined
   treesInProgress: VNode[] = []
   currentTreeIndex = 0
+  maxFrameMs = 33 // 30fps
 
   hookIndex = 0
   deletions: VNode[] = []
@@ -75,8 +76,24 @@ class GlobalContext {
       while (this.pendingEffects.length) this.pendingEffects.shift()?.()
       this.treesInProgress = []
     }
-
-    requestIdleCallback(this.workLoop.bind(this))
+    const w = window as Window
+    if ("requestIdleCallback" in w) {
+      w.requestIdleCallback(this.workLoop.bind(this))
+    } else {
+      window.requestAnimationFrame(() => {
+        const start = performance.now()
+        window.setTimeout(() => {
+          const elapsed = performance.now() - start
+          const deadline: IdleDeadline = {
+            didTimeout: false,
+            timeRemaining: function () {
+              return Math.max(0, 50 - elapsed) // Simulate 50ms max idle time
+            },
+          }
+          this.workLoop(deadline)
+        }, 0)
+      })
+    }
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
