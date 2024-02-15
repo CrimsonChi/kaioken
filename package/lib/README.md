@@ -14,7 +14,6 @@
 - [x] useRef
 - [x] useMemo
 - [x] useFetch
-- [x] useSyncExternalStore
 - [x] useCallback
 - [x] memo
 - [x] useOptimistic
