@@ -4,9 +4,9 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "tsx ./server/server.ts",
+    "dev": "tsx ./src/server/server.ts",
     "build": "vite build",
-    "preview": "set NODE_ENV=production&& tsx ./server/server.ts",
+    "preview": "set NODE_ENV=production&& tsx ./src/server/server.ts",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ."
   },
   "keywords": [],

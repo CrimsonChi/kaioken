@@ -16,7 +16,7 @@
     "types": ["vite/client"],
     "jsx": "preserve",
     "paths": {
-      "$/*": ["./*"]
+      "$/*": ["./src/*"]
     }
   },
   "exclude": ["dist"]
