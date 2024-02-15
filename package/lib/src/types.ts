@@ -8,7 +8,18 @@ import type {
   SvgGlobalAttributes,
 } from "./types.dom"
 
-export type { VNode, Rec, Ref, Context, ProviderProps, ElementProps, Hook }
+export type {
+  VNode,
+  Rec,
+  Ref,
+  Context,
+  ProviderProps,
+  ElementProps,
+  Hook,
+  StateSetter,
+}
+
+type StateSetter<T> = T | ((prev: T) => T)
 
 type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
@@ -32,12 +43,12 @@ declare global {
     type Element = VNode | VNode[] | string | number | null
 
     type InternalProps<
-      K extends keyof HtmlElementAttributes | keyof SvgElementAttributes
+      K extends keyof HtmlElementAttributes | keyof SvgElementAttributes,
     > = K extends keyof HTMLElementTagNameMap
       ? { ref?: Ref<HTMLElementTagNameMap[K]> }
       : K extends keyof SVGElementTagNameMap
-      ? { ref?: Ref<SVGElementTagNameMap[K]> }
-      : {}
+        ? { ref?: Ref<SVGElementTagNameMap[K]> }
+        : {}
   }
 }
 

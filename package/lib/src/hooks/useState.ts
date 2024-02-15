@@ -1,6 +1,5 @@
+import type { StateSetter } from "../types.js"
 import { isSSR, useHook } from "./utils.js"
-
-type StateSetter<T> = T | ((prev: T) => T)
 
 export function useState<T>(
   initial: T | (() => T)

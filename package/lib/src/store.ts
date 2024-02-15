@@ -1,17 +1,28 @@
 import { ctx } from "./globalContext"
 import { useEffect } from "./hooks"
-import type { VNode } from "./types"
+import type { StateSetter, VNode } from "./types"
 
 export { createStore }
 
-type StateSetter<T> = T | ((prev: T) => T)
+type MutatorFactory<T> = (
+  setState: (setter: StateSetter<T>) => void
+) => Record<string, (...args: any[]) => void>
 
-function createStore<
-  T,
-  U extends (
-    mutator: (setter: StateSetter<T>) => void
-  ) => Record<string, (...args: any[]) => void>,
->(initial: T, settersFactory: U) {
+type UseStoreArgs<T, U extends MutatorFactory<T>> = { value: T } & ReturnType<U>
+
+type Store<T, U extends MutatorFactory<T>> = {
+  <Selector extends (state: UseStoreArgs<T, U>) => unknown>(
+    fn: Selector
+  ): ReturnType<Selector>
+  getState: () => T
+  setState: (newValue: T) => void
+  subscribe: (fn: (value: T) => void) => () => void
+} & ReturnType<U>
+
+function createStore<T, U extends MutatorFactory<T>>(
+  initial: T,
+  mutatorFactory: U
+) {
   let value = initial
   const subscribers = new Set<VNode | Function>()
   const setState = (setter: StateSetter<T>) => {
@@ -20,11 +31,11 @@ function createStore<
       n instanceof Function ? n(value) : ctx.requestUpdate(n)
     )
   }
-  const mutators = settersFactory(setState) as ReturnType<U>
+  const mutators = mutatorFactory(setState) as ReturnType<U>
 
-  function useStore<
-    Selector extends (state: { value: T } & ReturnType<U>) => unknown,
-  >(fn: Selector) {
+  function useStore<Selector extends (state: UseStoreArgs<T, U>) => unknown>(
+    fn: Selector
+  ) {
     const node = ctx.curNode
     if (node) {
       subscribers.add(node)
@@ -40,5 +51,5 @@ function createStore<
       subscribers.add(fn)
       return (() => (subscribers.delete(fn), void 0)) as () => void
     },
-  })
+  }) as Store<T, U>
 }
