@@ -51,7 +51,7 @@ function Thread({
   })
 
   return (
-    <>
+    <div className="flex flex-col">
       <form
         autocomplete="off"
         action={formAction}
@@ -67,6 +67,6 @@ function Thread({
           {sending && <small> Sending...</small>}
         </div>
       ))}
-    </>
+    </div>
   )
 }

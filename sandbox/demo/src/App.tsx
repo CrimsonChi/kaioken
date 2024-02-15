@@ -12,16 +12,16 @@ import { Link } from "./components/atoms/Link"
 export function App() {
   return (
     <ThemeContextProvider>
-      <H1 className="mb-5">App</H1>
-      <nav className="flex flex-wrap gap-2 justify-center mb-5">
+      <nav className="flex flex-col flex-wrap gap-2 min-h-screen p-2 justify-center mb-5">
+        <H1 className="mb-5">App</H1>
         <Link to="/">Home</Link>
-        <Link to="/todos">Todos</Link>
-        <Link to="/counter">Counter</Link>
-        <Link to="/query?id=1">Query</Link>
-        <Link to="/messages">Messages</Link>
-        <Link to="/transitions">Transitions</Link>
+        <Link to="/todos">Todos (state, model, memo)</Link>
+        <Link to="/counter">Counter (store)</Link>
+        <Link to="/query?id=1">Query (useFetch)</Link>
+        <Link to="/messages">Messages (useOptimistic)</Link>
+        <Link to="/transitions">Dialogs (transitions, portal)</Link>
       </nav>
-      <main>
+      <main className="flex items-center justify-center flex-grow w-full">
         <Router>
           <Route path="/" element={() => <h2>Home</h2>} />
           <Route path="/todos" element={Todos} />
@@ -31,9 +31,10 @@ export function App() {
           <Route
             path="/transitions"
             element={() => (
-              <>
-                <ModalDemo /> <DrawerDemo />
-              </>
+              <div className="flex gap-2">
+                <ModalDemo />
+                <DrawerDemo />
+              </div>
             )}
           />
         </Router>

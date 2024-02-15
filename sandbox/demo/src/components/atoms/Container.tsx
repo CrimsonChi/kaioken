@@ -6,7 +6,7 @@ export function Container({
   ...props
 }: ElementProps<"div">) {
   return (
-    <div {...props} className={`container mx-auto px-4 ${className || ""}`}>
+    <div {...props} className={`mx-auto px-4 ${className || ""}`}>
       {children}
     </div>
   )
