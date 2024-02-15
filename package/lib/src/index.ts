@@ -11,6 +11,7 @@ export * from "./globalContext.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
+export * from "./store.js"
 export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }

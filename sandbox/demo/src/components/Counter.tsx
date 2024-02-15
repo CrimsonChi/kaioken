@@ -1,17 +1,13 @@
-import { useState } from "kaioken"
 import { Button } from "./atoms/Button"
 import { Container } from "./atoms/Container"
+import { useCountStore } from "../store"
 
 export function Counter() {
-  const [count, setCount] = useState(0)
-
-  const increment = () => {
-    setCount(count + 1)
-  }
-
-  const decrement = () => {
-    setCount(count - 1)
-  }
+  const { count, increment, decrement } = useCountStore((store) => ({
+    count: store.value.count,
+    increment: store.increment,
+    decrement: store.decrement,
+  }))
 
   return (
     <Container className="flex gap-2 items-center">
