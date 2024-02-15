@@ -588,6 +588,10 @@ interface SvgGlobalAttributes {
   fill?: string
   stroke?: string
   strokeWidth?: string | number
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/CSS/display) */
+  display?: string
+  transform?: string
+  "transform-origin"?: string
 }
 
 interface SvgElementAttributes {
@@ -597,6 +601,8 @@ interface SvgElementAttributes {
     viewBox?: string
     preserveAspectRatio?: string
     xmlns?: string
+    "xmlns:xlink"?: string
+    version?: string
   }
   circle: {
     cx?: string | number
