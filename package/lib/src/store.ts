@@ -13,21 +13,32 @@ function createStore<
   ) => Record<string, (...args: any[]) => void>,
 >(initial: T, settersFactory: U) {
   let value = initial
-  const subscribers = new Set<VNode>()
-  const mutator = (setter: StateSetter<T>) => {
+  const subscribers = new Set<VNode | Function>()
+  const setState = (setter: StateSetter<T>) => {
     value = setter instanceof Function ? setter(value) : setter
-    subscribers.forEach((n) => ctx.requestUpdate(n))
+    subscribers.forEach((n) =>
+      n instanceof Function ? n(value) : ctx.requestUpdate(n)
+    )
   }
-  const factory = settersFactory(mutator) as ReturnType<U>
+  const mutators = settersFactory(setState) as ReturnType<U>
 
-  type S = { value: T } & ReturnType<U>
-
-  return function useStore<Selector extends (s: S) => unknown>(fn: Selector) {
+  function useStore<
+    Selector extends (state: { value: T } & ReturnType<U>) => unknown,
+  >(fn: Selector) {
     const node = ctx.curNode
     if (node) {
       subscribers.add(node)
       useEffect(() => () => subscribers.delete(node), [])
     }
-    return fn({ value, ...factory }) as ReturnType<Selector>
+    return fn({ value, ...mutators }) as ReturnType<Selector>
   }
+
+  return Object.assign(useStore, {
+    getState: () => value,
+    setState,
+    subscribe: (fn: (state: T) => void) => {
+      subscribers.add(fn)
+      return (() => (subscribers.delete(fn), void 0)) as () => void
+    },
+  })
 }
