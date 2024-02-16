@@ -1,6 +1,7 @@
 import { useEffect, useOptimistic, useRef, useState } from "kaioken"
 import { Button } from "./atoms/Button"
 import { Input } from "./atoms/Input"
+import { useMessageStatsStore } from "../store"
 
 type Message = {
   message: string
@@ -9,17 +10,24 @@ type Message = {
 
 async function deliverMessage(message: Message) {
   await new Promise((res) => setTimeout(res, 1000))
+  const fail = Math.random() > 0.5
+  if (fail) {
+    useMessageStatsStore.setState((prev) => ({ ...prev, fail: prev.fail + 1 }))
+    throw "teerasd"
+  }
+  useMessageStatsStore.setState((prev) => ({
+    ...prev,
+    success: prev.success + 1,
+  }))
   return message
 }
 
 export function Messages() {
-  const [messages, setMessages] = useState([
-    { message: "Hello there!", sending: false },
-  ] as Message[])
+  const [messages, setMessages] = useState<Message[]>([])
 
   async function sendMessage(message: string) {
     const sentMessage = await deliverMessage({ message })
-    setMessages((messages) => [...messages, { message: sentMessage.message }])
+    setMessages((messages) => [...messages, sentMessage])
   }
 
   return <Thread messages={messages} sendMessage={sendMessage} />
@@ -34,24 +42,26 @@ function Thread({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const { success, fail } = useMessageStatsStore(({ value }) => value)
+
   function formAction(formData: FormData) {
     const message = formData.get("message") as string
     if (!message) return
-    // formRef.current?.reset()
-    sendMessage(message)
-    addOptimisticMessage(message)
+    const revert = addOptimisticMessage(message)
+    sendMessage(message).catch(revert)
   }
+
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
     messages,
     (state, message: string) => [...state, { message, sending: true }]
   )
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  })
+  useEffect(() => inputRef.current?.focus())
 
   return (
     <div className="flex flex-col">
+      <div>success: {success}</div>
+      <div>fail: {fail}</div>
       <form
         autocomplete="off"
         action={formAction}
