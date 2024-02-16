@@ -18,6 +18,7 @@ type Store<T, U extends MutatorFactory<T>> = {
   (): T & ReturnType<U>
   getState: () => T
   setState: (setter: StateSetter<T>) => void
+  mutators: ReturnType<U>
   subscribe: (fn: (value: T) => void) => () => void
 } & ReturnType<U>
 
@@ -52,6 +53,7 @@ function createStore<T, U extends MutatorFactory<T>>(
   return Object.assign(useStore, {
     getState,
     setState,
+    mutators,
     subscribe: (fn: (state: T) => void) => {
       subscribers.add(fn)
       return (() => (subscribers.delete(fn), void 0)) as () => void
