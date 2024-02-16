@@ -15,6 +15,7 @@ type Store<T, U extends MutatorFactory<T>> = {
   <Selector extends (state: UseStoreArgs<T, U>) => unknown>(
     fn: Selector
   ): ReturnType<Selector>
+  (): T & ReturnType<U>
   getState: () => T
   setState: (setter: StateSetter<T>) => void
   subscribe: (fn: (value: T) => void) => () => void
@@ -35,15 +36,17 @@ function createStore<T, U extends MutatorFactory<T>>(
   }
   const mutators = mutatorFactory(setState, getState) as ReturnType<U>
 
-  function useStore<Selector extends (state: UseStoreArgs<T, U>) => unknown>(
-    fn: Selector
+  function useStore<Selector extends (selector: UseStoreArgs<T, U>) => unknown>(
+    fn?: Selector
   ) {
     const node = ctx.curNode
     if (node) {
       subscribers.add(node)
       useEffect(() => () => subscribers.delete(node), [])
     }
-    return fn({ value, ...mutators }) as ReturnType<Selector>
+    return fn
+      ? (fn({ value, ...mutators }) as ReturnType<Selector>)
+      : { value, ...mutators }
   }
 
   return Object.assign(useStore, {
