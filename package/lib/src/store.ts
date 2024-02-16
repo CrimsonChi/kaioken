@@ -15,7 +15,7 @@ type Store<T, U extends MutatorFactory<T>> = {
     fn: Selector
   ): ReturnType<Selector>
   getState: () => T
-  setState: (newValue: T) => void
+  setState: (setter: StateSetter<T>) => void
   subscribe: (fn: (value: T) => void) => () => void
 } & ReturnType<U>
 
