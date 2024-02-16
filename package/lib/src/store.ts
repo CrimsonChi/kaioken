@@ -4,27 +4,27 @@ import type { StateSetter, VNode } from "./types"
 
 export { createStore }
 
-type MutatorFactory<T> = (
+type MethodFactory<T> = (
   setState: (setter: StateSetter<T>) => void,
   getState: () => T
 ) => Record<string, (...args: any[]) => void>
 
-type UseStoreArgs<T, U extends MutatorFactory<T>> = { value: T } & ReturnType<U>
+type UseStoreArgs<T, U extends MethodFactory<T>> = { value: T } & ReturnType<U>
 
-type Store<T, U extends MutatorFactory<T>> = {
+type Store<T, U extends MethodFactory<T>> = {
   <Selector extends (state: UseStoreArgs<T, U>) => unknown>(
     fn: Selector
   ): ReturnType<Selector>
   (): T & ReturnType<U>
   getState: () => T
   setState: (setter: StateSetter<T>) => void
-  mutators: ReturnType<U>
+  methods: ReturnType<U>
   subscribe: (fn: (value: T) => void) => () => void
 } & ReturnType<U>
 
-function createStore<T, U extends MutatorFactory<T>>(
+function createStore<T, U extends MethodFactory<T>>(
   initial: T,
-  mutatorFactory: U
+  methodFactory: U
 ) {
   let value = initial
   const subscribers = new Set<VNode | Function>()
@@ -35,7 +35,7 @@ function createStore<T, U extends MutatorFactory<T>>(
       n instanceof Function ? n(value) : ctx.requestUpdate(n)
     )
   }
-  const mutators = mutatorFactory(setState, getState) as ReturnType<U>
+  const methods = methodFactory(setState, getState) as ReturnType<U>
 
   function useStore<Selector extends (selector: UseStoreArgs<T, U>) => unknown>(
     fn?: Selector
@@ -46,14 +46,14 @@ function createStore<T, U extends MutatorFactory<T>>(
       useEffect(() => () => subscribers.delete(node), [])
     }
     return fn
-      ? (fn({ value, ...mutators }) as ReturnType<Selector>)
-      : { value, ...mutators }
+      ? (fn({ value, ...methods }) as ReturnType<Selector>)
+      : { value, ...methods }
   }
 
   return Object.assign(useStore, {
     getState,
     setState,
-    mutators,
+    methods,
     subscribe: (fn: (state: T) => void) => {
       subscribers.add(fn)
       return (() => (subscribers.delete(fn), void 0)) as () => void
