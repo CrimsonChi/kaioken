@@ -5,7 +5,8 @@ import type { StateSetter, VNode } from "./types"
 export { createStore }
 
 type MutatorFactory<T> = (
-  setState: (setter: StateSetter<T>) => void
+  setState: (setter: StateSetter<T>) => void,
+  getState: () => T
 ) => Record<string, (...args: any[]) => void>
 
 type UseStoreArgs<T, U extends MutatorFactory<T>> = { value: T } & ReturnType<U>
@@ -25,13 +26,14 @@ function createStore<T, U extends MutatorFactory<T>>(
 ) {
   let value = initial
   const subscribers = new Set<VNode | Function>()
+  const getState = () => value
   const setState = (setter: StateSetter<T>) => {
     value = setter instanceof Function ? setter(value) : setter
     subscribers.forEach((n) =>
       n instanceof Function ? n(value) : ctx.requestUpdate(n)
     )
   }
-  const mutators = mutatorFactory(setState) as ReturnType<U>
+  const mutators = mutatorFactory(setState, getState) as ReturnType<U>
 
   function useStore<Selector extends (state: UseStoreArgs<T, U>) => unknown>(
     fn: Selector
@@ -45,7 +47,7 @@ function createStore<T, U extends MutatorFactory<T>>(
   }
 
   return Object.assign(useStore, {
-    getState: () => value,
+    getState,
     setState,
     subscribe: (fn: (state: T) => void) => {
       subscribers.add(fn)
