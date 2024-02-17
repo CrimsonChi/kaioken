@@ -15,7 +15,7 @@ type Store<T, U extends MethodFactory<T>> = {
   <Selector extends (state: UseStoreArgs<T, U>) => unknown>(
     fn: Selector
   ): ReturnType<Selector>
-  (): T & ReturnType<U>
+  (): { value: T } & ReturnType<U>
   getState: () => T
   setState: (setter: StateSetter<T>) => void
   methods: ReturnType<U>
