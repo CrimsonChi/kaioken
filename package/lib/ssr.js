@@ -1,1 +1,1 @@
-export * from "./dist/ssr"
+export * from "./dist/ssr/index.js"

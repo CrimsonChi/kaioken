@@ -1,4 +1,4 @@
-import { Rec, mount } from "../"
+import { Rec, mount } from "../index.js"
 
 export interface SSRProps {
   request: {

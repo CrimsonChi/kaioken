@@ -4,7 +4,7 @@ import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
 
 export type * from "./types"
-export * from "./hooks"
+export * from "./hooks/index.js"
 export * from "./component.js"
 export * from "./context.js"
 export * from "./globalContext.js"

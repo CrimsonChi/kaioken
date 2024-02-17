@@ -1,5 +1,5 @@
 import { ctx } from "./globalContext.js"
-import { useEffect } from "./hooks"
+import { useEffect } from "./hooks/index.js"
 import type { StateSetter, VNode } from "./types"
 
 export { createStore }
