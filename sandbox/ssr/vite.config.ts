@@ -17,5 +17,5 @@ export default defineConfig({
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },
-  plugins: [ssr(), kaioken()],
+  plugins: [ssr({ prerender: true }), kaioken()],
 })

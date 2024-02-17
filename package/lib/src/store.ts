@@ -1,4 +1,4 @@
-import { ctx } from "./globalContext"
+import { ctx } from "./globalContext.js"
 import { useEffect } from "./hooks"
 import type { StateSetter, VNode } from "./types"
 
