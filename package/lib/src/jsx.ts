@@ -6,7 +6,9 @@ export { jsx }
 
 function jsx(
   type: string | Function | typeof Component,
-  { children, ...props } = {} as { children?: (VNode | unknown)[] }
+  { children, ...props } = {} as {
+    children?: VNode | unknown | (VNode | unknown)[]
+  }
 ) {
   return createElement(type, props, children)
 }
