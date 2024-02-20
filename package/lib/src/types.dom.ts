@@ -595,6 +595,15 @@ interface SvgGlobalAttributes {
 }
 
 interface SvgElementAttributes {
+  defs: {}
+  filter: {
+    x?: string | number
+    y?: string | number
+    width?: string | number
+    height?: string | number
+    filterUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    primitiveUnits?: "userSpaceOnUse" | "objectBoundingBox"
+  }
   svg: {
     width?: string | number
     height?: string | number
