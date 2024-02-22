@@ -8,6 +8,8 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
 
 - `.github`
   - Contains workflows used by GitHub Actions.
+- `e2e-testing`
+  - Contains end-to-end test suite.
 - `packages`
   - Contains the individual packages managed in the monorepo.
   - [kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/kaioken)
