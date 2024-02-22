@@ -8,5 +8,13 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
 
 - `.github`
   - Contains workflows used by GitHub Actions.
-- `package`
-  - Contains
+- `packages`
+  - Contains the individual packages managed in the monorepo.
+  - [kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/kaioken)
+  - [vite-plugin-kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/vite-plugin-kaioken)
+- `sandbox`
+  - Contains example applications and random tidbits.
+
+## Tasks
+
+- Use `make build` to recursively run the build script in each package
