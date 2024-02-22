@@ -9,8 +9,8 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
 - `.github`
   - Contains workflows used by GitHub Actions.
 - `assets`
-  - Contains Kiaoken branding assets.
-- `e2e-testing`
+  - Contains Kiaoken brand assets.
+- `e2e`
   - Contains end-to-end test suite.
 - `packages`
   - Contains the individual packages managed in the monorepo.

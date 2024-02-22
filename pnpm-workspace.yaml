@@ -1,4 +1,4 @@
 packages:
+  - "./e2e/**"
   - "./packages/**"
   - "./sandbox/**"
-  - "./e2e-testing/**"
