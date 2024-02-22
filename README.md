@@ -8,6 +8,8 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
 
 - `.github`
   - Contains workflows used by GitHub Actions.
+- `assets`
+  - Contains Kiaoken branding assets.
 - `e2e-testing`
   - Contains end-to-end test suite.
 - `packages`
@@ -20,3 +22,4 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
 ## Tasks
 
 - Use `make build` to recursively run the build script in each package
+- Use `make test` to recursively run the test script in each package
