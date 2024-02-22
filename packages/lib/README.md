@@ -21,9 +21,6 @@
 - [x] renderToString
 - [x] Portals
 - [x] Transitions / Animations
-- [ ] Error Boundaries
-- [ ] lazy / dynamic imports
-- [ ] Server Side Rendering / Hydration
 
 <br />
 
