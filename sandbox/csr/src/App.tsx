@@ -38,6 +38,7 @@ export function App() {
         <Link to="/messages">Messages (useOptimistic)</Link>
         <Link to="/transitions">Dialogs (transitions, portal)</Link>
         <Link to="/test/123?sort=desc">Route Params / Query</Link>
+        <Link to="/unhandled-route">Unhandled Route</Link>
       </nav>
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
@@ -68,6 +69,7 @@ export function App() {
               </div>
             )}
           />
+          <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>
     </ThemeContextProvider>
