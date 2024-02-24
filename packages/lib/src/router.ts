@@ -34,30 +34,40 @@ function Router(props: RouterProps) {
   }, [])
 
   const pathSegments = state.path.split("/")
+  const query = extractQueryParams(state.search)
 
+  let fallbackRoute: RouteComponent | undefined
   for (const child of props.children ?? []) {
     if (isRoute(child)) {
+      if (isFallbackRoute(child)) {
+        fallbackRoute = child
+        continue
+      }
       const routeSegments = ((props.basePath || "") + child.props.path).split(
         "/"
       )
       const params = matchPath(routeSegments, pathSegments)
       if (params) {
-        const query = extractQueryParams(state.search)
         return fragment({
           children: [createElement(child.props.element, { params, query })],
         })
       }
     }
   }
+  if (fallbackRoute) {
+    return fragment({
+      children: [
+        createElement(fallbackRoute.props.element, { params: {}, query }),
+      ],
+    })
+  }
 
   return null
 }
 
-type RouteComponentFunc = (props: RouteChildProps) => JSX.Element | null
-
 interface RouteProps {
   path: string
-  element: RouteComponentFunc
+  element: (props: RouteChildProps) => JSX.Element | null
 }
 
 interface RouteChildProps {
@@ -65,9 +75,13 @@ interface RouteChildProps {
   query: Record<string, any>
 }
 
-function isRoute(
-  thing: unknown
-): thing is Kaioken.VNode & { props: RouteProps } {
+type RouteComponent = Kaioken.VNode & { props: RouteProps }
+
+function isFallbackRoute(route: RouteComponent) {
+  return route.props.path === "*"
+}
+
+function isRoute(thing: unknown): thing is RouteComponent {
   return isVNode(thing) && thing.type === Route
 }
 
