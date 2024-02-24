@@ -14,7 +14,7 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
   - Contains end-to-end test suite.
 - `packages`
   - Contains the individual packages managed in the monorepo.
-  - [kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/kaioken)
+  - [kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/lib)
   - [vite-plugin-kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/vite-plugin-kaioken)
 - `sandbox`
   - Contains example applications and random tidbits.
