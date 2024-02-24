@@ -1,9 +1,10 @@
-import type { ElementProps, Rec, VNode } from "./types"
+import type { ElementProps, VNode } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
 
-export { Router, Route, Link, navigate, type RouteChildProps }
+export { Router, Route, Link, navigate, matchPath }
+export type { RouteChildProps, LinkProps }
 
 interface RouterProps {
   basePath?: string
@@ -32,14 +33,16 @@ function Router(props: RouterProps) {
     return () => window.removeEventListener("popstate", handler)
   }, [])
 
+  const pathSegments = state.path.split("/")
+
   for (const child of props.children ?? []) {
     if (isRoute(child)) {
-      const { match, params, query } = matchPath(
-        state.path,
-        state.search,
-        (props.basePath || "") + child.props.path
+      const routeSegments = ((props.basePath || "") + child.props.path).split(
+        "/"
       )
-      if (match) {
+      const params = matchPath(routeSegments, pathSegments)
+      if (params) {
+        const query = extractQueryParams(state.search)
         return fragment({
           children: [createElement(child.props.element, { params, query })],
         })
@@ -58,8 +61,8 @@ interface RouteProps {
 }
 
 interface RouteChildProps {
-  params: Rec
-  query: Rec
+  params: Record<string, any>
+  query: Record<string, any>
 }
 
 function isRoute(thing: unknown): thing is VNode & { props: RouteProps } {
@@ -75,7 +78,7 @@ function navigate(to: string) {
   window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
 }
 
-export interface LinkProps extends ElementProps<"a"> {
+interface LinkProps extends ElementProps<"a"> {
   to: string
 }
 
@@ -94,45 +97,35 @@ function Link({ to, children, ...props }: LinkProps) {
   )
 }
 
-export function matchPath(
-  value: string,
-  query: string,
-  routePath: string
-): {
-  match: RegExpMatchArray | null
-  params: Record<string, string>
-  query: Record<string, string>
-} {
-  let paramNames: any[] = []
-  let _query: any = {}
+function extractQueryParams(query: string) {
+  let _query: Record<string, string> = {}
+  const rSide = query.split("?")[1]
+  if (!rSide) return _query
 
-  const cPath: string = routePath
-  let regexPath =
-    cPath.replace(/([:*])(\w+)/g, (_full, _colon, name) => {
-      paramNames.push(name)
-      return "([^/]+)"
-    }) + "(?:/|$)"
+  return rSide.split("&").reduce((acc, value) => {
+    const [key, val] = value.split("=")
+    acc[key] = val
+    return acc
+  }, _query)
+}
 
-  // match query params
-  if (query.length) {
-    _query = query
-      .split("?")[1]
-      .split("&")
-      .reduce((str, value) => {
-        if (str === null) _query = {}
-        const [key, val] = value.split("=")
-        _query[key] = val
-        return _query
-      }, null)
+function matchPath(routeSegments: string[], pathSegments: string[]) {
+  const params: Record<string, string> = {}
+
+  if (routeSegments.length !== pathSegments.length) {
+    return null
   }
 
-  let params: any = {}
-  let match = value.split("?")[0].match(new RegExp(regexPath))
-  if (match !== null) {
-    params = match.slice(1).reduce((acc, value, index) => {
-      acc[paramNames[index]] = value.split("?")[0] // ensure no query params
-      return acc
-    }, {} as Rec)
+  for (let i = 0; i < routeSegments.length; i++) {
+    const routeSegment = routeSegments[i]
+    const pathSegment = pathSegments[i]
+
+    if (routeSegment.startsWith(":")) {
+      params[routeSegment.substring(1)] = pathSegment
+    } else if (routeSegment !== pathSegment) {
+      return null
+    }
   }
-  return { match, params, query: _query }
+
+  return params
 }
