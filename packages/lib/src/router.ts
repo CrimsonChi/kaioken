@@ -38,22 +38,22 @@ function Router(props: RouterProps) {
 
   let fallbackRoute: RouteComponent | undefined
   for (const child of props.children ?? []) {
-    if (isRoute(child)) {
-      if (isFallbackRoute(child)) {
-        fallbackRoute = child
-        continue
-      }
-      const routeSegments = ((props.basePath || "") + child.props.path).split(
-        "/"
-      )
-      const params = matchPath(routeSegments, pathSegments)
-      if (params) {
-        return fragment({
-          children: [createElement(child.props.element, { params, query })],
-        })
-      }
+    if (!isRoute(child)) continue
+
+    if (isFallbackRoute(child)) {
+      fallbackRoute = child
+      continue
+    }
+
+    const routeSegments = ((props.basePath || "") + child.props.path).split("/")
+    const params = matchPath(routeSegments, pathSegments)
+    if (params) {
+      return fragment({
+        children: [createElement(child.props.element, { params, query })],
+      })
     }
   }
+
   if (fallbackRoute) {
     return fragment({
       children: [
