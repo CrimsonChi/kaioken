@@ -1,4 +1,4 @@
-import type { ElementProps, VNode } from "./types"
+import type { ElementProps } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
@@ -65,7 +65,9 @@ interface RouteChildProps {
   query: Record<string, any>
 }
 
-function isRoute(thing: unknown): thing is VNode & { props: RouteProps } {
+function isRoute(
+  thing: unknown
+): thing is Kaioken.VNode & { props: RouteProps } {
   return isVNode(thing) && thing.type === Route
 }
 

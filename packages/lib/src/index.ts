@@ -1,4 +1,3 @@
-import type { Rec, VNode } from "./types"
 import { setGlobalCtx, GlobalContext } from "./globalContext.js"
 import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
@@ -16,7 +15,9 @@ export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }
 
-function mount<T extends Rec>(
+type VNode = Kaioken.VNode
+
+function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   container: HTMLElement,
   appProps = {} as T
@@ -66,7 +67,7 @@ function fragment({ children }: { children: JSX.Element[] }) {
   return children as JSX.Element
 }
 
-function renderToString<T extends Rec>(
+function renderToString<T extends Record<string, unknown>>(
   element: JSX.Element | ((props: T) => JSX.Element),
   elementProps = {} as T,
   ctx = setGlobalCtx(new GlobalContext())
@@ -76,7 +77,7 @@ function renderToString<T extends Rec>(
   if (typeof element === "function")
     return renderToString(element(elementProps))
   if (element instanceof Array)
-    return element.map((el) => renderToString(el, ctx)).join("")
+    return element.map((el) => renderToString(el, el.props, ctx)).join("")
   if (typeof element === "number") return String(element)
   if (element.type === "TEXT_ELEMENT") return element.props.nodeValue ?? ""
 
@@ -99,7 +100,7 @@ function renderToString<T extends Rec>(
       isSelfClosing ? " /" : ""
     }>`
     if (isSelfClosing) return open
-    return `${open}${children.map((el) => renderToString(el, ctx)).join("")}</${
+    return `${open}${children.map((el) => renderToString(el, el.props, ctx)).join("")}</${
       element.type
     }>`
   }
@@ -107,7 +108,7 @@ function renderToString<T extends Rec>(
 
   if (Component.isCtor(element.type)) {
     const instance = new (element.type as unknown as {
-      new (props: Rec): Component
+      new (props: Record<string, unknown>): Component
     })(element.props)
     instance.componentDidMount?.()
     return renderToString(instance.render())

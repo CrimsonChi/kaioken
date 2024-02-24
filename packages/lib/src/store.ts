@@ -1,11 +1,10 @@
 import { ctx } from "./globalContext.js"
 import { useEffect } from "./hooks/index.js"
-import type { StateSetter, VNode } from "./types"
 
 export { createStore }
 
 type MethodFactory<T> = (
-  setState: (setter: StateSetter<T>) => void,
+  setState: (setter: Kaioken.StateSetter<T>) => void,
   getState: () => T
 ) => Record<string, (...args: any[]) => void>
 
@@ -17,7 +16,7 @@ type Store<T, U extends MethodFactory<T>> = {
   ): ReturnType<Selector>
   (): { value: T } & ReturnType<U>
   getState: () => T
-  setState: (setter: StateSetter<T>) => void
+  setState: (setter: Kaioken.StateSetter<T>) => void
   methods: ReturnType<U>
   subscribe: (fn: (value: T) => void) => () => void
 } & ReturnType<U>
@@ -27,9 +26,9 @@ function createStore<T, U extends MethodFactory<T>>(
   methodFactory: U
 ) {
   let value = initial
-  const subscribers = new Set<VNode | Function>()
+  const subscribers = new Set<Kaioken.VNode | Function>()
   const getState = () => value
-  const setState = (setter: StateSetter<T>) => {
+  const setState = (setter: Kaioken.StateSetter<T>) => {
     value = setter instanceof Function ? setter(value) : setter
     subscribers.forEach((n) =>
       n instanceof Function ? n(value) : ctx.requestUpdate(n)

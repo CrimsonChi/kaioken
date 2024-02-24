@@ -1,15 +1,14 @@
-import type { Rec, VNode } from "./types.js"
 import { componentSymbol } from "./constants.js"
 import { ctx } from "./globalContext.js"
 
 export { Component }
 
-abstract class Component<T = Rec> {
+abstract class Component<T = Record<string, unknown>> {
   rootDom?: HTMLElement
   static [componentSymbol] = true
-  state = {} as Rec
+  state = {} as Record<string, unknown>
   props: T
-  vNode: VNode
+  vNode: Kaioken.VNode
   constructor(props: T) {
     this.props = props
     this.vNode = ctx.curNode!

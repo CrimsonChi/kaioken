@@ -1,12 +1,12 @@
-import type { Rec, VNode } from "./types"
-
-export function isVNode(thing: unknown): thing is VNode {
+export function isVNode(thing: unknown): thing is Kaioken.VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
 export function isValidChild(child: unknown) {
   return child !== null && child !== undefined && typeof child !== "boolean"
 }
+
+type Rec = Record<string, unknown>
 
 export const propFilters = {
   internalProps: ["children", "ref"],

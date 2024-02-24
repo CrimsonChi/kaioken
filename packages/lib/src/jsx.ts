@@ -1,8 +1,9 @@
 import { createElement } from "./index.js"
 import type { Component } from "./component"
-import type { VNode } from "./types"
 
 export { jsx }
+
+type VNode = Kaioken.VNode
 
 function jsx(
   type: string | Function | typeof Component,

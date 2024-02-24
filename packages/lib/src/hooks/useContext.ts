@@ -1,5 +1,3 @@
-import type { Context } from "../types"
-
-export function useContext<T>(context: Context<T>): T {
+export function useContext<T>(context: Kaioken.Context<T>): T {
   return context.value()
 }

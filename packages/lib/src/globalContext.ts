@@ -1,9 +1,10 @@
-import type { Rec, VNode } from "./types"
 import { commitWork, createDom } from "./dom.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
 export { GlobalContext, ctx, setGlobalCtx }
+
+type VNode = Kaioken.VNode
 
 class GlobalContext {
   rootNode: VNode | undefined = undefined
@@ -136,7 +137,9 @@ class GlobalContext {
     if (!vNode.instance) {
       const instance =
         vNode.prev?.instance ??
-        new (vNode.type as { new (props: Rec): Component })(vNode.props)
+        new (vNode.type as { new (props: Record<string, unknown>): Component })(
+          vNode.props
+        )
       vNode.instance = instance
     } else {
       vNode.instance.props = vNode.props

@@ -1,16 +1,20 @@
-import type { Rec, VNode } from "./types"
 import { createElement } from "./index.js"
 
-function _arePropsEqual(prevProps: any, nextProps: any) {
+type Rec = Record<string, unknown>
+
+function _arePropsEqual(prevProps: Rec, nextProps: Rec) {
   return JSON.stringify(prevProps) === JSON.stringify(nextProps)
 }
 
-export function memo<Props extends Rec>(
+export function memo<Props extends Record<string, unknown>>(
   fn: (props: Props) => JSX.Element | null,
-  arePropsEqual: (prevProps: any, nextProps: any) => boolean = _arePropsEqual
+  arePropsEqual: (
+    prevProps: Record<string, unknown>,
+    nextProps: Record<string, unknown>
+  ) => boolean = _arePropsEqual
 ) {
-  let node: VNode
-  let oldProps: Rec = {}
+  let node: Kaioken.VNode
+  let oldProps = {}
 
   return (props: Props) => {
     if (!node) {

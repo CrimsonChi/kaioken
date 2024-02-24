@@ -1,4 +1,4 @@
-import { Rec, mount } from "../index.js"
+import { mount } from "../index.js"
 
 export interface SSRProps {
   request: {
@@ -7,7 +7,7 @@ export interface SSRProps {
   }
 }
 
-export function hydrate<T extends Rec>(
+export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   container: HTMLElement,
   appProps = {} as T

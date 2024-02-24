@@ -1,16 +1,15 @@
-import { Ref } from "src/types.js"
 import { isSSR, useHook } from "./utils.js"
 
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-  U extends string | number | boolean
->(initial: U): [Ref<T>, U, (newValue: U) => void] {
+  U extends string | number | boolean,
+>(initial: U): [Kaioken.Ref<T>, U, (newValue: U) => void] {
   if (isSSR) {
     return [{ current: null }, initial, () => {}]
   }
   return useHook(
     "useModel",
-    { value: initial, ref: { current: null } as Ref<T> },
+    { value: initial, ref: { current: null } as Kaioken.Ref<T> },
     ({ hook, oldHook, update, queueEffect }) => {
       const setValue = (value: U) => {
         if (value !== hook.value) {

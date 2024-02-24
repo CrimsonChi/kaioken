@@ -1,4 +1,3 @@
-import type { Hook } from "../types.js"
 import { ctx } from "../globalContext.js"
 
 export const isSSR = !("window" in globalThis)
@@ -10,6 +9,8 @@ export {
   type HookCallback,
   type HookCallbackState,
 }
+
+type Hook<T> = Kaioken.Hook<T>
 
 type HookCallbackState<T> = {
   hook: Hook<T>

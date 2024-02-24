@@ -1,4 +1,4 @@
-import type { ElementProps, Rec, VNode } from "./types"
+import type { ElementProps } from "./types"
 import { type GlobalContext } from "./globalContext.js"
 import { propFilters } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
@@ -6,6 +6,8 @@ import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
 export { commitWork, createDom }
+
+type VNode = Kaioken.VNode
 
 const svgTags = [
   "svg",
@@ -54,8 +56,8 @@ function updateFormProps(vNode: VNode, dom: HTMLFormElement) {
 }
 
 function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
-  const prevProps: Rec = node.prev?.props ?? {}
-  const nextProps: Rec = node.props ?? {}
+  const prevProps: Record<string, any> = node.prev?.props ?? {}
+  const nextProps: Record<string, any> = node.props ?? {}
   if (dom instanceof HTMLFormElement) {
     updateFormProps(node, dom)
   }
@@ -84,7 +86,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
       ) {
         Object.keys(prevProps[name] as Partial<CSSStyleSheet>).forEach(
           (styleName) => {
-            ;(dom.style as Rec)[styleName] = ""
+            ;(dom.style as any)[styleName] = ""
           }
         )
         return
@@ -98,7 +100,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         return
       }
 
-      ;(dom as Rec)[name] = ""
+      ;(dom as any)[name] = ""
     })
 
   // Set new or changed properties
@@ -125,7 +127,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         )
         return
       }
-      ;(dom as Rec)[name] = nextProps[name]
+      ;(dom as any)[name] = nextProps[name]
     })
 
   // Add event listeners

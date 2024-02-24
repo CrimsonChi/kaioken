@@ -1,9 +1,8 @@
-import type { StateSetter } from "../types.js"
 import { isSSR, useHook } from "./utils.js"
 
 export function useState<T>(
   initial: T | (() => T)
-): [T, (value: StateSetter<T>) => void] {
+): [T, (value: Kaioken.StateSetter<T>) => void] {
   if (isSSR) {
     return [initial instanceof Function ? initial() : initial, () => {}]
   }
@@ -14,7 +13,7 @@ export function useState<T>(
     ({ hook, oldHook, update }) => {
       if (!oldHook)
         hook.state = initial instanceof Function ? initial() : initial
-      const setState = (setter: StateSetter<T>) => {
+      const setState = (setter: Kaioken.StateSetter<T>) => {
         const newState =
           setter instanceof Function ? setter(hook.state) : setter
         if (newState !== hook.state) {
