@@ -2,9 +2,14 @@ import type { ElementProps } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
+import { ctx } from "./globalContext"
 
 export { Router, Route, Link, navigate, matchPath }
 export type { RouteChildProps, LinkProps }
+
+interface LinkProps extends ElementProps<"a"> {
+  to: string
+}
 
 interface RouterProps {
   basePath?: string
@@ -16,11 +21,37 @@ type RouterState = {
   search: string
 }
 
+interface RouteProps {
+  path: string
+  /**
+   * Allow url with additional segments being matched. Useful with nested routers.
+   * @example
+   * ```tsx
+   * // the following route would match the url '/test/something-else'
+   * <Route path="/test" fallthrough />
+   * ```
+   */
+  fallthrough?: boolean
+  element: (props: RouteChildProps) => JSX.Element | null
+}
+
+interface RouteChildProps {
+  params: Record<string, any>
+  query: Record<string, any>
+}
+
+type RouteComponent = Kaioken.VNode & { props: RouteProps }
+type RouterComponent = Kaioken.VNode & { props: RouterProps }
+
+const routeDataSymbol = Symbol.for("kaioken.routeData")
+
 function Router(props: RouterProps) {
   const [state, setState] = useState({
     path: window.location.pathname,
     search: window.location.search,
   } as RouterState)
+
+  const parentPath = buildParentPath(ctx.curNode!)
 
   useEffect(() => {
     const handler = () => {
@@ -45,11 +76,23 @@ function Router(props: RouterProps) {
       continue
     }
 
-    const routeSegments = ((props.basePath || "") + child.props.path).split("/")
-    const params = matchPath(routeSegments, pathSegments)
+    const routeSegments =
+      `${parentPath}${props.basePath || ""}${child.props.path}`.split("/")
+
+    const params = matchPath(
+      routeSegments,
+      pathSegments,
+      child.props.fallthrough
+    )
     if (params) {
       return fragment({
-        children: [createElement(child.props.element, { params, query })],
+        children: [
+          createElement(child.props.element, {
+            params,
+            query,
+            [routeDataSymbol]: { path: child.props.path },
+          }),
+        ],
       })
     }
   }
@@ -65,26 +108,6 @@ function Router(props: RouterProps) {
   return null
 }
 
-interface RouteProps {
-  path: string
-  element: (props: RouteChildProps) => JSX.Element | null
-}
-
-interface RouteChildProps {
-  params: Record<string, any>
-  query: Record<string, any>
-}
-
-type RouteComponent = Kaioken.VNode & { props: RouteProps }
-
-function isFallbackRoute(route: RouteComponent) {
-  return route.props.path === "*"
-}
-
-function isRoute(thing: unknown): thing is RouteComponent {
-  return isVNode(thing) && thing.type === Route
-}
-
 function Route({ path, element }: RouteProps) {
   return createElement(Route, { path, element })
 }
@@ -92,10 +115,6 @@ function Route({ path, element }: RouteProps) {
 function navigate(to: string) {
   window.history.pushState({}, "", to)
   window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
-}
-
-interface LinkProps extends ElementProps<"a"> {
-  to: string
 }
 
 function Link({ to, children, ...props }: LinkProps) {
@@ -113,6 +132,38 @@ function Link({ to, children, ...props }: LinkProps) {
   )
 }
 
+type ActiveRouteData = {
+  path: string
+}
+
+function buildParentPath(node: Kaioken.VNode) {
+  let parentPath = ""
+  let parent: Kaioken.VNode | undefined = node.parent
+  // debugger
+  while (parent) {
+    if (routeDataSymbol in parent.props) {
+      parentPath =
+        (parent.props[routeDataSymbol] as ActiveRouteData).path + parentPath
+    } else if (isRouter(parent) && parent.props.basePath) {
+      parentPath = parent.props.basePath + parentPath
+    }
+    parent = parent.parent
+  }
+  return parentPath
+}
+
+function isFallbackRoute(route: RouteComponent) {
+  return route.props.path === "*"
+}
+
+function isRoute(thing: unknown): thing is RouteComponent {
+  return isVNode(thing) && thing.type === Route
+}
+
+function isRouter(thing: unknown): thing is RouterComponent {
+  return isVNode(thing) && thing.type === Router
+}
+
 function extractQueryParams(query: string) {
   let _query: Record<string, string> = {}
   const rSide = query.split("?")[1]
@@ -125,10 +176,14 @@ function extractQueryParams(query: string) {
   }, _query)
 }
 
-function matchPath(routeSegments: string[], pathSegments: string[]) {
+function matchPath(
+  routeSegments: string[],
+  pathSegments: string[],
+  fallthrough?: boolean
+) {
   const params: Record<string, string> = {}
 
-  if (routeSegments.length !== pathSegments.length) {
+  if (!fallthrough && routeSegments.length !== pathSegments.length) {
     return null
   }
 

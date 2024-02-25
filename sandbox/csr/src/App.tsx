@@ -45,6 +45,7 @@ export function App() {
           <Route path="/" element={() => <h1>Home</h1>} />
           <Route
             path="/test/:id"
+            fallthrough
             element={({ params, query }) => (
               <div className="flex flex-col">
                 <p>
@@ -53,6 +54,22 @@ export function App() {
                 <p>
                   sort query: <i>{query.sort}</i>
                 </p>
+                <Link to={`/test/${params.id}/info?sort=${query.sort}`}>
+                  Child Router
+                </Link>
+                <Router>
+                  <Route
+                    path="/info"
+                    element={() => (
+                      <>
+                        <h1>info</h1>
+                        <Link to={`/test/${params.id}?sort=${query.sort}`}>
+                          Back to parent
+                        </Link>
+                      </>
+                    )}
+                  />
+                </Router>
               </div>
             )}
           />
