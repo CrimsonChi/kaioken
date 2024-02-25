@@ -1,12 +1,12 @@
 {
   "name": "kaioken",
-  "version": "0.6.12",
+  "version": "0.7.0",
   "description": "A lightweight (less than 6Kb) react-like library for creating web apps with ease.",
   "main": "index.js",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Robby6Strings/kaioken"
+    "url": "https://github.com/CrimsonChi/kaioken"
   },
   "scripts": {
     "build": "rm -rf dist && pnpm i && tsc",
