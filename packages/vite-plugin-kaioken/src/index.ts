@@ -39,23 +39,24 @@ export default function (): Plugin {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
           code = `
-import {ctx} from "kaioken/dist/globalContext";\n
+import {contexts} from "kaioken/dist/globalContext";\n
 ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
-        ctx.current.applyRecursive((node) => {
+      contexts.forEach((ctx) => {
+        ctx.applyRecursive((node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];
             if (node.prev) {
               node.prev.type = newModule[name];
             }
-            ctx.current.requestUpdate(node);
+            ctx.requestUpdate(node);
           }
         })
-      }
+      })
+    }
   }
-
 
   import.meta.hot.accept((newModule) => {
     if (newModule) {
