@@ -4,6 +4,7 @@
   "description": "A lightweight (less than 6Kb) react-like library for creating web apps with ease.",
   "main": "index.js",
   "type": "module",
+  "homepage": "https://kaioken.dev",
   "repository": {
     "type": "git",
     "url": "https://github.com/CrimsonChi/kaioken"
