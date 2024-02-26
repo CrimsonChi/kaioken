@@ -2,7 +2,7 @@ import { commitWork, createDom } from "./dom.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { GlobalContext, ctx, node, getNodeCtx }
+export { GlobalContext, ctx, node, nodeToContextMap, contexts }
 
 type VNode = Kaioken.VNode
 let id = 0
@@ -19,6 +19,10 @@ class GlobalContext {
   hookIndex = 0
   deletions: VNode[] = []
   pendingEffects: Function[] = []
+
+  constructor() {
+    contexts.add(this)
+  }
 
   mount(node: VNode, container: HTMLElement) {
     this.rootNode = node
@@ -157,9 +161,6 @@ class GlobalContext {
   private updateFunctionComponent(vNode: VNode) {
     this.hookIndex = 0
     node.current = vNode
-    // ctx.current = nodeToContextMap.get(vNode)!
-    console.log(ctx.current.id)
-
     const children = [(vNode.type as Function)(vNode.props)].flat()
 
     this.reconcileChildren(vNode, children)
@@ -189,6 +190,7 @@ class GlobalContext {
         newNode.props = child.props
         newNode.parent = vNode
         newNode.effectTag = EffectTag.UPDATE
+        nodeToContextMap.set(newNode, ctx.current)
       }
       if (child && !sameType) {
         newNode = {
@@ -197,6 +199,7 @@ class GlobalContext {
           parent: vNode,
           effectTag: EffectTag.PLACEMENT,
         }
+        nodeToContextMap.set(newNode, ctx.current)
       }
       if (oldNode && !sameType) {
         oldNode.effectTag = EffectTag.DELETION
@@ -233,17 +236,8 @@ class GlobalContext {
   }
 }
 
-export const nodeToContextMap = new WeakMap<Kaioken.VNode, GlobalContext>()
-
-function getNodeCtx(node: Kaioken.VNode) {
-  let parent = node as Kaioken.VNode | undefined
-  let ctx: GlobalContext | undefined
-  while (parent && !ctx) {
-    ctx = nodeToContextMap.get(parent)
-    parent = parent.parent
-  }
-  return ctx
-}
+const nodeToContextMap = new WeakMap<Kaioken.VNode, GlobalContext>()
+const contexts = new Set<GlobalContext>()
 
 const node = {
   current: undefined as Kaioken.VNode | undefined,

@@ -1,4 +1,4 @@
-import { getNodeCtx, node } from "./globalContext.js"
+import { nodeToContextMap, node } from "./globalContext.js"
 import { useEffect } from "./hooks/index.js"
 
 export { createStore }
@@ -34,7 +34,7 @@ function createStore<T, U extends MethodFactory<T>>(
       if (n instanceof Function) {
         return n(value)
       }
-      const ctx = getNodeCtx(n)
+      const ctx = nodeToContextMap.get(n)
       ctx!.requestUpdate(n)
     })
   }
@@ -44,10 +44,13 @@ function createStore<T, U extends MethodFactory<T>>(
     fn?: Selector
   ) {
     const curNode = node.current
-    if (curNode) {
-      subscribers.add(curNode)
-      useEffect(() => () => subscribers.delete(curNode), [])
+    if (!curNode) {
+      throw new Error(
+        `[kaioken]: hook "useStore" must be used at the top level of a component or inside another hook.`
+      )
     }
+    subscribers.add(curNode)
+    useEffect(() => () => subscribers.delete(curNode), [])
     return fn
       ? (fn({ value, ...methods }) as ReturnType<Selector>)
       : { value, ...methods }

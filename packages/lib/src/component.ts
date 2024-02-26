@@ -1,5 +1,5 @@
 import { componentSymbol } from "./constants.js"
-import { node, type GlobalContext, getNodeCtx } from "./globalContext.js"
+import { node, type GlobalContext, nodeToContextMap } from "./globalContext.js"
 
 export { Component }
 
@@ -13,7 +13,7 @@ abstract class Component<T = Record<string, unknown>> {
   constructor(props: T) {
     this.props = props
     this.vNode = node.current!
-    this.ctx = getNodeCtx(this.vNode)!
+    this.ctx = nodeToContextMap.get(this.vNode)!
   }
   abstract render(): JSX.Element
 

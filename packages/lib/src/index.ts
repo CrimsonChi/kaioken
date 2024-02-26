@@ -1,4 +1,4 @@
-import { ctx, GlobalContext, node } from "./globalContext.js"
+import { ctx, GlobalContext, node, nodeToContextMap } from "./globalContext.js"
 import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
 
@@ -49,7 +49,7 @@ function createElement(
       ).map((child) => createChildElement(child)) as VNode[],
     },
   }
-
+  nodeToContextMap.set(node, ctx.current)
   return node
 }
 
@@ -113,7 +113,7 @@ function renderToString<T extends Record<string, unknown>>(
     const instance = new (element.type as unknown as {
       new (props: Record<string, unknown>): Component
     })(element.props)
-    // instance.componentDidMount?.()
+    instance.componentDidMount?.()
     return renderToString(instance.render(), element.props, ctx)
   }
 
