@@ -6,27 +6,8 @@ import { ProductPage } from "./components/Product"
 import { Messages } from "./components/Messages"
 import { ModalDemo } from "./components/dialog/Modal"
 import { DrawerDemo } from "./components/dialog/Drawer"
-// import { H1 } from "./components/atoms/Heading"
 import { Link } from "./components/atoms/Link"
 import { Button } from "./components/atoms/Button"
-
-// let start = performance.now()
-
-// function Home() {
-//   const length = 10e3
-//   useEffect(() => {
-//     console.log(`effect took ${performance.now() - start}ms`)
-//   }, [])
-//   const children = Array.from({ length }).map((_, idx) => <li>{idx}</li>)
-//   return (
-//     <div>
-//       <H1>Home</H1>
-//       <div>
-//         <ul>{children}</ul>
-//       </div>
-//     </div>
-//   )
-// }
 
 export function App() {
   return (
