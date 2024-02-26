@@ -1,4 +1,4 @@
-import { Router, Route } from "kaioken"
+import { Router, Route, useState } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ThemeContextProvider } from "./ThemeContext"
@@ -8,6 +8,7 @@ import { ModalDemo } from "./components/dialog/Modal"
 import { DrawerDemo } from "./components/dialog/Drawer"
 // import { H1 } from "./components/atoms/Heading"
 import { Link } from "./components/atoms/Link"
+import { Button } from "./components/atoms/Button"
 
 // let start = performance.now()
 
@@ -42,7 +43,15 @@ export function App() {
       </nav>
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route path="/" element={() => <h1>Home</h1>} />
+          <Route
+            path="/"
+            element={() => (
+              <div className="flex flex-col">
+                <h1>Home</h1>
+                <SimpleCounter />
+              </div>
+            )}
+          />
           <Route
             path="/test/:id"
             fallthrough
@@ -90,5 +99,15 @@ export function App() {
         </Router>
       </main>
     </ThemeContextProvider>
+  )
+}
+
+function SimpleCounter() {
+  const [count, setCount] = useState(0)
+  return (
+    <>
+      <span>Count: {count}</span>
+      <Button onclick={() => setCount((prev) => prev + 1)}>Increment</Button>
+    </>
   )
 }

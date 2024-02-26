@@ -1,4 +1,4 @@
-import { ctx } from "../globalContext.js"
+import { ctx, getNodeCtx, node } from "../globalContext.js"
 
 export const isSSR = !("window" in globalThis)
 
@@ -16,7 +16,7 @@ type HookCallbackState<T> = {
   hook: Hook<T>
   oldHook?: Hook<T>
   update: () => void
-  queueEffect: typeof ctx.queueEffect
+  queueEffect: typeof ctx.current.queueEffect
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
@@ -25,21 +25,23 @@ function useHook<T, U>(
   hookData: Hook<T>,
   callback: HookCallback<T, U>
 ): U {
-  const node = ctx.curNode
-  if (!node)
+  const vNode = node.current
+  if (!vNode)
     throw new Error(
       `hook "${hookName}" must be used at the top level of a component or inside another hook.`
     )
-  const oldHook = node.prev && (node.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
+  const ctx = getNodeCtx(vNode)
+  if (!ctx) throw "dafuuuuq"
+  const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
   const res = callback({
     hook,
     oldHook,
-    update: () => ctx.requestUpdate(node),
+    update: () => ctx.requestUpdate(vNode),
     queueEffect: ctx.queueEffect.bind(ctx),
   })
-  if (!node.hooks) node.hooks = []
-  node.hooks[ctx.hookIndex++] = hook
+  if (!vNode.hooks) vNode.hooks = []
+  vNode.hooks[ctx.hookIndex++] = hook
   return res
 }
 

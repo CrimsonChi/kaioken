@@ -1,5 +1,5 @@
 import { componentSymbol } from "./constants.js"
-import { ctx } from "./globalContext.js"
+import { node, type GlobalContext, getNodeCtx } from "./globalContext.js"
 
 export { Component }
 
@@ -9,16 +9,18 @@ abstract class Component<T = Record<string, unknown>> {
   state = {} as Record<string, unknown>
   props: T
   vNode: Kaioken.VNode
+  ctx: GlobalContext
   constructor(props: T) {
     this.props = props
-    this.vNode = ctx.curNode!
+    this.vNode = node.current!
+    this.ctx = getNodeCtx(this.vNode)!
   }
   abstract render(): JSX.Element
 
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {
-      queueMicrotask(() => ctx.requestUpdate(this.vNode))
+      queueMicrotask(() => this.ctx.requestUpdate(this.vNode))
     }
   }
 

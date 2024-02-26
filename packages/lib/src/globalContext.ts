@@ -2,17 +2,18 @@ import { commitWork, createDom } from "./dom.js"
 import { EffectTag } from "./constants.js"
 import { Component } from "./component.js"
 
-export { GlobalContext, ctx, setGlobalCtx }
+export { GlobalContext, ctx, node, getNodeCtx }
 
 type VNode = Kaioken.VNode
+let id = 0
 
 class GlobalContext {
+  id = id++
   rootNode: VNode | undefined = undefined
-  curNode: VNode | undefined = undefined
   nextUnitOfWork: VNode | void = undefined
   treesInProgress: VNode[] = []
   currentTreeIndex = 0
-  maxFrameMs = 50
+  maxFrameMs = 50 as const
   timeoutRef: number = -1
 
   hookIndex = 0
@@ -21,6 +22,8 @@ class GlobalContext {
 
   mount(node: VNode, container: HTMLElement) {
     this.rootNode = node
+    nodeToContextMap.set(this.rootNode, ctx.current)
+
     node.dom = container
     this.requestUpdate(node)
     this.workLoop()
@@ -59,6 +62,7 @@ class GlobalContext {
 
   private workLoop(deadline?: IdleDeadline) {
     let shouldYield = false
+    ctx.current = this
     while (this.nextUnitOfWork && !shouldYield) {
       this.nextUnitOfWork =
         this.performUnitOfWork(this.nextUnitOfWork) ??
@@ -72,6 +76,7 @@ class GlobalContext {
       this.currentTreeIndex = 0
       this.deletions.forEach((d) => commitWork(this, d))
       this.deletions = []
+
       for (let i = 0; i < this.treesInProgress.length; i++) {
         commitWork(this, this.treesInProgress[i])
       }
@@ -133,7 +138,7 @@ class GlobalContext {
 
   private updateClassComponent(vNode: VNode) {
     this.hookIndex = 0
-    this.curNode = vNode
+    node.current = vNode
     if (!vNode.instance) {
       const instance =
         vNode.prev?.instance ??
@@ -151,7 +156,9 @@ class GlobalContext {
 
   private updateFunctionComponent(vNode: VNode) {
     this.hookIndex = 0
-    this.curNode = vNode
+    node.current = vNode
+    // ctx.current = nodeToContextMap.get(vNode)!
+    console.log(ctx.current.id)
 
     const children = [(vNode.type as Function)(vNode.props)].flat()
 
@@ -226,10 +233,22 @@ class GlobalContext {
   }
 }
 
-const g = new GlobalContext()
-let ctx = g
+export const nodeToContextMap = new WeakMap<Kaioken.VNode, GlobalContext>()
 
-function setGlobalCtx(newCtx: GlobalContext) {
-  ctx = newCtx
-  return newCtx
+function getNodeCtx(node: Kaioken.VNode) {
+  let parent = node as Kaioken.VNode | undefined
+  let ctx: GlobalContext | undefined
+  while (parent && !ctx) {
+    ctx = nodeToContextMap.get(parent)
+    parent = parent.parent
+  }
+  return ctx
+}
+
+const node = {
+  current: undefined as Kaioken.VNode | undefined,
+}
+
+const ctx = {
+  current: undefined as unknown as GlobalContext,
 }

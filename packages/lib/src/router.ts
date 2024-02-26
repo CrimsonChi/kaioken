@@ -2,7 +2,7 @@ import type { ElementProps } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
-import { ctx } from "./globalContext"
+import { node } from "./globalContext"
 
 export { Router, Route, Link, navigate, matchPath }
 export type { RouteChildProps, LinkProps }
@@ -51,7 +51,7 @@ function Router(props: RouterProps) {
     search: window.location.search,
   } as RouterState)
 
-  const parentPath = buildParentPath(ctx.curNode!)
+  const parentPath = buildParentPath(node.current!)
 
   useEffect(() => {
     const handler = () => {

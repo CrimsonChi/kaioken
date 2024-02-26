@@ -1,4 +1,4 @@
-import { setGlobalCtx, GlobalContext } from "./globalContext.js"
+import { ctx, GlobalContext, node } from "./globalContext.js"
 import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
 
@@ -22,12 +22,13 @@ function mount<T extends Record<string, unknown>>(
   container: HTMLElement,
   appProps = {} as T
 ) {
+  ctx.current = new GlobalContext()
   const node = createElement(
     container.nodeName.toLowerCase(),
     {},
     createElement(appFunc, appProps)
   )
-  return setGlobalCtx(new GlobalContext()).mount(node, container)
+  return ctx.current.mount(node, container)
 }
 
 function createElement(
@@ -35,7 +36,7 @@ function createElement(
   props = {},
   ...children: (VNode | unknown)[]
 ): VNode {
-  return {
+  const node = {
     type,
     props: {
       ...props,
@@ -48,6 +49,8 @@ function createElement(
       ).map((child) => createChildElement(child)) as VNode[],
     },
   }
+
+  return node
 }
 
 function createChildElement(child: VNode | string | (() => VNode)): VNode {
@@ -70,7 +73,7 @@ function fragment({ children }: { children: JSX.Element[] }) {
 function renderToString<T extends Record<string, unknown>>(
   element: JSX.Element | ((props: T) => JSX.Element),
   elementProps = {} as T,
-  ctx = setGlobalCtx(new GlobalContext())
+  ctx = new GlobalContext()
 ): string {
   if (!element) return ""
   if (typeof element === "string") return element
@@ -104,17 +107,17 @@ function renderToString<T extends Record<string, unknown>>(
       element.type
     }>`
   }
-  ctx.curNode = element
+  node.current = element
 
   if (Component.isCtor(element.type)) {
     const instance = new (element.type as unknown as {
       new (props: Record<string, unknown>): Component
     })(element.props)
-    instance.componentDidMount?.()
-    return renderToString(instance.render())
+    // instance.componentDidMount?.()
+    return renderToString(instance.render(), element.props, ctx)
   }
 
-  return renderToString(element.type(element.props))
+  return renderToString(element.type(element.props), element.props, ctx)
 }
 
 function transformPropNameToHtmlAttr(key: string) {

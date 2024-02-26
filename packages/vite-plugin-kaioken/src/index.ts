@@ -44,13 +44,13 @@ ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
-        ctx.applyRecursive((node) => {
+        ctx.current.applyRecursive((node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];
             if (node.prev) {
               node.prev.type = newModule[name];
             }
-            ctx.requestUpdate(node);
+            ctx.current.requestUpdate(node);
           }
         })
       }

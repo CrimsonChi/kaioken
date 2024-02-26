@@ -2,10 +2,11 @@ import "./index.css"
 import { App } from "./App"
 import { mount, renderToString } from "kaioken"
 
-const root = document.querySelector<HTMLDivElement>("#app")!
+const root = document.getElementById("app")!
+const root2 = document.getElementById("app2")!
 
-const instance = mount(App, root)
-console.log("mounted", instance)
+mount(App, root)
+mount(App, root2)
 
 let testRenderToString = false
 if (testRenderToString) {

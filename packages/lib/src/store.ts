@@ -1,4 +1,4 @@
-import { ctx } from "./globalContext.js"
+import { getNodeCtx, node } from "./globalContext.js"
 import { useEffect } from "./hooks/index.js"
 
 export { createStore }
@@ -30,19 +30,23 @@ function createStore<T, U extends MethodFactory<T>>(
   const getState = () => value
   const setState = (setter: Kaioken.StateSetter<T>) => {
     value = setter instanceof Function ? setter(value) : setter
-    subscribers.forEach((n) =>
-      n instanceof Function ? n(value) : ctx.requestUpdate(n)
-    )
+    subscribers.forEach((n) => {
+      if (n instanceof Function) {
+        return n(value)
+      }
+      const ctx = getNodeCtx(n)
+      ctx!.requestUpdate(n)
+    })
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
   function useStore<Selector extends (selector: UseStoreArgs<T, U>) => unknown>(
     fn?: Selector
   ) {
-    const node = ctx.curNode
-    if (node) {
-      subscribers.add(node)
-      useEffect(() => () => subscribers.delete(node), [])
+    const curNode = node.current
+    if (curNode) {
+      subscribers.add(curNode)
+      useEffect(() => () => subscribers.delete(curNode), [])
     }
     return fn
       ? (fn({ value, ...methods }) as ReturnType<Selector>)
