@@ -33,7 +33,7 @@ function mount<T extends Record<string, unknown>>(
   if (optionsOrRoot instanceof HTMLElement) {
     root = optionsOrRoot
   } else {
-    opts = optionsOrRoot as GlobalContextOptions
+    opts = optionsOrRoot
     root = optionsOrRoot.root
   }
 

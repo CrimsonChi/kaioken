@@ -104,8 +104,11 @@ function Router(props: RouterProps) {
   return null
 }
 
-function Route({ path, element }: RouteProps) {
-  return createElement(Route, { path, element })
+function Route({ path, element, fallthrough }: RouteProps) {
+  return fragment({
+    children: [],
+    [routeDataSymbol]: { path, element, fallthrough },
+  })
 }
 
 function navigate(to: string) {
@@ -135,7 +138,7 @@ type ActiveRouteData = {
 function buildParentPath(node: Kaioken.VNode) {
   let parentPath = ""
   let parent: Kaioken.VNode | undefined = node.parent
-  // debugger
+
   while (parent) {
     if (routeDataSymbol in parent.props) {
       parentPath =
