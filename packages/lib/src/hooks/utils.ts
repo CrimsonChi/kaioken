@@ -1,7 +1,7 @@
 import { ctx, nodeToCtxMap, node, renderMode } from "../globalContext.js"
 
 export const shouldExecHook = () => {
-  return !("window" in globalThis) || renderMode.current === "dom"
+  return renderMode.current === "dom"
 }
 
 export {

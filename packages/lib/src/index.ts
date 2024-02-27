@@ -93,7 +93,7 @@ function renderToString<T extends Record<string, unknown>>(
   el: JSX.Element | ((props: T) => JSX.Element),
   elProps = {} as T
 ) {
-  let prev = renderMode.current
+  const prev = renderMode.current
   renderMode.current = "string"
   const res = renderToString_internal(el, elProps)
   renderMode.current = prev
