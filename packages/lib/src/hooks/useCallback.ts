@@ -1,10 +1,10 @@
-import { depsRequireChange, useHook, isSSR } from "./utils.js"
+import { depsRequireChange, useHook, shouldExecHook } from "./utils.js"
 
 export function useCallback<T extends (...args: any[]) => any>(
   callback: T,
   deps: unknown[]
 ): T {
-  if (isSSR) return callback
+  if (!shouldExecHook()) return callback
 
   return useHook("useCallback", { callback, deps }, ({ hook, oldHook }) => {
     if (depsRequireChange(deps, oldHook?.deps)) {

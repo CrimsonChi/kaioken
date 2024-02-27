@@ -1,6 +1,6 @@
-import { isSSR, useHook } from "./utils.js"
+import { shouldExecHook, useHook } from "./utils.js"
 
 export function useRef<T>(current: T | null): Kaioken.Ref<T> {
-  if (isSSR) return { current }
+  if (!shouldExecHook()) return { current }
   return useHook("useRef", { current }, ({ hook }) => hook)
 }

@@ -16,17 +16,7 @@ export function memo<Props extends Record<string, unknown>>(
   let node: Kaioken.VNode
   let oldProps = {}
 
-  return (props: Props) => {
-    if (!node) {
-      node = createElement(fn, props)
-      oldProps = props
-      return node
-    }
-    if (arePropsEqual(oldProps, props)) {
-      return node
-    }
-    node = createElement(fn, props)
-    oldProps = props
-    return node
-  }
+  return (props: Props) =>
+    (arePropsEqual(oldProps, props) && node) ||
+    (node = createElement(fn, (oldProps = props)))
 }

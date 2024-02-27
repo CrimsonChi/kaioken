@@ -2,7 +2,7 @@ import { commitWork, createDom } from "./dom.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 
-export { GlobalContext, ctx, node, nodeToContextMap, contexts }
+export { GlobalContext, ctx, node, nodeToCtxMap, contexts, renderMode }
 export type { GlobalContextOptions }
 
 type VNode = Kaioken.VNode
@@ -35,7 +35,7 @@ class GlobalContext {
 
   mount(node: VNode, container: HTMLElement) {
     this.rootNode = node
-    nodeToContextMap.set(this.rootNode, ctx.current)
+    nodeToCtxMap.set(this.rootNode, ctx.current)
 
     node.dom = container
     this.requestUpdate(node)
@@ -98,16 +98,16 @@ class GlobalContext {
     }
     if ("requestIdleCallback" in window) {
       let didExec = false
-      if (this.timeoutRef !== -1) {
-        window.clearTimeout(this.timeoutRef)
-        this.timeoutRef = -1
-      }
-      this.timeoutRef = window.setTimeout(() => {
-        if (!didExec) {
-          this.workLoop()
-          didExec = true
-        }
-      }, this.maxFrameMs)
+
+      this.timeoutRef =
+        (this.timeoutRef !== -1 && window.clearTimeout(this.timeoutRef),
+        window.setTimeout(() => {
+          if (!didExec) {
+            this.workLoop()
+            didExec = true
+          }
+        }, this.maxFrameMs))
+
       window.requestIdleCallback((deadline) => {
         if (!didExec) {
           this.workLoop(deadline)
@@ -142,14 +142,10 @@ class GlobalContext {
     } else {
       this.updateHostComponent(vNode)
     }
-    if (vNode.child) {
-      return vNode.child
-    }
+    if (vNode.child) return vNode.child
     let nextNode: VNode | undefined = vNode
     while (nextNode) {
-      if (nextNode.sibling) {
-        return nextNode.sibling
-      }
+      if (nextNode.sibling) return nextNode.sibling
       nextNode = nextNode.parent
     }
   }
@@ -205,7 +201,7 @@ class GlobalContext {
         newNode.props = child.props
         newNode.parent = vNode
         newNode.effectTag = EffectTag.UPDATE
-        nodeToContextMap.set(newNode, ctx.current)
+        nodeToCtxMap.set(newNode, ctx.current)
       }
       if (child && !sameType) {
         newNode = {
@@ -214,7 +210,7 @@ class GlobalContext {
           parent: vNode,
           effectTag: EffectTag.PLACEMENT,
         }
-        nodeToContextMap.set(newNode, ctx.current)
+        nodeToCtxMap.set(newNode, ctx.current)
       }
       if (oldNode && !sameType) {
         oldNode.effectTag = EffectTag.DELETION
@@ -243,15 +239,17 @@ class GlobalContext {
     return this.treesInProgress.some((d) => this.vNodeContains(d, node))
   }
 
-  private vNodeContains(parent: VNode, node: VNode) {
-    if (parent === node) return true
-    if (parent.child && this.vNodeContains(parent.child, node)) return true
-    if (parent.sibling && this.vNodeContains(parent.sibling, node)) return true
-    return false
+  private vNodeContains(parent: VNode, node: VNode): boolean {
+    return (
+      parent === node ||
+      (parent.child && this.vNodeContains(parent.child, node)) ||
+      (parent.sibling && this.vNodeContains(parent.sibling, node)) ||
+      false
+    )
   }
 }
 
-const nodeToContextMap = new WeakMap<Kaioken.VNode, GlobalContext>()
+const nodeToCtxMap = new WeakMap<Kaioken.VNode, GlobalContext>()
 const contexts = new Set<GlobalContext>()
 
 const node = {
@@ -260,4 +258,8 @@ const node = {
 
 const ctx = {
   current: undefined as unknown as GlobalContext,
+}
+
+const renderMode = {
+  current: "dom" as "dom" | "string",
 }

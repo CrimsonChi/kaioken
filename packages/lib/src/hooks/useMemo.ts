@@ -1,7 +1,7 @@
-import { depsRequireChange, isSSR, useHook } from "./utils.js"
+import { depsRequireChange, shouldExecHook, useHook } from "./utils.js"
 
 export function useMemo<T>(factory: () => T, deps: unknown[]): T {
-  if (isSSR) return factory()
+  if (!shouldExecHook()) return factory()
   return useHook(
     "useMemo",
     { deps, value: undefined as T },

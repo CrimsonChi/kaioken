@@ -1,10 +1,10 @@
-import { isSSR, useHook } from "./utils.js"
+import { shouldExecHook, useHook } from "./utils.js"
 
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   U extends string | number | boolean,
 >(initial: U): [Kaioken.Ref<T>, U, (newValue: U) => void] {
-  if (isSSR) {
+  if (!shouldExecHook()) {
     return [{ current: null }, initial, () => {}]
   }
   return useHook(

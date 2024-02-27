@@ -1,10 +1,10 @@
-import { isSSR, useHook } from "./utils.js"
+import { shouldExecHook, useHook } from "./utils.js"
 
 export function useOptimistic<T, U>(
   state: T,
   setState: (prev: T, newValue: U) => T
 ): [T, (value: U) => () => void] {
-  if (isSSR) [state, () => () => {}]
+  if (!shouldExecHook()) [state, () => () => {}]
 
   return useHook(
     "useOptimistic",

@@ -1,4 +1,4 @@
-import { nodeToContextMap, node } from "./globalContext.js"
+import { nodeToCtxMap, node } from "./globalContext.js"
 import { useEffect } from "./hooks/index.js"
 
 export { createStore }
@@ -31,11 +31,8 @@ function createStore<T, U extends MethodFactory<T>>(
   const setState = (setter: Kaioken.StateSetter<T>) => {
     value = setter instanceof Function ? setter(value) : setter
     subscribers.forEach((n) => {
-      if (n instanceof Function) {
-        return n(value)
-      }
-      const ctx = nodeToContextMap.get(n)
-      ctx!.requestUpdate(n)
+      if (n instanceof Function) return n(value)
+      nodeToCtxMap.get(n)!.requestUpdate(n)
     })
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>

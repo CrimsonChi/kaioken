@@ -1,31 +1,17 @@
-import type { ElementProps } from "./types"
 import { type GlobalContext } from "./globalContext.js"
-import { propFilters } from "./utils.js"
+import { propFilters, svgTags } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EffectTag } from "./constants.js"
+import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 
 export { commitWork, createDom }
 
 type VNode = Kaioken.VNode
 
-const svgTags = [
-  "svg",
-  "clipPath",
-  "circle",
-  "ellipse",
-  "g",
-  "line",
-  "path",
-  "polygon",
-  "polyline",
-  "rect",
-]
-
 function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   const t = vNode.type as string
   let dom =
-    t == "TEXT_ELEMENT"
+    t == elementTypes.text
       ? document.createTextNode("")
       : svgTags.includes(t)
         ? (document.createElementNS(
@@ -34,110 +20,87 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
           ) as SVGElement)
         : document.createElement(t)
 
-  if (t === "form") {
-    updateFormProps(vNode, dom as HTMLFormElement)
-  }
-
   dom = updateDom(vNode, dom)
   vNode.dom = dom
   return dom
 }
 
-function updateFormProps(vNode: VNode, dom: HTMLFormElement) {
-  if (vNode.props.onsubmit || vNode.props.onSubmit) return
-  if (!vNode.props.action || !(vNode.props.action instanceof Function)) return
-
-  const action = vNode.props.action
-  ;(vNode.props as ElementProps<"form">).onsubmit = (e) => {
-    e.preventDefault()
-    return action(new FormData(dom))
-  }
-  vNode.props.action = undefined
-}
-
 function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const prevProps: Record<string, any> = node.prev?.props ?? {}
   const nextProps: Record<string, any> = node.props ?? {}
-  if (dom instanceof HTMLFormElement) {
-    updateFormProps(node, dom)
-  }
-  //Remove old or changed event listeners
-  Object.keys(prevProps)
-    .filter(propFilters.isEvent)
-    .filter(
-      (key) =>
-        !(key in nextProps) || propFilters.isNew(prevProps, nextProps)(key)
-    )
-    .forEach((name) => {
-      const eventType = name.toLowerCase().substring(2)
-      // @ts-ignore
-      dom.removeEventListener(eventType, prevProps[name])
-    })
+  const prevKeys = Object.keys(prevProps)
+  const nextKeys = Object.keys(nextProps)
 
-  // Remove old properties
-  Object.keys(prevProps)
-    .filter(propFilters.isProperty)
-    .filter(propFilters.isGone(prevProps, nextProps))
-    .forEach((name) => {
+  for (let i = 0; i < prevKeys.length; i++) {
+    const key = prevKeys[i]
+    //Remove old or changed event listeners
+    if (
+      propFilters.isEvent(key) &&
+      (!(key in nextProps) || prevProps[key] !== nextProps[key])
+    ) {
+      const eventType = key.toLowerCase().substring(2)
+      dom.removeEventListener(eventType, prevProps[key])
+      continue
+    }
+    // Remove old properties
+    if (propFilters.isProperty(key) && !(key in nextProps)) {
       if (
-        name === "style" &&
-        typeof nextProps[name] !== "string" &&
+        key === "style" &&
+        typeof nextProps[key] !== "string" &&
         !(dom instanceof Text)
       ) {
-        Object.keys(prevProps[name] as Partial<CSSStyleSheet>).forEach(
+        Object.keys(prevProps[key] as Partial<CSSStyleSheet>).forEach(
           (styleName) => {
             ;(dom.style as any)[styleName] = ""
           }
         )
-        return
+        continue
       }
 
       if (
         dom instanceof SVGElement ||
-        (dom instanceof Element && name.includes("-"))
+        (dom instanceof Element && key.includes("-"))
       ) {
-        dom.removeAttribute(name.toLowerCase() === "classname" ? "class" : name)
-        return
+        dom.removeAttribute(key.toLowerCase() === "classname" ? "class" : key)
+        continue
       }
 
-      ;(dom as any)[name] = ""
-    })
+      ;(dom as any)[key] = ""
+    }
+  }
 
-  // Set new or changed properties
-  Object.keys(nextProps)
-    .filter(propFilters.isProperty)
-    .filter(propFilters.isNew(prevProps, nextProps))
-    .forEach((name) => {
+  for (let i = 0; i < nextKeys.length; i++) {
+    const key = nextKeys[i]
+    // Set new or changed properties
+    if (propFilters.isProperty(key) && prevProps[key] !== nextProps[key]) {
       if (
-        name === "style" &&
-        typeof nextProps[name] !== "string" &&
+        key === "style" &&
+        typeof nextProps[key] !== "string" &&
         !(dom instanceof Text)
       ) {
-        Object.assign(dom.style, nextProps[name])
-        return
+        Object.assign(dom.style, nextProps[key])
+        continue
       }
 
       if (
         dom instanceof SVGElement ||
-        (dom instanceof Element && name.includes("-"))
+        (dom instanceof Element && key.includes("-"))
       ) {
         dom.setAttribute(
-          name.toLowerCase() === "classname" ? "class" : name,
-          nextProps[name]
+          key.toLowerCase() === "classname" ? "class" : key,
+          nextProps[key]
         )
-        return
+        continue
       }
-      ;(dom as any)[name] = nextProps[name]
-    })
-
-  // Add event listeners
-  Object.keys(nextProps)
-    .filter(propFilters.isEvent)
-    .filter(propFilters.isNew(prevProps, nextProps))
-    .forEach((name) => {
-      const eventType = name.toLowerCase().substring(2)
-      dom.addEventListener(eventType, nextProps[name])
-    })
+      ;(dom as any)[key] = nextProps[key]
+      continue
+    }
+    // Add event listeners
+    if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
+      const eventType = key.toLowerCase().substring(2)
+      dom.addEventListener(eventType, nextProps[key])
+    }
+  }
 
   return dom
 }
@@ -150,32 +113,30 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     (!dom.isConnected ||
       (vNode.effectTag === EffectTag.PLACEMENT && !vNode.instance?.rootDom))
   ) {
-    let parentNode: VNode | undefined =
-      vNode.parent ?? vNode.prev?.parent ?? ctx.treesInProgress[0]
-    let domParent = parentNode
-      ? parentNode.instance?.rootDom ?? parentNode.dom
-      : undefined
+    // find mountable parent dom
+    let parentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
+    let domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
     while (parentNode && !domParent) {
       parentNode = parentNode.parent
-      domParent = parentNode
-        ? parentNode.instance?.rootDom ?? parentNode.dom
-        : undefined
+      domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
     }
 
     if (!domParent) {
-      console.error("no domParent", vNode)
+      console.error("[kaioken]: no domParent found - seek help!", vNode)
       return
     }
 
     let siblingDom: HTMLElement | SVGElement | Text | undefined = undefined
     let tmp = vNode.sibling && vNode.sibling.dom
-    if (tmp && tmp.isConnected) siblingDom = tmp
-
-    let parent = vNode.parent
-
-    while (!siblingDom && parent) {
-      siblingDom = findDomRecursive(parent.sibling)
-      parent = parent.parent
+    if (tmp && tmp.isConnected) {
+      siblingDom = tmp
+    } else {
+      // try to find sibling dom by traversing upwards through the tree
+      let parent = vNode.parent
+      while (!siblingDom && parent) {
+        siblingDom = findDomRecursive(parent.sibling)
+        parent = parent.parent
+      }
     }
 
     if (siblingDom && domParent.contains(siblingDom)) {
@@ -183,7 +144,6 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     } else {
       domParent.appendChild(dom)
     }
-    vNode.dom
   } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {

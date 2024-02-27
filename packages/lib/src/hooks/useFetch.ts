@@ -1,4 +1,4 @@
-import { depsRequireChange, isSSR, useHook } from "./utils.js"
+import { depsRequireChange, shouldExecHook, useHook } from "./utils.js"
 
 type useFetchHook<T> = {
   keys: string[]
@@ -20,7 +20,7 @@ export function useFetch<T extends unknown>(
   options: RequestInit = {},
   keys?: string[]
 ): useFetchHookData<T> {
-  if (isSSR) return { loading: true }
+  if (!shouldExecHook()) return { loading: true }
 
   const defaultHook: useFetchHook<T> = {
     keys: keys ?? [url, JSON.stringify(options)],

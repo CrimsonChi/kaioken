@@ -1,15 +1,11 @@
-import { createElement } from "./index.js"
 import type { Component } from "./component"
+import { createElement } from "./index.js"
 
 export { jsx }
 
-type VNode = Kaioken.VNode
-
 function jsx(
   type: string | Function | typeof Component,
-  { children, ...props } = {} as {
-    children?: VNode | unknown | (VNode | unknown)[]
-  }
+  { children = [], ...props } = { children: [] }
 ) {
-  return createElement(type, props, children)
+  return createElement(type, props, ...children)
 }

@@ -1,6 +1,8 @@
-import { ctx, nodeToContextMap, node } from "../globalContext.js"
+import { ctx, nodeToCtxMap, node, renderMode } from "../globalContext.js"
 
-export const isSSR = !("window" in globalThis)
+export const shouldExecHook = () => {
+  return !("window" in globalThis) || renderMode.current === "dom"
+}
 
 export {
   cleanupHook,
@@ -30,7 +32,7 @@ function useHook<T, U>(
     throw new Error(
       `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another hook.`
     )
-  const ctx = nodeToContextMap.get(vNode)
+  const ctx = nodeToCtxMap.get(vNode)
   if (!ctx)
     throw new Error(
       `[kaioken]: an unknown error occured during execution of hook "${hookName}" (could not ascertain ctx). Seek help from the developers.`

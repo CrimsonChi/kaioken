@@ -3,7 +3,8 @@ import {
   GlobalContext,
   GlobalContextOptions,
   node,
-  nodeToContextMap,
+  nodeToCtxMap,
+  renderMode,
 } from "./globalContext.js"
 import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
@@ -64,7 +65,7 @@ function createElement(
       ).map((child) => createChildElement(child)) as VNode[],
     },
   }
-  nodeToContextMap.set(node, ctx.current)
+  nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
@@ -91,15 +92,34 @@ function fragment({
 function renderToString<T extends Record<string, unknown>>(
   element: JSX.Element | ((props: T) => JSX.Element),
   elementProps = {} as T
+) {
+  let prevMode = renderMode.current
+  renderMode.current = "string"
+  const res = renderToString_internal(element, elementProps)
+  renderMode.current = prevMode
+  return res
+}
+
+function renderToString_internal<T extends Record<string, unknown>>(
+  element: JSX.Element | ((props: T) => JSX.Element),
+  elementProps = {} as T
 ): string {
   if (!element) return ""
+
   if (typeof element === "string") return element
   if (typeof element === "function")
-    return renderToString(element(elementProps))
+    return renderToString_internal(
+      createElement(element, elementProps),
+      elementProps
+    )
+  if (typeof element === "number") return String(element)
   if (element instanceof Array)
     return element.map((el) => renderToString(el, el.props)).join("")
-  if (typeof element === "number") return String(element)
-  if (element.type === "TEXT_ELEMENT") return element.props.nodeValue ?? ""
+  if (element.type === elementTypes.text) return element.props.nodeValue ?? ""
+  if (element.type === elementTypes.fragment)
+    return element.props.children
+      .map((el) => renderToString_internal(el, el.props))
+      .join("")
 
   const children = element.props.children ?? []
   const props = element.props ?? {}
@@ -113,14 +133,14 @@ function renderToString<T extends Record<string, unknown>>(
       .filter(propFilters.isProperty)
       .map(
         (key) =>
-          `${transformPropNameToHtmlAttr(key)}="${transformPropValueToHtmlAttrValue(key, props[key])}"`
+          `${propToHtmlAttr(key)}="${propValueToHtmlAttrValue(key, props[key])}"`
       )
       .join(" ")
     const open = `<${element.type}${attrs ? ` ${attrs}` : ""}${
       isSelfClosing ? " /" : ""
     }>`
     if (isSelfClosing) return open
-    return `${open}${children.map((el) => renderToString(el, el.props)).join("")}</${
+    return `${open}${children.map((el) => renderToString_internal(el, el.props)).join("")}</${
       element.type
     }>`
   }
@@ -131,13 +151,13 @@ function renderToString<T extends Record<string, unknown>>(
       new (props: Record<string, unknown>): Component
     })(element.props)
     instance.componentDidMount?.()
-    return renderToString(instance.render(), element.props)
+    return renderToString_internal(instance.render(), element.props)
   }
 
-  return renderToString(element.type(element.props), element.props)
+  return renderToString_internal(element.type(element.props), element.props)
 }
 
-function transformPropNameToHtmlAttr(key: string) {
+function propToHtmlAttr(key: string) {
   switch (key.toLowerCase()) {
     case "classname":
       return "class"
@@ -157,7 +177,7 @@ function styleObjectToCss(styleObject: Partial<CSSStyleDeclaration>) {
   return cssString
 }
 
-function transformPropValueToHtmlAttrValue(key: string, value: unknown) {
+function propValueToHtmlAttrValue(key: string, value: unknown) {
   switch (key) {
     case "style":
       if (typeof value === "object" && !!value) return styleObjectToCss(value)

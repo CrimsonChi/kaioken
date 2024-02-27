@@ -1,7 +1,7 @@
 {
   "name": "kaioken",
   "version": "0.7.3",
-  "description": "A lightweight (less than 6Kb) react-like library for creating web apps with ease.",
+  "description": "A lightweight (<10kb) react-like library for creating web apps with ease.",
   "main": "index.js",
   "type": "module",
   "homepage": "https://kaioken.dev",

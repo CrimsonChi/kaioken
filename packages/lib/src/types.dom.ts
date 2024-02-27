@@ -174,6 +174,8 @@ type GlobalAttributes = {
   | keyof InputEventAttributes
   | keyof FocusEventAttributes
   | keyof KeyboardEventAttributes
+  | "addEventListener"
+  | "removeEventListener"
 >
 
 type KeyboardEventAttributes = {
@@ -320,7 +322,7 @@ interface HtmlElementAttributes {
     novalidate?: boolean
     target?: string
     onsubmit?: (e: Event) => void
-    action?: FormAction | ((data: FormData) => void)
+    action?: FormAction
   }
   h1: {}
   h2: {}

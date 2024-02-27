@@ -1,9 +1,9 @@
-import { isSSR, useHook } from "./utils.js"
+import { shouldExecHook, useHook } from "./utils.js"
 
 export function useState<T>(
   initial: T | (() => T)
 ): [T, (value: Kaioken.StateSetter<T>) => void] {
-  if (isSSR) {
+  if (!shouldExecHook()) {
     return [initial instanceof Function ? initial() : initial, () => {}]
   }
 
