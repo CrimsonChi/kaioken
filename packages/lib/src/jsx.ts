@@ -5,7 +5,7 @@ export { jsx }
 
 function jsx(
   type: string | Function | typeof Component,
-  { children = [], ...props } = { children: [] }
+  { children, ...props } = {} as { children?: Kaioken.VNode[] }
 ) {
-  return createElement(type, props, ...children)
+  return createElement(type, props, children)
 }
