@@ -1,7 +1,7 @@
 import { type GlobalContext } from "./globalContext.js"
 import { propFilters, svgTags } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EffectTag, elementTypes } from "./constants.js"
+import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 
 export { commitWork, createDom }
@@ -107,7 +107,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 
 function commitWork(ctx: GlobalContext, vNode: VNode) {
   const dom = vNode.dom ?? vNode.instance?.rootDom
-
+  const frozen = elementFreezeSymbol in vNode && !!vNode[elementFreezeSymbol]
   if (
     dom &&
     (!dom.isConnected ||
@@ -144,7 +144,7 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     } else {
       domParent.appendChild(dom)
     }
-  } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
+  } else if (!frozen && vNode.effectTag === EffectTag.UPDATE && dom) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
     commitDeletion(vNode, dom)
@@ -153,14 +153,14 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
 
   vNode.effectTag = undefined
 
-  vNode.child && commitWork(ctx, vNode.child)
+  !frozen && vNode.child && commitWork(ctx, vNode.child)
   vNode.sibling && commitWork(ctx, vNode.sibling)
   const instance = vNode.instance
   if (instance) {
     const onMounted = instance.componentDidMount?.bind(instance)
     if (!vNode.prev && onMounted) {
       ctx.queueEffect(() => onMounted())
-    } else if (EffectTag.UPDATE) {
+    } else if (!frozen && EffectTag.UPDATE) {
       const onUpdated = instance.componentDidUpdate?.bind(instance)
       if (onUpdated) ctx.queueEffect(() => onUpdated())
     }

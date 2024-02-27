@@ -1,5 +1,5 @@
 import { commitWork, createDom } from "./dom.js"
-import { EffectTag, elementTypes } from "./constants.js"
+import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 
 export { GlobalContext, ctx, node, nodeToCtxMap, contexts, renderMode }
@@ -201,6 +201,11 @@ class GlobalContext {
         newNode.props = child.props
         newNode.parent = vNode
         newNode.effectTag = EffectTag.UPDATE
+        if (elementFreezeSymbol in child) {
+          Object.assign(newNode, {
+            [elementFreezeSymbol]: child[elementFreezeSymbol],
+          })
+        }
         nodeToCtxMap.set(newNode, ctx.current)
       }
       if (child && !sameType) {
