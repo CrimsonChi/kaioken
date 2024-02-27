@@ -3,3 +3,6 @@ node_modules
 dist
 pnpm-lock.yaml
 .env
+sandbox/*
+!sandbox/csr
+!sandbox/ssr
