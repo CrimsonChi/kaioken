@@ -27,7 +27,6 @@ export function memo<Props extends Record<string, unknown>>(
     } else {
       Object.assign(node.props, props)
     }
-    console.log("props changed")
     return Object.assign(node, { [elementFreezeSymbol]: false })
   }
 }

@@ -6,7 +6,7 @@ const root = document.getElementById("app")!
 
 mount(App, root)
 
-let testRenderToString = true
+let testRenderToString = false
 if (testRenderToString) {
   const html = renderToString(() => App())
   console.log("renderToString", html)

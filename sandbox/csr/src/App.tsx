@@ -7,7 +7,6 @@ import { Messages } from "./components/Messages"
 import { ModalDemo } from "./components/dialog/Modal"
 import { DrawerDemo } from "./components/dialog/Drawer"
 import { Link } from "./components/atoms/Link"
-import { Button } from "./components/atoms/Button"
 
 export function App() {
   return (
@@ -86,21 +85,30 @@ export function App() {
 function SimpleCounter() {
   const [count, setCount] = useState(0)
   return (
-    <>
+    <div id="memo">
       <span>Count: {count}</span>
-      <Button onclick={() => setCount((prev) => prev + 1)}>Increment</Button>
-      {count % 2 === 0 && <MemoizedComponent count={123} />}
-    </>
+      <button onclick={() => setCount((prev) => prev + 1)}>Increment</button>
+      <WhenPropsChangeMemo count={1} />
+      {count % 2 === 0 && <DynamicRenderMemo />}
+    </div>
   )
 }
 
 let renders = 0
-
-const MemoizedComponent = memo(({ count }: { count: number }) => {
+const DynamicRenderMemo = memo(() => {
   return (
-    <div className="flex flex-col">
+    <div id="memo-dynamic" className="flex flex-col">
+      <span className="text-red-500">Render Count: {++renders}</span>
+    </div>
+  )
+})
+
+let renders2 = 0
+const WhenPropsChangeMemo = memo(({ count }: { count: number }) => {
+  return (
+    <div id="memo-props" className="flex flex-col">
       <div>Memo Demo {count}</div>
-      <div>Render Count: {++renders}</div>
+      <span>Render Count: {++renders2}</span>
     </div>
   )
 })
