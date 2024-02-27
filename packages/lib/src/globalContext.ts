@@ -1,26 +1,35 @@
 import { commitWork, createDom } from "./dom.js"
-import { EffectTag } from "./constants.js"
+import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 
 export { GlobalContext, ctx, node, nodeToContextMap, contexts }
+export type { GlobalContextOptions }
 
 type VNode = Kaioken.VNode
-let id = 0
+
+interface GlobalContextOptions {
+  root: HTMLElement
+  /**
+   * Sets the maximum render refresh time.
+   * @default 50
+   */
+  maxFrameMs?: number
+}
 
 class GlobalContext {
-  id = id++
   rootNode: VNode | undefined = undefined
   nextUnitOfWork: VNode | void = undefined
   treesInProgress: VNode[] = []
   currentTreeIndex = 0
-  maxFrameMs = 50 as const
+  maxFrameMs = 50
   timeoutRef: number = -1
 
   hookIndex = 0
   deletions: VNode[] = []
   pendingEffects: Function[] = []
 
-  constructor() {
+  constructor(options?: GlobalContextOptions) {
+    this.maxFrameMs = options?.maxFrameMs ?? 50
     contexts.add(this)
   }
 
@@ -89,7 +98,10 @@ class GlobalContext {
     }
     if ("requestIdleCallback" in window) {
       let didExec = false
-      if (this.timeoutRef !== -1) window.clearTimeout(this.timeoutRef)
+      if (this.timeoutRef !== -1) {
+        window.clearTimeout(this.timeoutRef)
+        this.timeoutRef = -1
+      }
       this.timeoutRef = window.setTimeout(() => {
         if (!didExec) {
           this.workLoop()
@@ -123,7 +135,10 @@ class GlobalContext {
   private performUnitOfWork(vNode: VNode): VNode | void {
     if (Component.isCtor(vNode.type)) {
       this.updateClassComponent(vNode)
-    } else if (vNode.type instanceof Function) {
+    } else if (
+      vNode.type instanceof Function ||
+      vNode.type === elementTypes.fragment
+    ) {
       this.updateFunctionComponent(vNode)
     } else {
       this.updateHostComponent(vNode)
@@ -161,7 +176,10 @@ class GlobalContext {
   private updateFunctionComponent(vNode: VNode) {
     this.hookIndex = 0
     node.current = vNode
-    const children = [(vNode.type as Function)(vNode.props)].flat()
+    const children =
+      vNode.type instanceof Function
+        ? [(vNode.type as Function)(vNode.props)].flat()
+        : vNode.props.children.flat()
 
     this.reconcileChildren(vNode, children)
   }

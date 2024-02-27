@@ -1,6 +1,13 @@
-import { ctx, GlobalContext, node, nodeToContextMap } from "./globalContext.js"
+import {
+  ctx,
+  GlobalContext,
+  GlobalContextOptions,
+  node,
+  nodeToContextMap,
+} from "./globalContext.js"
 import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
+import { elementTypes } from "./constants.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
@@ -19,16 +26,24 @@ type VNode = Kaioken.VNode
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
-  container: HTMLElement,
+  optionsOrRoot: HTMLElement | GlobalContextOptions,
   appProps = {} as T
 ) {
-  ctx.current = new GlobalContext()
+  let opts, root
+  if (optionsOrRoot instanceof HTMLElement) {
+    root = optionsOrRoot
+  } else {
+    opts = optionsOrRoot as GlobalContextOptions
+    root = optionsOrRoot.root
+  }
+
+  ctx.current = new GlobalContext(opts)
   const node = createElement(
-    container.nodeName.toLowerCase(),
+    root.nodeName.toLowerCase(),
     {},
     createElement(appFunc, appProps)
   )
-  return ctx.current.mount(node, container)
+  return ctx.current.mount(node, root)
 }
 
 function createElement(
@@ -63,24 +78,26 @@ function createChildElement(child: VNode | string | (() => VNode)): VNode {
 }
 
 function createTextElement(nodeValue: string): VNode {
-  return createElement("TEXT_ELEMENT", { nodeValue })
+  return createElement(elementTypes.text, { nodeValue })
 }
 
-function fragment({ children }: { children: JSX.Element[] }) {
-  return children as JSX.Element
+function fragment({
+  children,
+  ...rest
+}: { children: JSX.Element[] } & Record<string, unknown>) {
+  return createElement(elementTypes.fragment, rest, ...children)
 }
 
 function renderToString<T extends Record<string, unknown>>(
   element: JSX.Element | ((props: T) => JSX.Element),
-  elementProps = {} as T,
-  ctx = new GlobalContext()
+  elementProps = {} as T
 ): string {
   if (!element) return ""
   if (typeof element === "string") return element
   if (typeof element === "function")
     return renderToString(element(elementProps))
   if (element instanceof Array)
-    return element.map((el) => renderToString(el, el.props, ctx)).join("")
+    return element.map((el) => renderToString(el, el.props)).join("")
   if (typeof element === "number") return String(element)
   if (element.type === "TEXT_ELEMENT") return element.props.nodeValue ?? ""
 
@@ -103,7 +120,7 @@ function renderToString<T extends Record<string, unknown>>(
       isSelfClosing ? " /" : ""
     }>`
     if (isSelfClosing) return open
-    return `${open}${children.map((el) => renderToString(el, el.props, ctx)).join("")}</${
+    return `${open}${children.map((el) => renderToString(el, el.props)).join("")}</${
       element.type
     }>`
   }
@@ -114,10 +131,10 @@ function renderToString<T extends Record<string, unknown>>(
       new (props: Record<string, unknown>): Component
     })(element.props)
     instance.componentDidMount?.()
-    return renderToString(instance.render(), element.props, ctx)
+    return renderToString(instance.render(), element.props)
   }
 
-  return renderToString(element.type(element.props), element.props, ctx)
+  return renderToString(element.type(element.props), element.props)
 }
 
 function transformPropNameToHtmlAttr(key: string) {

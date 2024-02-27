@@ -71,7 +71,7 @@ function Router(props: RouterProps) {
   for (const child of props.children ?? []) {
     if (!isRoute(child)) continue
 
-    if (isFallbackRoute(child)) {
+    if (child.props.path === "*") {
       fallbackRoute = child
       continue
     }
@@ -90,19 +90,15 @@ function Router(props: RouterProps) {
           createElement(child.props.element, {
             params,
             query,
-            [routeDataSymbol]: { path: child.props.path },
           }),
         ],
+        [routeDataSymbol]: { path: child.props.path },
       })
     }
   }
 
   if (fallbackRoute) {
-    return fragment({
-      children: [
-        createElement(fallbackRoute.props.element, { params: {}, query }),
-      ],
-    })
+    return createElement(fallbackRoute.props.element, { params: {}, query })
   }
 
   return null
@@ -150,10 +146,6 @@ function buildParentPath(node: Kaioken.VNode) {
     parent = parent.parent
   }
   return parentPath
-}
-
-function isFallbackRoute(route: RouteComponent) {
-  return route.props.path === "*"
 }
 
 function isRoute(thing: unknown): thing is RouteComponent {

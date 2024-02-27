@@ -5,3 +5,8 @@ export enum EffectTag {
 }
 
 export const componentSymbol = Symbol.for("kaioken.component")
+
+export const elementTypes = {
+  text: "TEXT_ELEMENT",
+  fragment: "KAIOKEN_FRAGMENT",
+}

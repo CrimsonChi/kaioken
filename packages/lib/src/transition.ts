@@ -12,12 +12,6 @@ export class Transition extends Component<TransitionProps> {
     transitionState: "exited" as TransitionState,
     timeoutRef: null as number | null,
   }
-  constructor(props: TransitionProps) {
-    super({
-      ...props,
-      timings: props.timings ?? [0, 0, 0, 0],
-    })
-  }
 
   render(): JSX.Element {
     return this.props.element(this.state.transitionState)
@@ -56,15 +50,16 @@ export class Transition extends Component<TransitionProps> {
   }
 
   getTiming(): number {
+    const timings = this.props.timings ?? [0, 0, 0, 0]
     switch (this.state.transitionState) {
       case "entering":
-        return this.props.timings![0]
+        return timings[0]
       case "entered":
-        return this.props.timings![1]
+        return timings[1]
       case "exiting":
-        return this.props.timings![2]
+        return timings[2]
       case "exited":
-        return this.props.timings![3]
+        return timings[3]
     }
   }
 
