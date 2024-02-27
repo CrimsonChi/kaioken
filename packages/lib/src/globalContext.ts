@@ -135,11 +135,10 @@ class GlobalContext {
   private performUnitOfWork(vNode: VNode): VNode | void {
     if (Component.isCtor(vNode.type)) {
       this.updateClassComponent(vNode)
-    } else if (
-      vNode.type instanceof Function ||
-      vNode.type === elementTypes.fragment
-    ) {
+    } else if (vNode.type instanceof Function) {
       this.updateFunctionComponent(vNode)
+    } else if (vNode.type === elementTypes.fragment) {
+      this.reconcileChildren(vNode, vNode.props.children)
     } else {
       this.updateHostComponent(vNode)
     }
@@ -169,19 +168,17 @@ class GlobalContext {
       vNode.instance.props = vNode.props
     }
 
-    const children = [vNode.instance.render()].flat() as VNode[]
-    this.reconcileChildren(vNode, children)
+    this.reconcileChildren(vNode, [vNode.instance.render()].flat() as VNode[])
   }
 
   private updateFunctionComponent(vNode: VNode) {
     this.hookIndex = 0
     node.current = vNode
-    const children =
-      vNode.type instanceof Function
-        ? [(vNode.type as Function)(vNode.props)].flat()
-        : vNode.props.children.flat()
 
-    this.reconcileChildren(vNode, children)
+    this.reconcileChildren(
+      vNode,
+      [(vNode.type as Function)(vNode.props)].flat()
+    )
   }
 
   private updateHostComponent(vNode: VNode) {
