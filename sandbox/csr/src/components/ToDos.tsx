@@ -37,7 +37,8 @@ export function Todos() {
     setTodos(newTodos)
   }
 
-  const handleAdd = () => {
+  const handleAdd = (e: Event) => {
+    e.preventDefault()
     if (!text) return
     const newTodos = [
       ...todos,
@@ -63,7 +64,7 @@ export function Todos() {
   return (
     <Container>
       <form
-        action={handleAdd}
+        onsubmit={handleAdd}
         className="flex gap-2 mb-5 items-center justify-center"
       >
         <Input ref={ref} />

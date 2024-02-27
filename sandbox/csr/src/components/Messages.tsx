@@ -1,4 +1,4 @@
-import { useEffect, useOptimistic, useRef, useState } from "kaioken"
+import { useEffect, useModel, useOptimistic, useRef, useState } from "kaioken"
 import { Button } from "./atoms/Button"
 import { Input } from "./atoms/Input"
 import { useMessageStatsStore } from "../store"
@@ -40,15 +40,14 @@ function Thread({
   messages: Message[]
   sendMessage: (message: string) => Promise<void>
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [inputRef, inputValue] = useModel<HTMLInputElement, string>("")
   const formRef = useRef<HTMLFormElement>(null)
   const { success, fail } = useMessageStatsStore(({ value }) => value)
 
-  function formAction(formData: FormData) {
-    const message = formData.get("message") as string
-    if (!message) return
-    const revert = addOptimisticMessage(message)
-    sendMessage(message).catch(revert)
+  function handleSubmit(e: Event) {
+    e.preventDefault()
+    const revert = addOptimisticMessage(inputValue)
+    sendMessage(inputValue).catch(revert)
   }
 
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
@@ -63,8 +62,8 @@ function Thread({
       <div>success: {success}</div>
       <div>fail: {fail}</div>
       <form
+        onsubmit={handleSubmit}
         autocomplete="off"
-        action={formAction}
         ref={formRef}
         className="flex gap-2 mb-5"
       >
