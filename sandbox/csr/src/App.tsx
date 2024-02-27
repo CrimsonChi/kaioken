@@ -1,4 +1,4 @@
-import { Router, Route, useState } from "kaioken"
+import { Router, Route, useState, memo } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ThemeContextProvider } from "./ThemeContext"
@@ -89,6 +89,18 @@ function SimpleCounter() {
     <>
       <span>Count: {count}</span>
       <Button onclick={() => setCount((prev) => prev + 1)}>Increment</Button>
+      {count % 2 === 0 && <MemoizedComponent count={123} />}
     </>
   )
 }
+
+let renders = 0
+
+const MemoizedComponent = memo(({ count }: { count: number }) => {
+  return (
+    <div className="flex flex-col">
+      <div>Memo Demo {count}</div>
+      <div>Render Count: {++renders}</div>
+    </div>
+  )
+})
