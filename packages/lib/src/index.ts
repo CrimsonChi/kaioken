@@ -6,7 +6,14 @@ import {
   nodeToCtxMap,
   renderMode,
 } from "./globalContext.js"
-import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
+import {
+  isVNode,
+  isValidChild,
+  propFilters,
+  propToHtmlAttr,
+  propValueToHtmlAttrValue,
+  selfClosingTags,
+} from "./utils.js"
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
 
@@ -148,33 +155,4 @@ function renderToString_internal<T extends Record<string, unknown>>(
   }
 
   return renderToString_internal(type(props), props)
-}
-
-function propToHtmlAttr(key: string) {
-  switch (key.toLowerCase()) {
-    case "classname":
-      return "class"
-    case "htmlfor":
-      return "for"
-    default:
-      return key
-  }
-}
-
-function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
-  let cssString = ""
-  for (const key in obj) {
-    const cssKey = key.replace(/[A-Z]/g, "-$&").toLowerCase()
-    cssString += `${cssKey}:${obj[key]};`
-  }
-  return cssString
-}
-
-function propValueToHtmlAttrValue(key: string, value: unknown) {
-  switch (key) {
-    case "style":
-      if (typeof value === "object" && !!value) return styleObjectToCss(value)
-    default:
-      return String(value)
-  }
 }

@@ -1,5 +1,5 @@
 import { type GlobalContext } from "./globalContext.js"
-import { propFilters, svgTags } from "./utils.js"
+import { propFilters, propToHtmlAttr, svgTags } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
@@ -57,15 +57,9 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         continue
       }
 
-      if (
-        dom instanceof SVGElement ||
-        (dom instanceof Element && key.includes("-"))
-      ) {
-        dom.removeAttribute(key.toLowerCase() === "classname" ? "class" : key)
-        continue
+      if (!(dom instanceof Text)) {
+        dom.removeAttribute(propToHtmlAttr(key.toLowerCase()))
       }
-
-      ;(dom as any)[key] = ""
     }
   }
 
@@ -86,10 +80,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         dom instanceof SVGElement ||
         (dom instanceof Element && key.includes("-"))
       ) {
-        dom.setAttribute(
-          key.toLowerCase() === "classname" ? "class" : key,
-          nextProps[key]
-        )
+        dom.setAttribute(propToHtmlAttr(key.toLowerCase()), nextProps[key])
         continue
       }
       ;(dom as any)[key] = nextProps[key]
