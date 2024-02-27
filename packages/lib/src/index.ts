@@ -8,7 +8,7 @@ import {
 } from "./globalContext.js"
 import { isVNode, isValidChild, propFilters, selfClosingTags } from "./utils.js"
 import { Component } from "./component.js"
-import { elementTypes } from "./constants.js"
+import { elementTypes as et } from "./constants.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
@@ -79,82 +79,75 @@ function createChildElement(child: VNode | string | (() => VNode)): VNode {
 }
 
 function createTextElement(nodeValue: string): VNode {
-  return createElement(elementTypes.text, { nodeValue })
+  return createElement(et.text, { nodeValue })
 }
 
 function fragment({
   children,
   ...rest
 }: { children: JSX.Element[] } & Record<string, unknown>) {
-  return createElement(elementTypes.fragment, rest, ...children)
+  return createElement(et.fragment, rest, ...children)
 }
 
 function renderToString<T extends Record<string, unknown>>(
-  element: JSX.Element | ((props: T) => JSX.Element),
-  elementProps = {} as T
+  el: JSX.Element | ((props: T) => JSX.Element),
+  elProps = {} as T
 ) {
-  let prevMode = renderMode.current
+  let prev = renderMode.current
   renderMode.current = "string"
-  const res = renderToString_internal(element, elementProps)
-  renderMode.current = prevMode
+  const res = renderToString_internal(el, elProps)
+  renderMode.current = prev
   return res
 }
 
 function renderToString_internal<T extends Record<string, unknown>>(
-  element: JSX.Element | ((props: T) => JSX.Element),
-  elementProps = {} as T
+  el: JSX.Element | ((props: T) => JSX.Element),
+  elProps = {} as T
 ): string {
-  if (!element) return ""
+  if (!el) return ""
 
-  if (typeof element === "string") return element
-  if (typeof element === "function")
-    return renderToString_internal(
-      createElement(element, elementProps),
-      elementProps
-    )
-  if (typeof element === "number") return String(element)
-  if (element instanceof Array)
-    return element.map((el) => renderToString(el, el.props)).join("")
-  if (element.type === elementTypes.text) return element.props.nodeValue ?? ""
-  if (element.type === elementTypes.fragment)
-    return element.props.children
-      .map((el) => renderToString_internal(el, el.props))
-      .join("")
+  if (typeof el === "string") return el
+  if (typeof el === "function")
+    return renderToString_internal(createElement(el, elProps), elProps)
+  if (typeof el === "number") return String(el)
+  if (el instanceof Array)
+    return el.map((el) => renderToString(el, el.props)).join("")
 
-  const children = element.props.children ?? []
-  const props = element.props ?? {}
+  const props = el.props ?? {}
+  const children = props.children ?? []
+  const type = el.type
+  if (type === et.text) return props.nodeValue ?? ""
+  if (type === et.fragment)
+    return children.map((c) => renderToString_internal(c, props)).join("")
 
-  if (typeof element.type === "string") {
-    if (element.type === "form" && typeof props.action === "function") {
-      delete props.action
-    }
-    const isSelfClosing = selfClosingTags.includes(element.type)
+  if (typeof type === "string") {
+    const sc = selfClosingTags.includes(type)
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
       .map(
-        (key) =>
-          `${propToHtmlAttr(key)}="${propValueToHtmlAttrValue(key, props[key])}"`
+        (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
       )
       .join(" ")
-    const open = `<${element.type}${attrs ? ` ${attrs}` : ""}${
-      isSelfClosing ? " /" : ""
-    }>`
-    if (isSelfClosing) return open
-    return `${open}${children.map((el) => renderToString_internal(el, el.props)).join("")}</${
-      element.type
-    }>`
-  }
-  node.current = element
 
-  if (Component.isCtor(element.type)) {
-    const instance = new (element.type as unknown as {
+    const open = `<${type} ${attrs}`
+    return (
+      open +
+      (!sc
+        ? `>${children.map((c) => renderToString_internal(c, c.props)).join("")}</${type}>`
+        : "/>")
+    )
+  }
+
+  node.current = el
+  if (Component.isCtor(type)) {
+    const instance = new (type as unknown as {
       new (props: Record<string, unknown>): Component
-    })(element.props)
+    })(props)
     instance.componentDidMount?.()
-    return renderToString_internal(instance.render(), element.props)
+    return renderToString_internal(instance.render(), props)
   }
 
-  return renderToString_internal(element.type(element.props), element.props)
+  return renderToString_internal(type(props), props)
 }
 
 function propToHtmlAttr(key: string) {
@@ -168,11 +161,11 @@ function propToHtmlAttr(key: string) {
   }
 }
 
-function styleObjectToCss(styleObject: Partial<CSSStyleDeclaration>) {
+function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
   let cssString = ""
-  for (const key in styleObject) {
-    const cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase()
-    cssString += `${cssKey}:${styleObject[key]};`
+  for (const key in obj) {
+    const cssKey = key.replace(/[A-Z]/g, "-$&").toLowerCase()
+    cssString += `${cssKey}:${obj[key]};`
   }
   return cssString
 }
