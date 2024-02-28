@@ -7,6 +7,7 @@ import { Messages } from "./components/Messages"
 import { ModalDemo } from "./components/dialog/Modal"
 import { DrawerDemo } from "./components/dialog/Drawer"
 import { Link } from "./components/atoms/Link"
+import { GithubIcon } from "./components/GithubIcon"
 
 export function App() {
   return (
@@ -21,6 +22,7 @@ export function App() {
         <Link to="/test/123?sort=desc">Route Params / Query</Link>
         <Link to="/unhandled-route">Unhandled Route</Link>
       </nav>
+      <GithubIcon />
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
           <Route

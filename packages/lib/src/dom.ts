@@ -1,5 +1,10 @@
 import { type GlobalContext } from "./globalContext.js"
-import { propFilters, propToHtmlAttr, svgTags } from "./utils.js"
+import {
+  booleanAttributes,
+  propFilters,
+  propToHtmlAttr,
+  svgTags,
+} from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
@@ -25,72 +30,114 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   return dom
 }
 
-function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
-  const prevProps: Record<string, any> = node.prev?.props ?? {}
-  const nextProps: Record<string, any> = node.props ?? {}
-  const prevKeys = Object.keys(prevProps)
-  const nextKeys = Object.keys(nextProps)
-
-  for (let i = 0; i < prevKeys.length; i++) {
-    const key = prevKeys[i]
-    //Remove old or changed event listeners
-    if (
-      propFilters.isEvent(key) &&
-      (!(key in nextProps) || prevProps[key] !== nextProps[key])
-    ) {
-      const eventType = key.toLowerCase().substring(2)
-      dom.removeEventListener(eventType, prevProps[key])
-      continue
+function handleAttributeRemoval(
+  dom: Element,
+  key: string,
+  value: unknown,
+  isBoolAttr = false
+) {
+  if (value === null) {
+    dom.removeAttribute(key)
+    return true
+  }
+  switch (typeof value) {
+    case "undefined":
+    case "function":
+    case "symbol": {
+      dom.removeAttribute(key)
+      return true
     }
-    // Remove old properties
-    if (propFilters.isProperty(key) && !(key in nextProps)) {
-      if (
-        key === "style" &&
-        typeof nextProps[key] !== "string" &&
-        !(dom instanceof Text)
-      ) {
-        Object.keys(prevProps[key] as Partial<CSSStyleSheet>).forEach(
-          (styleName) => {
-            ;(dom.style as any)[styleName] = ""
-          }
-        )
-        continue
-      }
-
-      if (!(dom instanceof Text)) {
-        dom.removeAttribute(propToHtmlAttr(key.toLowerCase()))
+    case "boolean": {
+      if (isBoolAttr && !value) {
+        dom.removeAttribute(key)
+        return true
       }
     }
   }
 
-  for (let i = 0; i < nextKeys.length; i++) {
-    const key = nextKeys[i]
-    // Set new or changed properties
-    if (propFilters.isProperty(key) && prevProps[key] !== nextProps[key]) {
-      if (
-        key === "style" &&
-        typeof nextProps[key] !== "string" &&
-        !(dom instanceof Text)
-      ) {
-        Object.assign(dom.style, nextProps[key])
-        continue
-      }
+  return false
+}
 
-      if (
-        dom instanceof SVGElement ||
-        (dom instanceof Element && key.includes("-"))
-      ) {
-        dom.setAttribute(propToHtmlAttr(key.toLowerCase()), nextProps[key])
-        continue
-      }
-      ;(dom as any)[key] = nextProps[key]
-      continue
-    }
-    // Add event listeners
+export function setDomAttribute(dom: Element, key: string, value: unknown) {
+  const isBoolAttr = booleanAttributes.includes(key)
+
+  if (handleAttributeRemoval(dom, key, value, isBoolAttr)) return
+
+  dom.setAttribute(key, isBoolAttr ? "" : String(value))
+}
+
+function setProp(
+  dom: HTMLElement | SVGElement,
+  key: string,
+  value: unknown,
+  prev: unknown
+) {
+  switch (key) {
+    case "style":
+      setStyleProp(dom, value, prev)
+      break
+    default:
+      setDomAttribute(dom, propToHtmlAttr(key), value)
+  }
+}
+
+function setStyleProp(
+  dom: HTMLElement | SVGElement,
+  value: unknown,
+  prev: unknown
+) {
+  if (handleAttributeRemoval(dom, "style", value)) return
+  if (typeof value === "string") {
+    dom.setAttribute("style", value)
+    return
+  }
+
+  if (
+    !!prev &&
+    typeof prev === "object" &&
+    !!value &&
+    typeof value === "object"
+  ) {
+    Object.keys(prev).forEach((k) => {
+      if (!(k in value)) dom.style[k as any] = ""
+    })
+  }
+
+  if (typeof value !== "object" || !value) return
+
+  Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
+    (k) => (dom.style[k as any] = value[k as keyof typeof value] as any)
+  )
+}
+
+function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
+  const prevProps: Record<string, any> = node.prev?.props ?? {}
+  const nextProps: Record<string, any> = node.props ?? {}
+
+  const allProps = { ...prevProps, ...nextProps }
+  const allKeys = Object.keys(allProps)
+
+  for (let i = 0; i < allKeys.length; i++) {
+    const key = allKeys[i]
+    if (propFilters.internalProps.includes(key)) continue
+
     if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
       const eventType = key.toLowerCase().substring(2)
-      dom.addEventListener(eventType, nextProps[key])
+      if (!(key in nextProps)) {
+        dom.removeEventListener(eventType, prevProps[key])
+      } else {
+        if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
+        if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
+      }
+      continue
     }
+
+    if (!(dom instanceof Text)) {
+      setProp(dom, key, nextProps[key], prevProps[key])
+      continue
+    }
+
+    ;(dom as any)[key] = nextProps[key]
   }
 
   return dom
