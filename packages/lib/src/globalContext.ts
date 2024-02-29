@@ -44,8 +44,10 @@ class GlobalContext {
   }
 
   requestUpdate(node: VNode) {
+    // handle cases where a vNode that has been removed has an async cb which requests update
     if (!this.vNodeContains(this.rootNode!, node)) return
     if (node.effectTag === EffectTag.DELETION) return
+
     if (this.isNodeBeingWorkedOn(node)) {
       const dt = performance.now()
       if (node.dt && dt >= node.dt) return // stale update request
@@ -81,6 +83,7 @@ class GlobalContext {
       this.nextUnitOfWork =
         this.performUnitOfWork(this.nextUnitOfWork) ??
         this.treesInProgress[++this.currentTreeIndex]
+
       shouldYield =
         (deadline && deadline.timeRemaining() < 1) ??
         (!deadline && !this.nextUnitOfWork)
@@ -153,9 +156,14 @@ class GlobalContext {
       }
       if (vNode.child) return vNode.child
     }
+
     let nextNode: VNode | undefined = vNode
+    const t = this.treesInProgress[this.currentTreeIndex]
     while (nextNode) {
-      if (nextNode.sibling) return nextNode.sibling
+      if (nextNode.sibling) {
+        if (t === nextNode) return // prevent unnecessary traversal of entry-point siblings
+        return nextNode.sibling
+      }
       nextNode = nextNode.parent
     }
   }
