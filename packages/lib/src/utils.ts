@@ -116,13 +116,15 @@ function propToHtmlAttr(key: string) {
       return key.toLowerCase()
 
     default:
+      if (key.startsWith("aria"))
+        return "aria-" + key.substring(4).toLowerCase()
+
       return snakeCaseAttrs.get(key) || key
   }
 }
 
 const snakeCaseAttrs = new Map([
   ["acceptCharset", "accept-charset"],
-  ["httpEquiv", "http-equiv"],
   ["accentHeight", "accent-height"],
   ["alignmentBaseline", "alignment-baseline"],
   ["arabicForm", "arabic-form"],
@@ -152,6 +154,7 @@ const snakeCaseAttrs = new Map([
   ["glyphOrientationVertical", "glyph-orientation-vertical"],
   ["horizAdvX", "horiz-adv-x"],
   ["horizOriginX", "horiz-origin-x"],
+  ["httpEquiv", "http-equiv"],
   ["imageRendering", "image-rendering"],
   ["letterSpacing", "letter-spacing"],
   ["lightingColor", "lighting-color"],
