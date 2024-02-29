@@ -19,6 +19,7 @@ type HookCallbackState<T> = {
   oldHook?: Hook<T>
   update: () => void
   queueEffect: typeof ctx.current.queueEffect
+  vNode: Kaioken.VNode
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
@@ -44,6 +45,7 @@ function useHook<T, U>(
     oldHook,
     update: () => ctx.requestUpdate(vNode),
     queueEffect: ctx.queueEffect.bind(ctx),
+    vNode,
   })
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook

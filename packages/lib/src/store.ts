@@ -1,5 +1,5 @@
-import { nodeToCtxMap, node } from "./globalContext.js"
-import { useEffect } from "./hooks/index.js"
+import { nodeToCtxMap } from "./globalContext.js"
+import { useHook } from "./hooks/utils.js"
 
 export { createStore }
 
@@ -8,18 +8,18 @@ type MethodFactory<T> = (
   getState: () => T
 ) => Record<string, (...args: any[]) => void>
 
-type UseStoreArgs<T, U extends MethodFactory<T>> = { value: T } & ReturnType<U>
-
 type Store<T, U extends MethodFactory<T>> = {
-  <Selector extends (state: UseStoreArgs<T, U>) => unknown>(
+  <Selector extends (state: T) => unknown>(
     fn: Selector
-  ): ReturnType<Selector>
+  ): { value: T } & ReturnType<U>
   (): { value: T } & ReturnType<U>
   getState: () => T
   setState: (setter: Kaioken.StateSetter<T>) => void
   methods: ReturnType<U>
   subscribe: (fn: (value: T) => void) => () => void
 } & ReturnType<U>
+
+const nodeToComputeMap = new WeakMap<Kaioken.VNode, [Function, unknown][]>()
 
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
@@ -32,25 +32,41 @@ function createStore<T, U extends MethodFactory<T>>(
     value = setter instanceof Function ? setter(value) : setter
     subscribers.forEach((n) => {
       if (n instanceof Function) return n(value)
+      const computes = nodeToComputeMap.get(n)
+      if (computes) {
+        let computeChanged = false
+        for (let i = 0; i < computes.length; i++) {
+          const [fn, slice] = computes[i]
+
+          const next = JSON.stringify(fn(value))
+          if (next === slice) continue
+
+          computeChanged = true
+          computes[i] = [fn, next]
+        }
+        if (!computeChanged) return
+      }
+
       nodeToCtxMap.get(n)!.requestUpdate(n)
     })
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
-  function useStore<Selector extends (selector: UseStoreArgs<T, U>) => unknown>(
-    fn?: Selector
-  ) {
-    const curNode = node.current
-    if (!curNode) {
-      throw new Error(
-        `[kaioken]: hook "useStore" must be used at the top level of a component or inside another hook.`
-      )
-    }
-    subscribers.add(curNode)
-    useEffect(() => () => subscribers.delete(curNode), [])
-    return fn
-      ? (fn({ value, ...methods }) as ReturnType<Selector>)
-      : { value, ...methods }
+  function useStore<Selector extends (state: T) => unknown>(fn?: Selector) {
+    return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
+      if (!oldHook) {
+        const stateSlice = fn ? fn(value) : value
+        if (fn) {
+          const computes = nodeToComputeMap.get(vNode) ?? []
+          computes.push([fn, JSON.stringify(stateSlice)])
+          nodeToComputeMap.set(vNode, computes)
+        }
+        subscribers.add(vNode)
+        hook.cleanup = () => subscribers.delete(vNode)
+      }
+
+      return { value, ...methods }
+    })
   }
 
   return Object.assign(useStore, {
