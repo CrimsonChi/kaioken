@@ -114,12 +114,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const prevProps: Record<string, any> = node.prev?.props ?? {}
   const nextProps: Record<string, any> = node.props ?? {}
 
-  const allProps = { ...prevProps, ...nextProps }
-  const allKeys = Object.keys(allProps)
+  const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
-  for (let i = 0; i < allKeys.length; i++) {
-    const key = allKeys[i]
-    if (propFilters.internalProps.includes(key)) continue
+  keys.forEach((key) => {
+    if (propFilters.internalProps.includes(key)) return
 
     if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
       const eventType = key.toLowerCase().substring(2)
@@ -129,16 +127,16 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
         if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
         if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
       }
-      continue
+      return
     }
 
     if (!(dom instanceof Text)) {
       setProp(dom, key, nextProps[key], prevProps[key])
-      continue
+      return
     }
 
     ;(dom as any)[key] = nextProps[key]
-  }
+  })
 
   return dom
 }
