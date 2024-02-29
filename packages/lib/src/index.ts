@@ -34,9 +34,21 @@ type VNode = Kaioken.VNode
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
+  options: GlobalContextOptions,
+  appProps?: T
+): Kaioken.VNode
+
+function mount<T extends Record<string, unknown>>(
+  appFunc: (props: T) => JSX.Element,
+  root: HTMLElement,
+  appProps?: T
+): Kaioken.VNode
+
+function mount<T extends Record<string, unknown>>(
+  appFunc: (props: T) => JSX.Element,
   optionsOrRoot: HTMLElement | GlobalContextOptions,
   appProps = {} as T
-) {
+): Kaioken.VNode {
   let opts, root
   if (optionsOrRoot instanceof HTMLElement) {
     root = optionsOrRoot
