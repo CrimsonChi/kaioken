@@ -59,7 +59,7 @@ declare global {
       child?: VNode
       sibling?: VNode
       prev?: VNode
-      effectTag?: EffectTag
+      effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
       dt?: number
     }
 
