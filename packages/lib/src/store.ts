@@ -1,5 +1,6 @@
 import { nodeToCtxMap } from "./globalContext.js"
 import { useHook } from "./hooks/utils.js"
+import { shallow } from "./shallow.js"
 
 export { createStore }
 
@@ -38,8 +39,8 @@ function createStore<T, U extends MethodFactory<T>>(
         for (let i = 0; i < computes.length; i++) {
           const [fn, slice] = computes[i]
 
-          const next = JSON.stringify(fn(value))
-          if (next === slice) continue
+          const next = fn(value)
+          if (shallow(next, slice)) continue
 
           computeChanged = true
           computes[i] = [fn, next]
@@ -58,7 +59,7 @@ function createStore<T, U extends MethodFactory<T>>(
         const stateSlice = fn ? fn(value) : value
         if (fn) {
           const computes = nodeToComputeMap.get(vNode) ?? []
-          computes.push([fn, JSON.stringify(stateSlice)])
+          computes.push([fn, stateSlice])
           nodeToComputeMap.set(vNode, computes)
         }
         subscribers.add(vNode)
