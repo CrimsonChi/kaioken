@@ -65,12 +65,13 @@ class GlobalContext {
   }
 
   applyRecursive(func: (node: VNode) => void) {
+    const nodes: VNode[] = [this.rootNode!]
     const apply = (node: VNode) => {
       func(node)
-      if (node.child) apply(node.child)
-      if (node.sibling) apply(node.sibling)
+      node.child && nodes.push(node.child)
+      node.sibling && nodes.push(node.sibling)
     }
-    apply(this.rootNode!)
+    while (nodes.length) apply(nodes.shift()!)
   }
 
   private workLoop(deadline?: IdleDeadline) {
@@ -87,12 +88,18 @@ class GlobalContext {
 
     if (!this.nextUnitOfWork && this.treesInProgress.length) {
       this.currentTreeIndex = 0
-      this.deletions.forEach((d) => commitWork(this, d))
+      const followUps: Function[] = []
+      this.deletions.forEach((d) => followUps.push(...commitWork(this, d)))
       this.deletions = []
 
       for (let i = 0; i < this.treesInProgress.length; i++) {
-        commitWork(this, this.treesInProgress[i])
+        followUps.push(...commitWork(this, this.treesInProgress[i]))
       }
+
+      while (followUps.length) {
+        followUps.push(...(followUps.shift()?.(this) ?? []))
+      }
+
       while (this.pendingEffects.length) this.pendingEffects.shift()?.()
       this.treesInProgress = []
     }
@@ -133,16 +140,19 @@ class GlobalContext {
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
-    if (Component.isCtor(vNode.type)) {
-      this.updateClassComponent(vNode)
-    } else if (vNode.type instanceof Function) {
-      this.updateFunctionComponent(vNode)
-    } else if (vNode.type === elementTypes.fragment) {
-      this.reconcileChildren(vNode, vNode.props.children)
-    } else {
-      this.updateHostComponent(vNode)
+    const frozen = elementFreezeSymbol in vNode && !!vNode[elementFreezeSymbol]
+    if (!frozen) {
+      if (Component.isCtor(vNode.type)) {
+        this.updateClassComponent(vNode)
+      } else if (vNode.type instanceof Function) {
+        this.updateFunctionComponent(vNode)
+      } else if (vNode.type === elementTypes.fragment) {
+        this.reconcileChildren(vNode, vNode.props.children)
+      } else {
+        this.updateHostComponent(vNode)
+      }
+      if (vNode.child) return vNode.child
     }
-    if (vNode.child) return vNode.child
     let nextNode: VNode | undefined = vNode
     while (nextNode) {
       if (nextNode.sibling) return nextNode.sibling

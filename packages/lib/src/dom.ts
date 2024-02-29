@@ -6,7 +6,7 @@ import {
   svgTags,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
+import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 
 export { commitWork, createDom }
@@ -141,71 +141,90 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   return dom
 }
 
-function commitWork(ctx: GlobalContext, vNode: VNode) {
+function commitWork(
+  ctx: GlobalContext,
+  vNode: VNode,
+  domParent?: HTMLElement | SVGElement | Text,
+  prevDom?: HTMLElement | SVGElement | Text
+) {
   const dom = vNode.dom ?? vNode.instance?.rootDom
-  const frozen = elementFreezeSymbol in vNode && !!vNode[elementFreezeSymbol]
   if (
     dom &&
     (!dom.isConnected ||
       (vNode.effectTag === EffectTag.PLACEMENT && !vNode.instance?.rootDom))
   ) {
     // find mountable parent dom
-    let parentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
-    let domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
-    while (parentNode && !domParent) {
-      parentNode = parentNode.parent
+    if (!domParent) {
+      let parentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
+
       domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
+      while (parentNode && !domParent) {
+        parentNode = parentNode.parent
+        domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
+      }
     }
 
     if (!domParent) {
       console.error("[kaioken]: no domParent found - seek help!", vNode)
-      return
+      return []
     }
 
-    let siblingDom: HTMLElement | SVGElement | Text | undefined = undefined
-    let tmp = vNode.sibling && vNode.sibling.dom
-    if (tmp && tmp.isConnected) {
-      siblingDom = tmp
-    } else {
-      // try to find sibling dom by traversing upwards through the tree
-      let parent = vNode.parent
-      while (!siblingDom && parent) {
-        siblingDom = findDomRecursive(parent.sibling)
-        parent = parent.parent
+    let nextDom
+    if (!prevDom) {
+      let tmp = vNode.sibling && vNode.sibling.dom
+      if (tmp && tmp.isConnected) {
+        nextDom = tmp
+      } else {
+        // try to find sibling dom by traversing upwards through the tree
+        let parent = vNode.parent
+
+        while (!nextDom && parent) {
+          nextDom = findDomRecursive(parent.sibling)
+          parent = parent.parent
+        }
       }
     }
-
-    if (siblingDom && domParent.contains(siblingDom)) {
-      domParent.insertBefore(dom, siblingDom)
+    if (prevDom && domParent.contains(prevDom)) {
+      prevDom.after(dom)
+    } else if (nextDom && domParent.contains(nextDom)) {
+      domParent.insertBefore(dom, nextDom)
     } else {
       domParent.appendChild(dom)
     }
-  } else if (!frozen && vNode.effectTag === EffectTag.UPDATE && dom) {
+  } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
-    commitDeletion(vNode, dom)
-    return
+    return commitDeletion(vNode, dom)
   }
 
-  vNode.effectTag = undefined
+  const followUpWork: Function[] = []
 
-  !frozen && vNode.child && commitWork(ctx, vNode.child)
-  vNode.sibling && commitWork(ctx, vNode.sibling)
+  vNode.child &&
+    followUpWork.push((ctx: GlobalContext) =>
+      commitWork(ctx, vNode.child!, dom)
+    )
+  vNode.sibling &&
+    followUpWork.push((ctx: GlobalContext) =>
+      commitWork(ctx, vNode.sibling!, domParent, dom)
+    )
+
   const instance = vNode.instance
   if (instance) {
     const onMounted = instance.componentDidMount?.bind(instance)
     if (!vNode.prev && onMounted) {
-      ctx.queueEffect(() => onMounted())
-    } else if (!frozen && EffectTag.UPDATE) {
+      ctx.queueEffect(onMounted)
+    } else if (vNode.effectTag === EffectTag.UPDATE) {
       const onUpdated = instance.componentDidUpdate?.bind(instance)
-      if (onUpdated) ctx.queueEffect(() => onUpdated())
+      if (onUpdated) ctx.queueEffect(onUpdated)
     }
   }
 
   if (vNode.props.ref && dom) {
     vNode.props.ref.current = dom
   }
+  vNode.effectTag = undefined
   vNode.prev = { ...vNode, prev: undefined }
+  return followUpWork
 }
 
 function findDomRecursive(
@@ -230,10 +249,12 @@ function commitDeletion(vNode: VNode, dom = vNode.dom, root = true) {
     if (dom.isConnected && vNode.instance?.rootDom !== dom) dom.remove()
     delete vNode.dom
   }
+  const followUps: Function[] = []
   if (vNode.child) {
-    commitDeletion(vNode.child, undefined, false)
+    followUps.push(() => commitDeletion(vNode.child!, undefined, false))
   }
   if (vNode.sibling && !root) {
-    commitDeletion(vNode.sibling, undefined, false)
+    followUps.push(() => commitDeletion(vNode.sibling!, undefined, false))
   }
+  return followUps
 }
