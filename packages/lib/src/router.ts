@@ -4,7 +4,7 @@ import { isVNode } from "./utils.js"
 import { useState, useEffect } from "./hooks/index.js"
 import { node } from "./globalContext.js"
 
-export { Router, Route, Link, navigate, matchPath }
+export { Router, Route, Link, Navigate, navigate, matchPath }
 export type { RouteChildProps, LinkProps }
 
 interface LinkProps extends ElementProps<"a"> {
@@ -112,8 +112,19 @@ function Route({ path, element, fallthrough }: RouteProps) {
 }
 
 function navigate(to: string) {
-  window.history.pushState({}, "", to)
-  window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
+  /**
+   * postpone until next tick to allow for cases
+   * where navigate is called upon new route render
+   */
+  setTimeout(() => {
+    window.history.pushState({}, "", to)
+    window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
+  }, 0)
+}
+
+function Navigate({ to }: { to: string }) {
+  navigate(to)
+  return null
 }
 
 function Link({ to, children, ...props }: LinkProps) {
