@@ -42,7 +42,9 @@ function Thread({
 }) {
   const [inputRef, inputValue] = useModel<HTMLInputElement, string>("")
   const formRef = useRef<HTMLFormElement>(null)
-  const { success, fail } = useMessageStatsStore(({ value }) => value)
+  const {
+    value: { success, fail },
+  } = useMessageStatsStore()
 
   function handleSubmit(e: Event) {
     e.preventDefault()
@@ -70,12 +72,14 @@ function Thread({
         <Input ref={inputRef} type="text" name="message" placeholder="Hello!" />
         <Button type="submit">Send</Button>
       </form>
-      {optimisticMessages.map(({ message, sending }) => (
-        <div className="text-center">
-          {message}
-          {sending && <small> Sending...</small>}
-        </div>
-      ))}
+      <ol className="list-decimal">
+        {optimisticMessages.map(({ message, sending }) => (
+          <li className="text-center">
+            {message}
+            {sending && <small> Sending...</small>}
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }

@@ -3,11 +3,7 @@ import { Container } from "./atoms/Container"
 import { useCountStore } from "../store"
 
 export function Counter() {
-  const { count, increment, decrement } = useCountStore((store) => ({
-    count: store.value.count,
-    increment: store.increment,
-    decrement: store.decrement,
-  }))
+  const { value: count, increment, decrement } = useCountStore()
 
   return (
     <Container className="flex gap-2 items-center">

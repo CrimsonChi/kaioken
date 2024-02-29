@@ -10,6 +10,7 @@ import { Link } from "./components/atoms/Link"
 import { GithubIcon } from "./components/GithubIcon"
 import { MemoDemo } from "./MemoDemo"
 import { BigListComponent } from "./components/BigList"
+import { TodosWithStore } from "./components/TodosWithStore"
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
         <div className="sticky top-0 flex flex-col gap-2">
           <Link to="/">Home</Link>
           <Link to="/todos">Todos (state, model, memo)</Link>
+          <Link to="/todos-with-store">Todos (with store)</Link>
           <Link to="/counter">Counter (store)</Link>
           <Link to="/query?id=1">Query (useFetch)</Link>
           <Link to="/messages">Messages (useOptimistic)</Link>
@@ -73,6 +75,7 @@ export function App() {
           <Route path="/big-list" element={BigListComponent} />
           <Route path="/memo" element={MemoDemo} />
           <Route path="/todos" element={Todos} />
+          <Route path="/todos-with-store" element={TodosWithStore} />
           <Route path="/counter" element={Counter} />
           <Route path="/query" element={ProductPage} />
           <Route path="/messages" element={Messages} />
