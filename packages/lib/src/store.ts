@@ -18,7 +18,7 @@ type Store<T, U extends MethodFactory<T>> = {
   setState: (setter: Kaioken.StateSetter<T>) => void
   methods: ReturnType<U>
   subscribe: (fn: (value: T) => void) => () => void
-} & ReturnType<U>
+}
 
 const nodeToComputeMap = new WeakMap<Kaioken.VNode, [Function, unknown][]>()
 
