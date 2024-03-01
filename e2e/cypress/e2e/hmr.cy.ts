@@ -1,40 +1,24 @@
-const counterTsx = `import { useState } from "kaioken"
+let counterTsx = "",
+  counterModifiedTsx = ""
+// const counterTsx = fs.readFileSync("../../src/Counter.tsx", {
+//   encoding: "utf-8",
+// })
 
-export function Counter() {
-  const [count, setCount] = useState(0)
-  return (
-    <div id="counter">
-      {count % 2 === 0 ? (
-        <span data-even={true}>{count}</span>
-      ) : (
-        <span data-odd={true}>{count}</span>
-      )}
-      <button onclick={() => setCount((prev) => prev + 1)}>increment</button>
-      {count > 0 && count % 2 === 0 && <p>count is even</p>}
-    </div>
-  )
-}
-`
-
-const counterModifiedTsx = `import { useState } from "kaioken"
-
-export function Counter() {
-  const [count, setCount] = useState(0)
-  return (
-    <div id="counter" data-changed="true">
-      {count % 2 === 0 ? (
-        <span data-even={true}>{count}</span>
-      ) : (
-        <span data-odd={true}>{count}</span>
-      )}
-      <button onclick={() => setCount((prev) => prev + 1)}>increment</button>
-      {count > 0 && count % 2 === 0 && <p>count is even</p>}
-    </div>
-  )
-}
-`
+// const counterModifiedTsx = counterTsx.replace(
+//   `<div id="counter">`,
+//   `<div id="counter" data-changed="true">`
+// )
 
 describe("hot module reload", () => {
+  before(() =>
+    cy.readFile("src/Counter.tsx").then((file) => {
+      counterTsx = file
+      counterModifiedTsx = counterTsx.replace(
+        `<div id="counter">`,
+        `<div id="counter" data-changed="true">`
+      )
+    })
+  )
   beforeEach(() => {
     const port = Cypress.env("port")
     cy.visit(`http://localhost:${port}`)
