@@ -1,5 +1,5 @@
 import { nodeToCtxMap } from "./globalContext.js"
-import { useHook } from "./hooks/utils.js"
+import { shouldExecHook, useHook } from "./hooks/utils.js"
 import { shallow } from "./shallow.js"
 
 export { createStore }
@@ -54,6 +54,8 @@ function createStore<T, U extends MethodFactory<T>>(
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
   function useStore<Selector extends (state: T) => unknown>(fn?: Selector) {
+    if (!shouldExecHook()) return { value, ...methods }
+
     return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
       if (!oldHook) {
         const stateSlice = fn ? fn(value) : value
