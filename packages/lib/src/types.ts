@@ -46,6 +46,25 @@ declare global {
   }
 
   export namespace Kaioken {
+    type Context<T> = {
+      Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
+      value: () => T
+    }
+
+    type FC<T = {}> = (props: FCProps<T>) => JSX.Element
+    type FCProps<T = {}> = T & { children?: JSX.Element[] }
+
+    type Hook<T> = T & { cleanup?: () => void }
+
+    type Ref<T> = { current: T | null }
+
+    type StateSetter<T> = T | ((prev: T) => T)
+
+    type ProviderProps<T> = {
+      value: T
+      children?: JSX.Element[]
+    }
+
     type VNode = {
       type: string | Function | typeof Component
       dom?: HTMLElement | SVGElement | Text
@@ -62,21 +81,5 @@ declare global {
       effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
       dt?: number
     }
-
-    type Hook<T> = T & { cleanup?: () => void }
-
-    type Ref<T> = { current: T | null }
-
-    type Context<T> = {
-      Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
-      value: () => T
-    }
-
-    type ProviderProps<T> = {
-      value: T
-      children?: JSX.Element[]
-    }
-
-    type StateSetter<T> = T | ((prev: T) => T)
   }
 }
