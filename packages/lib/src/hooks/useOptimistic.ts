@@ -1,9 +1,9 @@
 import { shouldExecHook, useHook } from "./utils.js"
 
-export function useOptimistic<T, U>(
+export function useOptimistic<T, U extends readonly unknown[]>(
   state: T,
-  setState: (prev: T, newValue: U) => T
-): [T, (value: U) => () => void] {
+  setState: (state: T, ...args: U) => T
+): [T, (...args: U) => () => void] {
   if (!shouldExecHook()) [state, () => () => {}]
 
   return useHook(
@@ -21,8 +21,8 @@ export function useOptimistic<T, U>(
         hook.optimistic = hook.queue.reduce((acc, fn) => fn(acc), hook.state)
       }
 
-      const setter = (newValue: U) => {
-        const fn = (state: T) => setState(state, newValue)
+      const setter = (...args: U) => {
+        const fn = (state: T) => setState(state, ...args)
         const newState = fn(hook.optimistic)
         hook.optimistic = newState
         hook.queue.push(fn)
