@@ -17,7 +17,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   const t = vNode.type as string
   let dom =
     t == elementTypes.text
-      ? document.createTextNode("")
+      ? document.createTextNode(vNode.props?.nodeValue ?? "")
       : svgTags.includes(t)
         ? (document.createElementNS(
             "http://www.w3.org/2000/svg",
@@ -117,10 +117,6 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
-    if (key === "container") {
-      console.log(node, dom)
-      debugger
-    }
     if (propFilters.internalProps.includes(key)) return
 
     if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
@@ -138,8 +134,9 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
       setProp(dom, key, nextProps[key], prevProps[key])
       return
     }
-
-    ;(dom as any)[key] = nextProps[key]
+    if (node.prev?.props && prevProps.nodeValue !== nextProps.nodeValue) {
+      dom.nodeValue = nextProps.nodeValue
+    }
   })
 
   return dom
