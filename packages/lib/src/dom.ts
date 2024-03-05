@@ -117,6 +117,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
+    if (key === "container") {
+      console.log(node, dom)
+      debugger
+    }
     if (propFilters.internalProps.includes(key)) return
 
     if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
@@ -191,7 +195,11 @@ function commitWork(
     } else {
       domParent.appendChild(dom)
     }
-  } else if (vNode.effectTag === EffectTag.UPDATE && dom) {
+  } else if (
+    vNode.effectTag === EffectTag.UPDATE &&
+    dom &&
+    !vNode.instance?.rootDom
+  ) {
     updateDom(vNode, dom)
   } else if (vNode.effectTag === EffectTag.DELETION) {
     return commitDeletion(vNode, dom)
