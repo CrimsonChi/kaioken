@@ -1,5 +1,5 @@
 import { nodeToCtxMap } from "./globalContext.js"
-import { shouldExecHook, useHook } from "./hooks/utils.js"
+import { cleanupHook, shouldExecHook, useHook } from "./hooks/utils.js"
 import { shallow } from "./shallow.js"
 
 export { createStore }
@@ -57,15 +57,19 @@ function createStore<T, U extends MethodFactory<T>>(
     if (!shouldExecHook()) return { value, ...methods }
 
     return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
-      if (!oldHook) {
-        const stateSlice = fn ? fn(value) : value
-        if (fn) {
-          const computes = nodeToComputeMap.get(vNode) ?? []
-          computes.push([fn, stateSlice])
-          nodeToComputeMap.set(vNode, computes)
-        }
-        subscribers.add(vNode)
-        hook.cleanup = () => subscribers.delete(vNode)
+      if (oldHook) {
+        cleanupHook(oldHook)
+      }
+      const stateSlice = fn ? fn(value) : value
+      if (fn) {
+        const computes = nodeToComputeMap.get(vNode) ?? []
+        computes.push([fn, stateSlice])
+        nodeToComputeMap.set(vNode, computes)
+      }
+      subscribers.add(vNode)
+      hook.cleanup = () => {
+        nodeToComputeMap.delete(vNode)
+        subscribers.delete(vNode)
       }
 
       return { value, ...methods }
