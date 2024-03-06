@@ -19,10 +19,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
     t == elementTypes.text
       ? document.createTextNode(vNode.props?.nodeValue ?? "")
       : svgTags.includes(t)
-        ? (document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            t
-          ) as SVGElement)
+        ? document.createElementNS("http://www.w3.org/2000/svg", t)
         : document.createElement(t)
 
   dom = updateDom(vNode, dom)
