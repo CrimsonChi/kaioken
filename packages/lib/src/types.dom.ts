@@ -171,7 +171,7 @@ type GlobalAttributes = {
   translate?: "yes" | "no"
 } & Omit<
   Partial<GlobalEventHandlers>,
-  | keyof InputEventAttributes
+  | keyof InputEventAttributes<any>
   | keyof FocusEventAttributes
   | keyof KeyboardEventAttributes
   | "addEventListener"
@@ -189,11 +189,21 @@ type FocusEventAttributes = {
   onfocus?: (e: FocusEvent) => void
 }
 
-type InputEventAttributes = {
-  onchange?: (e: Event) => void
-  oninput?: (e: Event) => void
-  onreset?: (e: Event) => void
-  onsubmit?: (e: Event) => void
+type InputEvent<T extends "input" | "select" | "textarea"> = Omit<
+  Event,
+  "target"
+> & {
+  target: T extends "input"
+    ? HTMLInputElement
+    : T extends "select"
+      ? HTMLSelectElement
+      : HTMLTextAreaElement
+}
+type InputEventAttributes<T extends "input" | "select" | "textarea"> = {
+  onchange?: (e: InputEvent<T>) => void
+  oninput?: (e: InputEvent<T>) => void
+  onreset?: (e: InputEvent<T>) => void
+  onsubmit?: (e: InputEvent<T>) => void
 }
 
 // type MouseEventAttributes = {
@@ -211,7 +221,7 @@ type InputEventAttributes = {
 type EventAttributes<T extends string> = KeyboardEventAttributes &
   // MouseEventAttributes &
   (T extends FocussableElementTags ? FocusEventAttributes : {}) &
-  (T extends "input" | "select" | "textarea" ? InputEventAttributes : {}) &
+  (T extends "input" | "select" | "textarea" ? InputEventAttributes<T> : {}) &
   (T extends LoadableElementTags ? { onload?: (e: Event) => void } : {}) &
   (T extends ErrorableElementTags ? { onerror?: (e: Event) => void } : {})
 
