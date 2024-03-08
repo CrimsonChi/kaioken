@@ -169,11 +169,27 @@ function commitWork(
 
     let nextDom
     if (!prevDom) {
-      let tmp = vNode.sibling && vNode.sibling.dom
+      // the following is likely a somewhat naiive implementation of the algorithm
+      // but it should be good enough for most cases. Will be improved as/when
+      // edge cases are encountered.
+
+      // try to find next dom by traversing through the sibling if it exists
+      let tmp = findDomRecursive(vNode.sibling)
       if (tmp && tmp.isConnected) {
         nextDom = tmp
       } else {
-        // try to find sibling dom by traversing upwards through the tree
+        // try to find next dom by traversing (up and across) through the tree
+        // handles cases like the following:
+        /**
+         * <div>
+         *    <>
+         *      <TheComponentThatIsUpdating />
+         *    <>
+         *    <>
+         *      <div></div> <- find this node
+         *    </>
+         * </div>
+         */
         let parent = vNode.parent
 
         while (!nextDom && parent) {
@@ -185,7 +201,7 @@ function commitWork(
     if (prevDom && domParent.contains(prevDom)) {
       prevDom.after(dom)
     } else if (nextDom && domParent.contains(nextDom)) {
-      domParent.insertBefore(dom, nextDom)
+      nextDom.before(dom)
     } else {
       domParent.appendChild(dom)
     }

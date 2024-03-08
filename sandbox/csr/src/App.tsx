@@ -11,6 +11,7 @@ import { GithubIcon } from "./components/GithubIcon"
 import { MemoDemo } from "./MemoDemo"
 import { BigListComponent } from "./components/BigList"
 import { TodosWithStore } from "./components/TodosWithStore"
+import { FilteredList } from "./components/FilteredList"
 
 export function App() {
   return (
@@ -24,24 +25,18 @@ export function App() {
           <Link to="/query?id=1">Query (useFetch)</Link>
           <Link to="/messages">Messages (useOptimistic)</Link>
           <Link to="/transitions">Dialogs (transitions, portal)</Link>
-          <Link to="/memo">Memo demo (transitions, portal)</Link>
+          <Link to="/memo">Memo demo</Link>
           <Link to="/big-list">Large-list rendering</Link>
           <Link to="/test/123?sort=desc">Route Params / Query</Link>
           <Link to="/unhandled-route">Unhandled Route</Link>
+          <Link to="/filtered-list">Filtered list</Link>
           <GithubIcon />
         </div>
       </nav>
 
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route
-            path="/"
-            element={() => (
-              <div className="flex flex-col">
-                <h1>Home</h1>
-              </div>
-            )}
-          />
+          <Route path="/" element={() => <h1>Home</h1>} />
           <Route
             path="/test/:id"
             fallthrough
@@ -88,6 +83,7 @@ export function App() {
               </div>
             )}
           />
+          <Route path="/filtered-list" element={FilteredList} />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>
