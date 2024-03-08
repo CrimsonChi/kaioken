@@ -1,25 +1,25 @@
 import { TodoItem as TodoItemType, useTodosStore } from "../store"
 
 export function TodosWithStore() {
-  const todo = useTodosStore.getState()[0]
-  const todo2 = useTodosStore.getState()[1]
+  const todos = useTodosStore.getState()
 
   console.log("parent component")
 
   return (
     <ul>
-      <TodoItem todo={todo} id={1} />
-      <TodoItem todo={todo2} id={2} />
+      {todos.map((todo) => (
+        <TodoItem todo={todo} />
+      ))}
     </ul>
   )
 }
 
-function TodoItem({ todo, id }: { todo: TodoItemType; id: number }) {
+function TodoItem({ todo }: { todo: TodoItemType }) {
   const { toggleTodo } = useTodosStore((store) =>
-    store.filter((items) => items.id === todo.id)
+    store.filter((item) => item.id === todo.id)
   )
 
-  console.log("child component", id)
+  console.log("child component", todo.id)
 
   return (
     <div>
