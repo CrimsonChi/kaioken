@@ -17,6 +17,7 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "baseUrl": ".",
+    "removeComments": true,
     "sourceMap": false
   },
   "include": ["./src/*", "./src/tests", "src/types.ts", "./src/ssr/*"],
