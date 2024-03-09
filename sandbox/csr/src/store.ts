@@ -11,10 +11,6 @@ export const useCountStore = createStore(0, (set, get) => ({
   reset: () => set(0),
 }))
 
-// const { add } = useCountStore((store) => ({add: store.add}))
-
-// const x = add(1)
-
 export const useMessageStatsStore = createStore(
   { success: 0, fail: 0 },
   () => ({})

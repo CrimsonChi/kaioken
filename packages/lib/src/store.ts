@@ -10,9 +10,11 @@ type MethodFactory<T> = (
 ) => Record<string, (...args: any[]) => void>
 
 type Store<T, U extends MethodFactory<T>> = {
-  <Selector extends (state: T) => unknown>(
-    fn: Selector
-  ): { value: T } & ReturnType<U>
+  <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
+  <R>(
+    sliceFn: (state: T) => R,
+    equality: (prev: T, next: T) => boolean
+  ): { value: R } & ReturnType<U>
   (): { value: T } & ReturnType<U>
   getState: () => T
   setState: (setter: Kaioken.StateSetter<T>) => void
@@ -20,7 +22,10 @@ type Store<T, U extends MethodFactory<T>> = {
   subscribe: (fn: (value: T) => void) => () => void
 }
 
-const nodeToComputeMap = new WeakMap<Kaioken.VNode, [Function, unknown][]>()
+const nodeToSliceComputeMap = new WeakMap<
+  Kaioken.VNode,
+  [Function, ((prev: any, next: any) => boolean) | undefined, unknown][]
+>()
 
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
@@ -33,46 +38,50 @@ function createStore<T, U extends MethodFactory<T>>(
     value = setter instanceof Function ? setter(value) : setter
     subscribers.forEach((n) => {
       if (n instanceof Function) return n(value)
-      const computes = nodeToComputeMap.get(n)
+      const computes = nodeToSliceComputeMap.get(n)
       if (computes) {
         let computeChanged = false
         for (let i = 0; i < computes.length; i++) {
-          const [fn, slice] = computes[i]
+          const [sliceFn, eq, slice] = computes[i]
 
-          const next = fn(value)
+          const next = sliceFn(value)
+          if (eq && eq(slice, next)) continue
           if (shallow(next, slice)) continue
 
           computeChanged = true
-          computes[i] = [fn, next]
+          computes[i] = [sliceFn, eq, next]
         }
         if (!computeChanged) return
       }
-
       nodeToCtxMap.get(n)!.requestUpdate(n)
     })
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
-  function useStore<Selector extends (state: T) => unknown>(fn?: Selector) {
+  function useStore(
+    sliceFn?: (state: T) => unknown,
+    equality?: (prev: T, next: T) => boolean
+  ) {
     if (!shouldExecHook()) return { value, ...methods }
 
     return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
       if (oldHook) {
         cleanupHook(oldHook)
       }
-      const stateSlice = fn ? fn(value) : value
-      if (fn) {
-        const computes = nodeToComputeMap.get(vNode) ?? []
-        computes.push([fn, stateSlice])
-        nodeToComputeMap.set(vNode, computes)
+      const stateSlice = sliceFn ? sliceFn(value) : value
+      if (sliceFn) {
+        const computes = nodeToSliceComputeMap.get(vNode) ?? []
+        computes.push([sliceFn, equality, stateSlice])
+        nodeToSliceComputeMap.set(vNode, computes)
       }
+
       subscribers.add(vNode)
       hook.cleanup = () => {
-        nodeToComputeMap.delete(vNode)
+        nodeToSliceComputeMap.delete(vNode)
         subscribers.delete(vNode)
       }
 
-      return { value, ...methods }
+      return { value: stateSlice, ...methods }
     })
   }
 

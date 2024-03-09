@@ -1,8 +1,10 @@
 import { TodoItem as TodoItemType, useTodosStore } from "../store"
 
 export function TodosWithStore() {
-  const todos = useTodosStore.getState()
-
+  const { value: todos } = useTodosStore(
+    (store) => store,
+    (prev, next) => prev.length === next.length
+  )
   console.log("parent component")
 
   return (
