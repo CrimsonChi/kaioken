@@ -1,6 +1,6 @@
 //https://vike.dev/pageContext#custom
 
-import { UserModel } from "./drizzle/schema"
+import { UserModel } from "$/drizzle/schema"
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

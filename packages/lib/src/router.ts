@@ -65,7 +65,6 @@ function Router(props: RouterProps) {
   }, [])
 
   const pathSegments = state.path.split("/")
-  const query = extractQueryParams(state.search)
 
   let fallbackRoute: RouteComponent | undefined
   for (const child of props.children ?? []) {
@@ -85,6 +84,7 @@ function Router(props: RouterProps) {
       child.props.fallthrough
     )
     if (params) {
+      const query = extractQueryParams(state.search)
       return fragment({
         children: [
           createElement(child.props.element, {
@@ -98,6 +98,7 @@ function Router(props: RouterProps) {
   }
 
   if (fallbackRoute) {
+    const query = extractQueryParams(state.search)
     return createElement(fallbackRoute.props.element, { params: {}, query })
   }
 
