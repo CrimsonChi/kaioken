@@ -4,14 +4,13 @@ import { Counter } from "./components/Counter"
 import { ThemeContextProvider } from "./ThemeContext"
 import { ProductPage } from "./components/Product"
 import { Messages } from "./components/Messages"
-import { ModalDemo } from "./components/dialog/Modal"
-import { DrawerDemo } from "./components/dialog/Drawer"
 import { Link } from "./components/atoms/Link"
 import { GithubIcon } from "./components/GithubIcon"
 import { MemoDemo } from "./MemoDemo"
 import { BigListComponent } from "./components/BigList"
 import { TodosWithStore } from "./components/TodosWithStore"
 import { FilteredList } from "./components/FilteredList"
+import { Transitions } from "./components/Transitions"
 
 export function App() {
   return (
@@ -74,15 +73,7 @@ export function App() {
           <Route path="/counter" element={Counter} />
           <Route path="/query" element={ProductPage} />
           <Route path="/messages" element={Messages} />
-          <Route
-            path="/transitions"
-            element={() => (
-              <div className="flex gap-2">
-                <ModalDemo />
-                <DrawerDemo />
-              </div>
-            )}
-          />
+          <Route path="/transitions" element={Transitions} />
           <Route path="/filtered-list" element={FilteredList} />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>

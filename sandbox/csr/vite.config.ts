@@ -9,6 +9,7 @@ export default defineConfig({
     jsxFragment: "kaioken.fragment",
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
+    sourcemap: false,
   },
   plugins: [kaioken()],
 })

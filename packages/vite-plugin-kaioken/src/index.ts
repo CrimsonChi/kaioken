@@ -86,7 +86,9 @@ interface AstNode {
   type: string
   body?: AstNode | AstNode[]
   declaration?: AstNode
+  declarations?: AstNode[]
   id?: AstNodeId
+  init?: AstNode
   object?: AstNodeId
   property?: AstNodeId
   argument?: AstNode
@@ -116,7 +118,21 @@ function findExportedComponentNames(nodes: AstNode[]): string[] {
         }
         continue
       }
-      const name = dec.id?.name
+      if (!dec.id) {
+        // handle 'export const MyComponent = () => {}'
+        const declarations = dec.declarations
+        if (!declarations) continue
+        for (const dec of declarations) {
+          const name = dec.id?.name
+          if (!name) continue
+          if (componentNames.includes(name)) continue
+          if (dec.init && nodeContainsCreateElement(dec.init)) {
+            componentNames.push(name)
+          }
+        }
+      }
+
+      const name = dec.id?.name // handle 'export function MyComponent() {}'
       if (!name) continue
 
       if (nodeContainsCreateElement(dec)) {
@@ -125,7 +141,11 @@ function findExportedComponentNames(nodes: AstNode[]): string[] {
     } else {
       if (nodeContainsCreateElement(node)) {
         const name = node.id?.name
-        if (name && exportNames.includes(name)) {
+        if (
+          name &&
+          exportNames.includes(name) &&
+          !componentNames.includes(name)
+        ) {
           componentNames.push(name)
         }
       }
@@ -156,7 +176,9 @@ function nodeContainsCreateElement(node: AstNode): boolean {
     (node.alternate && nodeContainsCreateElement(node.alternate)) ||
     (node.callee && nodeContainsCreateElement(node.callee)) ||
     (node.arguments &&
-      node.arguments.some((arg) => nodeContainsCreateElement(arg)))
+      node.arguments.some((arg) => nodeContainsCreateElement(arg))) ||
+    (node.declarations &&
+      node.declarations.some((decl) => nodeContainsCreateElement(decl)))
   ) {
     return true
   }
