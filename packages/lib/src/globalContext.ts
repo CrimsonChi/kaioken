@@ -47,13 +47,7 @@ class GlobalContext {
     // handle cases where a vNode that has been removed has an async cb which requests update
     if (!this.vNodeContains(this.rootNode!, node)) return
     if (node.effectTag === EffectTag.DELETION) return
-
-    if (this.isNodeBeingWorkedOn(node)) {
-      const dt = performance.now()
-      if (node.dt && dt >= node.dt) return // stale update request
-      node.dt = dt
-      return
-    }
+    if (this.isNodeQueued(node)) return
 
     if (!node.prev || node.prev?.prev) node.prev = { ...node, prev: undefined }
 
@@ -158,12 +152,9 @@ class GlobalContext {
     }
 
     let nextNode: VNode | undefined = vNode
-    const t = this.treesInProgress[this.currentTreeIndex]
     while (nextNode) {
-      if (nextNode.sibling) {
-        if (t === nextNode) return // prevent unnecessary traversal of entry-point siblings
-        return nextNode.sibling
-      }
+      if (nextNode === this.treesInProgress[this.currentTreeIndex]) return
+      if (nextNode.sibling) return nextNode.sibling
       nextNode = nextNode.parent
     }
   }
@@ -258,15 +249,21 @@ class GlobalContext {
     }
   }
 
-  private isNodeBeingWorkedOn(node: VNode) {
+  private isNodeQueued(node: VNode) {
     return this.treesInProgress.some((d) => this.vNodeContains(d, node))
   }
 
-  private vNodeContains(parent: VNode, node: VNode): boolean {
+  private vNodeContains(
+    haystack: VNode,
+    needle: VNode,
+    checkSiblings = false
+  ): boolean {
     return (
-      parent === node ||
-      (parent.child && this.vNodeContains(parent.child, node)) ||
-      (parent.sibling && this.vNodeContains(parent.sibling, node)) ||
+      haystack === needle ||
+      (haystack.child && this.vNodeContains(haystack.child, needle, true)) ||
+      (checkSiblings &&
+        haystack.sibling &&
+        this.vNodeContains(haystack.sibling, needle, true)) ||
       false
     )
   }
