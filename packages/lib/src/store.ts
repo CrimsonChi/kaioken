@@ -13,7 +13,7 @@ type Store<T, U extends MethodFactory<T>> = {
   <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
   <R>(
     sliceFn: (state: T) => R,
-    equality: (prev: T, next: T) => boolean
+    equality: (prev: R, next: R, compare: typeof shallow) => boolean
   ): { value: R } & ReturnType<U>
   (): { value: T } & ReturnType<U>
   getState: () => T
@@ -24,7 +24,11 @@ type Store<T, U extends MethodFactory<T>> = {
 
 const nodeToSliceComputeMap = new WeakMap<
   Kaioken.VNode,
-  [Function, ((prev: any, next: any) => boolean) | undefined, unknown][]
+  [
+    Function,
+    ((prev: any, next: any, compare: typeof shallow) => boolean) | undefined,
+    unknown,
+  ][]
 >()
 
 function createStore<T, U extends MethodFactory<T>>(
@@ -45,11 +49,15 @@ function createStore<T, U extends MethodFactory<T>>(
           const [sliceFn, eq, slice] = computes[i]
 
           const next = sliceFn(value)
-          if (eq && eq(slice, next)) continue
-          if (shallow(next, slice)) continue
+          computes[i] = [sliceFn, eq, next]
+          if (computeChanged) continue
+          if (eq && eq(slice, next, shallow)) {
+            continue
+          } else if (!eq && shallow(slice, next)) {
+            continue
+          }
 
           computeChanged = true
-          computes[i] = [sliceFn, eq, next]
         }
         if (!computeChanged) return
       }
@@ -58,9 +66,9 @@ function createStore<T, U extends MethodFactory<T>>(
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
-  function useStore(
-    sliceFn?: (state: T) => unknown,
-    equality?: (prev: T, next: T) => boolean
+  function useStore<R>(
+    sliceFn?: (state: T) => R,
+    equality?: (prev: R, next: R) => boolean
   ) {
     if (!shouldExecHook()) return { value, ...methods }
 
