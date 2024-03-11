@@ -22,21 +22,21 @@ type Store<T, U extends MethodFactory<T>> = {
   subscribe: (fn: (value: T) => void) => () => void
 }
 
-const nodeToSliceComputeMap = new WeakMap<
-  Kaioken.VNode,
-  [
-    Function,
-    ((prev: any, next: any, compare: typeof shallow) => boolean) | undefined,
-    unknown,
-  ][]
->()
-
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
   methodFactory: U
 ) {
   let value = initial
   const subscribers = new Set<Kaioken.VNode | Function>()
+  const nodeToSliceComputeMap = new WeakMap<
+    Kaioken.VNode,
+    [
+      Function,
+      ((prev: any, next: any, compare: typeof shallow) => boolean) | undefined,
+      unknown,
+    ][]
+  >()
+
   const getState = () => value
   const setState = (setter: Kaioken.StateSetter<T>) => {
     value = setter instanceof Function ? setter(value) : setter
