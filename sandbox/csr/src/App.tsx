@@ -1,4 +1,4 @@
-import { Router, Route } from "kaioken"
+import { Router, Route, useState, useEffect } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ThemeContextProvider } from "./ThemeContext"
@@ -35,7 +35,14 @@ export function App() {
 
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route path="/" element={() => <h1>Home</h1>} />
+          <Route
+            path="/"
+            element={() => (
+              <h1>
+                Home <Multiply values={[69, 420]} />
+              </h1>
+            )}
+          />
           <Route
             path="/test/:id"
             fallthrough
@@ -80,4 +87,15 @@ export function App() {
       </main>
     </ThemeContextProvider>
   )
+}
+
+function Multiply({ values }: { values: number[] }) {
+  const [multiplier, setMultiplier] = useState(1)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMultiplier((m) => m + 1)
+    }, 420)
+    return () => clearInterval(id)
+  }, [])
+  return values.reduce((a, b) => a * b, multiplier)
 }

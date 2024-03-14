@@ -10,4 +10,4 @@ export const elementFreezeSymbol = Symbol.for("kaioken.freezeElement")
 export const elementTypes = {
   text: "TEXT_ELEMENT",
   fragment: "KAIOKEN_FRAGMENT",
-}
+} as const

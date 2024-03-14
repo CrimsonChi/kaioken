@@ -34,7 +34,7 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
 
-    type Element = Kaioken.VNode | Kaioken.VNode[] | string | number | null
+    type Element = Kaioken.VNode | string | number | null
 
     type InternalProps<
       K extends keyof HtmlElementAttributes | keyof SvgElementAttributes,
@@ -79,7 +79,6 @@ declare global {
       sibling?: VNode
       prev?: VNode
       effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
-      dt?: number
     }
   }
 }

@@ -7,8 +7,8 @@ import {
   renderMode,
 } from "./globalContext.js"
 import {
-  isVNode,
   isValidChild,
+  isVNode,
   propFilters,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
@@ -69,31 +69,22 @@ function mount<T extends Record<string, unknown>>(
 function createElement(
   type: string | Function | typeof Component,
   props = {},
-  ...children: (VNode | unknown)[]
+  ...children: JSX.Element[]
 ): VNode {
+  if (!type) debugger
   const node = {
     type,
     props: {
       ...props,
-      children: (
-        children.flat().filter(isValidChild) as (
-          | VNode
-          | string
-          | (() => VNode)
-        )[]
-      ).map((child) => createChildElement(child)) as VNode[],
+      children: children.flat().filter(isValidChild).map(createChildElement),
     },
   }
   nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
-function createChildElement(child: VNode | string | (() => VNode)): VNode {
+function createChildElement(child: JSX.Element): VNode {
   if (isVNode(child)) return child
-  if (typeof child === "function") {
-    const node = child()
-    return createChildElement(node)
-  }
   return createTextElement(String(child))
 }
 
@@ -123,12 +114,13 @@ function renderToString_internal<T extends Record<string, unknown>>(
   el: JSX.Element | ((props: T) => JSX.Element),
   elProps = {} as T
 ): string {
-  if (!el) return ""
-
+  if (el === null) return ""
+  if (el === undefined) return ""
+  if (typeof el === "boolean") return ""
   if (typeof el === "string") return el
+  if (typeof el === "number") return el.toString()
   if (typeof el === "function")
     return renderToString_internal(createElement(el, elProps), elProps)
-  if (typeof el === "number") return String(el)
   if (el instanceof Array)
     return el.map((el) => renderToString(el, el.props)).join("")
 

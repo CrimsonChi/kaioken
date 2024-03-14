@@ -1,6 +1,7 @@
 import { commitWork, createDom } from "./dom.js"
 import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
+import { isVNode, isValidChild } from "./utils.js"
 
 export { GlobalContext, ctx, node, nodeToCtxMap, contexts, renderMode }
 export type { GlobalContextOptions }
@@ -51,7 +52,6 @@ class GlobalContext {
 
     if (!node.prev || node.prev?.prev) node.prev = { ...node, prev: undefined }
 
-    node.dt = performance.now()
     this.treesInProgress.push(node)
     if (!this.nextUnitOfWork) this.nextUnitOfWork = node
   }
@@ -217,13 +217,26 @@ class GlobalContext {
         }
         nodeToCtxMap.set(newNode, ctx.current)
       }
-      if (child && !sameType) {
-        newNode = {
-          type: child.type,
-          props: child.props,
-          parent: vNode,
-          effectTag: EffectTag.PLACEMENT,
+      if (isValidChild(child) && !sameType) {
+        if (isVNode(child)) {
+          newNode = {
+            type: child.type,
+            props: child.props,
+            parent: vNode,
+            effectTag: EffectTag.PLACEMENT,
+          }
+        } else {
+          newNode = {
+            type: elementTypes.text,
+            props: {
+              nodeValue: String(child),
+              children: [],
+            },
+            parent: vNode,
+            effectTag: EffectTag.PLACEMENT,
+          }
         }
+
         nodeToCtxMap.set(newNode, ctx.current)
       }
       if (oldNode && !sameType) {
