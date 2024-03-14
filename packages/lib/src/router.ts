@@ -1,7 +1,7 @@
 import type { ElementProps } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
-import { useState, useEffect } from "./hooks/index.js"
+import { useState, useEffect, useMemo } from "./hooks/index.js"
 import { node } from "./globalContext.js"
 
 export { Router, Route, Link, navigate, matchPath }
@@ -51,6 +51,7 @@ function Router(props: RouterProps) {
     search: window.location.search,
   } as RouterState)
 
+  const query = useMemo(() => extractQueryParams(state.search), [state.search])
   const parentPath = buildParentPath(node.current!)
 
   useEffect(() => {
@@ -84,7 +85,6 @@ function Router(props: RouterProps) {
       child.props.fallthrough
     )
     if (params) {
-      const query = extractQueryParams(state.search)
       return fragment({
         children: [
           createElement(child.props.element, {
@@ -98,7 +98,6 @@ function Router(props: RouterProps) {
   }
 
   if (fallbackRoute) {
-    const query = extractQueryParams(state.search)
     return createElement(fallbackRoute.props.element, { params: {}, query })
   }
 
@@ -114,8 +113,8 @@ function Route({ path, element, fallthrough }: RouteProps) {
 
 function navigate(to: string) {
   /**
-   * postpone until next tick to allow for cases
-   * where navigate is called upon new route render
+   * postpone until next tick to allow for cases where
+   * navigate is called programatically upon new route render
    */
   setTimeout(() => {
     window.history.pushState({}, "", to)
@@ -135,7 +134,7 @@ function Link({ to, children, ...props }: LinkProps) {
       },
       ...props,
     },
-    children
+    ...(children ?? [])
   )
 }
 
