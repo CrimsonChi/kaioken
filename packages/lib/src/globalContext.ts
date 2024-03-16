@@ -91,6 +91,7 @@ class GlobalContext {
             // unprocessed tree
             node.prev = { ...node, prev: undefined }
           }
+          return
         } else {
           const reqNodeContainsTree = this.vNodeContains(
             node,
@@ -111,13 +112,13 @@ class GlobalContext {
               // node contains a tree that has not yet been processed
               node.prev = { ...node, prev: undefined }
             }
-          } else {
-            // new tree
-            node.prev = { ...node, prev: undefined }
-            this.treesInProgress.push(node)
+            return
           }
         }
       }
+      // node is not a child or parent of any queued trees, queue new tree
+      node.prev = { ...node, prev: undefined }
+      this.treesInProgress.push(node)
       return
     }
 
