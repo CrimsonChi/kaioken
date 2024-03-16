@@ -48,7 +48,10 @@ class GlobalContext {
     // handle cases where a vNode that has been removed has an async cb which requests update
     if (!this.vNodeContains(this.rootNode!, node)) return
     if (node.effectTag === EffectTag.DELETION) return
-    if (this.isNodeQueued(node)) return
+    if (this.isNodeQueued(node)) {
+      this.queueEffect(() => this.requestUpdate(node))
+      return
+    }
 
     if (!node.prev || node.prev?.prev) node.prev = { ...node, prev: undefined }
 
@@ -97,8 +100,8 @@ class GlobalContext {
         followUps.push(...(followUps.shift()?.(this) ?? []))
       }
 
-      while (this.pendingEffects.length) this.pendingEffects.shift()?.()
       this.treesInProgress = []
+      while (this.pendingEffects.length) this.pendingEffects.shift()?.()
     }
     if ("requestIdleCallback" in window) {
       let didExec = false
