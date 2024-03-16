@@ -49,84 +49,58 @@ class GlobalContext {
   requestUpdate(node: VNode) {
     if (!this.vNodeContains(this.rootNode!, node)) return
     if (node.effectTag === EffectTag.DELETION) return
-    if (node === this.nextUnitOfWork) {
-      node.prev = { ...node, prev: undefined }
+
+    node.prev = { ...node, prev: undefined }
+
+    if (!this.nextUnitOfWork) {
+      this.treesInProgress.push(node)
       this.nextUnitOfWork = node
       return
     }
 
-    if (this.nextUnitOfWork) {
-      const treeIdx = this.treesInProgress.indexOf(node)
-      // handle node as queued tree
-      if (treeIdx !== -1) {
-        if (this.currentTreeIndex < treeIdx) return // node not processed yet, no change needed
-        if (this.currentTreeIndex === treeIdx) return // node currently processing, (should) be fine?
-
-        // this.currentTreeIndex is > treeIdx, node already processed so needs reprocessing
+    const treeIdx = this.treesInProgress.indexOf(node)
+    // handle node as queued tree
+    if (treeIdx !== -1) {
+      if (this.currentTreeIndex === treeIdx) {
+        this.treesInProgress[this.currentTreeIndex] = node
+        this.nextUnitOfWork = node
+      } else if (this.currentTreeIndex > treeIdx) {
         this.currentTreeIndex--
         this.treesInProgress.splice(treeIdx, 1)
         this.treesInProgress.push(node)
-        return
       }
-
-      // handle node as child or parent of queued trees
-      for (let i = 0; i < this.treesInProgress.length; i++) {
-        const treeContainsReqNode = this.vNodeContains(
-          this.treesInProgress[i],
-          node
-        )
-
-        if (treeContainsReqNode) {
-          if (i === this.currentTreeIndex) {
-            // if req node is child of work node we can skip
-            if (this.vNodeContains(this.nextUnitOfWork, node)) return
-            // otherwise work node is a child of req node so we need to cancel & replace it
-            node.prev = { ...node, prev: undefined }
-            this.nextUnitOfWork = node // jump back up the tree
-          } else if (i < this.currentTreeIndex) {
-            // already processed tree, create new tree with the node
-            node.prev = { ...node, prev: undefined }
-            this.treesInProgress.push(node)
-          } else {
-            // unprocessed tree
-            node.prev = { ...node, prev: undefined }
-          }
-          return
-        } else {
-          const reqNodeContainsTree = this.vNodeContains(
-            node,
-            this.treesInProgress[i]
-          )
-          if (reqNodeContainsTree) {
-            if (i < this.currentTreeIndex) {
-              // node contains a tree that has already been processed
-              node.prev = { ...node, prev: undefined }
-              this.currentTreeIndex--
-              this.treesInProgress.splice(i, 1)
-              this.treesInProgress.push(node)
-            } else if (i === this.currentTreeIndex) {
-              node.prev = { ...node, prev: undefined }
-              this.treesInProgress.splice(i, 1, node)
-              this.nextUnitOfWork = node
-            } else {
-              // node contains a tree that has not yet been processed
-              node.prev = { ...node, prev: undefined }
-            }
-            return
-          }
-        }
-      }
-      // node is not a child or parent of any queued trees, queue new tree
-      node.prev = { ...node, prev: undefined }
-      this.treesInProgress.push(node)
       return
     }
 
-    //if (!node.prev || node.prev?.prev) node.prev = { ...node, prev: undefined }
-    node.prev = { ...node, prev: undefined }
-
+    // handle node as child or parent of queued trees
+    for (let i = 0; i < this.treesInProgress.length; i++) {
+      if (this.vNodeContains(this.treesInProgress[i], node)) {
+        if (i === this.currentTreeIndex) {
+          // if req node is child of work node we can skip
+          if (this.vNodeContains(this.nextUnitOfWork, node)) return
+          // otherwise work node is a child of req node so we need to cancel & replace it
+          this.nextUnitOfWork = node // jump back up the tree
+        } else if (i < this.currentTreeIndex) {
+          // already processed tree, create new tree with the node
+          this.treesInProgress.push(node)
+        }
+        return
+      } else if (this.vNodeContains(node, this.treesInProgress[i])) {
+        if (i === this.currentTreeIndex) {
+          // node contains current tree, replace it
+          this.treesInProgress.splice(i, 1, node)
+          this.nextUnitOfWork = node
+        } else if (i < this.currentTreeIndex) {
+          // node contains a tree that has already been processed
+          this.currentTreeIndex--
+          this.treesInProgress.splice(i, 1)
+          this.treesInProgress.push(node)
+        }
+        return
+      }
+    }
+    // node is not a child or parent of any queued trees, queue new tree
     this.treesInProgress.push(node)
-    this.nextUnitOfWork = node
   }
 
   queueEffect(callback: Function) {
