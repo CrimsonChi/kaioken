@@ -61,10 +61,10 @@ class GlobalContext {
     const treeIdx = this.treesInProgress.indexOf(node)
     // handle node as queued tree
     if (treeIdx !== -1) {
-      if (this.currentTreeIndex === treeIdx) {
+      if (treeIdx === this.currentTreeIndex) {
         this.treesInProgress[this.currentTreeIndex] = node
         this.nextUnitOfWork = node
-      } else if (this.currentTreeIndex > treeIdx) {
+      } else if (treeIdx < this.currentTreeIndex) {
         this.currentTreeIndex--
         this.treesInProgress.splice(treeIdx, 1)
         this.treesInProgress.push(node)
