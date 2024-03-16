@@ -118,12 +118,8 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 
     if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
       const eventType = key.toLowerCase().substring(2)
-      if (!(key in nextProps)) {
-        dom.removeEventListener(eventType, prevProps[key])
-      } else {
-        if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
-        if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
-      }
+      if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
+      if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
       return
     }
 
@@ -143,7 +139,8 @@ function commitWork(
   ctx: GlobalContext,
   vNode: VNode,
   domParent?: HTMLElement | SVGElement | Text,
-  prevDom?: HTMLElement | SVGElement | Text
+  prevDom?: HTMLElement | SVGElement | Text,
+  commitSibling = false
 ): KaiokenCtxFollowupFunc[] {
   const dom = vNode.dom ?? vNode.instance?.rootDom
   if (
@@ -216,14 +213,15 @@ function commitWork(
   }
 
   const followUpWork: KaiokenCtxFollowupFunc[] = []
-
-  vNode.child &&
+  const { child, sibling } = vNode
+  child &&
     followUpWork.push((ctx: GlobalContext) =>
-      commitWork(ctx, vNode.child!, dom)
+      commitWork(ctx, child, dom, undefined, true)
     )
-  vNode.sibling &&
+  commitSibling &&
+    sibling &&
     followUpWork.push((ctx: GlobalContext) =>
-      commitWork(ctx, vNode.sibling!, domParent, dom)
+      commitWork(ctx, sibling, domParent, dom, true)
     )
 
   const instance = vNode.instance
@@ -259,7 +257,7 @@ function findDomRecursive(
 function commitDeletion(
   vNode: VNode,
   dom = vNode.dom,
-  root = true
+  deleteSibling = false
 ): KaiokenCtxFollowupFunc[] {
   if (Component.isCtor(vNode.type) && vNode.instance) {
     vNode.instance.componentWillUnmount?.()
@@ -271,12 +269,12 @@ function commitDeletion(
     if (dom.isConnected && vNode.instance?.rootDom !== dom) dom.remove()
     delete vNode.dom
   }
-  const followUps = []
-  if (vNode.child) {
-    followUps.push(() => commitDeletion(vNode.child!, undefined, false))
-  }
-  if (vNode.sibling && !root) {
-    followUps.push(() => commitDeletion(vNode.sibling!, undefined, false))
-  }
+  const followUps: KaiokenCtxFollowupFunc[] = []
+  const { child, sibling } = vNode
+  child && followUps.push(() => commitDeletion(child, undefined, true))
+  deleteSibling &&
+    sibling &&
+    followUps.push(() => commitDeletion(sibling, undefined, true))
+
   return followUps
 }
