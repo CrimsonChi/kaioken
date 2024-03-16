@@ -35,14 +35,7 @@ export function App() {
 
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route
-            path="/"
-            element={() => (
-              <h1>
-                Home <Multiply values={[69, 420]} />
-              </h1>
-            )}
-          />
+          <Route path="/" element={Home} />
           <Route
             path="/test/:id"
             fallthrough
@@ -86,6 +79,28 @@ export function App() {
         </Router>
       </main>
     </ThemeContextProvider>
+  )
+}
+
+function Home() {
+  const [count, setCount] = useState(0)
+  const [show, setShow] = useState(false)
+  console.log("home render", show)
+
+  function handleClick() {
+    setCount((prev) => prev + 1)
+    setShow((prev) => !prev)
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <h1>Home</h1>
+      <div>
+        <button onclick={handleClick}>Increment {count}</button>
+      </div>
+      <div>
+        <Multiply values={[69, 420]} />
+      </div>
+    </div>
   )
 }
 
