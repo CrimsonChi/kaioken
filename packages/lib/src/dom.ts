@@ -1,4 +1,4 @@
-import { type GlobalContext } from "./globalContext.js"
+import type { GlobalContext, KaiokenCtxFollowupFunc } from "./globalContext"
 import {
   booleanAttributes,
   propFilters,
@@ -144,7 +144,7 @@ function commitWork(
   vNode: VNode,
   domParent?: HTMLElement | SVGElement | Text,
   prevDom?: HTMLElement | SVGElement | Text
-) {
+): KaiokenCtxFollowupFunc[] {
   const dom = vNode.dom ?? vNode.instance?.rootDom
   if (
     dom &&
@@ -215,7 +215,7 @@ function commitWork(
     return commitDeletion(vNode, dom)
   }
 
-  const followUpWork: Function[] = []
+  const followUpWork: KaiokenCtxFollowupFunc[] = []
 
   vNode.child &&
     followUpWork.push((ctx: GlobalContext) =>
@@ -256,7 +256,11 @@ function findDomRecursive(
   )
 }
 
-function commitDeletion(vNode: VNode, dom = vNode.dom, root = true) {
+function commitDeletion(
+  vNode: VNode,
+  dom = vNode.dom,
+  root = true
+): KaiokenCtxFollowupFunc[] {
   if (Component.isCtor(vNode.type) && vNode.instance) {
     vNode.instance.componentWillUnmount?.()
   } else if (vNode.type instanceof Function) {
@@ -267,7 +271,7 @@ function commitDeletion(vNode: VNode, dom = vNode.dom, root = true) {
     if (dom.isConnected && vNode.instance?.rootDom !== dom) dom.remove()
     delete vNode.dom
   }
-  const followUps: Function[] = []
+  const followUps = []
   if (vNode.child) {
     followUps.push(() => commitDeletion(vNode.child!, undefined, false))
   }

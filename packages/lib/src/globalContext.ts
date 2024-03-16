@@ -4,8 +4,9 @@ import { Component } from "./component.js"
 import { isVNode, isValidChild } from "./utils.js"
 
 export { GlobalContext, ctx, node, nodeToCtxMap, contexts, renderMode }
-export type { GlobalContextOptions }
+export type { GlobalContextOptions, KaiokenCtxFollowupFunc }
 
+type KaiokenCtxFollowupFunc = (ctx: GlobalContext) => KaiokenCtxFollowupFunc[]
 type VNode = Kaioken.VNode
 
 interface GlobalContextOptions {
@@ -134,7 +135,7 @@ class GlobalContext {
 
     if (!this.nextUnitOfWork && this.treesInProgress.length) {
       this.currentTreeIndex = 0
-      const followUps: Function[] = []
+      const followUps: KaiokenCtxFollowupFunc[] = []
       this.deletions.forEach((d) => followUps.push(...commitWork(this, d)))
       this.deletions = []
 

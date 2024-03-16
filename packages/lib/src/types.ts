@@ -1,4 +1,4 @@
-import { Component } from "./component"
+import type { Component } from "./component"
 import type { EffectTag } from "./constants"
 import type {
   EventAttributes,
@@ -44,7 +44,6 @@ declare global {
         ? { ref?: Kaioken.Ref<SVGElementTagNameMap[K]> }
         : {}
   }
-
   export namespace Kaioken {
     type Context<T> = {
       Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
