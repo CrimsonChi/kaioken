@@ -649,17 +649,23 @@ interface SvgElementAttributes {
     y2?: string | number
     points?: string
     animatedPoints?: string
+    strokeLinecap?: string
   }
   path: {
     d?: string
+    strokeLinecap?: string
+    strokeLinejoin?: string
   }
   polygon: {
     points?: string
     animatedPoints?: string
+    strokeLinejoin?: string
   }
   polyline: {
     points?: string
     animatedPoints?: string
+    strokeLinecap?: string
+    strokeLinejoin?: string
   }
   rect: {
     x?: string | number
@@ -668,5 +674,22 @@ interface SvgElementAttributes {
     ry?: string | number
     width?: string | number
     height?: string | number
+    strokeLinejoin?: string
+  }
+  text: {
+    strokeLinejoin?: string
+    strokeLinecap?: string
+  }
+  textPath: {
+    strokeLinejoin?: string
+    strokeLinecap?: string
+  }
+  tref: {
+    strokeLinejoin?: string
+    strokeLinecap?: string
+  }
+  tspan: {
+    strokeLinejoin?: string
+    strokeLinecap?: string
   }
 }
