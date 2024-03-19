@@ -606,6 +606,15 @@ interface SvgGlobalAttributes {
   "transform-origin"?: string
 }
 
+/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linecap) */
+interface SvgStrokeLineCap {
+  strokeLinecap?: "butt" | "round" | "square"
+}
+/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linejoin) */
+interface SvgStrokeLineJoin {
+  strokeLinejoin?: "arcs" | "bevel" | "miter" | "miter-clip" | "round"
+}
+
 interface SvgElementAttributes {
   defs: {}
   filter: {
@@ -642,31 +651,36 @@ interface SvgElementAttributes {
   g: {
     clipPath?: string
   }
-  line: {
+  line: SvgStrokeLineCap & {
     x1?: string | number
     y1?: string | number
     x2?: string | number
     y2?: string | number
     points?: string
     animatedPoints?: string
+  }  
+  path: SvgStrokeLineCap & SvgStrokeLineJoin & {
+      d?: string
   }
-  path: {
-    d?: string
-  }
-  polygon: {
+  polygon: SvgStrokeLineJoin & {
     points?: string
     animatedPoints?: string
-  }
-  polyline: {
+  } 
+  polyline: SvgStrokeLineCap & SvgStrokeLineJoin & {
     points?: string
     animatedPoints?: string
-  }
-  rect: {
+  } 
+  rect: SvgStrokeLineJoin & {
     x?: string | number
     y?: string | number
     rx?: string | number
     ry?: string | number
     width?: string | number
     height?: string | number
-  }
+  } 
+  text: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
+  textPath: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
+  tref: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
+  tspan: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
 }
+
