@@ -71,7 +71,6 @@ function createElement(
   props = {},
   ...children: JSX.Element[]
 ): VNode {
-  if (!type) debugger
   const node = {
     type,
     props: {
