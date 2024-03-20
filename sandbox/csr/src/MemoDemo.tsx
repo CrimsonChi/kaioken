@@ -14,21 +14,21 @@ export function MemoDemo() {
 }
 
 let renders = 0
-const DynamicRenderMemo = memo(() => {
-  return (
-    <div id="memo-dynamic" className="flex flex-col">
-      <span className="text-red-500">Render Count: {++renders}</span>
-    </div>
-  )
-})
-
-let renders2 = 0
 const WhenPropsChangeMemo = memo(({ count }: { count: number }) => {
   console.log("this should only log when mounted")
   return (
     <div id="memo-props" className="flex flex-col">
       <div>Memo Demo {count}</div>
-      <span>Render Count: {++renders2}</span>
+      <span>Render Count: {++renders}</span>
+    </div>
+  )
+})
+
+let renders2 = 0
+const DynamicRenderMemo = memo(() => {
+  return (
+    <div id="memo-dynamic" className="flex flex-col">
+      <span className="text-red-500">Render Count: {++renders2}</span>
     </div>
   )
 })
