@@ -248,14 +248,17 @@ class GlobalContext {
     let index = 0
     let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
     let prevSibling: VNode | undefined = undefined
+    let newNode: VNode | undefined = undefined
 
-    while (index < children.length || oldNode) {
+    let lastPlacedIndex = 0
+
+    for (; !!oldNode && index < children.length; index++) {
       const child = children[index]
-      let newNode: VNode | undefined = undefined
 
       const sameType = oldNode && child && child.type == oldNode.type
 
       if (sameType && oldNode) {
+        if (child.props.key !== oldNode.props.key) break
         newNode = oldNode
         newNode.props = child.props
         newNode.parent = vNode
@@ -266,14 +269,14 @@ class GlobalContext {
           })
         }
         nodeToCtxMap.set(newNode, ctx.current)
-      }
-      if (isValidChild(child) && !sameType) {
+      } else if (isValidChild(child) && !sameType) {
         if (isVNode(child)) {
           newNode = {
             type: child.type,
             props: child.props,
             parent: vNode,
             effectTag: EffectTag.PLACEMENT,
+            index,
           }
         } else {
           newNode = {
@@ -284,6 +287,7 @@ class GlobalContext {
             },
             parent: vNode,
             effectTag: EffectTag.PLACEMENT,
+            index,
           }
         }
 
@@ -306,11 +310,193 @@ class GlobalContext {
       } else if (prevSibling) {
         prevSibling.sibling = newNode
       }
-
+      if (newNode)
+        lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
       prevSibling = newNode
-      index++
+    }
+
+    // matched all children?
+    if (index === children.length) {
+      while (oldNode) {
+        oldNode.effectTag = EffectTag.DELETION
+        if (oldNode.props.ref) {
+          oldNode.props.ref.current = null
+        }
+        this.deletions.push(oldNode)
+        oldNode = oldNode.sibling
+      }
+      return
+    }
+
+    // just some good ol' insertions, baby
+    if (!oldNode) {
+      for (; index < children.length; index++) {
+        const child = children[index]
+        // if (!isValidChild(child)) {
+        //   index++
+        //   continue
+        // }
+        if (isVNode(child)) {
+          newNode = {
+            type: child.type,
+            props: child.props,
+            parent: vNode,
+            effectTag: EffectTag.PLACEMENT,
+            index,
+          }
+        } else {
+          newNode = {
+            type: elementTypes.text,
+            props: {
+              nodeValue: String(child),
+              children: [],
+            },
+            parent: vNode,
+            effectTag: EffectTag.PLACEMENT,
+            index,
+          }
+        }
+        lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
+        nodeToCtxMap.set(newNode, ctx.current)
+
+        if (index === 0) {
+          vNode.child = newNode
+        } else if (prevSibling) {
+          prevSibling.sibling = newNode
+        }
+        prevSibling = newNode
+      }
+      return
+    }
+    // deal with mismatched keys
+    console.log("mismatched keys", oldNode)
+    const existingChildren = this.mapRemainingChildren(oldNode)
+    debugger
+
+    for (; index < children.length; index++) {
+      const newNode = this.updateFromMap(
+        existingChildren,
+        vNode,
+        index,
+        children[index]
+      )
+      if (newNode !== undefined) {
+        if (newNode.prev !== undefined) {
+          existingChildren.delete(
+            newNode.prev.props.key === undefined
+              ? newNode.prev.index
+              : newNode.prev.props.key
+          )
+        }
+        lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
+        nodeToCtxMap.set(newNode, ctx.current)
+
+        if (index === 0) {
+          vNode.child = newNode
+        } else if (prevSibling) {
+          prevSibling.sibling = newNode
+        }
+        prevSibling = newNode
+        if (index === children.length - 1) {
+          prevSibling.sibling = undefined
+        }
+      }
+    }
+
+    existingChildren.forEach((child) => {
+      // if (prevSibling?.sibling === child) {
+      //   prevSibling.sibling = undefined
+      // }
+      child.effectTag = EffectTag.DELETION
+      if (child.props.ref) {
+        child.props.ref.current = null
+      }
+      this.deletions.push(child)
+    })
+  }
+
+  private placeChild(
+    vNode: VNode,
+    lastPlacedIndex: number,
+    newIndex: number
+  ): number {
+    vNode.index = newIndex
+    const prev = vNode.prev
+    if (prev !== undefined) {
+      const oldIndex = prev.index
+      if (oldIndex < lastPlacedIndex) {
+        vNode.effectTag = EffectTag.PLACEMENT
+        return lastPlacedIndex
+      } else {
+        return oldIndex
+      }
+    } else {
+      vNode.effectTag = EffectTag.PLACEMENT
+      return lastPlacedIndex
     }
   }
+
+  private updateFromMap(
+    existingChildren: Map<JSX.ElementKey, VNode>,
+    parent: VNode,
+    index: number,
+    newChild: any
+  ): VNode | undefined {
+    if (
+      (typeof newChild === "string" && newChild !== "") ||
+      typeof newChild === "number"
+    ) {
+      const oldChild = existingChildren.get(index)
+      if (oldChild) {
+        oldChild.effectTag = EffectTag.UPDATE
+        oldChild.props.nodeValue = newChild
+        return oldChild
+      } else {
+        return {
+          type: elementTypes.text,
+          props: {
+            nodeValue: newChild,
+            children: [],
+          },
+          parent,
+          effectTag: EffectTag.PLACEMENT,
+          index,
+        }
+      }
+    }
+
+    if (isVNode(newChild)) {
+      const oldChild = existingChildren.get(
+        newChild.props.key === undefined ? index : newChild.props.key
+      )
+      if (oldChild) {
+        oldChild.effectTag = EffectTag.UPDATE
+        oldChild.props = newChild.props
+        return oldChild
+      } else {
+        return {
+          type: newChild.type,
+          props: newChild.props,
+          parent,
+          effectTag: EffectTag.PLACEMENT,
+          index,
+        }
+      }
+    }
+
+    return
+  }
+
+  private mapRemainingChildren(vNode: VNode) {
+    const map: Map<JSX.ElementKey, VNode> = new Map()
+    let n: VNode | undefined = vNode
+    while (n) {
+      map.set(n.props.key === undefined ? n.index : n.props.key, n)
+      n = n.sibling
+    }
+    return map
+  }
+
   private vNodeContains(
     haystack: VNode,
     needle: VNode,

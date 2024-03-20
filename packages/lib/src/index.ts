@@ -73,6 +73,7 @@ function createElement(
 ): VNode {
   const node = {
     type,
+    index: 0,
     props: {
       ...props,
       children: children.flat().filter(isValidChild).map(createChildElement),

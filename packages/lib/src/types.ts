@@ -34,14 +34,15 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
 
+    type ElementKey = string | number
     type Element = Kaioken.VNode | string | number | null
 
     type InternalProps<
       K extends keyof HtmlElementAttributes | keyof SvgElementAttributes,
     > = K extends keyof HTMLElementTagNameMap
-      ? { ref?: Kaioken.Ref<HTMLElementTagNameMap[K]> }
+      ? { ref?: Kaioken.Ref<HTMLElementTagNameMap[K]>; key?: ElementKey }
       : K extends keyof SVGElementTagNameMap
-        ? { ref?: Kaioken.Ref<SVGElementTagNameMap[K]> }
+        ? { ref?: Kaioken.Ref<SVGElementTagNameMap[K]>; key?: ElementKey }
         : {}
   }
   export namespace Kaioken {
@@ -71,7 +72,10 @@ declare global {
       props: {
         [key: string]: any
         children: VNode[]
+        key?: JSX.ElementKey
+        ref?: Kaioken.Ref<unknown>
       }
+      index: number
       hooks?: Hook<unknown>[]
       parent?: VNode
       child?: VNode

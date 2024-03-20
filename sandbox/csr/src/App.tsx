@@ -1,4 +1,4 @@
-import { Router, Route, useState, useEffect } from "kaioken"
+import { Router, Route, useState } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ThemeContextProvider } from "./ThemeContext"
@@ -11,6 +11,7 @@ import { BigListComponent } from "./components/BigList"
 import { TodosWithStore } from "./components/TodosWithStore"
 import { FilteredList } from "./components/FilteredList"
 import { Transitions } from "./components/Transitions"
+import { Button } from "./components/atoms/Button"
 
 export function App() {
   return (
@@ -83,34 +84,68 @@ export function App() {
 }
 
 function Home() {
-  const [count, setCount] = useState(0)
-  const [show, setShow] = useState(false)
-  console.log("home render", show)
-
-  function handleClick() {
-    setCount((prev) => prev + 1)
-    setShow((prev) => !prev)
-  }
   return (
     <div className="flex flex-col gap-2">
       <h1>Home</h1>
-      <div>
-        <button onclick={handleClick}>Increment {count}</button>
-      </div>
-      <div>
-        <Multiply values={[69, 420]} />
-      </div>
+      <CounterList />
     </div>
   )
 }
 
-function Multiply({ values }: { values: number[] }) {
-  const [multiplier, setMultiplier] = useState(1)
-  useEffect(() => {
-    const id = setInterval(() => {
-      setMultiplier((m) => m + 1)
-    }, 420)
-    return () => clearInterval(id)
-  }, [])
-  return values.reduce((a, b) => a * b, multiplier)
+function CounterList() {
+  const [counters, setCounters] = useState<number[]>([1, 2, 3, 4, 5])
+
+  function move(id: number, dist: number) {
+    const idx = counters.indexOf(id)
+    if (idx + dist < 0 || idx + dist >= counters.length) return
+    const newCounters = [...counters]
+    newCounters.splice(idx, 1)
+    newCounters.splice(idx + dist, 0, id)
+    setCounters(newCounters)
+  }
+
+  function remove(id: number) {
+    setCounters(counters.filter((c) => c !== id))
+  }
+
+  return (
+    <ul>
+      {counters.map((c) => (
+        <li key={"item-" + c} className="flex gap-2">
+          <KeyedCounterItem
+            id={c}
+            move={(dist) => move(c, dist)}
+            remove={() => remove(c)}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+interface KeyedCounterProps {
+  id: number
+  move: (dist: number) => void
+  remove: () => void
+}
+
+function KeyedCounterItem({ id, move, remove }: KeyedCounterProps) {
+  const [count, setCount] = useState(0)
+  //@ts-ignore
+  console.log(id, this)
+  return (
+    <>
+      id : {id}
+      <div className="flex gap-2 px-2 bg-black bg-opacity-30">
+        <Button variant="primary" onclick={() => setCount((c) => c + 1)}>
+          {count}
+        </Button>
+        <Button onclick={() => move(1)}>↓</Button>
+        <Button onclick={() => move(2)}>↓↓</Button>
+        <Button onclick={() => move(-1)}>↑</Button>
+        <Button onclick={() => move(-2)}>↑↑</Button>
+      </div>
+      <button onclick={remove}>Remove</button>
+    </>
+  )
 }
