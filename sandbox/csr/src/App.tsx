@@ -131,8 +131,6 @@ interface KeyedCounterProps {
 
 function KeyedCounterItem({ id, move, remove }: KeyedCounterProps) {
   const [count, setCount] = useState(0)
-  //@ts-ignore
-  console.log(id, this)
   return (
     <>
       id : {id}

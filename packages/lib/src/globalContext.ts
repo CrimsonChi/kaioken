@@ -188,7 +188,8 @@ class GlobalContext {
 
   private performUnitOfWork(vNode: VNode): VNode | void {
     const frozen = elementFreezeSymbol in vNode && !!vNode[elementFreezeSymbol]
-    if (!frozen) {
+    const skip = frozen && vNode.effectTag !== EffectTag.PLACEMENT
+    if (!skip) {
       if (Component.isCtor(vNode.type)) {
         this.updateClassComponent(vNode)
       } else if (vNode.type instanceof Function) {
@@ -246,8 +247,9 @@ class GlobalContext {
 
   private reconcileChildren(vNode: VNode, children: VNode[]) {
     let index = 0
+    let prevOldNode: VNode | undefined = undefined
     let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
-    let prevSibling: VNode | undefined = undefined
+    let prevNewNode: VNode | undefined = undefined
     let newNode: VNode | undefined = undefined
 
     let lastPlacedIndex = 0
@@ -291,6 +293,12 @@ class GlobalContext {
           }
         }
 
+        if (elementFreezeSymbol in child) {
+          Object.assign(newNode, {
+            [elementFreezeSymbol]: child[elementFreezeSymbol],
+          })
+        }
+
         nodeToCtxMap.set(newNode, ctx.current)
       }
       if (oldNode && !sameType) {
@@ -302,22 +310,27 @@ class GlobalContext {
       }
 
       if (oldNode) {
+        prevOldNode = oldNode
         oldNode = oldNode.sibling
       }
 
       if (index === 0) {
         vNode.child = newNode
-      } else if (prevSibling) {
-        prevSibling.sibling = newNode
+      } else if (prevNewNode) {
+        prevNewNode.sibling = newNode
       }
       if (newNode)
         lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
-      prevSibling = newNode
+      prevNewNode = newNode
     }
 
     // matched all children?
     if (index === children.length) {
       while (oldNode) {
+        if (prevOldNode) {
+          prevOldNode.sibling = undefined
+        }
+        prevOldNode = oldNode
         oldNode.effectTag = EffectTag.DELETION
         if (oldNode.props.ref) {
           oldNode.props.ref.current = null
@@ -332,10 +345,7 @@ class GlobalContext {
     if (!oldNode) {
       for (; index < children.length; index++) {
         const child = children[index]
-        // if (!isValidChild(child)) {
-        //   index++
-        //   continue
-        // }
+        if (!isValidChild(child)) continue
         if (isVNode(child)) {
           newNode = {
             type: child.type,
@@ -356,30 +366,30 @@ class GlobalContext {
             index,
           }
         }
+        if (elementFreezeSymbol in child) {
+          Object.assign(newNode, {
+            [elementFreezeSymbol]: child[elementFreezeSymbol],
+          })
+        }
         lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
         nodeToCtxMap.set(newNode, ctx.current)
 
         if (index === 0) {
           vNode.child = newNode
-        } else if (prevSibling) {
-          prevSibling.sibling = newNode
+        } else if (prevNewNode) {
+          prevNewNode.sibling = newNode
         }
-        prevSibling = newNode
+        prevNewNode = newNode
       }
       return
     }
-    // deal with mismatched keys
-    console.log("mismatched keys", oldNode)
+
+    // deal with mismatched keys / unmatched children
     const existingChildren = this.mapRemainingChildren(oldNode)
-    debugger
 
     for (; index < children.length; index++) {
-      const newNode = this.updateFromMap(
-        existingChildren,
-        vNode,
-        index,
-        children[index]
-      )
+      const child = children[index]
+      const newNode = this.updateFromMap(existingChildren, vNode, index, child)
       if (newNode !== undefined) {
         if (newNode.prev !== undefined) {
           existingChildren.delete(
@@ -388,25 +398,27 @@ class GlobalContext {
               : newNode.prev.props.key
           )
         }
+        if (elementFreezeSymbol in child) {
+          Object.assign(newNode, {
+            [elementFreezeSymbol]: child[elementFreezeSymbol],
+          })
+        }
         lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
         nodeToCtxMap.set(newNode, ctx.current)
 
         if (index === 0) {
           vNode.child = newNode
-        } else if (prevSibling) {
-          prevSibling.sibling = newNode
+        } else if (prevNewNode) {
+          prevNewNode.sibling = newNode
         }
-        prevSibling = newNode
+        prevNewNode = newNode
         if (index === children.length - 1) {
-          prevSibling.sibling = undefined
+          prevNewNode.sibling = undefined
         }
       }
     }
 
     existingChildren.forEach((child) => {
-      // if (prevSibling?.sibling === child) {
-      //   prevSibling.sibling = undefined
-      // }
       child.effectTag = EffectTag.DELETION
       if (child.props.ref) {
         child.props.ref.current = null
