@@ -39,13 +39,14 @@ export default function (): Plugin {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
           code = `
-import {contexts} from "kaioken/dist/globalContext";\n
+import {contexts} from "kaioken/dist/globals.js";\n
+import {applyRecursive} from "kaioken/dist/utils.js";\n
 ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
       contexts.forEach((ctx) => {
-        ctx.applyRecursive((node) => {
+        applyRecursive(ctx, (node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];
             if (node.prev) {

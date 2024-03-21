@@ -1,11 +1,4 @@
-import {
-  ctx,
-  GlobalContext,
-  GlobalContextOptions,
-  node,
-  nodeToCtxMap,
-  renderMode,
-} from "./globalContext.js"
+import { GlobalContext, GlobalContextOptions } from "./globalContext.js"
 import {
   isValidChild,
   isVNode,
@@ -16,6 +9,7 @@ import {
 } from "./utils.js"
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
+import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"

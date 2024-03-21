@@ -1,6 +1,6 @@
-import { nodeToCtxMap } from "./globalContext.js"
+import { nodeToCtxMap } from "./globals.js"
 import { cleanupHook, shouldExecHook, useHook } from "./hooks/utils.js"
-import { shallow } from "./shallow.js"
+import { shallowCompare } from "./utils.js"
 
 export { createStore }
 
@@ -13,7 +13,7 @@ type Store<T, U extends MethodFactory<T>> = {
   <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
   <R>(
     sliceFn: (state: T) => R,
-    equality: (prev: R, next: R, compare: typeof shallow) => boolean
+    equality: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ): { value: R } & ReturnType<U>
   (): { value: T } & ReturnType<U>
   getState: () => T
@@ -32,7 +32,10 @@ function createStore<T, U extends MethodFactory<T>>(
     Kaioken.VNode,
     [
       Function,
-      ((prev: any, next: any, compare: typeof shallow) => boolean) | undefined,
+      (
+        | ((prev: any, next: any, compare: typeof shallowCompare) => boolean)
+        | undefined
+      ),
       unknown,
     ][]
   >()
@@ -51,9 +54,9 @@ function createStore<T, U extends MethodFactory<T>>(
           const next = sliceFn(value)
           computes[i] = [sliceFn, eq, next]
           if (computeChanged) continue
-          if (eq && eq(slice, next, shallow)) {
+          if (eq && eq(slice, next, shallowCompare)) {
             continue
-          } else if (!eq && shallow(slice, next)) {
+          } else if (!eq && shallowCompare(slice, next)) {
             continue
           }
 

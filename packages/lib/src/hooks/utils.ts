@@ -1,4 +1,4 @@
-import { ctx, nodeToCtxMap, node, renderMode } from "../globalContext.js"
+import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
 
 export const shouldExecHook = () => {
   return renderMode.current === "dom"

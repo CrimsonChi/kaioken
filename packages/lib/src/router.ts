@@ -2,7 +2,7 @@ import type { ElementProps } from "./types"
 import { createElement, fragment } from "./index.js"
 import { isVNode } from "./utils.js"
 import { useState, useEffect, useMemo } from "./hooks/index.js"
-import { node } from "./globalContext.js"
+import { node } from "./globals.js"
 
 export { Router, Route, Link, navigate, matchPath }
 export type { RouteChildProps, LinkProps }

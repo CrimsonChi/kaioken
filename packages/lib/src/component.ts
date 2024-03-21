@@ -1,5 +1,6 @@
 import { componentSymbol } from "./constants.js"
-import { node, type GlobalContext, nodeToCtxMap } from "./globalContext.js"
+import type { GlobalContext } from "./globalContext"
+import { node, nodeToCtxMap } from "./globals.js"
 
 export { Component }
 
