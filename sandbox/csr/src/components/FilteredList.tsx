@@ -63,6 +63,19 @@ export function FilteredList() {
               placeholder="Search"
             />
           </div>
+          {albums.length === 0 ? (
+            <span data-test className="text-muted">
+              No albums found
+            </span>
+          ) : albums.length % 2 === 0 ? (
+            <i data-test className="text-muted">
+              Even
+            </i>
+          ) : (
+            <p data-test className="text-muted">
+              Odd
+            </p>
+          )}
           <AlbumList albums={filteredAlbums} />
         </div>
       </div>
@@ -77,28 +90,14 @@ export function FilteredList() {
 
 function AlbumList({ albums }: { albums: Album[] }) {
   return (
-    <article className="flex flex-col gap-4">
-      {albums.length === 0 ? (
-        <span data-test className="text-muted">
-          No albums found
-        </span>
-      ) : albums.length % 2 === 0 ? (
-        <i data-test className="text-muted">
-          Even
-        </i>
-      ) : (
-        <p data-test className="text-muted">
-          Odd
-        </p>
-      )}
+    <>
       {albums.map((album) => (
-        <AlbumItem album={album} />
+        <AlbumItem key={"album-" + album.id} album={album} />
       ))}
-    </article>
+    </>
   )
 }
-
-function AlbumItem({ album }: { album: Album }) {
+function AlbumItem({ album }: { album: Album; key: string }) {
   return (
     <div className="flex items-center gap-4">
       <button role="none" className="p-2 border-2 border-light rounded">
