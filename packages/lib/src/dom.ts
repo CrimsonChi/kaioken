@@ -139,9 +139,11 @@ function commitWork(
   ctx: GlobalContext,
   vNode: VNode,
   domParent?: HTMLElement | SVGElement | Text,
-  prevDom?: HTMLElement | SVGElement | Text,
+  prevSibling?: VNode,
+  prevSiblingDom?: HTMLElement | SVGElement | Text,
   commitSibling = false
 ): KaiokenCtxFollowupFunc[] {
+  let domParentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
   const dom = vNode.dom ?? vNode.instance?.rootDom
   if (
     dom &&
@@ -150,57 +152,28 @@ function commitWork(
   ) {
     // find mountable parent dom
     if (!domParent) {
-      let parentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
-
-      domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
-      while (parentNode && !domParent) {
-        parentNode = parentNode.parent
-        domParent = parentNode?.instance?.rootDom ?? parentNode?.dom
+      domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+      while (domParentNode && !domParent) {
+        domParentNode = domParentNode.parent
+        domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
       }
     }
 
-    if (!domParent) {
+    if (!domParent || !domParentNode) {
       console.error("[kaioken]: no domParent found - seek help!", vNode)
       return []
     }
-
-    let nextDom
-    if (!prevDom) {
-      // the following is likely a somewhat naiive implementation of the algorithm
-      // but it should be good enough for most cases. Will be improved as/when
-      // edge cases are encountered.
-
-      // try to find next dom by traversing through the sibling if it exists
-      let tmp = findDomRecursive(vNode.sibling)
-      if (tmp && tmp.isConnected) {
-        nextDom = tmp
-      } else {
-        // try to find next dom by traversing (up and across) through the tree
-        // handles cases like the following:
-        /**
-         * <div>
-         *    <>
-         *      <TheComponentThatIsUpdating />
-         *    <>
-         *    <>
-         *      <div></div> <- find this node
-         *    </>
-         * </div>
-         */
-        let parent = vNode.parent
-
-        while (!nextDom && parent) {
-          nextDom = findDomRecursive(parent.sibling)
-          parent = parent.parent
-        }
-      }
-    }
-    if (prevDom && domParent.contains(prevDom)) {
-      prevDom.after(dom)
-    } else if (nextDom && domParent.contains(nextDom)) {
-      nextDom.before(dom)
-    } else {
+    if (domParent.childNodes.length === 0) {
       domParent.appendChild(dom)
+    } else {
+      if (!prevSiblingDom && prevSibling) {
+        prevSiblingDom = findMountedDomRecursive(prevSibling)
+      }
+      if (prevSiblingDom) {
+        prevSiblingDom.after(dom)
+      } else {
+        domParent.appendChild(dom)
+      }
     }
   } else if (
     vNode.effectTag === EffectTag.UPDATE &&
@@ -216,12 +189,12 @@ function commitWork(
   const { child, sibling } = vNode
   child &&
     followUpWork.push((ctx: GlobalContext) =>
-      commitWork(ctx, child, dom, undefined, true)
+      commitWork(ctx, child, dom, prevSibling, undefined, true)
     )
   commitSibling &&
     sibling &&
     followUpWork.push((ctx: GlobalContext) =>
-      commitWork(ctx, sibling, domParent, dom, true)
+      commitWork(ctx, sibling, domParent, vNode, dom, true)
     )
 
   const instance = vNode.instance
@@ -243,15 +216,18 @@ function commitWork(
   return followUpWork
 }
 
-function findDomRecursive(
-  vNode?: VNode
+function findMountedDomRecursive(
+  vNode: VNode,
+  includeSibling = false
 ): HTMLElement | SVGElement | Text | undefined {
-  if (!vNode) return
-  return (
-    vNode.dom ??
-    findDomRecursive(vNode.child) ??
-    findDomRecursive(vNode.sibling)
-  )
+  if (vNode.dom?.isConnected) return vNode.dom
+  if (vNode.child) {
+    const dom = findMountedDomRecursive(vNode.child, true)
+    if (dom) return dom
+  }
+  if (includeSibling && vNode.sibling)
+    return findMountedDomRecursive(vNode.sibling, true)
+  return undefined
 }
 
 function commitDeletion(
