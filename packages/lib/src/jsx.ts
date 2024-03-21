@@ -7,5 +7,10 @@ function jsx(
   type: string | Function | typeof Component,
   { children, ...props } = {} as { children?: Kaioken.VNode[] }
 ) {
-  return createElement(type, props, ...(children ?? []))
+  if (!children) return createElement(type, props)
+  return createElement(
+    type,
+    props,
+    ...(Array.isArray(children) ? children : [children])
+  )
 }
