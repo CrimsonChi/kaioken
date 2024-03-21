@@ -245,6 +245,40 @@ class GlobalContext {
     this.reconcileChildren(vNode, vNode.props.children)
   }
 
+  private createChild(parent: VNode, child: any, index: number): VNode {
+    let newNode: VNode
+    if (isVNode(child)) {
+      newNode = {
+        type: child.type,
+        props: child.props,
+        parent,
+        effectTag: EffectTag.PLACEMENT,
+        index,
+      }
+    } else {
+      newNode = {
+        type: elementTypes.text,
+        props: {
+          nodeValue: String(child),
+          children: [],
+        },
+        parent,
+        effectTag: EffectTag.PLACEMENT,
+        index,
+      }
+    }
+
+    if (elementFreezeSymbol in child) {
+      Object.assign(newNode, {
+        [elementFreezeSymbol]: child[elementFreezeSymbol],
+      })
+    }
+
+    nodeToCtxMap.set(newNode, ctx.current)
+
+    return newNode
+  }
+
   private reconcileChildren(vNode: VNode, children: VNode[]) {
     let index = 0
     let prevOldNode: VNode | undefined = undefined
@@ -272,34 +306,7 @@ class GlobalContext {
         }
         nodeToCtxMap.set(newNode, ctx.current)
       } else if (isValidChild(child) && !sameType) {
-        if (isVNode(child)) {
-          newNode = {
-            type: child.type,
-            props: child.props,
-            parent: vNode,
-            effectTag: EffectTag.PLACEMENT,
-            index,
-          }
-        } else {
-          newNode = {
-            type: elementTypes.text,
-            props: {
-              nodeValue: String(child),
-              children: [],
-            },
-            parent: vNode,
-            effectTag: EffectTag.PLACEMENT,
-            index,
-          }
-        }
-
-        if (elementFreezeSymbol in child) {
-          Object.assign(newNode, {
-            [elementFreezeSymbol]: child[elementFreezeSymbol],
-          })
-        }
-
-        nodeToCtxMap.set(newNode, ctx.current)
+        newNode = this.createChild(vNode, child, index)
       }
       if (oldNode && !sameType) {
         oldNode.effectTag = EffectTag.DELETION
@@ -346,34 +353,8 @@ class GlobalContext {
       for (; index < children.length; index++) {
         const child = children[index]
         if (!isValidChild(child)) continue
-        if (isVNode(child)) {
-          newNode = {
-            type: child.type,
-            props: child.props,
-            parent: vNode,
-            effectTag: EffectTag.PLACEMENT,
-            index,
-          }
-        } else {
-          newNode = {
-            type: elementTypes.text,
-            props: {
-              nodeValue: String(child),
-              children: [],
-            },
-            parent: vNode,
-            effectTag: EffectTag.PLACEMENT,
-            index,
-          }
-        }
-        if (elementFreezeSymbol in child) {
-          Object.assign(newNode, {
-            [elementFreezeSymbol]: child[elementFreezeSymbol],
-          })
-        }
+        newNode = this.createChild(vNode, child, index)
         lastPlacedIndex = this.placeChild(newNode, lastPlacedIndex, index)
-        nodeToCtxMap.set(newNode, ctx.current)
-
         if (index === 0) {
           vNode.child = newNode
         } else if (prevNewNode) {
