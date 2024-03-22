@@ -63,11 +63,11 @@ export function FilteredList() {
               placeholder="Search"
             />
           </div>
-          {albums.length === 0 ? (
+          {filteredAlbums.length === 0 ? (
             <span data-test className="text-muted">
               No albums found
             </span>
-          ) : albums.length % 2 === 0 ? (
+          ) : filteredAlbums.length % 2 === 0 ? (
             <i data-test className="text-muted">
               Even
             </i>
