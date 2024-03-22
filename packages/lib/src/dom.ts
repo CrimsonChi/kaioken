@@ -163,17 +163,44 @@ function commitWork(
       console.error("[kaioken]: no domParent found - seek help!", vNode)
       return []
     }
-    if (domParent.childNodes.length === 0) {
-      domParent.appendChild(dom)
-    } else {
-      if (!prevSiblingDom && prevSibling) {
-        prevSiblingDom = findMountedDomRecursive(prevSibling)
-      }
-      if (prevSiblingDom) {
-        prevSiblingDom.after(dom)
+    let nextDom
+    if (!prevSiblingDom?.isConnected) {
+      // the following is likely a somewhat naiive implementation of the algorithm
+      // but it should be good enough for most cases. Will be improved as/when
+      // edge cases are encountered.
+
+      // try to find next dom by traversing through the sibling if it exists
+
+      let tmp = findMountedDomRecursive(vNode.sibling)
+      if (tmp && tmp.isConnected) {
+        nextDom = tmp
       } else {
-        domParent.appendChild(dom)
+        // try to find next dom by traversing (up and across) through the tree
+        // handles cases like the following:
+        /**
+         * <div>
+         *    <>
+         *      <TheComponentThatIsUpdating />
+         *    <>
+         *    <>
+         *      <div></div> <- find this node
+         *    </>
+         * </div>
+         */
+        let parent = vNode.parent
+
+        while (!nextDom && parent) {
+          nextDom = findMountedDomRecursive(parent.sibling)
+          parent = parent.parent
+        }
       }
+    }
+    if (prevSiblingDom && domParent.contains(prevSiblingDom)) {
+      prevSiblingDom.after(dom)
+    } else if (nextDom && domParent.contains(nextDom)) {
+      nextDom.before(dom)
+    } else {
+      domParent.appendChild(dom)
     }
   } else if (
     vNode.effectTag === EffectTag.UPDATE &&
@@ -216,20 +243,6 @@ function commitWork(
   return followUpWork
 }
 
-function findMountedDomRecursive(
-  vNode: VNode,
-  includeSibling = false
-): HTMLElement | SVGElement | Text | undefined {
-  if (vNode.dom?.isConnected) return vNode.dom
-  if (vNode.child) {
-    const dom = findMountedDomRecursive(vNode.child, true)
-    if (dom) return dom
-  }
-  if (includeSibling && vNode.sibling)
-    return findMountedDomRecursive(vNode.sibling, true)
-  return undefined
-}
-
 function commitDeletion(
   vNode: VNode,
   dom = vNode.dom,
@@ -253,4 +266,27 @@ function commitDeletion(
     followUps.push(() => commitDeletion(sibling, undefined, true))
 
   return followUps
+}
+
+function findDomRecursive(
+  vNode?: VNode
+): HTMLElement | SVGElement | Text | undefined {
+  if (!vNode) return
+  if (vNode.dom?.isConnected) return vNode.dom
+  return findDomRecursive(vNode.child) ?? findDomRecursive(vNode.sibling)
+}
+
+function findMountedDomRecursive(
+  vNode?: VNode
+): HTMLElement | SVGElement | Text | undefined {
+  if (!vNode) return
+  const stack: VNode[] = []
+  stack.push(vNode)
+  while (stack.length) {
+    var node = stack.pop()!
+    if (node.dom?.isConnected) return node.dom
+    if (node.sibling) stack.push(node.sibling)
+    if (node.child) stack.push(node.child)
+  }
+  return void 0
 }
