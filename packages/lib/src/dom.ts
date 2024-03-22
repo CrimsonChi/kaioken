@@ -276,10 +276,10 @@ function findMountedDomRecursive(
   const stack: VNode[] = []
   stack.push(vNode)
   while (stack.length) {
-    var node = stack.pop()!
-    if (node.dom?.isConnected) return node.dom
-    if (node.sibling) stack.push(node.sibling)
-    if (node.child) stack.push(node.child)
+    const n = stack.pop()!
+    if (n.dom?.isConnected) return n.dom
+    if (n.sibling) stack.push(n.sibling)
+    if (n.child) stack.push(n.child)
   }
   return void 0
 }
