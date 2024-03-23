@@ -693,6 +693,14 @@ interface SvgElementAttributes {
     mask?: string
     opacity?: string | number
   }
+  linearGradient: {
+    x1?: string | number
+    y1?: string | number
+    x2?: string | number
+    y2?: string | number
+    gradientUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    gradientTransform?: string
+  }
   mask: {
     x?: string | number
     y?: string | number
@@ -727,6 +735,11 @@ interface SvgElementAttributes {
     height?: string | number
     mask?: string
     opacity?: string | number
+  }
+  stop: {
+    offset?: string
+    stopColor?: string
+    stopOpacity?: string
   }
   svg: {
     width?: string | number

@@ -134,6 +134,7 @@ const svgTags = [
   "circle",
   "ellipse",
   "g",
+  "defs",
   "line",
   "path",
   "polygon",
