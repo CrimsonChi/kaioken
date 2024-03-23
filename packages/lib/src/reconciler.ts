@@ -97,7 +97,7 @@ export function reconcileChildren(
     }
   }
 
-  existingChildren.forEach(globalCtx.requestDelete.bind(globalCtx))
+  existingChildren.forEach((child) => globalCtx.requestDelete(child))
   return resultingChild
 }
 
@@ -171,9 +171,8 @@ function placeChild(
 ): number {
   if (vNode === undefined) return lastPlacedIndex
   vNode.index = newIndex
-  const prev = vNode.prev
-  if (prev !== undefined) {
-    const oldIndex = prev.index
+  if (vNode.prev !== undefined) {
+    const oldIndex = vNode.prev.index
     if (oldIndex < lastPlacedIndex) {
       vNode.effectTag = EffectTag.PLACEMENT
       return lastPlacedIndex
