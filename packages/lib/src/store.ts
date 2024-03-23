@@ -3,6 +3,7 @@ import { cleanupHook, shouldExecHook, useHook } from "./hooks/utils.js"
 import { shallowCompare } from "./utils.js"
 
 export { createStore }
+export type { Store, MethodFactory }
 
 type MethodFactory<T> = (
   setState: (setter: Kaioken.StateSetter<T>) => void,
