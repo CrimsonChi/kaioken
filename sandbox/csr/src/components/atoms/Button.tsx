@@ -1,12 +1,8 @@
-import { type ElementProps } from "kaioken"
+import { type ElementProps, children } from "kaioken"
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "success"
 
-export function PrimaryButton({
-  className,
-  children,
-  ...props
-}: ElementProps<"button">) {
+export function PrimaryButton({ className, ...props }: ElementProps<"button">) {
   return (
     <button
       {...props}
@@ -14,14 +10,13 @@ export function PrimaryButton({
         className || ""
       }`}
     >
-      {children}
+      {children()}
     </button>
   )
 }
 
 export function SecondaryButton({
   className,
-  children,
   ...props
 }: ElementProps<"button">) {
   return (
@@ -31,16 +26,12 @@ export function SecondaryButton({
         className || ""
       }`}
     >
-      {children}
+      {children()}
     </button>
   )
 }
 
-export function DangerButton({
-  className,
-  children,
-  ...props
-}: ElementProps<"button">) {
+export function DangerButton({ className, ...props }: ElementProps<"button">) {
   return (
     <button
       {...props}
@@ -48,16 +39,12 @@ export function DangerButton({
         className || ""
       }`}
     >
-      {children}
+      {children()}
     </button>
   )
 }
 
-export function SuccessButton({
-  className,
-  children,
-  ...props
-}: ElementProps<"button">) {
+export function SuccessButton({ className, ...props }: ElementProps<"button">) {
   return (
     <button
       {...props}
@@ -65,16 +52,12 @@ export function SuccessButton({
         className || ""
       }`}
     >
-      {children}
+      {children()}
     </button>
   )
 }
 
-export function DefaultButton({
-  className,
-  children,
-  ...props
-}: ElementProps<"button">) {
+export function DefaultButton({ className, ...props }: ElementProps<"button">) {
   return (
     <button
       {...props}
@@ -82,26 +65,25 @@ export function DefaultButton({
         className || ""
       }`}
     >
-      {children}
+      {children()}
     </button>
   )
 }
 
 export function Button({
   variant,
-  children,
   ...props
 }: ElementProps<"button"> & { variant?: ButtonVariant }) {
   switch (variant) {
     case "primary":
-      return <PrimaryButton {...props}>{children}</PrimaryButton>
+      return <PrimaryButton {...props}>{children()}</PrimaryButton>
     case "secondary":
-      return <SecondaryButton {...props}>{children}</SecondaryButton>
+      return <SecondaryButton {...props}>{children()}</SecondaryButton>
     case "danger":
-      return <DangerButton {...props}>{children}</DangerButton>
+      return <DangerButton {...props}>{children()}</DangerButton>
     case "success":
-      return <SuccessButton {...props}>{children}</SuccessButton>
+      return <SuccessButton {...props}>{children()}</SuccessButton>
     default:
-      return <DefaultButton {...props}>{children}</DefaultButton>
+      return <DefaultButton {...props}>{children()}</DefaultButton>
   }
 }

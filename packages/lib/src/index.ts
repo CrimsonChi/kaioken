@@ -13,6 +13,7 @@ import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
+export * from "./children.js"
 export * from "./component.js"
 export * from "./context.js"
 export * from "./globalContext.js"
