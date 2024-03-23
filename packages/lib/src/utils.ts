@@ -27,14 +27,16 @@ function vNodeContains(
   needle: Kaioken.VNode,
   checkSiblings = false
 ): boolean {
-  return (
-    haystack === needle ||
-    (haystack.child && vNodeContains(haystack.child, needle, true)) ||
-    (checkSiblings &&
-      haystack.sibling &&
-      vNodeContains(haystack.sibling, needle, true)) ||
-    false
-  )
+  if (haystack === needle) return true
+  const stack: Kaioken.VNode[] = [haystack]
+  while (stack.length) {
+    const n = stack.pop()!
+    if (n === needle) return true
+    n.child && stack.push(n.child)
+    checkSiblings && n.sibling && stack.push(n.sibling)
+    checkSiblings = true
+  }
+  return false
 }
 
 function applyRecursive(
