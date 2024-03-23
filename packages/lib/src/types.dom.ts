@@ -237,6 +237,7 @@ interface HtmlElementAttributes {
     rel?: AnchorRel
     type?: MediaType
     ping?: ListOfUrlsOrPaths
+    mask?: string
   }
   abbr: {}
   address: {}
@@ -604,6 +605,7 @@ interface SvgGlobalAttributes {
   display?: string
   transform?: string
   "transform-origin"?: string
+  filter?: string
 }
 
 /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linecap) */
@@ -614,16 +616,117 @@ interface SvgStrokeLineCap {
 interface SvgStrokeLineJoin {
   strokeLinejoin?: "arcs" | "bevel" | "miter" | "miter-clip" | "round"
 }
+/** https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation-filters */
+interface SvgColorInterpolationFilters {
+  colorInterpolationFilters?: "auto" | "sRGB" | "linearRGB"
+}
+
+/** https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation */
+interface SvgColorInterpolation {
+  colorInterpolation?: "auto" | "sRGB" | "linearRGB"
+}
+
+// colorInterpolationFilters
 
 interface SvgElementAttributes {
+  circle: {
+    cx?: string | number
+    cy?: string | number
+    r?: string | number
+    mask?: string
+    opacity?: string | number
+  }
+  clipPath: {
+    clipPathUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    mask?: string
+  }
   defs: {}
-  filter: {
+  ellipse: {
+    cx?: string | number
+    cy?: string | number
+    rx?: string | number
+    ry?: string | number
+    mask?: string
+    opacity?: string | number
+  }
+  feSpotLight: SvgColorInterpolationFilters & {
+    result?: string
+  }
+  feFlood: SvgColorInterpolationFilters & {
+    floodColor?: string
+    floodOpacity?: string
+    result?: string
+  }
+  feBlend: SvgColorInterpolationFilters & {
+    in?: string
+    in2?: string
+    mode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten"
+    result?: string
+  }
+  feGaussianBlur: SvgColorInterpolationFilters & {
+    in?: string
+    stdDeviation?: string | number
+    edgeMode?: "duplicate" | "wrap" | "none"
+    result?: string
+  }
+  filter: SvgColorInterpolationFilters &
+    SvgColorInterpolation & {
+      x?: string | number
+      y?: string | number
+      width?: string | number
+      height?: string | number
+      filterUnits?: "userSpaceOnUse" | "objectBoundingBox"
+      primitiveUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    }
+  g: {
+    clipPath?: string
+    mask?: string
+    opacity?: string | number
+  }
+  line: SvgStrokeLineCap & {
+    x1?: string | number
+    y1?: string | number
+    x2?: string | number
+    y2?: string | number
+    points?: string
+    animatedPoints?: string
+    mask?: string
+    opacity?: string | number
+  }
+  mask: {
     x?: string | number
     y?: string | number
     width?: string | number
     height?: string | number
-    filterUnits?: "userSpaceOnUse" | "objectBoundingBox"
-    primitiveUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    maskUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    mask?: string
+  }
+  path: SvgStrokeLineCap &
+    SvgStrokeLineJoin & {
+      d?: string
+      mask?: string
+      opacity?: string | number
+    }
+  polygon: SvgStrokeLineJoin & {
+    points?: string
+    animatedPoints?: string
+    opacity?: string | number
+  }
+  polyline: SvgStrokeLineCap &
+    SvgStrokeLineJoin & {
+      points?: string
+      animatedPoints?: string
+      opacity?: string | number
+    }
+  rect: SvgStrokeLineJoin & {
+    x?: string | number
+    y?: string | number
+    rx?: string | number
+    ry?: string | number
+    width?: string | number
+    height?: string | number
+    mask?: string
+    opacity?: string | number
   }
   svg: {
     width?: string | number
@@ -633,54 +736,21 @@ interface SvgElementAttributes {
     xmlns?: string
     "xmlns:xlink"?: string
     version?: string
+    mask?: string
+    opacity?: string | number
   }
-  circle: {
-    cx?: string | number
-    cy?: string | number
-    r?: string | number
-  }
-  clipPath: {
-    clipPathUnits?: "userSpaceOnUse" | "objectBoundingBox"
-  }
-  ellipse: {
-    cx?: string | number
-    cy?: string | number
-    rx?: string | number
-    ry?: string | number
-  }
-  g: {
-    clipPath?: string
-  }
-  line: SvgStrokeLineCap & {
-    x1?: string | number
-    y1?: string | number
-    x2?: string | number
-    y2?: string | number
-    points?: string
-    animatedPoints?: string
-  }  
-  path: SvgStrokeLineCap & SvgStrokeLineJoin & {
-      d?: string
-  }
-  polygon: SvgStrokeLineJoin & {
-    points?: string
-    animatedPoints?: string
-  } 
-  polyline: SvgStrokeLineCap & SvgStrokeLineJoin & {
-    points?: string
-    animatedPoints?: string
-  } 
-  rect: SvgStrokeLineJoin & {
-    x?: string | number
-    y?: string | number
-    rx?: string | number
-    ry?: string | number
-    width?: string | number
-    height?: string | number
-  } 
-  text: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
-  textPath: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
-  tref: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
-  tspan: SvgStrokeLineCap & SvgStrokeLineJoin & {} 
+  text: SvgStrokeLineCap &
+    SvgStrokeLineJoin & {
+      mask?: string
+      opacity?: string | number
+    }
+  textPath: SvgStrokeLineCap &
+    SvgStrokeLineJoin & {
+      opacity?: string | number
+    }
+  tref: SvgStrokeLineCap & SvgStrokeLineJoin & {}
+  tspan: SvgStrokeLineCap &
+    SvgStrokeLineJoin & {
+      opacity?: string | number
+    }
 }
-
