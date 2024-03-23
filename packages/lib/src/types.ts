@@ -40,9 +40,9 @@ declare global {
     type InternalProps<
       K extends keyof HtmlElementAttributes | keyof SvgElementAttributes,
     > = K extends keyof HTMLElementTagNameMap
-      ? { ref?: Kaioken.Ref<HTMLElementTagNameMap[K]>; key?: ElementKey }
+      ? { ref?: Kaioken.Ref<unknown>; key?: ElementKey }
       : K extends keyof SVGElementTagNameMap
-        ? { ref?: Kaioken.Ref<SVGElementTagNameMap[K]>; key?: ElementKey }
+        ? { ref?: Kaioken.Ref<unknown>; key?: ElementKey }
         : {}
   }
   export namespace Kaioken {
