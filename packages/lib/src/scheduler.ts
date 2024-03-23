@@ -96,9 +96,11 @@ export class Scheduler {
   queueUpdate(node: VNode) {
     node.prev = { ...node, prev: undefined }
 
-    if (!this.nextUnitOfWork) {
+    if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(node)
       this.nextUnitOfWork = node
+      return
+    } else if (this.nextUnitOfWork === node) {
       return
     }
 
