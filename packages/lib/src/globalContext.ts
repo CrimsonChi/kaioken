@@ -50,6 +50,6 @@ class GlobalContext {
   }
 
   queueEffect(callback: Function) {
-    this.scheduler.pendingEffects.push(callback)
+    this.scheduler.nodeEffects.push(callback)
   }
 }

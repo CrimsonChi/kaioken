@@ -15,7 +15,8 @@ export class Scheduler {
   private treesInProgress: VNode[] = []
   private currentTreeIndex = 0
   private timeoutRef: number = -1
-  pendingEffects: Function[] = []
+  queuedNodeEffectSets: Function[][] = []
+  nodeEffects: Function[] = []
   deletions: VNode[] = []
 
   constructor(
@@ -55,7 +56,12 @@ export class Scheduler {
       }
 
       this.treesInProgress = []
-      while (this.pendingEffects.length) this.pendingEffects.pop()?.()
+      while (this.queuedNodeEffectSets.length) {
+        const effects = this.queuedNodeEffectSets.pop()! // consume from child before parent
+        while (effects.length) {
+          effects.shift()!() // fire in sequence
+        }
+      }
     }
     if ("requestIdleCallback" in window) {
       let didExec = false
@@ -205,17 +211,25 @@ export class Scheduler {
       vNode,
       [vNode.instance.render()].flat() as VNode[]
     )
+    this.queueCurrentNodeEffects()
   }
 
   private updateFunctionComponent(vNode: VNode) {
     this.globalContext.hookIndex = 0
     node.current = vNode
-
     vNode.child = reconcileChildren(
       this.globalContext,
       vNode,
       [(vNode.type as Function)(vNode.props)].flat()
     )
+    this.queueCurrentNodeEffects()
+  }
+
+  private queueCurrentNodeEffects() {
+    if (this.nodeEffects.length) {
+      this.queuedNodeEffectSets.push(this.nodeEffects)
+      this.nodeEffects = []
+    }
   }
 
   private updateHostComponent(vNode: VNode) {
