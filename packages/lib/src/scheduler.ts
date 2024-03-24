@@ -55,7 +55,7 @@ export class Scheduler {
       }
 
       this.treesInProgress = []
-      while (this.pendingEffects.length) this.pendingEffects.shift()?.()
+      while (this.pendingEffects.length) this.pendingEffects.pop()?.()
     }
     if ("requestIdleCallback" in window) {
       let didExec = false
