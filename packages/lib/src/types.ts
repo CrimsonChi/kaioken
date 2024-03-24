@@ -19,14 +19,14 @@ type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
     GlobalAttributes &
     EventAttributes<K> &
-    JSX.InternalProps<K> &
+    Kaioken.InternalProps &
     Partial<ARIAMixin>
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
     SvgGlobalAttributes &
     GlobalAttributes &
     EventAttributes<K> &
-    JSX.InternalProps<K> &
+    Kaioken.InternalProps &
     Partial<ARIAMixin>
 }
 
@@ -36,14 +36,6 @@ declare global {
 
     type ElementKey = string | number
     type Element = Kaioken.VNode | string | number | null
-
-    type InternalProps<
-      K extends keyof HtmlElementAttributes | keyof SvgElementAttributes,
-    > = K extends keyof HTMLElementTagNameMap
-      ? { ref?: Kaioken.Ref<unknown>; key?: ElementKey }
-      : K extends keyof SVGElementTagNameMap
-        ? { ref?: Kaioken.Ref<unknown>; key?: ElementKey }
-        : {}
   }
   export namespace Kaioken {
     type Context<T> = {
@@ -55,6 +47,8 @@ declare global {
     type FCProps<T = {}> = T & { children?: JSX.Element[] }
 
     type Hook<T> = T & { cleanup?: () => void }
+
+    type InternalProps = { ref?: Kaioken.Ref<Element>; key?: JSX.ElementKey }
 
     type Ref<T> = { current: T | null }
 
