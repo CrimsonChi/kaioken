@@ -756,7 +756,7 @@ interface SvgElementAttributes {
     stopColor?: string
     stopOpacity?: string
   }
-  svg: {
+  svg: SvgStrokeAttributes & {
     width?: string | number
     height?: string | number
     viewBox?: string
