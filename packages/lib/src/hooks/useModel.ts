@@ -1,8 +1,8 @@
 import { shouldExecHook, useHook } from "./utils.js"
 
 export function useModel<
-  T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-  U extends string | number | boolean,
+  T extends HTMLElement,
+  U extends string | number | boolean = string,
 >(initial: U): [Kaioken.Ref<T>, U, (newValue: U) => void] {
   if (!shouldExecHook()) {
     return [{ current: null }, initial, () => {}]
@@ -39,31 +39,40 @@ export function useModel<
   )
 }
 
-function setElementValue(
-  element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-  value: unknown
-) {
-  switch (element.type) {
-    case "checkbox":
-      ;(element as HTMLInputElement).checked = value as boolean
-      break
-    case "radio":
-      ;(element as HTMLInputElement).checked = value === element.value
-      break
-    default:
-      element.value = value as string
+function setElementValue(element: HTMLElement, value: unknown) {
+  if (element instanceof HTMLInputElement) {
+    switch (element.type) {
+      case "checkbox":
+        element.checked = value as boolean
+        break
+      case "radio":
+        element.checked = value === element.value
+        break
+      default:
+        element.value = value as string
+    }
+  } else if (element instanceof HTMLTextAreaElement) {
+    element.value = value as string
+  } else if (element instanceof HTMLSelectElement) {
+    element.value = value as string
   }
 }
 
-function getElementValue(
-  element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-) {
-  switch (element.type) {
-    case "checkbox":
-      return (element as HTMLInputElement).checked
-    case "radio":
-      return (element as HTMLInputElement).value
-    default:
-      return element.value
+function getElementValue(element: HTMLElement) {
+  if (element instanceof HTMLInputElement) {
+    switch (element.type) {
+      case "checkbox":
+        return element.checked
+      case "radio":
+        return element.checked ? element.value : undefined
+      default:
+        return element.value
+    }
+  } else if (element instanceof HTMLTextAreaElement) {
+    return element.value
+  } else if (element instanceof HTMLSelectElement) {
+    return element.value
   }
+
+  return undefined
 }
