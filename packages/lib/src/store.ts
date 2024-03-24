@@ -74,7 +74,12 @@ function createStore<T, U extends MethodFactory<T>>(
     sliceFn?: (state: T) => R,
     equality?: (prev: R, next: R) => boolean
   ) {
-    if (!shouldExecHook()) return { value, ...methods }
+    if (!shouldExecHook()) {
+      if (sliceFn) {
+        return { value: sliceFn(value), ...methods }
+      }
+      return { value, ...methods }
+    }
 
     return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
       if (oldHook) {
