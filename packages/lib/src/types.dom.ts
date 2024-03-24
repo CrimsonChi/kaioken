@@ -599,8 +599,7 @@ interface HtmlElementAttributes {
 
 interface SvgGlobalAttributes {
   fill?: string
-  stroke?: string
-  strokeWidth?: string | number
+
   /** [MDN Reference](https://developer.mozilla.org/docs/Web/CSS/display) */
   display?: string
   transform?: string
@@ -608,20 +607,31 @@ interface SvgGlobalAttributes {
   filter?: string
 }
 
-/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linecap) */
-interface SvgStrokeLineCap {
+interface SvgStrokeAttributes {
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke) */
+  stroke?: string
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray) */
+  strokeDasharray?: string
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dashoffset) */
+  strokeDashoffset?: string | number
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linecap) */
   strokeLinecap?: "butt" | "round" | "square"
-}
-/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linejoin) */
-interface SvgStrokeLineJoin {
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-linejoin) */
   strokeLinejoin?: "arcs" | "bevel" | "miter" | "miter-clip" | "round"
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-miterlimit) */
+  strokeMiterlimit?: string | number
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-opacity) */
+  strokeOpacity?: string | number
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-width) */
+  strokeWidth?: string | number
 }
-/** https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation-filters */
+
+/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation-filters) */
 interface SvgColorInterpolationFilters {
   colorInterpolationFilters?: "auto" | "sRGB" | "linearRGB"
 }
 
-/** https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation */
+/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation) */
 interface SvgColorInterpolation {
   colorInterpolation?: "auto" | "sRGB" | "linearRGB"
 }
@@ -629,25 +639,27 @@ interface SvgColorInterpolation {
 // colorInterpolationFilters
 
 interface SvgElementAttributes {
-  circle: {
+  circle: SvgStrokeAttributes & {
     cx?: string | number
     cy?: string | number
     r?: string | number
     mask?: string
     opacity?: string | number
+    pathLength?: string | number
   }
   clipPath: {
     clipPathUnits?: "userSpaceOnUse" | "objectBoundingBox"
     mask?: string
   }
   defs: {}
-  ellipse: {
+  ellipse: SvgStrokeAttributes & {
     cx?: string | number
     cy?: string | number
     rx?: string | number
     ry?: string | number
     mask?: string
     opacity?: string | number
+    pathLength?: string | number
   }
   feSpotLight: SvgColorInterpolationFilters & {
     result?: string
@@ -683,7 +695,7 @@ interface SvgElementAttributes {
     mask?: string
     opacity?: string | number
   }
-  line: SvgStrokeLineCap & {
+  line: SvgStrokeAttributes & {
     x1?: string | number
     y1?: string | number
     x2?: string | number
@@ -692,6 +704,7 @@ interface SvgElementAttributes {
     animatedPoints?: string
     mask?: string
     opacity?: string | number
+    pathLength?: string | number
   }
   linearGradient: {
     x1?: string | number
@@ -709,24 +722,25 @@ interface SvgElementAttributes {
     maskUnits?: "userSpaceOnUse" | "objectBoundingBox"
     mask?: string
   }
-  path: SvgStrokeLineCap &
-    SvgStrokeLineJoin & {
-      d?: string
-      mask?: string
-      opacity?: string | number
-    }
-  polygon: SvgStrokeLineJoin & {
+  path: SvgStrokeAttributes & {
+    d?: string
+    mask?: string
+    opacity?: string | number
+    pathLength?: string | number
+  }
+  polygon: SvgStrokeAttributes & {
     points?: string
     animatedPoints?: string
     opacity?: string | number
+    pathLength?: string | number
   }
-  polyline: SvgStrokeLineCap &
-    SvgStrokeLineJoin & {
-      points?: string
-      animatedPoints?: string
-      opacity?: string | number
-    }
-  rect: SvgStrokeLineJoin & {
+  polyline: SvgStrokeAttributes & {
+    points?: string
+    animatedPoints?: string
+    opacity?: string | number
+    pathLength?: string | number
+  }
+  rect: SvgStrokeAttributes & {
     x?: string | number
     y?: string | number
     rx?: string | number
@@ -735,6 +749,7 @@ interface SvgElementAttributes {
     height?: string | number
     mask?: string
     opacity?: string | number
+    pathLength?: string | number
   }
   stop: {
     offset?: string
@@ -752,18 +767,15 @@ interface SvgElementAttributes {
     mask?: string
     opacity?: string | number
   }
-  text: SvgStrokeLineCap &
-    SvgStrokeLineJoin & {
-      mask?: string
-      opacity?: string | number
-    }
-  textPath: SvgStrokeLineCap &
-    SvgStrokeLineJoin & {
-      opacity?: string | number
-    }
-  tref: SvgStrokeLineCap & SvgStrokeLineJoin & {}
-  tspan: SvgStrokeLineCap &
-    SvgStrokeLineJoin & {
-      opacity?: string | number
-    }
+  text: SvgStrokeAttributes & {
+    mask?: string
+    opacity?: string | number
+  }
+  textPath: SvgStrokeAttributes & {
+    opacity?: string | number
+  }
+  tref: SvgStrokeAttributes & {}
+  tspan: SvgStrokeAttributes & {
+    opacity?: string | number
+  }
 }
