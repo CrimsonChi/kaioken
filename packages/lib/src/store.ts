@@ -10,13 +10,19 @@ type MethodFactory<T> = (
   getState: () => T
 ) => Record<string, (...args: any[]) => void>
 
-type Store<T, U extends MethodFactory<T>> = {
+type StoreHook<T, U extends MethodFactory<T>> = {
   <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
-  <R>(
-    sliceFn: (state: T) => R,
+  <
+    F extends null | ((state: T) => unknown),
+    R extends F extends Function ? ReturnType<F> : T,
+  >(
+    sliceFn: F,
     equality: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ): { value: R } & ReturnType<U>
   (): { value: T } & ReturnType<U>
+}
+
+type Store<T, U extends MethodFactory<T>> = StoreHook<T, U> & {
   getState: () => T
   setState: (setter: Kaioken.StateSetter<T>) => void
   methods: ReturnType<U>
@@ -26,13 +32,13 @@ type Store<T, U extends MethodFactory<T>> = {
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
   methodFactory: U
-) {
+): Store<T, U> {
   let value = initial
   const subscribers = new Set<Kaioken.VNode | Function>()
   const nodeToSliceComputeMap = new WeakMap<
     Kaioken.VNode,
     [
-      Function,
+      Function | null,
       (
         | ((prev: any, next: any, compare: typeof shallowCompare) => boolean)
         | undefined
@@ -51,13 +57,13 @@ function createStore<T, U extends MethodFactory<T>>(
         let computeChanged = false
         for (let i = 0; i < computes.length; i++) {
           const [sliceFn, eq, slice] = computes[i]
+          const computeRes = sliceFn === null ? value : sliceFn(value)
+          computes[i] = [sliceFn, eq, computeRes]
 
-          const next = sliceFn(value)
-          computes[i] = [sliceFn, eq, next]
           if (computeChanged) continue
-          if (eq && eq(slice, next, shallowCompare)) {
+          if (eq && eq(slice, computeRes, shallowCompare)) {
             continue
-          } else if (!eq && shallowCompare(slice, next)) {
+          } else if (!eq && shallowCompare(slice, computeRes)) {
             continue
           }
 
@@ -71,8 +77,8 @@ function createStore<T, U extends MethodFactory<T>>(
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
   function useStore<R>(
-    sliceFn?: (state: T) => R,
-    equality?: (prev: R, next: R) => boolean
+    sliceFn?: null | ((state: T) => R),
+    equality?: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ) {
     if (!shouldExecHook()) {
       if (sliceFn) {
@@ -86,9 +92,9 @@ function createStore<T, U extends MethodFactory<T>>(
         cleanupHook(oldHook)
       }
       const stateSlice = sliceFn ? sliceFn(value) : value
-      if (sliceFn) {
+      if (sliceFn || equality) {
         const computes = nodeToSliceComputeMap.get(vNode) ?? []
-        computes.push([sliceFn, equality, stateSlice])
+        computes.push([sliceFn ?? null, equality, stateSlice])
         nodeToSliceComputeMap.set(vNode, computes)
       }
 
@@ -110,5 +116,5 @@ function createStore<T, U extends MethodFactory<T>>(
       subscribers.add(fn)
       return (() => (subscribers.delete(fn), void 0)) as () => void
     },
-  }) as Store<T, U>
+  })
 }
