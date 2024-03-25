@@ -95,13 +95,16 @@ async function startServer() {
 }
 async function main() {
   const fastify = await startServer()
-  const { host, port } = env
+  const {
+    server: { host, port },
+    url,
+  } = env
   fastify.listen({ host, port }, function (err) {
     if (err) {
       fastify.log.error(err)
       process.exit(1)
     }
-    console.log(`Server listening at http://${host}:${port}`)
+    console.log(`Server listening at ${url}`)
   })
 }
 

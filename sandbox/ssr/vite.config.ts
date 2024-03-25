@@ -9,13 +9,5 @@ export default defineConfig({
       $: path.join(__dirname, "src"),
     },
   },
-  esbuild: {
-    jsxInject: `import * as kaioken from "kaioken"`,
-    jsx: "transform",
-    jsxFactory: "kaioken.createElement",
-    jsxFragment: "kaioken.fragment",
-    loader: "tsx",
-    include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
-  },
   plugins: [ssr({ prerender: true }), kaioken()],
 })
