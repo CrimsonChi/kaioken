@@ -1,4 +1,13 @@
-import type { ModuleNode, Plugin } from "vite"
+import type { ESBuildOptions, ModuleNode, Plugin } from "vite"
+
+const defaultEsBuildOptions: ESBuildOptions = {
+  jsxInject: `import * as kaioken from "kaioken"`,
+  jsx: "transform",
+  jsxFactory: "kaioken.createElement",
+  jsxFragment: "kaioken.fragment",
+  loader: "tsx",
+  include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
+}
 
 export default function (): Plugin {
   let isProduction = false
@@ -6,6 +15,14 @@ export default function (): Plugin {
 
   return {
     name: "vite-plugin-kaioken",
+    config(config) {
+      return {
+        esbuild: {
+          ...defaultEsBuildOptions,
+          ...config.esbuild,
+        },
+      }
+    },
     configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
