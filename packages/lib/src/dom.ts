@@ -273,8 +273,7 @@ function findMountedDomRecursive(
   vNode?: VNode
 ): HTMLElement | SVGElement | Text | undefined {
   if (!vNode) return
-  const stack: VNode[] = []
-  stack.push(vNode)
+  const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
     if (n.dom?.isConnected) return n.dom
