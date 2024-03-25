@@ -1,15 +1,16 @@
 import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
 
-export const shouldExecHook = () => {
-  return renderMode.current === "dom"
-}
-
 export {
   cleanupHook,
   depsRequireChange,
   useHook,
+  shouldExecHook,
   type HookCallback,
   type HookCallbackState,
+}
+
+const shouldExecHook = () => {
+  return renderMode.current === "dom"
 }
 
 type Hook<T> = Kaioken.Hook<T>
@@ -64,6 +65,6 @@ function depsRequireChange(a?: unknown[], b?: unknown[]) {
     a === undefined ||
     b === undefined ||
     a.length !== b.length ||
-    (a.length > 0 && b.some((dep, i) => dep !== a[i]))
+    (a.length > 0 && b.some((dep, i) => !Object.is(dep, a[i])))
   )
 }
