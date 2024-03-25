@@ -234,6 +234,7 @@ function commitWork(
       const onUpdated = instance.componentDidUpdate?.bind(instance)
       if (onUpdated) ctx.queueEffect(onUpdated)
     }
+    ctx.scheduler.queueCurrentNodeEffects()
   }
 
   if (vNode.props.ref && dom) {

@@ -225,7 +225,7 @@ export class Scheduler {
     this.queueCurrentNodeEffects()
   }
 
-  private queueCurrentNodeEffects() {
+  queueCurrentNodeEffects() {
     if (this.nodeEffects.length) {
       this.queuedNodeEffectSets.push(this.nodeEffects)
       this.nodeEffects = []
