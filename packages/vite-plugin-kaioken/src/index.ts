@@ -63,7 +63,7 @@ if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
       contexts.forEach((ctx) => {
-        applyRecursive(ctx, (node) => {
+        applyRecursive(ctx.rootNode, (node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];
             if (node.prev) {

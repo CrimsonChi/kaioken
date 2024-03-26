@@ -1,4 +1,4 @@
-import type { GlobalContext } from "./globalContext"
+import { node, nodeToCtxMap } from "./globals.js"
 
 export {
   isVNode,
@@ -8,10 +8,20 @@ export {
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   shallowCompare,
+  getNodeGlobalContext,
+  getCurrentNode,
   propFilters,
   selfClosingTags,
   svgTags,
   booleanAttributes,
+}
+
+function getNodeGlobalContext(node: Kaioken.VNode) {
+  return nodeToCtxMap.get(node)
+}
+
+function getCurrentNode() {
+  return node.current
 }
 
 function isVNode(thing: unknown): thing is Kaioken.VNode {
@@ -40,12 +50,10 @@ function vNodeContains(
 }
 
 function applyRecursive(
-  ctx: GlobalContext,
+  node: Kaioken.VNode,
   func: (node: Kaioken.VNode) => void
 ) {
-  if (!ctx.rootNode) return
-
-  const nodes: Kaioken.VNode[] = [ctx.rootNode]
+  const nodes: Kaioken.VNode[] = [node]
   const apply = (node: Kaioken.VNode) => {
     func(node)
     node.child && nodes.push(node.child)
