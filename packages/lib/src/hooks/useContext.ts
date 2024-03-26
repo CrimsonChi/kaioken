@@ -1,4 +1,4 @@
-import { useHook } from "./utils"
+import { useHook } from "./utils.js"
 
 const contextDataSymbol = Symbol.for("kaioken.contextData")
 
