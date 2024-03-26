@@ -102,14 +102,16 @@ function renderToString<T extends Record<string, unknown>>(
   ctx.current = c
   const prev = renderMode.current
   renderMode.current = "string"
-  const res = renderToString_internal(el, undefined, elProps)
+  const n = el instanceof Function ? createElement(el, elProps) : el
+  c.rootNode = n as VNode
+  const res = renderToString_internal(n, undefined, elProps)
   renderMode.current = prev
   contexts.delete(c)
   return res
 }
 
 function renderToString_internal<T extends Record<string, unknown>>(
-  el: JSX.Element | ((props: T) => JSX.Element),
+  el: JSX.Element,
   parent?: VNode | undefined,
   elProps = {} as T
 ): string {
