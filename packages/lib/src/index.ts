@@ -9,7 +9,7 @@ import {
 } from "./utils.js"
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
-import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
+import { contexts, ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
@@ -98,15 +98,19 @@ function renderToString<T extends Record<string, unknown>>(
   el: JSX.Element | ((props: T) => JSX.Element),
   elProps = {} as T
 ) {
+  const c = new GlobalContext()
+  ctx.current = c
   const prev = renderMode.current
   renderMode.current = "string"
-  const res = renderToString_internal(el, elProps)
+  const res = renderToString_internal(el, undefined, elProps)
   renderMode.current = prev
+  contexts.delete(c)
   return res
 }
 
 function renderToString_internal<T extends Record<string, unknown>>(
   el: JSX.Element | ((props: T) => JSX.Element),
+  parent?: VNode | undefined,
   elProps = {} as T
 ): string {
   if (el === null) return ""
@@ -115,16 +119,18 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (typeof el === "string") return el
   if (typeof el === "number") return el.toString()
   if (typeof el === "function")
-    return renderToString_internal(createElement(el, elProps), elProps)
+    return renderToString_internal(createElement(el, elProps))
   if (el instanceof Array)
     return el.map((el) => renderToString(el, el.props)).join("")
 
+  el.parent = parent
+  nodeToCtxMap.set(el, ctx.current)
   const props = el.props ?? {}
   const children = props.children ?? []
   const type = el.type
   if (type === et.text) return props.nodeValue ?? ""
   if (type === et.fragment)
-    return children.map((c) => renderToString_internal(c, props)).join("")
+    return children.map((c) => renderToString_internal(c, el, props)).join("")
 
   if (typeof type === "string") {
     const sc = selfClosingTags.includes(type)
@@ -139,7 +145,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
     return (
       open +
       (!sc
-        ? `>${children.map((c) => renderToString_internal(c, c.props)).join("")}</${type}>`
+        ? `>${children.map((c) => renderToString_internal(c, el, c.props)).join("")}</${type}>`
         : "/>")
     )
   }
@@ -149,9 +155,8 @@ function renderToString_internal<T extends Record<string, unknown>>(
     const instance = new (type as unknown as {
       new (props: Record<string, unknown>): Component
     })(props)
-    instance.componentDidMount?.()
-    return renderToString_internal(instance.render(), props)
+    return renderToString_internal(instance.render(), el, props)
   }
 
-  return renderToString_internal(type(props), props)
+  return renderToString_internal(type(props), el, props)
 }
