@@ -40,7 +40,7 @@ declare global {
   export namespace Kaioken {
     type Context<T> = {
       Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
-      value: () => T
+      default: () => T | null
     }
 
     type FC<T = {}> = (props: FCProps<T>) => JSX.Element

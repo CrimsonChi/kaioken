@@ -1,13 +1,19 @@
 import { fragment } from "./index.js"
 
-export function createContext<T>(initial: T | null): Kaioken.Context<T> {
-  let context = initial as T
+const contextDataSymbol = Symbol.for("kaioken.contextData")
 
-  return {
+export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
+  const ctx = {
     Provider: ({ value, children = [] }: Kaioken.ProviderProps<T>) => {
-      context = value
-      return fragment({ children })
+      return fragment({
+        children,
+        [contextDataSymbol]: {
+          value,
+          ctx,
+        },
+      })
     },
-    value: () => context,
+    default: () => defaultValue,
   }
+  return ctx
 }
