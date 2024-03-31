@@ -10,11 +10,14 @@ export {
   shallowCompare,
   getNodeGlobalContext,
   getCurrentNode,
+  noop,
   propFilters,
   selfClosingTags,
   svgTags,
   booleanAttributes,
 }
+
+const noop = Object.freeze(() => {})
 
 function getNodeGlobalContext(node: Kaioken.VNode) {
   return nodeToCtxMap.get(node)

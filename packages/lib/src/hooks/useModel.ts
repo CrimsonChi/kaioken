@@ -1,3 +1,4 @@
+import { noop } from "../utils.js"
 import { shouldExecHook, useHook } from "./utils.js"
 
 export function useModel<
@@ -9,13 +10,19 @@ export function useModel<
   }
   return useHook(
     "useModel",
-    { value: initial, ref: { current: null } as Kaioken.Ref<T> },
+    {
+      value: initial,
+      ref: { current: null } as Kaioken.Ref<T>,
+      dispatch: noop as (value: U) => void,
+    },
     ({ hook, oldHook, update, queueEffect }) => {
-      const setValue = (value: U) => {
-        if (value !== hook.value) {
-          hook.value = value
-          if (hook.ref.current) setElementValue(hook.ref.current, value)
-          update()
+      if (!oldHook) {
+        hook.dispatch = (value: U) => {
+          if (value !== hook.value) {
+            hook.value = value
+            if (hook.ref.current) setElementValue(hook.ref.current, value)
+            update()
+          }
         }
       }
 
@@ -26,7 +33,7 @@ export function useModel<
         }
         if (!oldHook) setElementValue(element, hook.value)
 
-        const listener = () => setValue(getElementValue(element) as U)
+        const listener = () => hook.dispatch(getElementValue(element) as U)
 
         element.addEventListener("input", listener)
         return () => {
@@ -34,7 +41,7 @@ export function useModel<
         }
       })
 
-      return [hook.ref, hook.value, setValue] as const
+      return [hook.ref, hook.value, hook.dispatch] as const
     }
   )
 }
