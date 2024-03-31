@@ -1,3 +1,4 @@
+export * from "./useAsync.js"
 export * from "./useCallback.js"
 export * from "./useContext.js"
 export * from "./useEffect.js"
