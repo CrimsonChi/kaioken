@@ -8,6 +8,7 @@ export function useCallback<T extends (...args: any[]) => any>(
 
   return useHook("useCallback", { callback, deps }, ({ hook, oldHook }) => {
     if (depsRequireChange(deps, oldHook?.deps)) {
+      hook.deps = deps
       hook.callback = callback
     }
     return hook.callback
