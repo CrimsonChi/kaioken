@@ -690,7 +690,7 @@ interface SvgElementAttributes {
       filterUnits?: "userSpaceOnUse" | "objectBoundingBox"
       primitiveUnits?: "userSpaceOnUse" | "objectBoundingBox"
     }
-  g: {
+  g: SvgStrokeAttributes & {
     clipPath?: string
     mask?: string
     opacity?: string | number
