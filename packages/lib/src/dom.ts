@@ -135,7 +135,15 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   return dom
 }
 
-function placeDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
+function placeDom(
+  node: VNode,
+  dom: HTMLElement | SVGElement | Text,
+  prevSiblingDom: HTMLElement | SVGElement | Text | undefined
+) {
+  if (prevSiblingDom) {
+    prevSiblingDom.after(dom)
+    return
+  }
   // find mountable parent dom
   let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
   let domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
@@ -189,13 +197,15 @@ function placeDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 
 function commitWork(ctx: GlobalContext, vNode: VNode) {
   let commitSibling = false
-  const stack: VNode[] = [vNode]
+  const stack: [VNode, HTMLElement | SVGElement | Text | undefined][] = [
+    [vNode, undefined],
+  ]
   while (stack.length) {
-    const n = stack.pop()!
+    const [n, prevSiblingDom] = stack.pop()!
     const dom = n.dom
     if (dom) {
       if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-        placeDom(n, dom)
+        placeDom(n, dom, prevSiblingDom)
       } else if (n.effectTag === EffectTag.UPDATE) {
         updateDom(n, dom)
       }
@@ -206,7 +216,7 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     }
 
     if (commitSibling && n.sibling) {
-      stack.push(n.sibling)
+      stack.push([n.sibling, dom])
     }
     commitSibling = true
 
@@ -216,7 +226,7 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     }
 
     if (n.child) {
-      stack.push(n.child)
+      stack.push([n.child, undefined])
     }
 
     const instance = n.instance
