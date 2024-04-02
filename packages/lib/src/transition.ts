@@ -66,10 +66,7 @@ export class Transition extends Component<TransitionProps> {
   queueStateChange(transitionState: TransitionState): void {
     this.state.timeoutRef = window.setTimeout(() => {
       this.clearTimeout()
-      this.setState((prev) => ({
-        ...prev,
-        transitionState,
-      }))
+      this.setTransitionState(transitionState)
     }, this.getTiming())
   }
 }
