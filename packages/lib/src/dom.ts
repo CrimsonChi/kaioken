@@ -192,14 +192,11 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
-    const dom = n.dom ?? n.instance?.rootDom
+    const dom = n.dom
     if (dom) {
-      if (
-        !dom.isConnected ||
-        (n.effectTag === EffectTag.PLACEMENT && !n.instance?.rootDom)
-      ) {
+      if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
         placeDom(n, dom)
-      } else if (n.effectTag === EffectTag.UPDATE && !n.instance?.rootDom) {
+      } else if (n.effectTag === EffectTag.UPDATE) {
         updateDom(n, dom)
       }
 
