@@ -6,8 +6,6 @@ import { ctx, node } from "./globals.js"
 import { reconcileChildren } from "./reconciler.js"
 import { vNodeContains } from "./utils.js"
 
-type KaiokenCtxFollowupFunc = (ctx: GlobalContext) => KaiokenCtxFollowupFunc[]
-
 type VNode = Kaioken.VNode
 
 export class Scheduler {
@@ -39,20 +37,11 @@ export class Scheduler {
 
     if (!this.nextUnitOfWork && this.treesInProgress.length) {
       this.currentTreeIndex = 0
-      const followUps: KaiokenCtxFollowupFunc[] = []
-      this.deletions.forEach((d) =>
-        followUps.push(...commitWork(this.globalContext, d))
-      )
-      this.deletions = []
-
-      for (let i = 0; i < this.treesInProgress.length; i++) {
-        followUps.push(
-          ...commitWork(this.globalContext, this.treesInProgress[i])
-        )
+      while (this.deletions.length) {
+        commitWork(this.globalContext, this.deletions.pop()!)
       }
-
-      while (followUps.length) {
-        followUps.push(...(followUps.shift()?.(this.globalContext) ?? []))
+      while (this.treesInProgress.length) {
+        commitWork(this.globalContext, this.treesInProgress.pop()!)
       }
 
       this.treesInProgress = []

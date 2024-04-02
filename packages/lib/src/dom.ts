@@ -1,4 +1,4 @@
-import type { GlobalContext, KaiokenCtxFollowupFunc } from "./globalContext"
+import type { GlobalContext } from "./globalContext"
 import {
   booleanAttributes,
   propFilters,
@@ -135,35 +135,28 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   return dom
 }
 
-function commitWork(
-  ctx: GlobalContext,
-  vNode: VNode,
-  domParent?: HTMLElement | SVGElement | Text,
-  prevSiblingDom?: HTMLElement | SVGElement | Text,
-  commitSibling = false
-): KaiokenCtxFollowupFunc[] {
-  const dom = vNode.dom ?? vNode.instance?.rootDom
-  if (
-    dom &&
-    (!dom.isConnected ||
-      (vNode.effectTag === EffectTag.PLACEMENT && !vNode.instance?.rootDom))
-  ) {
-    if (prevSiblingDom?.isConnected) {
-      prevSiblingDom.after(dom)
-    } else {
+function commitWork(ctx: GlobalContext, vNode: VNode) {
+  let commitSibling = false
+  const stack: VNode[] = [vNode]
+  while (stack.length) {
+    const n = stack.pop()!
+    const dom = n.dom ?? n.instance?.rootDom
+    if (
+      dom &&
+      (!dom.isConnected ||
+        (n.effectTag === EffectTag.PLACEMENT && !n.instance?.rootDom))
+    ) {
       // find mountable parent dom
-      let domParentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
-      if (!domParent) {
+      let domParentNode: VNode | undefined = n.parent ?? n.prev?.parent
+      let domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+      while (domParentNode && !domParent) {
+        domParentNode = domParentNode.parent
         domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
-        while (domParentNode && !domParent) {
-          domParentNode = domParentNode.parent
-          domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
-        }
       }
 
       if (!domParent || !domParentNode) {
-        console.error("[kaioken]: no domParent found - seek help!", vNode)
-        return []
+        console.error("[kaioken]: no domParent found - seek help!", n)
+        return
       }
 
       if (domParent.childNodes.length === 0) {
@@ -174,7 +167,7 @@ function commitWork(
         // edge cases are encountered.
 
         // first, try to find next dom by traversing through siblings
-        let nextDom = findMountedDomRecursive(vNode.sibling)
+        let nextDom = findMountedDomRecursive(n.sibling)
         if (nextDom === undefined) {
           // try to find next dom by traversing (up and across) through the tree
           // handles cases like the following:
@@ -202,72 +195,59 @@ function commitWork(
           domParent.appendChild(dom)
         }
       }
+    } else if (
+      n.effectTag === EffectTag.UPDATE &&
+      dom &&
+      !n.instance?.rootDom
+    ) {
+      updateDom(n, dom)
+    } else if (n.effectTag === EffectTag.DELETION) {
+      commitDeletion(n)
     }
-  } else if (
-    vNode.effectTag === EffectTag.UPDATE &&
-    dom &&
-    !vNode.instance?.rootDom
-  ) {
-    updateDom(vNode, dom)
-  } else if (vNode.effectTag === EffectTag.DELETION) {
-    return commitDeletion(vNode, dom)
-  }
 
-  const followUpWork: KaiokenCtxFollowupFunc[] = []
-  const { child, sibling } = vNode
-  child &&
-    followUpWork.push((ctx: GlobalContext) =>
-      commitWork(ctx, child, dom, undefined, true)
-    )
-  commitSibling &&
-    sibling &&
-    followUpWork.push((ctx: GlobalContext) =>
-      commitWork(ctx, sibling, domParent, dom, true)
-    )
-
-  const instance = vNode.instance
-  if (instance) {
-    const onMounted = instance.componentDidMount?.bind(instance)
-    if (!vNode.prev && onMounted) {
-      ctx.queueEffect(onMounted)
-    } else if (vNode.effectTag === EffectTag.UPDATE) {
-      const onUpdated = instance.componentDidUpdate?.bind(instance)
-      if (onUpdated) ctx.queueEffect(onUpdated)
+    const instance = n.instance
+    if (instance) {
+      const onMounted = instance.componentDidMount?.bind(instance)
+      if (!n.prev && onMounted) {
+        ctx.queueEffect(onMounted)
+      } else if (n.effectTag === EffectTag.UPDATE) {
+        const onUpdated = instance.componentDidUpdate?.bind(instance)
+        if (onUpdated) ctx.queueEffect(onUpdated)
+      }
+      ctx.scheduler.queueCurrentNodeEffects()
     }
-    ctx.scheduler.queueCurrentNodeEffects()
-  }
 
-  if (vNode.props.ref && dom) {
-    vNode.props.ref.current = dom
+    if (n.props.ref && dom) {
+      n.props.ref.current = dom
+    }
+    n.effectTag = undefined
+    n.prev = { ...n, prev: undefined }
+
+    if (commitSibling && n.sibling) {
+      stack.push(n.sibling)
+    }
+    if (n.child) {
+      stack.push(n.child)
+    }
+    commitSibling = true
   }
-  vNode.effectTag = undefined
-  vNode.prev = { ...vNode, prev: undefined }
-  return followUpWork
 }
 
-function commitDeletion(
-  vNode: VNode,
-  dom = vNode.dom,
-  deleteSibling = false
-): KaiokenCtxFollowupFunc[] {
-  if (Component.isCtor(vNode.type) && vNode.instance) {
-    vNode.instance.componentWillUnmount?.()
-  } else if (vNode.type instanceof Function) {
-    while (vNode.hooks?.length) cleanupHook(vNode.hooks.pop()!)
+function commitDeletion(vNode: VNode, deleteSibling = false) {
+  const stack: VNode[] = [vNode]
+  while (stack.length) {
+    const n = stack.pop()!
+    if (Component.isCtor(n.type) && n.instance) {
+      n.instance.componentWillUnmount?.()
+    } else if (n.type instanceof Function) {
+      while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
+    }
+    if (n.dom?.isConnected) n.dom.remove()
+    delete n.dom
+    if (deleteSibling && n.sibling) stack.push(n.sibling)
+    if (n.child) stack.push(n.child)
+    deleteSibling = true
   }
-
-  if (dom) {
-    if (dom.isConnected && vNode.instance?.rootDom !== dom) dom.remove()
-    delete vNode.dom
-  }
-  const followUps: KaiokenCtxFollowupFunc[] = []
-  const { child, sibling } = vNode
-  child && followUps.push(() => commitDeletion(child, undefined, true))
-  deleteSibling &&
-    sibling &&
-    followUps.push(() => commitDeletion(sibling, undefined, true))
-
-  return followUps
 }
 
 function findMountedDomRecursive(

@@ -4,9 +4,8 @@ import { Scheduler } from "./scheduler.js"
 import { vNodeContains } from "./utils.js"
 
 export { GlobalContext }
-export type { GlobalContextOptions, KaiokenCtxFollowupFunc }
+export type { GlobalContextOptions }
 
-type KaiokenCtxFollowupFunc = (ctx: GlobalContext) => KaiokenCtxFollowupFunc[]
 type VNode = Kaioken.VNode
 
 interface GlobalContextOptions {
