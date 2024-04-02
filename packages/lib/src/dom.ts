@@ -201,8 +201,26 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
       !n.instance?.rootDom
     ) {
       updateDom(n, dom)
-    } else if (n.effectTag === EffectTag.DELETION) {
+    }
+
+    if (commitSibling && n.sibling) {
+      stack.push(n.sibling)
+    }
+    commitSibling = true
+
+    if (n.effectTag === EffectTag.DELETION) {
       commitDeletion(n)
+      continue
+    }
+
+    if (n.props.ref && dom) {
+      n.props.ref.current = dom
+    }
+    n.effectTag = undefined
+    n.prev = { ...n, prev: undefined }
+
+    if (n.child) {
+      stack.push(n.child)
     }
 
     const instance = n.instance
@@ -216,20 +234,6 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
       }
       ctx.scheduler.queueCurrentNodeEffects()
     }
-
-    if (n.props.ref && dom) {
-      n.props.ref.current = dom
-    }
-    n.effectTag = undefined
-    n.prev = { ...n, prev: undefined }
-
-    if (commitSibling && n.sibling) {
-      stack.push(n.sibling)
-    }
-    if (n.child) {
-      stack.push(n.child)
-    }
-    commitSibling = true
   }
 }
 
