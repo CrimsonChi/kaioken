@@ -135,72 +135,77 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   return dom
 }
 
+function placeDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
+  // find mountable parent dom
+  let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
+  let domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+  while (domParentNode && !domParent) {
+    domParentNode = domParentNode.parent
+    domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+  }
+
+  if (!domParent || !domParentNode) {
+    console.error("[kaioken]: no domParent found - seek help!", node)
+    return
+  }
+
+  if (domParent.childNodes.length === 0) {
+    domParent.appendChild(dom)
+  } else {
+    // the following is likely a somewhat naiive implementation of the algorithm
+    // but it should be good enough for most cases. Will be improved as/when
+    // edge cases are encountered.
+
+    // first, try to find next dom by traversing through siblings
+    let nextDom = findMountedDomRecursive(node.sibling)
+    if (nextDom === undefined) {
+      // try to find next dom by traversing (up and across) through the tree
+      // handles cases like the following:
+      /**
+       * <div>
+       *    <>
+       *      <TheComponentThatIsUpdating />
+       *    <>
+       *    <>
+       *      <div></div> <- find this node
+       *    </>
+       * </div>
+       */
+      let parent = node.parent
+
+      while (!nextDom && parent && parent !== domParentNode) {
+        nextDom = findMountedDomRecursive(parent.sibling)
+        parent = parent.parent
+      }
+    }
+
+    if (nextDom) {
+      nextDom.before(dom)
+    } else {
+      domParent.appendChild(dom)
+    }
+  }
+}
+
 function commitWork(ctx: GlobalContext, vNode: VNode) {
   let commitSibling = false
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
     const dom = n.dom ?? n.instance?.rootDom
-    if (
-      dom &&
-      (!dom.isConnected ||
-        (n.effectTag === EffectTag.PLACEMENT && !n.instance?.rootDom))
-    ) {
-      // find mountable parent dom
-      let domParentNode: VNode | undefined = n.parent ?? n.prev?.parent
-      let domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
-      while (domParentNode && !domParent) {
-        domParentNode = domParentNode.parent
-        domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+    if (dom) {
+      if (
+        !dom.isConnected ||
+        (n.effectTag === EffectTag.PLACEMENT && !n.instance?.rootDom)
+      ) {
+        placeDom(n, dom)
+      } else if (n.effectTag === EffectTag.UPDATE && !n.instance?.rootDom) {
+        updateDom(n, dom)
       }
 
-      if (!domParent || !domParentNode) {
-        console.error("[kaioken]: no domParent found - seek help!", n)
-        return
+      if (n.props.ref) {
+        n.props.ref.current = dom
       }
-
-      if (domParent.childNodes.length === 0) {
-        domParent.appendChild(dom)
-      } else {
-        // the following is likely a somewhat naiive implementation of the algorithm
-        // but it should be good enough for most cases. Will be improved as/when
-        // edge cases are encountered.
-
-        // first, try to find next dom by traversing through siblings
-        let nextDom = findMountedDomRecursive(n.sibling)
-        if (nextDom === undefined) {
-          // try to find next dom by traversing (up and across) through the tree
-          // handles cases like the following:
-          /**
-           * <div>
-           *    <>
-           *      <TheComponentThatIsUpdating />
-           *    <>
-           *    <>
-           *      <div></div> <- find this node
-           *    </>
-           * </div>
-           */
-          let parent = vNode.parent
-
-          while (!nextDom && parent && parent !== domParentNode) {
-            nextDom = findMountedDomRecursive(parent.sibling)
-            parent = parent.parent
-          }
-        }
-
-        if (nextDom) {
-          nextDom.before(dom)
-        } else {
-          domParent.appendChild(dom)
-        }
-      }
-    } else if (
-      n.effectTag === EffectTag.UPDATE &&
-      dom &&
-      !n.instance?.rootDom
-    ) {
-      updateDom(n, dom)
     }
 
     if (commitSibling && n.sibling) {
@@ -213,9 +218,6 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
       continue
     }
 
-    if (n.props.ref && dom) {
-      n.props.ref.current = dom
-    }
     n.effectTag = undefined
     n.prev = { ...n, prev: undefined }
 
