@@ -218,9 +218,6 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
       continue
     }
 
-    n.effectTag = undefined
-    n.prev = { ...n, prev: undefined }
-
     if (n.child) {
       stack.push(n.child)
     }
@@ -236,6 +233,9 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
       }
       ctx.scheduler.queueCurrentNodeEffects()
     }
+
+    n.effectTag = undefined
+    n.prev = { ...n, prev: undefined }
   }
 }
 
