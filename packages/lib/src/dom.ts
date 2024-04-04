@@ -134,17 +134,11 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 
   return dom
 }
-
-function placeDom(
-  node: VNode,
-  dom: HTMLElement | SVGElement | Text,
-  prevSiblingDom: HTMLElement | SVGElement | Text | undefined
-) {
-  if (prevSiblingDom) {
-    prevSiblingDom.after(dom)
-    return
-  }
-  // find mountable parent dom
+type DomParentSearchResult = {
+  node: VNode
+  element: HTMLElement | SVGElement | Text
+}
+function getDomParent(node: VNode): DomParentSearchResult {
   let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
   let domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
   while (domParentNode && !domParent) {
@@ -153,19 +147,38 @@ function placeDom(
   }
 
   if (!domParent || !domParentNode) {
-    console.error("[kaioken]: no domParent found - seek help!", node)
+    if (!node.parent) {
+      // handle app entry
+      if (node.dom) return { node, element: node.dom }
+    }
+
+    throw new Error(
+      "[kaioken]: no domParent found - seek help!\n" + String(node)
+    )
+  }
+  return { node: domParentNode, element: domParent }
+}
+
+function placeDom(
+  vNode: VNode,
+  dom: HTMLElement | SVGElement | Text,
+  prevSiblingDom: HTMLElement | SVGElement | Text | undefined,
+  mntParent: DomParentSearchResult
+) {
+  if (prevSiblingDom) {
+    prevSiblingDom.after(dom)
     return
   }
-
-  if (domParent.childNodes.length === 0) {
-    domParent.appendChild(dom)
+  const { element, node } = mntParent
+  if (element.childNodes.length === 0) {
+    element.appendChild(dom)
   } else {
     // the following is likely a somewhat naiive implementation of the algorithm
     // but it should be good enough for most cases. Will be improved as/when
     // edge cases are encountered.
 
     // first, try to find next dom by traversing through siblings
-    let nextDom = findMountedDomRecursive(node.sibling)
+    let nextDom = findMountedDomRecursive(vNode.sibling)
     if (nextDom === undefined) {
       // try to find next dom by traversing (up and across) through the tree
       // handles cases like the following:
@@ -179,9 +192,9 @@ function placeDom(
        *    </>
        * </div>
        */
-      let parent = node.parent
+      let parent = vNode.parent
 
-      while (!nextDom && parent && parent !== domParentNode) {
+      while (!nextDom && parent && parent !== node) {
         nextDom = findMountedDomRecursive(parent.sibling)
         parent = parent.parent
       }
@@ -190,22 +203,29 @@ function placeDom(
     if (nextDom) {
       nextDom.before(dom)
     } else {
-      domParent.appendChild(dom)
+      element.appendChild(dom)
     }
   }
 }
 
 function commitWork(ctx: GlobalContext, vNode: VNode) {
   let commitSibling = false
-  const stack: [VNode, HTMLElement | SVGElement | Text | undefined][] = [
-    [vNode, undefined],
+  type MaybeDom = HTMLElement | SVGElement | Text | undefined
+
+  const stack: [VNode, MaybeDom, DomParentSearchResult | undefined][] = [
+    [vNode, undefined, undefined],
   ]
+
   while (stack.length) {
-    const [n, prevSiblingDom] = stack.pop()!
+    let [n, prevSiblingDom, mntParent] = stack.pop()!
     const dom = n.dom
+
     if (dom) {
       if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-        placeDom(n, dom, prevSiblingDom)
+        if (!mntParent) {
+          mntParent = getDomParent(n)
+        }
+        placeDom(n, dom, prevSiblingDom, mntParent)
       } else if (n.effectTag === EffectTag.UPDATE) {
         updateDom(n, dom)
       }
@@ -216,7 +236,7 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     }
 
     if (commitSibling && n.sibling) {
-      stack.push([n.sibling, dom])
+      stack.push([n.sibling, dom, mntParent])
     }
     commitSibling = true
 
@@ -226,7 +246,11 @@ function commitWork(ctx: GlobalContext, vNode: VNode) {
     }
 
     if (n.child) {
-      stack.push([n.child, undefined])
+      stack.push([
+        n.child,
+        undefined,
+        dom ? { element: dom, node: n } : undefined,
+      ])
     }
 
     const instance = n.instance
