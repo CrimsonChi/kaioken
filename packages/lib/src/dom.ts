@@ -211,10 +211,9 @@ function placeDom(
 function commitWork(ctx: GlobalContext, vNode: VNode) {
   let commitSibling = false
   type MaybeDom = HTMLElement | SVGElement | Text | undefined
+  type StackItem = [VNode, MaybeDom, DomParentSearchResult | undefined]
 
-  const stack: [VNode, MaybeDom, DomParentSearchResult | undefined][] = [
-    [vNode, undefined, undefined],
-  ]
+  const stack: StackItem[] = [[vNode, undefined, undefined]]
 
   while (stack.length) {
     let [n, prevSiblingDom, mntParent] = stack.pop()!
