@@ -1,4 +1,4 @@
-import { Router, Route, Child, children } from "kaioken"
+import { Router, Route, children } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -93,10 +93,8 @@ export function App() {
             element={() => {
               return (
                 <PostComponent>
-                  <div>
-                    <Child name="title">My Post Title</Child>
-                  </div>
-                  <Child name="body">My Post Body</Child>
+                  <h1>Title</h1>
+                  <div>Body</div>
                 </PostComponent>
               )
             }}
@@ -109,10 +107,5 @@ export function App() {
 }
 
 function PostComponent() {
-  return (
-    <div>
-      <h1>{children("title")}</h1>
-      <div>{children("body")}</div>
-    </div>
-  )
+  return <div>{children()}</div>
 }
