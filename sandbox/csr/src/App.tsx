@@ -93,7 +93,9 @@ export function App() {
             element={() => {
               return (
                 <PostComponent>
-                  <Child name="title">My Post Title</Child>
+                  <div>
+                    <Child name="title">My Post Title</Child>
+                  </div>
                   <Child name="body">My Post Body</Child>
                 </PostComponent>
               )

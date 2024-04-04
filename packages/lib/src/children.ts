@@ -20,7 +20,7 @@ function children(name?: string): JSX.Element {
     if (n.type === Child && n.props.name === name) {
       return n
     }
-    n.child && stack.push(n.child)
+    stack.push(...n.props.children)
   }
   console.warn(`[kaioken]: Unable to find child with name "${name}"`)
   return null
