@@ -1,4 +1,4 @@
-import { Router, Route } from "kaioken"
+import { Router, Route, Child, children } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -32,6 +32,7 @@ export function App() {
           <Link to="/filtered-list">Filtered list</Link>
           <Link to="/keyed-list">Keyed list</Link>
           <Link to="/context">Context</Link>
+          <Link to="/children">children</Link>
           <GithubIcon />
         </div>
       </nav>
@@ -87,9 +88,29 @@ export function App() {
           <Route path="/filtered-list" element={FilteredList} />
           <Route path="/keyed-list" element={KeyedList} />
           <Route path="/context" element={ContextExample} />
+          <Route
+            path="/children"
+            element={() => {
+              return (
+                <PostComponent>
+                  <Child name="title">My Post Title</Child>
+                  <Child name="body">My Post Body</Child>
+                </PostComponent>
+              )
+            }}
+          />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>
     </>
+  )
+}
+
+function PostComponent() {
+  return (
+    <div>
+      <h1>{children("title")}</h1>
+      <div>{children("body")}</div>
+    </div>
   )
 }

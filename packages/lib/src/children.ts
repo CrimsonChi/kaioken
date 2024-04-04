@@ -11,19 +11,18 @@ function Child({ name, children }: { name: string; children?: JSX.Element[] }) {
 
 function children(name?: string): JSX.Element {
   if (!node.current) return null
-  if (name === undefined)
-    return fragment({ children: node.current.props.children })
+  const children = node.current.props.children
+  if (name === undefined) return fragment({ children })
 
-  const stack: Kaioken.VNode[] = [...node.current.props.children]
+  const stack: Kaioken.VNode[] = [...children]
   while (stack.length) {
     const n = stack.pop()!
     if (n.type === Child && n.props.name === name) {
-      return fragment({ children: n.props.children })
+      return n
     }
-
     n.child && stack.push(n.child)
-    n.sibling && stack.push(n.sibling)
   }
+  console.warn(`[kaioken]: Unable to find child with name "${name}"`)
   return null
 }
 
