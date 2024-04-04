@@ -1,4 +1,5 @@
 import { node, nodeToCtxMap } from "./globals.js"
+import type { GlobalContext } from "./globalContext"
 
 export {
   isVNode,
@@ -19,7 +20,7 @@ export {
 
 const noop = Object.freeze(() => {})
 
-function getNodeGlobalContext(node: Kaioken.VNode) {
+function getNodeGlobalContext(node: Kaioken.VNode): GlobalContext | undefined {
   return nodeToCtxMap.get(node)
 }
 
