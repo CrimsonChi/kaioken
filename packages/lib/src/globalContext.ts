@@ -1,54 +1,31 @@
-import { EffectTag } from "./constants.js"
-import { contexts, ctx, nodeToCtxMap } from "./globals.js"
-import { Scheduler } from "./scheduler.js"
-import { vNodeContains } from "./utils.js"
+import type { AppContext } from "./appContext"
 
-export { GlobalContext }
-export type { GlobalContextOptions }
+export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
-type VNode = Kaioken.VNode
+type GlobalKaiokenEvent = "mount" | "unmount" | "update"
 
-interface GlobalContextOptions {
-  root: HTMLElement
-  /**
-   * Sets the maximum render refresh time.
-   * @default 50
-   */
-  maxFrameMs?: number
+declare global {
+  interface Window {
+    __kaioken: KaiokenGlobalContext | undefined
+  }
 }
 
-class GlobalContext {
-  scheduler: Scheduler
-  rootNode: VNode | undefined = undefined
-  hookIndex = 0
+class KaiokenGlobalContext {
+  listeners: Map<GlobalKaiokenEvent, Set<(ctx: AppContext) => void>> = new Map()
 
-  constructor(options?: GlobalContextOptions) {
-    contexts.add(this)
-    this.scheduler = new Scheduler(this, options?.maxFrameMs ?? 50)
+  emit(event: GlobalKaiokenEvent, ctx: AppContext) {
+    this.listeners.get(event)?.forEach((cb) => cb(ctx))
   }
-
-  mount(node: VNode, container: HTMLElement) {
-    this.rootNode = node
-    nodeToCtxMap.set(this.rootNode, ctx.current)
-
-    node.dom = container
-    this.scheduler.queueUpdate(node)
-    this.scheduler.workLoop()
-    return this.rootNode
+  on(event: GlobalKaiokenEvent, callback: (ctx: AppContext) => void) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set())
+    }
+    this.listeners.get(event)!.add(callback)
   }
-
-  requestUpdate(node: VNode) {
-    if (node.effectTag === EffectTag.DELETION) return
-    if (!vNodeContains(this.rootNode!, node)) return
-    return this.scheduler.queueUpdate(node)
-  }
-
-  requestDelete(node: VNode) {
-    if (node.effectTag === EffectTag.DELETION) return
-    this.scheduler.queueDelete(node)
-  }
-
-  queueEffect(callback: Function) {
-    this.scheduler.nodeEffects.push(callback)
+  off(event: GlobalKaiokenEvent, callback: (ctx: AppContext) => void) {
+    if (!this.listeners.has(event)) {
+      return
+    }
+    this.listeners.get(event)!.delete(callback)
   }
 }

@@ -1,0 +1,41 @@
+{
+  "name": "kaioken-devtools",
+  "displayName": "Kaioken Devtools",
+  "version": "0.0.0",
+  "author": "**",
+  "description": "",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "chrome-extension",
+    "vanilla",
+    "vite",
+    "create-chrome-ext"
+  ],
+  "engines": {
+    "node": ">=14.18.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "fmt": "prettier --write '**/*.{ts,json,css,scss,md}'",
+    "zip": "npm run build && node src/zip.js"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "2.0.0-beta.23",
+    "@types/chrome": "^0.0.246",
+    "autoprefixer": "^10.4.19",
+    "gulp": "^4.0.2",
+    "gulp-zip": "^6.0.0",
+    "postcss": "^8.4.38",
+    "prettier": "^3.2.5",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.4",
+    "vite": "^5.2.8",
+    "vite-plugin-kaioken": "workspace:^"
+  },
+  "dependencies": {
+    "kaioken": "workspace:^"
+  }
+}

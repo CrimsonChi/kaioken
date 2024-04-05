@@ -1,4 +1,4 @@
-import { GlobalContext, GlobalContextOptions } from "./globalContext.js"
+import { AppContext, AppContextOptions } from "./appContext.js"
 import {
   isValidChild,
   isVNode,
@@ -10,13 +10,14 @@ import {
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
 import { contexts, ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
+import { KaiokenGlobalContext } from "./globalContext.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
 export * from "./children.js"
 export * from "./component.js"
 export * from "./context.js"
-export * from "./globalContext.js"
+export * from "./appContext.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
@@ -25,11 +26,15 @@ export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }
 
+if ("window" in globalThis) {
+  window.__kaioken = window.__kaioken ?? new KaiokenGlobalContext()
+}
+
 type VNode = Kaioken.VNode
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
-  options: GlobalContextOptions,
+  options: AppContextOptions,
   appProps?: T
 ): Kaioken.VNode
 
@@ -41,7 +46,7 @@ function mount<T extends Record<string, unknown>>(
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
-  optionsOrRoot: HTMLElement | GlobalContextOptions,
+  optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
 ): Kaioken.VNode {
   let opts, root
@@ -52,7 +57,7 @@ function mount<T extends Record<string, unknown>>(
     root = optionsOrRoot.root
   }
 
-  ctx.current = new GlobalContext(opts)
+  ctx.current = new AppContext(opts)
   const node = createElement(
     root.nodeName.toLowerCase(),
     {},
@@ -98,7 +103,7 @@ function renderToString<T extends Record<string, unknown>>(
   el: JSX.Element | ((props: T) => JSX.Element),
   elProps = {} as T
 ) {
-  const c = new GlobalContext()
+  const c = new AppContext()
   ctx.current = c
   const prev = renderMode.current
   renderMode.current = "string"

@@ -1,4 +1,4 @@
-import type { GlobalContext } from "./globalContext.js"
+import type { AppContext } from "./appContext"
 import { Component } from "./component.js"
 import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { commitWork, createDom } from "./dom.js"
@@ -18,7 +18,7 @@ export class Scheduler {
   deletions: VNode[] = []
 
   constructor(
-    private globalContext: GlobalContext,
+    private globalContext: AppContext,
     private maxFrameMs = 50
   ) {}
 
@@ -51,6 +51,7 @@ export class Scheduler {
           effects.shift()!() // fire in sequence
         }
       }
+      window.__kaioken!.emit("update", this.globalContext)
     }
     if ("requestIdleCallback" in window) {
       let didExec = false

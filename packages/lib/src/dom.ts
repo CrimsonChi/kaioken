@@ -1,4 +1,4 @@
-import type { GlobalContext } from "./globalContext"
+import type { AppContext } from "./appContext"
 import {
   booleanAttributes,
   propFilters,
@@ -208,7 +208,7 @@ function placeDom(
   }
 }
 
-function commitWork(ctx: GlobalContext, vNode: VNode) {
+function commitWork(ctx: AppContext, vNode: VNode) {
   let commitSibling = false
   type MaybeDom = HTMLElement | SVGElement | Text | undefined
   type StackItem = [VNode, MaybeDom, DomParentSearchResult | undefined]

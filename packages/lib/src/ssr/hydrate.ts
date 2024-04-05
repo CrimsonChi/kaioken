@@ -1,4 +1,4 @@
-import type { GlobalContextOptions } from "../globalContext"
+import type { AppContextOptions } from "../appContext"
 import { mount } from "../index.js"
 
 export interface SSRProps {
@@ -10,7 +10,7 @@ export interface SSRProps {
 
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
-  container: GlobalContextOptions,
+  container: AppContextOptions,
   appProps?: T
 ): Kaioken.VNode
 
@@ -22,7 +22,7 @@ export function hydrate<T extends Record<string, unknown>>(
 
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
-  optionsOrRoot: HTMLElement | GlobalContextOptions,
+  optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
 ) {
   if (optionsOrRoot instanceof HTMLElement) {

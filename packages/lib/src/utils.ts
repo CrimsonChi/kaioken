@@ -1,5 +1,5 @@
 import { node, nodeToCtxMap } from "./globals.js"
-import type { GlobalContext } from "./globalContext"
+import type { AppContext } from "./appContext"
 
 export {
   isVNode,
@@ -9,7 +9,7 @@ export {
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   shallowCompare,
-  getNodeGlobalContext,
+  getNodeAppContext,
   getCurrentNode,
   noop,
   propFilters,
@@ -20,7 +20,7 @@ export {
 
 const noop = Object.freeze(() => {})
 
-function getNodeGlobalContext(node: Kaioken.VNode): GlobalContext | undefined {
+function getNodeAppContext(node: Kaioken.VNode): AppContext | undefined {
   return nodeToCtxMap.get(node)
 }
 

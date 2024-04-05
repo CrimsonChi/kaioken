@@ -1,5 +1,5 @@
 import { componentSymbol } from "./constants.js"
-import type { GlobalContext } from "./globalContext"
+import type { AppContext } from "./appContext.js"
 import { node, nodeToCtxMap } from "./globals.js"
 
 export { Component }
@@ -10,7 +10,7 @@ abstract class Component<T = Record<string, unknown>> {
   state = {} as Record<string, unknown>
   props: T
   vNode: Kaioken.VNode
-  ctx: GlobalContext
+  ctx: AppContext
   constructor(props: T) {
     this.props = props
     this.vNode = node.current!

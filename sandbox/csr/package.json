@@ -8,9 +8,6 @@
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "kaioken": "workspace:^"
-  },
   "devDependencies": {
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.33",
@@ -18,5 +15,8 @@
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-kaioken": "workspace:^"
+  },
+  "dependencies": {
+    "kaioken": "workspace:^"
   }
 }

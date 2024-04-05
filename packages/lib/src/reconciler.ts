@@ -1,12 +1,12 @@
 import { EffectTag, elementTypes, elementFreezeSymbol } from "./constants.js"
-import type { GlobalContext } from "./globalContext"
+import type { AppContext } from "./appContext"
 import { ctx, nodeToCtxMap } from "./globals.js"
 import { isVNode, isValidChild } from "./utils.js"
 
 type VNode = Kaioken.VNode
 
 export function reconcileChildren(
-  globalCtx: GlobalContext,
+  globalCtx: AppContext,
   vNode: VNode,
   children: VNode[]
 ) {
@@ -131,7 +131,7 @@ function createChild(parent: VNode, child: any, index: number): VNode {
 }
 
 function updateSlot(
-  globalCtx: GlobalContext,
+  globalCtx: AppContext,
   parent: VNode,
   child: VNode,
   oldNode: VNode | undefined,
