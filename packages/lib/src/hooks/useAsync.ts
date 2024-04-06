@@ -5,7 +5,6 @@ export function useAsync<T>(func: () => Promise<T>, deps: unknown[]): T | null {
   return useHook(
     "useAsync",
     {
-      func,
       deps,
       data: null as T | null,
       promise: undefined as Promise<T> | undefined,
@@ -16,8 +15,10 @@ export function useAsync<T>(func: () => Promise<T>, deps: unknown[]): T | null {
         hook.promise = func()
         hook.data = null
         hook.promise.then((data: T) => {
-          hook.data = data
-          update()
+          if (!depsRequireChange(deps, hook.deps)) {
+            hook.data = data
+            update()
+          }
         })
       }
       return hook.data

@@ -1,4 +1,4 @@
-import { Router, Route, children } from "kaioken"
+import { Router, Route } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -12,6 +12,7 @@ import { FilteredList } from "./components/FilteredList"
 import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
+import { UseAsyncExample } from "./components/UseAsyncExample"
 
 export function App() {
   return (
@@ -32,7 +33,7 @@ export function App() {
           <Link to="/filtered-list">Filtered list</Link>
           <Link to="/keyed-list">Keyed list</Link>
           <Link to="/context">Context</Link>
-          <Link to="/children">children</Link>
+          <Link to="/useAsync">useAsync</Link>
           <GithubIcon />
         </div>
       </nav>
@@ -88,24 +89,10 @@ export function App() {
           <Route path="/filtered-list" element={FilteredList} />
           <Route path="/keyed-list" element={KeyedList} />
           <Route path="/context" element={ContextExample} />
-          <Route
-            path="/children"
-            element={() => {
-              return (
-                <PostComponent>
-                  <h1>Title</h1>
-                  <div>Body</div>
-                </PostComponent>
-              )
-            }}
-          />
+          <Route path="/useAsync" element={UseAsyncExample} />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>
     </>
   )
-}
-
-function PostComponent() {
-  return <div>{children()}</div>
 }
