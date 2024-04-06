@@ -50,6 +50,11 @@ function useHook<T, U>(
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
   if (!oldHook) hook.name = hookName
+  else if (oldHook && oldHook.name !== hookName) {
+    throw new Error(
+      `[kaioken]: hooks must be called in the same order. Hook "${oldHook.name}" was called before hook "${hookName}".`
+    )
+  }
   const res = callback({
     hook,
     oldHook,
