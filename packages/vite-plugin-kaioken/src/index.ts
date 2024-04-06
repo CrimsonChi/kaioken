@@ -9,9 +9,23 @@ const defaultEsBuildOptions: ESBuildOptions = {
   include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
 }
 
-export default function (): Plugin {
+export interface KaiokenPluginOptions {
+  enableDevtools?: boolean
+}
+
+const devtoolsScript = `
+import {contexts} from "kaioken/dist/globals.js";
+console.log("kaioken:devtools", contexts);
+`
+
+export default function (
+  opts: KaiokenPluginOptions = {
+    enableDevtools: true,
+  }
+): Plugin {
   let isProduction = false
   let isBuild = false
+  let hasInjectedDevtools = false
 
   return {
     name: "vite-plugin-kaioken",
@@ -50,7 +64,11 @@ export default function (): Plugin {
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (!/\.(tsx|jsx)$/.test(id)) return
+      if (opts.enableDevtools && !hasInjectedDevtools) {
+        code += devtoolsScript
+        hasInjectedDevtools = true
+      }
+      if (!/\.(tsx|jsx)$/.test(id)) return { code }
       const ast = this.parse(code)
       try {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
