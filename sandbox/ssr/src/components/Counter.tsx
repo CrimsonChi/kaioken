@@ -1,12 +1,7 @@
 import { useState } from "kaioken"
-import { getCurrentNode, getNodeGlobalContext } from "kaioken/utils"
 
 export function Counter() {
   const [count, setCount] = useState(0)
-
-  const node = getCurrentNode()
-  const ctx = getNodeGlobalContext(node!)
-  console.log(ctx, node)
 
   return (
     <>

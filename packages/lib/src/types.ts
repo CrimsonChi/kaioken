@@ -46,7 +46,7 @@ declare global {
     type FC<T = {}> = (props: FCProps<T>) => JSX.Element
     type FCProps<T = {}> = T & { children?: JSX.Element[] }
 
-    type Hook<T> = T & { cleanup?: () => void }
+    type Hook<T> = T & { cleanup?: () => void; name?: string }
 
     type InternalProps = { ref?: Kaioken.Ref<Element>; key?: JSX.ElementKey }
 

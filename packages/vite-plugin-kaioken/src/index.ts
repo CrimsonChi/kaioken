@@ -1,4 +1,5 @@
 import type { ESBuildOptions, ModuleNode, Plugin } from "vite"
+import devtoolsScript from "kaioken-devtools"
 
 const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -10,22 +11,17 @@ const defaultEsBuildOptions: ESBuildOptions = {
 }
 
 export interface KaiokenPluginOptions {
-  enableDevtools?: boolean
+  devtools?: boolean
 }
-
-const devtoolsScript = `
-import {contexts} from "kaioken/dist/globals.js";
-console.log("kaioken:devtools", contexts);
-`
 
 export default function (
   opts: KaiokenPluginOptions = {
-    enableDevtools: true,
+    devtools: true,
   }
 ): Plugin {
   let isProduction = false
   let isBuild = false
-  let hasInjectedDevtools = false
+  let devtoolsModuleId: string | null = null
 
   return {
     name: "vite-plugin-kaioken",
@@ -37,7 +33,7 @@ export default function (
         },
       }
     },
-    configResolved(config) {
+    async configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
     },
@@ -64,9 +60,12 @@ export default function (
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (opts.enableDevtools && !hasInjectedDevtools) {
-        code += devtoolsScript
-        hasInjectedDevtools = true
+      if (
+        opts.devtools &&
+        (devtoolsModuleId === null || devtoolsModuleId === id)
+      ) {
+        code = devtoolsScript + code
+        devtoolsModuleId = id
       }
       if (!/\.(tsx|jsx)$/.test(id)) return { code }
       const ast = this.parse(code)

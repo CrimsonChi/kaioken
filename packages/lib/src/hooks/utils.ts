@@ -41,6 +41,7 @@ function useHook<T, U>(
     )
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
+  if (!oldHook) hook.name = hookName
   const res = callback({
     hook,
     oldHook,

@@ -1,0 +1,24 @@
+{
+  "name": "kaioken-devtools",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "types.d.ts",
+  "scripts": {
+    "build": "tsx src/build.ts",
+    "dev": "tsx src/build.dev.ts",
+    "test": "echo \"Error: no test specified\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "kaioken": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.5",
+    "esbuild": "^0.20.2",
+    "tsx": "^4.7.0"
+  }
+}
