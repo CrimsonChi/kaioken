@@ -24,11 +24,19 @@ type HookCallbackState<T> = {
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
+let isInUseHookCall = false
+
 function useHook<T, U>(
   hookName: string,
   hookData: Hook<T>,
   callback: HookCallback<T, U>
 ): U {
+  if (isInUseHookCall) {
+    throw new Error(
+      `[kaioken]: hooks cannot be called inside a hook. Hook "${hookName}" may not be called inside a hook.`
+    )
+  }
+  isInUseHookCall = true
   const vNode = node.current
   if (!vNode)
     throw new Error(
@@ -51,6 +59,7 @@ function useHook<T, U>(
   })
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
+  isInUseHookCall = false
   return res
 }
 

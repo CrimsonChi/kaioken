@@ -16,8 +16,7 @@ children.toString = function () {
       `[kaioken]: Did you forget to execute children() in a component?\n
 Correct usage:   <button>{children()}</button>
 Incorrect usage: <button>{children}</button> - results in children being rendered as a string.\n
-  `,
-      new Error()
+  `
     )
     hasWarned = true
   }

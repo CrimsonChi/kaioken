@@ -159,7 +159,7 @@ function __DevtoolsAppView() {
   return (
     <div style="flex-grow:1;padding:.5rem;max-height:500px;overflow-y:auto">
       <h2 style="font-weight:bold">App View</h2>
-      <__DevtoolsNodeListItem node={app?.rootNode?.child} />
+      <__DevtoolsNodeListItem node={app?.rootNode} />
     </div>
   )
 }
