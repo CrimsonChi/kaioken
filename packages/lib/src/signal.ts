@@ -1,90 +1,62 @@
 import { SignalKey } from "./constants"
-import { cleanupHook, shouldExecHook, useHook } from "./hooks"
-import { getCurrentNode, noop } from "./utils"
+import { cleanupHook, useEffect, useHook } from "./hooks"
+import { getCurrentNode, getNodeAppContext } from "./utils"
 
-export const createSignal = <T>(initial: T) => {
+const tryToNodeSubscribe = (subscribers: Set<Kaioken.VNode | Function>) => {
+  const vNode = getCurrentNode()
+  if (vNode) {
+    subscribers.add(vNode)
+    // NOTE: we didn't use useEffect, because it was firing unexpectedly with useMemo (for unknown reasons)
+    useHook('signalSubscribe', {}, ({ hook, oldHook }) => {
+      if (!oldHook) {
+        hook.cleanup = () => {
+          subscribers.delete(vNode)
+        }
+      }
+    })
+  }
+}
+
+export const signal = <T>(initial: T) => {
   let value = initial
-  const subscribers = new Set<Function>()
+  const subscribers = new Set<Kaioken.VNode | Function>()
 
   const emitSubscribers = (newValue: T) => {
-    subscribers.forEach((cb) => {
-      cb(newValue)
+    subscribers.forEach((consumer) => {
+      if (consumer instanceof Function) {
+        consumer(newValue)
+        return;
+      }
+      getNodeAppContext(consumer)?.requestUpdate(consumer)
     })
   }
 
-  const useSignal = () => {
-    if (!shouldExecHook()) {
-      return Object.assign(noop, {
-        [SignalKey]: true,
-        value,
-        toString() {
-          return value
-        },
-      }) as any as Kaioken.Signal<T>
-    }
-
-    return useHook(
-      "useSignal",
-      {
-        signal: undefined as Kaioken.Signal<T> | undefined,
-      },
-      ({ hook, oldHook, update }) => {
-        if (!oldHook) {
-          const subCb = (_: any) => {
-            update()
-          }
-          hook.signal = {
-            [SignalKey]: true,
-            get value() {
-              return value
-            },
-
-            set value(newValue) {
-              value = newValue
-              emitSubscribers(newValue)
-            },
-
-            toString() {
-              return `${value}`
-            },
-          } as any as Kaioken.Signal<T>
-
-          subscribers.add(subCb)
-          hook.cleanup = () => {
-            subscribers.delete(subCb)
-          }
-        }
-
-        return hook.signal as any as Kaioken.Signal<T>
-      }
-    )
-  }
-
-  // if this is called inside of a kaioken context, we just use skip over to the hook
-  if (getCurrentNode()) {
-    return useSignal()
-  }
-
-  const globalSignal = Object.assign(useSignal, {
-    _signal: true,
+  const signal = {
+    [SignalKey]: true,
+    get value() {
+      tryToNodeSubscribe(subscribers);
+      return value
+    },
+    set value(newValue) {
+      value = newValue
+      emitSubscribers(newValue)
+    },
     toString() {
+      tryToNodeSubscribe(subscribers);
       return `${value}`
     },
     subscribe: (cb: (state: T) => void) => {
       subscribers.add(cb)
       return (() => (subscribers.delete(cb), void 0)) as () => void
     },
-  })
+  }
 
-  Object.defineProperty(globalSignal, "value", {
-    get() {
-      return value
-    },
-    set(newValue) {
-      value = newValue
-      emitSubscribers(newValue)
-    },
-  })
+  const currentNode = getCurrentNode();
+  if (currentNode) {
+    return useHook('useSignal', { signal, }, ({ hook, }) => {
+      return hook.signal
+    })
+  }
 
-  return globalSignal as any as Kaioken.Signal<T>
+  return signal
 }

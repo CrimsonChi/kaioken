@@ -1,4 +1,4 @@
-import { Router, Route } from "kaioken"
+import { Router, Route, useMemo, signal, useEffect } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -13,19 +13,31 @@ import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
-import { SignalCounter } from "./components/SignalCounter"
 import { count } from "./components/signals/test"
 
-export function App() {
-  // version 1
-  const $count = count()
+const Child = () => {
   const onInc = () => {
-    $count.value += 1
+    count.value += 1
   }
 
   return (
+    <div className="flex flex-col gap-2">
+      <h1>Home</h1>
+      <button onclick={onInc}>{count}</button>
+    </div>
+  )
+}
+
+export function App() {
+  const double = useMemo(() => {
+    return count.value * 2
+  }, [count.value])
+
+  return (
     <>
-      <nav className=" min-h-screen p-2  mb-5 h-full">
+      {double}
+      <Child/>
+      {/* <nav className=" min-h-screen p-2  mb-5 h-full">
         <div className="sticky top-0 flex flex-col gap-2">
           <Link to="/">Home</Link>
           <Link to="/todos">Todos (state, model, memo)</Link>
@@ -51,11 +63,16 @@ export function App() {
           <Route
             path="/"
             element={() => {
+              // version 1
+              const onInc = () => {
+                count.value += 1
+              }
+
               return (
                 <div className="flex flex-col gap-2">
                   <h1>Home</h1>
-                  <button onclick={onInc}>{$count}</button>
-                  <SignalCounter />
+                  <button onclick={onInc}>{count}</button>
+                  <p>{double}</p>
                 </div>
               )
             }}
@@ -104,7 +121,7 @@ export function App() {
           <Route path="/useAsync" element={UseAsyncExample} />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
-      </main>
-    </>
+      </main> **/}
+    </> 
   )
 }

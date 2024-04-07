@@ -1,3 +1,3 @@
-import { createSignal } from "kaioken"
+import { signal } from "kaioken"
 
-export const count = createSignal(0)
+export const count = signal(0)
