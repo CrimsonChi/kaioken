@@ -1,7 +1,6 @@
 //import fs from "node:fs"
 import type { ESBuildOptions, ModuleNode, Plugin } from "vite"
 // import devtoolsLinkScript from "kaioken-devtools-link"
-import { startDevtoolsUiServer } from "kaioken-devtools-ui"
 
 // console.log("devtoolsUiServer", devtoolsUiServer)
 //const devtoolsIndexHtml = fs.readFileSync("kaioken-devtools-ui/dist/index.html")
@@ -42,14 +41,14 @@ export default function (
       isProduction = config.isProduction
       isBuild = config.command === "build"
     },
-    async configureServer(server) {
+    async configureServer(_server) {
       if (isProduction || isBuild || !opts.devtools) return
       console.log("configureServer")
-      const devtoolsUiServer = await startDevtoolsUiServer()
-      server.middlewares.use("/__devtools__", (req, res) => {
-        console.log("req.url", req.url)
-        devtoolsUiServer.middlewares(req, res)
-      })
+      // const devtoolsUiServer = await startDevtoolsUiServer()
+      // server.middlewares.use("/__devtools__", (req, res) => {
+      //   console.log("req.url", req.url)
+      //   devtoolsUiServer.middlewares(req, res)
+      // })
     },
     handleHotUpdate(ctx) {
       if (isProduction || isBuild) return

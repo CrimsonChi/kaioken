@@ -1,4 +1,6 @@
 import esbuild from "esbuild"
-import { options } from "./options"
+import { options, writeFile } from "./options"
 
-esbuild.buildSync(options)
+const { plugins, ...rest } = options
+const res = esbuild.buildSync(rest)
+writeFile(res.outputFiles![0].text)

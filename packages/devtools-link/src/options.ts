@@ -18,19 +18,21 @@ export const options: BuildOptions = {
       name: "build-evts",
       setup({ onEnd }) {
         onEnd((result) => {
-          // console.log("result", result.outputFiles![0].text)
-          //fs.rmdirSync("dist", { recursive: true })
-          fs.rmSync("dist", { recursive: true, force: true })
-          fs.mkdirSync("dist")
-          fs.writeFileSync(
-            "dist/index.js",
-            `export default \`import * as devtoolsKaioken from 'kaioken';\n${result.outputFiles![0].text}\``,
-            {
-              encoding: "utf-8",
-            }
-          )
+          writeFile(result.outputFiles![0].text)
         })
       },
     },
   ],
+}
+
+export function writeFile(content: string) {
+  fs.rmSync("dist", { recursive: true, force: true })
+  fs.mkdirSync("dist")
+  fs.writeFileSync(
+    "dist/index.js",
+    `export default \`import * as devtoolsKaioken from 'kaioken';\n${content}\``,
+    {
+      encoding: "utf-8",
+    }
+  )
 }
