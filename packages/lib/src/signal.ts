@@ -1,5 +1,5 @@
 import { SignalKey } from "./constants"
-import { cleanupHook, useEffect, useHook } from "./hooks"
+import { useHook } from "./hooks"
 import { getCurrentNode, getNodeAppContext } from "./utils"
 
 const tryToNodeSubscribe = (subscribers: Set<Kaioken.VNode | Function>) => {
@@ -7,11 +7,9 @@ const tryToNodeSubscribe = (subscribers: Set<Kaioken.VNode | Function>) => {
   if (vNode) {
     subscribers.add(vNode)
     // NOTE: we didn't use useEffect, because it was firing unexpectedly with useMemo (for unknown reasons)
-    useHook('signalSubscribe', {}, ({ hook, oldHook }) => {
-      if (!oldHook) {
-        hook.cleanup = () => {
-          subscribers.delete(vNode)
-        }
+    useHook('signalSubscribe', {}, ({ hook }) => {
+      hook.cleanup = () => {
+        subscribers.delete(vNode)
       }
     })
   }
@@ -49,7 +47,8 @@ export const signal = <T>(initial: T) => {
       subscribers.add(cb)
       return (() => (subscribers.delete(cb), void 0)) as () => void
     },
-  }
+    notify: () => emitSubscribers(value)
+  } as Kaioken.Signal<T>
 
   const currentNode = getCurrentNode();
   if (currentNode) {

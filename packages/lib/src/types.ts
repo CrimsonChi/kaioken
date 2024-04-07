@@ -59,14 +59,10 @@ declare global {
       children?: JSX.Element[]
     }
 
-    type BaseSignal<T> = {
+    type Signal<T> = {
       value: T
-      toString(): string
-    }
-
-    type Signal<T> = BaseSignal<T> & {
       subscribe: (fn: (value: T) => void) => () => void,
-      (): BaseSignal<T>
+      notify: () => void;
     }
 
     type VNode = {

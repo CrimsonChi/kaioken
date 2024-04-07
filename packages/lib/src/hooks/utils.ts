@@ -1,3 +1,4 @@
+import { SignalKey } from "../constants.js"
 import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
 
 export {
@@ -5,6 +6,8 @@ export {
   depsRequireChange,
   useHook,
   shouldExecHook,
+  isSignal,
+  unsignal,
   type HookCallback,
   type HookCallbackState,
 }
@@ -41,6 +44,8 @@ function useHook<T, U>(
     )
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
+  if (!vNode.hooks) vNode.hooks = []
+  vNode.hooks[ctx.hookIndex++] = hook
   const res = callback({
     hook,
     oldHook,
@@ -48,8 +53,6 @@ function useHook<T, U>(
     queueEffect: ctx.queueEffect.bind(ctx),
     vNode,
   })
-  if (!vNode.hooks) vNode.hooks = []
-  vNode.hooks[ctx.hookIndex++] = hook
   return res
 }
 
@@ -58,6 +61,14 @@ function cleanupHook(hook: { cleanup?: () => void }) {
     hook.cleanup()
     hook.cleanup = undefined
   }
+}
+
+function isSignal (value: any): value is Kaioken.Signal<any> {
+  return typeof value === "object" && SignalKey in (value ?? {})
+}
+
+function unsignal<T>(value: T) {
+  return isSignal(value) ? value.value : value
 }
 
 function depsRequireChange(a?: unknown[], b?: unknown[]) {

@@ -1,4 +1,4 @@
-import { Router, Route, useMemo, signal, useEffect } from "kaioken"
+import { Router, Route, useMemo } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -13,20 +13,7 @@ import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
-import { count } from "./components/signals/test"
-
-const Child = () => {
-  const onInc = () => {
-    count.value += 1
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <h1>Home</h1>
-      <button onclick={onInc}>{count}</button>
-    </div>
-  )
-}
+import { count, todo } from "./components/signals/test"
 
 export function App() {
   const double = useMemo(() => {
@@ -35,10 +22,9 @@ export function App() {
 
   return (
     <>
-      {double}
-      <Child/>
-      {/* <nav className=" min-h-screen p-2  mb-5 h-full">
+      <nav className=" min-h-screen p-2  mb-5 h-full">
         <div className="sticky top-0 flex flex-col gap-2">
+          {todo}
           <Link to="/">Home</Link>
           <Link to="/todos">Todos (state, model, memo)</Link>
           <Link to="/todos-with-store">Todos (with store)</Link>
@@ -63,9 +49,10 @@ export function App() {
           <Route
             path="/"
             element={() => {
-              // version 1
               const onInc = () => {
                 count.value += 1
+                todo.value.push('boop')
+                todo.notify()
               }
 
               return (
@@ -121,7 +108,7 @@ export function App() {
           <Route path="/useAsync" element={UseAsyncExample} />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
-      </main> **/}
+</main>
     </> 
   )
 }
