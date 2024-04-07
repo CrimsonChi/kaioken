@@ -1,5 +1,10 @@
+//import fs from "node:fs"
 import type { ESBuildOptions, ModuleNode, Plugin } from "vite"
-import devtoolsScript from "kaioken-devtools"
+// import devtoolsLinkScript from "kaioken-devtools-link"
+import { startDevtoolsUiServer } from "kaioken-devtools-ui"
+
+// console.log("devtoolsUiServer", devtoolsUiServer)
+//const devtoolsIndexHtml = fs.readFileSync("kaioken-devtools-ui/dist/index.html")
 
 const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -37,18 +42,13 @@ export default function (
       isProduction = config.isProduction
       isBuild = config.command === "build"
     },
-    configureServer(server) {
+    async configureServer(server) {
+      if (isProduction || isBuild || !opts.devtools) return
       console.log("configureServer")
-      server.middlewares.use((req, res, next) => {
-        // Handle incoming requests
-        if (req.url?.startsWith("/__devtools__")) {
-          // Serve another site
-          // You can use Express.js or any other server framework here
-          res.end("This is another site served by Vite!")
-        } else {
-          // Pass request to next middleware
-          next()
-        }
+      const devtoolsUiServer = await startDevtoolsUiServer()
+      server.middlewares.use("/__devtools__", (req, res) => {
+        console.log("req.url", req.url)
+        devtoolsUiServer.middlewares(req, res)
       })
     },
     handleHotUpdate(ctx) {
@@ -78,7 +78,7 @@ export default function (
         opts.devtools &&
         (devtoolsModuleId === null || devtoolsModuleId === id)
       ) {
-        code = devtoolsScript + code
+        // code = devtoolsLinkScript + code
         devtoolsModuleId = id
       }
       if (!/\.(tsx|jsx)$/.test(id)) return { code }

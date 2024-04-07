@@ -16,7 +16,10 @@
     "vite": "^5.0.8"
   },
   "devDependencies": {
-    "kaioken-devtools": "workspace:^",
     "vite": "^5.0.8"
+  },
+  "dependencies": {
+    "kaioken-devtools-link": "workspace:^",
+    "kaioken-devtools-ui": "workspace:^"
   }
 }
