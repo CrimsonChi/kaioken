@@ -1,11 +1,9 @@
 import {
-  useState as __devtoolsUseState,
-  Transition as __devtoolsTransition,
   createStore as __devtoolsCreateStore,
   type AppContext as __devtoolsAppContext,
 } from "kaioken"
 import { contexts as __devtoolsAppContexts } from "kaioken/dist/globals"
-import type { KaiokenGlobalContext } from "kaioken/dist/globalContext"
+import type { KaiokenGlobalContext as __devtoolsKaiokenGlobalContext } from "kaioken/dist/globalContext"
 import __DevtoolsApp from "./App"
 
 export const __useDevtoolsStore = __devtoolsCreateStore(
@@ -35,7 +33,8 @@ __devtoolsAppContexts.forEach((app) => {
   __useDevtoolsStore.methods.addApp(app)
 })
 
-const __devtoolsGlobalCtx = window.__kaioken! as KaiokenGlobalContext
+export const __devtoolsGlobalCtx =
+  window.__kaioken! as __devtoolsKaiokenGlobalContext
 __devtoolsGlobalCtx.on("mount", (app) => {
   if (app.rootNode!.child!.type === __DevtoolsApp) {
     return

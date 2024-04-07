@@ -13,12 +13,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "kaioken": "workspace:^"
-  },
   "devDependencies": {
     "@types/node": "^20.12.5",
     "esbuild": "^0.20.2",
     "tsx": "^4.7.0"
+  },
+  "dependencies": {
+    "kaioken": "workspace:^"
   }
 }

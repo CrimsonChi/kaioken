@@ -4,10 +4,12 @@ import {
   createStore as __devtoolsCreateStore,
   fragment as __devtoolsFragment,
   type AppContext as __devtoolsAppContext,
+  useEffect as __devtoolsUseEffect,
 } from "kaioken"
 import { __DevtoolsLogo } from "./logo"
-import { __useDevtoolsStore } from "./store"
+import { __devtoolsGlobalCtx, __useDevtoolsStore } from "./store"
 import { __devtoolsChevron } from "./chevron"
+import { getCurrentNode, getNodeAppContext } from "kaioken/dist/utils"
 
 const __devtoolsActiveItemStyle =
   "font-weight:bold;background-color:rgba(237,20,61,.6);color:white;"
@@ -47,6 +49,19 @@ export default function __DevtoolsApp() {
 }
 
 function __DevtoolsSelectedNodeView() {
+  const { value: app } = __useDevtoolsStore((state) => state.selectedApp)
+  const node = getCurrentNode()
+  const ctx = getNodeAppContext(node!)
+
+  function handleUpdate(appCtx: __devtoolsAppContext) {
+    if (appCtx !== app || !node) return
+    ctx?.requestUpdate(node)
+  }
+  __devtoolsUseEffect(() => {
+    __devtoolsGlobalCtx.on("update", handleUpdate)
+    return () => __devtoolsGlobalCtx.off("update", handleUpdate)
+  }, [])
+
   const { value: selectedNode } = __useDevtoolsStore((s) => s.selectedNode)
   if (selectedNode === null) return null
   console.log("selectedNode", selectedNode)
@@ -156,6 +171,19 @@ function __DevtoolsAppSelector() {
 }
 function __DevtoolsAppView() {
   const { value: app } = __useDevtoolsStore((state) => state.selectedApp)
+
+  const node = getCurrentNode()
+  const ctx = getNodeAppContext(node!)
+
+  function handleUpdate(appCtx: __devtoolsAppContext) {
+    if (appCtx !== app || !node) return
+    ctx?.requestUpdate(node)
+  }
+  __devtoolsUseEffect(() => {
+    __devtoolsGlobalCtx.on("update", handleUpdate)
+    return () => __devtoolsGlobalCtx.off("update", handleUpdate)
+  }, [])
+
   return (
     <div style="flex-grow:1;padding:.5rem;max-height:500px;overflow-y:auto">
       <h2 style="font-weight:bold">App View</h2>
