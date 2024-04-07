@@ -87,7 +87,15 @@ function __DevtoolsSelectedNodeView() {
                 <div>
                   <b>{name || "anonymous hook"}</b>
                   <pre style="padding:.5rem">
-                    {JSON.stringify(data, null, 2)}
+                    {Object.keys(data).map((key) => {
+                      const value = data[key as keyof typeof data]
+                      if (typeof value === "function") return null
+                      return (
+                        <div>
+                          {key}: {JSON.stringify(value)}
+                        </div>
+                      )
+                    })}
                   </pre>
                 </div>
               )
@@ -206,6 +214,7 @@ function __DevtoolsNodeListItem({
     }
   )
   const [collapsed, setCollapsed] = __devtoolsUseState(true)
+
   if (!node) return null
   if (typeof node.type !== "function" || node.type === __devtoolsFragment)
     return (
