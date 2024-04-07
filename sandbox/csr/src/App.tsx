@@ -13,8 +13,16 @@ import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
+import { SignalCounter } from "./components/SignalCounter"
+import { count } from "./components/signals/test"
 
 export function App() {
+  // version 1
+  const $count = count()
+  const onInc = () => {
+    $count.value += 1
+  }
+
   return (
     <>
       <nav className=" min-h-screen p-2  mb-5 h-full">
@@ -42,11 +50,15 @@ export function App() {
         <Router>
           <Route
             path="/"
-            element={() => (
-              <div className="flex flex-col gap-2">
-                <h1>Home</h1>
-              </div>
-            )}
+            element={() => {
+              return (
+                <div className="flex flex-col gap-2">
+                  <h1>Home</h1>
+                  <button onclick={onInc}>{$count}</button>
+                  <SignalCounter />
+                </div>
+              )
+            }}
           />
           <Route
             path="/test/:id"
