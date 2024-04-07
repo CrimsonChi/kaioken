@@ -33,9 +33,23 @@ export default function (
         },
       }
     },
-    async configResolved(config) {
+    configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
+    },
+    configureServer(server) {
+      console.log("configureServer")
+      server.middlewares.use((req, res, next) => {
+        // Handle incoming requests
+        if (req.url?.startsWith("/__devtools__")) {
+          // Serve another site
+          // You can use Express.js or any other server framework here
+          res.end("This is another site served by Vite!")
+        } else {
+          // Pass request to next middleware
+          next()
+        }
+      })
     },
     handleHotUpdate(ctx) {
       if (isProduction || isBuild) return
