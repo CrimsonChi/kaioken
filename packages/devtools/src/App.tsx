@@ -16,7 +16,7 @@ const __devtoolsActiveItemStyle =
 
 export default function __DevtoolsApp() {
   const {
-    value: { open },
+    value: { open, selectedApp, selectedNode },
   } = __useDevtoolsStore()
   return (
     <>
@@ -25,7 +25,6 @@ export default function __DevtoolsApp() {
         in={open}
         timings={[40, 150, 150, 150]}
         element={(state) => {
-          if (state === "exited") return null
           const posStyle =
             "position:fixed;left:0;bottom:0;right:0;transition:transform .3s;"
           const bgStyle = "background-color:#333;box-shadow:0 0 10px #0003;"
@@ -37,8 +36,8 @@ export default function __DevtoolsApp() {
               <__DevtoolsHeader />
               <div style="display:flex;gap:.5rem;padding:.5rem;">
                 <__DevtoolsAppSelector />
-                <__DevtoolsAppView />
-                <__DevtoolsSelectedNodeView />
+                {selectedApp && <__DevtoolsAppView />}
+                {selectedNode && <__DevtoolsSelectedNodeView />}
               </div>
             </div>
           )
@@ -49,7 +48,10 @@ export default function __DevtoolsApp() {
 }
 
 function __DevtoolsSelectedNodeView() {
-  const { value: app } = __useDevtoolsStore((state) => state.selectedApp)
+  const { value: app } = __useDevtoolsStore(
+    (state) => state.selectedApp,
+    (prev, next) => prev === next
+  )
   const node = getCurrentNode()
   const ctx = getNodeAppContext(node!)
 
@@ -64,7 +66,6 @@ function __DevtoolsSelectedNodeView() {
 
   const { value: selectedNode } = __useDevtoolsStore((s) => s.selectedNode)
   if (selectedNode === null) return null
-  console.log("selectedNode", selectedNode)
   const props = { ...selectedNode.props } as Record<string, any>
   delete props.children
   return (
@@ -148,7 +149,6 @@ function __DevtoolsToggleButton() {
 
 function __DevtoolsAppSelector() {
   const { value, setSelectedApp } = __useDevtoolsStore()
-  console.log("apps", value.apps)
   return (
     <div style="padding:.5rem">
       <h2 style="font-weight:bold">App Selector</h2>
