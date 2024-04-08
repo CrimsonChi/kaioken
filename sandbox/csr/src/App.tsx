@@ -1,4 +1,4 @@
-import { Router, Route } from "kaioken"
+import { Router, Route, useMemo } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -13,6 +13,7 @@ import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
+import { count, todo } from "./components/signals/test"
 
 function Nav() {
   return (
@@ -40,6 +41,10 @@ function Nav() {
 }
 
 export function App() {
+  const double = useMemo(() => {
+    return count.value * 2
+  }, [count.value])
+
   return (
     <>
       <Nav />
@@ -47,11 +52,21 @@ export function App() {
         <Router>
           <Route
             path="/"
-            element={() => (
-              <div className="flex flex-col gap-2">
-                <h1>Home</h1>
-              </div>
-            )}
+            element={() => {
+              const onInc = () => {
+                count.value += 1
+                todo.value.push("boop")
+                todo.notify()
+              }
+
+              return (
+                <div className="flex flex-col gap-2">
+                  <h1>Home</h1>
+                  <button onclick={onInc}>{count}</button>
+                  <p>{double}</p>
+                </div>
+              )
+            }}
           />
           <Route
             path="/test/:id"

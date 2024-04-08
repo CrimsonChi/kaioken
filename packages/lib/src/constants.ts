@@ -1,3 +1,5 @@
+export const SignalKey = Symbol('kaioken.signal')
+
 export const EffectTag = {
   UPDATE: 1,
   PLACEMENT: 2,

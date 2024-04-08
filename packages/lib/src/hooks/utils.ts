@@ -1,3 +1,4 @@
+import { SignalKey } from "../constants.js"
 import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
 
 export {
@@ -5,6 +6,8 @@ export {
   depsRequireChange,
   useHook,
   shouldExecHook,
+  isSignal,
+  unsignal,
   type HookCallback,
   type HookCallbackState,
 }
@@ -24,19 +27,11 @@ type HookCallbackState<T> = {
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
-let isInUseHookCall = false
-
 function useHook<T, U>(
   hookName: string,
   hookData: Hook<T>,
   callback: HookCallback<T, U>
 ): U {
-  if (isInUseHookCall) {
-    throw new Error(
-      `[kaioken]: hooks cannot be called inside a hook. Hook "${hookName}" may not be called inside a hook.`
-    )
-  }
-  isInUseHookCall = true
   const vNode = node.current
   if (!vNode)
     throw new Error(
@@ -55,6 +50,10 @@ function useHook<T, U>(
       `[kaioken]: hooks must be called in the same order. Hook "${oldHook.name}" was called before hook "${hookName}".`
     )
   }
+
+  if (!vNode.hooks) vNode.hooks = []
+  vNode.hooks[ctx.hookIndex++] = hook
+
   const res = callback({
     hook,
     oldHook,
@@ -62,9 +61,6 @@ function useHook<T, U>(
     queueEffect: ctx.queueEffect.bind(ctx),
     vNode,
   })
-  if (!vNode.hooks) vNode.hooks = []
-  vNode.hooks[ctx.hookIndex++] = hook
-  isInUseHookCall = false
   return res
 }
 
@@ -73,6 +69,14 @@ function cleanupHook(hook: { cleanup?: () => void }) {
     hook.cleanup()
     hook.cleanup = undefined
   }
+}
+
+function isSignal(value: any): value is Kaioken.Signal<any> {
+  return typeof value === "object" && SignalKey in (value ?? {})
+}
+
+function unsignal<T>(value: T) {
+  return isSignal(value) ? value.value : value
 }
 
 function depsRequireChange(a?: unknown[], b?: unknown[]) {

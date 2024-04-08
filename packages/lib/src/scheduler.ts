@@ -202,6 +202,7 @@ export class Scheduler {
       [vNode.instance.render()].flat() as VNode[]
     )
     this.queueCurrentNodeEffects()
+    node.current = undefined
   }
 
   private updateFunctionComponent(vNode: VNode) {
@@ -213,6 +214,7 @@ export class Scheduler {
       [(vNode.type as Function)(vNode.props)].flat()
     )
     this.queueCurrentNodeEffects()
+    node.current = undefined
   }
 
   queueCurrentNodeEffects() {

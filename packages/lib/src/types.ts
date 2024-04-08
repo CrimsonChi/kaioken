@@ -63,6 +63,12 @@ declare global {
       children?: JSX.Element[]
     }
 
+    type Signal<T> = {
+      value: T
+      subscribe: (fn: (value: T) => void) => () => void,
+      notify: () => void;
+    }
+
     type VNode = {
       type: string | Function | typeof Component
       dom?: HTMLElement | SVGElement | Text

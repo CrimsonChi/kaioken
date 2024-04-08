@@ -1,14 +1,14 @@
-import { useState, memo } from "kaioken"
+import { memo } from "kaioken"
 import { Button } from "./components/atoms/Button"
+import { count } from "./components/signals/test"
 
 export function MemoDemo() {
-  const [count, setCount] = useState(0)
   return (
     <div id="memo">
       <span>Count: {count}</span>
-      <Button onclick={() => setCount((prev) => prev + 1)}>Increment</Button>
+      <Button onclick={() => count.value++}>Increment</Button>
       <WhenPropsChangeMemo count={1} />
-      {count % 2 === 0 && <DynamicRenderMemo />}
+      {count.value % 2 === 0 && <DynamicRenderMemo />}
     </div>
   )
 }
