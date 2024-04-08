@@ -1,5 +1,5 @@
 {
-  "name": "kaioken-devtools-ui",
+  "name": "kaioken-devtools-client",
   "private": true,
   "version": "0.0.0",
   "main": "dist/index.js",
@@ -19,7 +19,6 @@
     "vite-plugin-singlefile": "^2.0.1"
   },
   "dependencies": {
-    "kaioken": "workspace:^",
-    "vite-plugin-kaioken": "workspace:^"
+    "kaioken": "workspace:^"
   }
 }

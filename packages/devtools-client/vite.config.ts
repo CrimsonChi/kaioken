@@ -1,14 +1,17 @@
 import fs from "node:fs"
 import { PluginOption, defineConfig } from "vite"
-import kaioken from "vite-plugin-kaioken"
 import { viteSingleFile } from "vite-plugin-singlefile"
 
 export default defineConfig({
   esbuild: {
-    sourcemap: false,
+    jsxInject: `import * as kaioken from "kaioken"`,
+    jsx: "transform",
+    jsxFactory: "kaioken.createElement",
+    jsxFragment: "kaioken.fragment",
+    loader: "tsx",
+    include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },
   plugins: [
-    kaioken({ devtools: false }),
     viteSingleFile(),
     {
       enforce: "post",

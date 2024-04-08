@@ -20,6 +20,6 @@
     "sourceMap": false,
     "jsx": "preserve"
   },
-  "include": ["./src/*", "./src/tests", "src/types.ts"],
+  "include": ["./src/*"],
   "exclude": ["dist"]
 }

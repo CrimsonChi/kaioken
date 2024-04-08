@@ -1,6 +1,6 @@
 import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
-import devtoolsLinkScript from "kaioken-devtools-link"
-import devtoolsUiScript from "kaioken-devtools-ui"
+import devtoolsLinkScript from "kaioken-devtools-host"
+import devtoolsUiScript from "kaioken-devtools-client"
 
 // console.log("devtoolsUiServer", devtoolsUiServer)
 

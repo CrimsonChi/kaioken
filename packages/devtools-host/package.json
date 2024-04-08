@@ -1,5 +1,6 @@
 {
-  "name": "kaioken-devtools-link",
+  "name": "kaioken-devtools-host",
+  "private": true,
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
