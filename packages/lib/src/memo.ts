@@ -17,16 +17,19 @@ export function memo<Props extends Record<string, unknown>>(
   let node: Kaioken.VNode
   let oldProps = {}
 
-  return (props: Props) => {
-    if (node && arePropsEqual(oldProps, props)) {
-      return Object.assign(node, { [elementFreezeSymbol]: true })
-    }
-    oldProps = props
-    if (!node) {
-      node = createElement(fn, props)
-    } else {
-      Object.assign(node.props, props)
-    }
-    return Object.assign(node, { [elementFreezeSymbol]: false })
-  }
+  return Object.assign(
+    (props: Props) => {
+      if (node && arePropsEqual(oldProps, props)) {
+        return Object.assign(node, { [elementFreezeSymbol]: true })
+      }
+      oldProps = props
+      if (!node) {
+        node = createElement(fn, props)
+      } else {
+        Object.assign(node.props, props)
+      }
+      return Object.assign(node, { [elementFreezeSymbol]: false })
+    },
+    { displayName: "Kaioken.memo" }
+  )
 }
