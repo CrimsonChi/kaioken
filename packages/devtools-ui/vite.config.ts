@@ -9,6 +9,7 @@ export default defineConfig({
   },
   plugins: [
     kaioken({ devtools: false }),
+    viteSingleFile(),
     {
       enforce: "post",
       buildEnd: (err) => {
@@ -30,6 +31,5 @@ export default defineConfig({
         })()
       },
     } as PluginOption,
-    viteSingleFile(),
   ],
 })

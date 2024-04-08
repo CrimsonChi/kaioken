@@ -1,18 +1,15 @@
 import type { AppContext } from "./appContext"
+import { contexts } from "./globals"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
 type GlobalKaiokenEvent = "mount" | "unmount" | "update"
 
-declare global {
-  interface Window {
-    __kaioken: KaiokenGlobalContext | undefined
-  }
-}
-
 class KaiokenGlobalContext {
   listeners: Map<GlobalKaiokenEvent, Set<(ctx: AppContext) => void>> = new Map()
-
+  get apps() {
+    return contexts
+  }
   emit(event: GlobalKaiokenEvent, ctx: AppContext) {
     this.listeners.get(event)?.forEach((cb) => cb(ctx))
   }

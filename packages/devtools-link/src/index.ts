@@ -10,4 +10,7 @@ __devtoolsRoot.setAttribute(
 )
 document.body.appendChild(__devtoolsRoot)
 
-__devtoolsMount(__DevtoolsApp, __devtoolsRoot)
+__devtoolsMount(__DevtoolsApp, {
+  root: __devtoolsRoot,
+  name: "kaioken.devtools",
+})

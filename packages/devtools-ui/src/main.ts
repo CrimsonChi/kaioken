@@ -1,4 +1,4 @@
-import "./style.css"
+import "./index.css"
 import { mount } from "kaioken"
 import { App } from "./App"
 

@@ -3,7 +3,7 @@ import type { AppContext } from "./appContext"
 export { ctx, node, nodeToCtxMap, contexts, renderMode }
 
 const nodeToCtxMap = new WeakMap<Kaioken.VNode, AppContext>()
-const contexts = new Set<AppContext>()
+const contexts: Array<AppContext> = []
 
 const node = {
   current: undefined as Kaioken.VNode | undefined,

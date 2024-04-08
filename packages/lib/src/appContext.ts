@@ -24,7 +24,7 @@ export class AppContext {
 
   constructor(options?: AppContextOptions) {
     this.id = Date.now()
-    contexts.add(this)
+    contexts.push(this)
     this.scheduler = new Scheduler(this, options?.maxFrameMs ?? 50)
     this.name = options?.name ?? "App-" + this.id
   }

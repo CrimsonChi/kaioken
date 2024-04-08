@@ -1,5 +1,6 @@
 import type { Component } from "./component"
 import type { EffectTag } from "./constants"
+import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
   GlobalAttributes,
@@ -31,6 +32,9 @@ type ElementMap = {
 }
 
 declare global {
+  interface Window {
+    __kaioken: KaiokenGlobalContext | undefined
+  }
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
 

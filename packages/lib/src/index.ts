@@ -111,7 +111,7 @@ function renderToString<T extends Record<string, unknown>>(
   c.rootNode = n as VNode
   const res = renderToString_internal(n, undefined, elProps)
   renderMode.current = prev
-  contexts.delete(c)
+  contexts.splice(contexts.indexOf(c), 1)
   return res
 }
 
