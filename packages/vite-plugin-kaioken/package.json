@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\"",
-    "build": "tsc"
+    "build": "tsx build.ts"
   },
   "keywords": [],
   "author": "",
@@ -15,10 +15,12 @@
     "kaioken": ">0.12.0"
   },
   "dependencies": {
-    "kaioken-devtools-host": "workspace:^",
-    "kaioken-devtools-client": "workspace:^"
+    "kaioken-devtools-client": "workspace:^",
+    "kaioken-devtools-host": "workspace:^"
   },
   "devDependencies": {
+    "esbuild": "^0.20.2",
+    "tsx": "^4.7.0",
     "vite": "^5.2.8"
   }
 }
