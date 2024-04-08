@@ -4,7 +4,7 @@ import { mount, renderToString } from "kaioken"
 
 const root = document.getElementById("app")!
 
-mount(App, { root, maxFrameMs: 16 })
+mount(App, { root, maxFrameMs: 16, name: "CSR app" })
 
 let testRenderToString = false
 if (testRenderToString) {

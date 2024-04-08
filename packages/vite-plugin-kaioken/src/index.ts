@@ -1,5 +1,6 @@
 import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
 import devtoolsLinkScript from "kaioken-devtools-link"
+import devtoolsUiScript from "kaioken-devtools-ui"
 
 // console.log("devtoolsUiServer", devtoolsUiServer)
 
@@ -42,11 +43,8 @@ export default function (
     },
     async configureServer(server) {
       if (isProduction || isBuild || !opts.devtools) return
-      console.log("configureServer")
-      // const devtoolsUiServer = await startDevtoolsUiServer()
-      server.middlewares.use("/__devtools__", (req, res) => {
-        console.log("req.url", req.originalUrl)
-        res.end("hello from vpk 🫎")
+      server.middlewares.use("/__devtools__", (_, res) => {
+        res.end(devtoolsUiScript)
       })
     },
     handleHotUpdate(ctx) {

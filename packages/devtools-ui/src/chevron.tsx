@@ -1,6 +1,6 @@
-import type { ElementProps as __devtoolsElementProps } from "kaioken"
+import type { ElementProps } from "kaioken"
 
-export function __devtoolsChevron(props: __devtoolsElementProps<"svg">) {
+export function Chevron(props: ElementProps<"svg">) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

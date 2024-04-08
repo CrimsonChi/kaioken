@@ -12,16 +12,21 @@ export interface AppContextOptions {
    * @default 50
    */
   maxFrameMs?: number
+  name?: string
 }
 
 export class AppContext {
+  id: number
+  name: string
   scheduler: Scheduler
   rootNode: VNode | undefined = undefined
   hookIndex = 0
 
   constructor(options?: AppContextOptions) {
+    this.id = Date.now()
     contexts.add(this)
     this.scheduler = new Scheduler(this, options?.maxFrameMs ?? 50)
+    this.name = options?.name ?? "App-" + this.id
   }
 
   mount(node: VNode, container: HTMLElement) {
