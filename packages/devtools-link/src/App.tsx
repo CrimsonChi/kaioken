@@ -71,7 +71,7 @@ function __DevtoolsSelectedNodeView() {
   return (
     <div style="flex-grow:1;padding:.5rem;max-height:500px;overflow-y:auto">
       <h2 style="font-weight:bold;border-bottom:1px solid rgba(0,0,0,.3)">
-        {"<" + selectedNode.type.name + ">"}
+        {"<" + __getNodeName(selectedNode) + ">"}
       </h2>
       <NodeDataSection title="props">
         {JSON.stringify(props, null, 2)}
@@ -86,17 +86,20 @@ function __DevtoolsSelectedNodeView() {
               return (
                 <div>
                   <b>{name || "anonymous hook"}</b>
-                  <pre style="padding:.5rem">
+                  <div style="padding:.5rem">
                     {Object.keys(data).map((key) => {
                       const value = data[key as keyof typeof data]
                       if (typeof value === "function") return null
                       return (
-                        <div>
-                          {key}: {JSON.stringify(value)}
+                        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;">
+                          <b style="padding:.5rem;">{key}:</b>{" "}
+                          <pre style="background-color:#0003;padding:.5rem;">
+                            {JSON.stringify(value, null, 2)}
+                          </pre>
                         </div>
                       )
                     })}
-                  </pre>
+                  </div>
                 </div>
               )
             })}
@@ -248,7 +251,7 @@ function __DevtoolsNodeListItem({
               setCollapsed((prev) => !prev)
             }}
           />
-          {"<" + node.type.name + ">"}
+          {"<" + __getNodeName(node) + ">"}
         </h2>
         {collapsed ? null : <__DevtoolsNodeListItem node={node.child} />}
       </div>
@@ -272,7 +275,14 @@ function __DevtoolsNodeListItemSiblings({ node }: { node?: Kaioken.VNode }) {
 }
 
 function __getAppName(app: __devtoolsAppContext) {
-  return (app.rootNode?.child?.type as Function)?.name
+  return __getNodeName(app.rootNode!.child!)
+}
+
+function __getNodeName(node: Kaioken.VNode) {
+  return (
+    (node.type as any).displayName ??
+    ((node.type as Function).name || "Anonymous Function")
+  )
 }
 
 // function __highlightElement(el: Element) {}

@@ -1,9 +1,7 @@
-//import fs from "node:fs"
-import type { ESBuildOptions, ModuleNode, Plugin } from "vite"
-// import devtoolsLinkScript from "kaioken-devtools-link"
+import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
+import devtoolsLinkScript from "kaioken-devtools-link"
 
 // console.log("devtoolsUiServer", devtoolsUiServer)
-//const devtoolsIndexHtml = fs.readFileSync("kaioken-devtools-ui/dist/index.html")
 
 const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -31,24 +29,25 @@ export default function (
     name: "vite-plugin-kaioken",
     config(config) {
       return {
+        ...config,
         esbuild: {
           ...defaultEsBuildOptions,
           ...config.esbuild,
         },
-      }
+      } as UserConfig
     },
     configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
     },
-    async configureServer(_server) {
+    async configureServer(server) {
       if (isProduction || isBuild || !opts.devtools) return
       console.log("configureServer")
       // const devtoolsUiServer = await startDevtoolsUiServer()
-      // server.middlewares.use("/__devtools__", (req, res) => {
-      //   console.log("req.url", req.url)
-      //   devtoolsUiServer.middlewares(req, res)
-      // })
+      server.middlewares.use("/__devtools__", (req, res) => {
+        console.log("req.url", req.originalUrl)
+        res.end("hello from vpk 🫎")
+      })
     },
     handleHotUpdate(ctx) {
       if (isProduction || isBuild) return
@@ -77,7 +76,7 @@ export default function (
         opts.devtools &&
         (devtoolsModuleId === null || devtoolsModuleId === id)
       ) {
-        // code = devtoolsLinkScript + code
+        code = devtoolsLinkScript + code
         devtoolsModuleId = id
       }
       if (!/\.(tsx|jsx)$/.test(id)) return { code }

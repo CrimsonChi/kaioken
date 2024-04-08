@@ -7,14 +7,16 @@ export function MemoDemo() {
     <div id="memo">
       <span>Count: {count}</span>
       <Button onclick={() => setCount((prev) => prev + 1)}>Increment</Button>
-      <WhenPropsChangeMemo count={1} />
+      <WhenPropsChangeMemo count={count} />
       {count % 2 === 0 && <DynamicRenderMemo />}
     </div>
   )
 }
 
 let renders = 0
-const WhenPropsChangeMemo = memo(({ count }: { count: number }) => {
+const WhenPropsChangeMemo = memo(CountDisplay)
+
+function CountDisplay({ count }: { count: number }) {
   console.log("this should only log when mounted")
   return (
     <div id="memo-props" className="flex flex-col">
@@ -22,7 +24,7 @@ const WhenPropsChangeMemo = memo(({ count }: { count: number }) => {
       <span>Render Count: {++renders}</span>
     </div>
   )
-})
+}
 
 let renders2 = 0
 const DynamicRenderMemo = memo(() => {
