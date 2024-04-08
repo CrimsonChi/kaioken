@@ -30,7 +30,7 @@ export function writeFile(content: string) {
   fs.mkdirSync("dist")
   fs.writeFileSync(
     "dist/index.js",
-    `export default \`import * as devtoolsKaioken from 'kaioken';\n${content}\``,
+    `export default \`import * as devtoolsKaioken from 'kaioken';\n${content.replace(/[`\\$]/g, "\\$&")}\``,
     {
       encoding: "utf-8",
     }

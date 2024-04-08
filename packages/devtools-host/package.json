@@ -20,6 +20,7 @@
     "tsx": "^4.7.0"
   },
   "dependencies": {
+    "@kaioken-core/hooks": "0.0.1-56",
     "kaioken": "workspace:^"
   }
 }
