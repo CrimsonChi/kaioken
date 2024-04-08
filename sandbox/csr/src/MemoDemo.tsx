@@ -7,7 +7,7 @@ export function MemoDemo() {
     <div id="memo">
       <span>Count: {count}</span>
       <Button onclick={() => setCount((prev) => prev + 1)}>Increment</Button>
-      <WhenPropsChangeMemo count={count} />
+      <WhenPropsChangeMemo count={1} />
       {count % 2 === 0 && <DynamicRenderMemo />}
     </div>
   )
