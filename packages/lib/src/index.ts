@@ -136,7 +136,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   const props = el.props ?? {}
   const children = props.children ?? []
   const type = el.type
-  if (type === et.text) return props.nodeValue ?? ""
+  if (type === et.text) return encodeHtmlEntities(props.nodeValue ?? "")
   if (type === et.fragment)
     return children.map((c) => renderToString_internal(c, el, props)).join("")
 
