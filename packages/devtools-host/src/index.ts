@@ -1,5 +1,6 @@
 import { mount as __devtoolsMount } from "kaioken"
 import __DevtoolsApp from "./App"
+import { __useDevtoolsStore } from "./store"
 
 if ("window" in globalThis) {
   const __devtoolsRoot = Object.assign(document.createElement("div"), {
@@ -12,4 +13,10 @@ if ("window" in globalThis) {
     root: __devtoolsRoot,
     name: "kaioken.devtools",
   })
+
+  window.onbeforeunload = () => {
+    const { popupWindow } = __useDevtoolsStore.getState()
+    if (!popupWindow) return
+    popupWindow.close()
+  }
 }
