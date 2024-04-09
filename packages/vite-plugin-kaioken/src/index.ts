@@ -70,6 +70,7 @@ export default function (
     },
     transform(code, id) {
       if (isProduction || isBuild) return
+      if (!/\.(tsx|jsx)$/.test(id)) return { code }
       if (
         opts.devtools &&
         (devtoolsModuleId === null || devtoolsModuleId === id)
@@ -77,7 +78,6 @@ export default function (
         code = devtoolsLinkScript + code
         devtoolsModuleId = id
       }
-      if (!/\.(tsx|jsx)$/.test(id)) return { code }
       const ast = this.parse(code)
       try {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])

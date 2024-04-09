@@ -9,5 +9,5 @@ export default defineConfig({
       $: path.join(__dirname, "src"),
     },
   },
-  plugins: [ssr({ prerender: true }), kaioken()],
+  plugins: [ssr({ prerender: true }), kaioken({ devtools: true })],
 })
