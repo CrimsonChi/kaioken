@@ -124,8 +124,8 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (el === null) return ""
   if (el === undefined) return ""
   if (typeof el === "boolean") return ""
-  if (typeof el === "string") return el
-  if (typeof el === "number") return el.toString()
+  if (typeof el === "string") return encodeHtmlEntities(el)
+  if (typeof el === "number") return encodeHtmlEntities(el.toString())
   if (typeof el === "function")
     return renderToString_internal(createElement(el, elProps))
   if (el instanceof Array)
@@ -167,4 +167,13 @@ function renderToString_internal<T extends Record<string, unknown>>(
   }
 
   return renderToString_internal(type(props), el, props)
+}
+
+function encodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
 }
