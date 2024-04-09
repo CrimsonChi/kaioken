@@ -15,14 +15,12 @@
   "peerDependencies": {
     "kaioken": ">=0.14.0"
   },
-  "dependencies": {
-    "kaioken-devtools-client": "workspace:^",
-    "kaioken-devtools-host": "workspace:^"
-  },
   "devDependencies": {
     "esbuild": "^0.20.2",
+    "kaioken-devtools-client": "workspace:^",
+    "kaioken-devtools-host": "workspace:^",
     "tsx": "^4.7.0",
-    "vite": "^5.2.8",
-    "typescript": "^5.4.4"
+    "typescript": "^5.4.4",
+    "vite": "^5.2.8"
   }
 }
