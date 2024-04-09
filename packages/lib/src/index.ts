@@ -21,7 +21,7 @@ export * from "./appContext.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
-export * from './signal.js'
+export * from "./signal.js"
 export * from "./store.js"
 export * from "./transition.js"
 
@@ -129,7 +129,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (typeof el === "function")
     return renderToString_internal(createElement(el, elProps))
   if (el instanceof Array)
-    return el.map((el) => renderToString(el, el.props)).join("")
+    return el.map((el) => renderToString_internal(el, el.props)).join("")
 
   el.parent = parent
   nodeToCtxMap.set(el, ctx.current)
