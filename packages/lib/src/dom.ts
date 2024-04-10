@@ -108,6 +108,7 @@ function setStyleProp(
 }
 
 function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
+  if (node.instance?.rootDom) return node.instance.rootDom
   const prevProps: Record<string, any> = node.prev?.props ?? {}
   const nextProps: Record<string, any> = node.props ?? {}
 
