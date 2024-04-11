@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 body {
-  background-color: #222;
+  min-width: fit-content;
+  background-color: #171616;
   color: #fff;
   min-height: 100vh;
   display: flex;

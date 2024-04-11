@@ -6,7 +6,7 @@ const initialApps = (kaiokenGlobal?.apps ?? []).filter(
   (app) => !isDevtoolsApp(app)
 )
 const initialApp = (initialApps[0] ?? null) as AppContext | null
-console.log({ initialApps, initialApp })
+
 export const useDevtoolsStore = createStore(
   {
     apps: initialApps,

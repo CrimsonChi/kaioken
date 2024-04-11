@@ -20,7 +20,9 @@ export function AppView() {
 
   return (
     <div className="flex-grow p-2 sticky top-0">
-      <h2 className="font-bold">App View</h2>
+      <h2 className="font-bold mb-2 pb-2 border-b-2 border-neutral-800">
+        App View
+      </h2>
       <NodeListItem node={app?.rootNode} />
     </div>
   )

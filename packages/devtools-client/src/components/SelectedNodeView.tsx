@@ -27,9 +27,10 @@ export function SelectedNodeView() {
   if (selectedNode === null) return null
   const props = { ...selectedNode.props } as Record<string, any>
   delete props.children
+
   return (
     <div className="flex-grow p-2 sticky top-0">
-      <h2 className="font-bold border-b border-neutral-800">
+      <h2 className="font-bold mb-2 pb-2 border-b-2 border-neutral-800">
         {"<" + getNodeName(selectedNode) + ">"}
       </h2>
       <NodeDataSection title="props">

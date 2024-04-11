@@ -30,14 +30,14 @@ export function NodeListItem({
       </>
     )
 
+  const isSelected = selectedNode === node
+
   return (
     <>
-      <div className="pl-2">
+      <div className="pl-4 mb-1">
         <h2
-          onclick={() =>
-            setSelectedNode(selectedNode === node ? null : (node as any))
-          }
-          className={`flex gap-2 items-center cursor-pointer ${selectedNode === node ? "font-bold bg-primary" : ""}`}
+          onclick={() => setSelectedNode(isSelected ? null : (node as any))}
+          className={`flex gap-2 items-center cursor-pointer mb-1 ${isSelected ? "font-medium bg-primary" : ""}`}
         >
           <Chevron
             className="cursor-pointer transform"
@@ -50,7 +50,13 @@ export function NodeListItem({
               setCollapsed((prev) => !prev)
             }}
           />
-          {"<" + getNodeName(node) + ">"}
+          <div>
+            <span className={isSelected ? "" : "text-neutral-400"}>{"<"}</span>
+            <span className={isSelected ? "" : "text-primary"}>
+              {getNodeName(node)}
+            </span>
+            <span className={isSelected ? "" : "text-neutral-400"}>{">"}</span>
+          </div>
         </h2>
         {collapsed ? null : <NodeListItem node={node.child} />}
       </div>

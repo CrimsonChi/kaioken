@@ -15,15 +15,15 @@ export function App() {
 
   return (
     <>
-      <header className="p-2 bg-neutral-700 border-b border-black border-opacity-30">
+      <header className="p-2 bg-neutral-800 border-b border-black border-opacity-30">
         <Select
-          className="bg-neutral-800 text-white rounded"
+          className="bg-neutral-700 text-white rounded"
           options={[
             { text: "Select App", key: "" },
             ...apps.map((app) => app.name),
           ]}
           value={selectedApp?.name ?? ""}
-          onchange={(name) =>
+          onChange={(name) =>
             setSelectedApp(apps.find((a) => a.name === name)!)
           }
         />

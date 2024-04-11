@@ -12,16 +12,16 @@ type SelectOption =
 interface SelectProps {
   value?: string
   options: SelectOption[]
-  onchange?: (value: string) => void
+  onChange?: (value: string) => void
 }
 
 export function Select(
   props: SelectProps & Omit<ElementProps<"select">, "onchange">
 ) {
-  const { className, value, onchange, options, ...rest } = props
+  const { className, value, onChange, options, ...rest } = props
   function handleChange(e: Event) {
     const target = e.target as HTMLSelectElement
-    onchange?.(target.value)
+    onChange?.(target.value)
   }
 
   return (
