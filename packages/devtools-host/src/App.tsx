@@ -8,7 +8,7 @@ export default function __DevtoolsApp() {
 
   function handleOpen() {
     if (popupWindow) return popupWindow.focus()
-    const features = `popup,width=${Math.floor(window.innerWidth / 2)},height=${Math.floor(window.innerHeight / 2)};`
+    const features = `popup,width=${Math.floor(window.screen.width / 2)},height=${Math.floor(window.screen.height / 2)};`
     const w = window.open("/__devtools__", "_blank", features)
     if (!w) return console.error("[kaioken]: Unable to open devtools window")
 

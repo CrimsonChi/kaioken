@@ -13,16 +13,6 @@ export const options: BuildOptions = {
 
   external: ["kaioken"],
   write: false,
-  plugins: [
-    {
-      name: "build-evts",
-      setup({ onEnd }) {
-        onEnd((result) => {
-          writeFile(result.outputFiles![0].text)
-        })
-      },
-    },
-  ],
 }
 
 export function writeFile(content: string) {

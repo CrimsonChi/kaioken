@@ -16,7 +16,6 @@ if ("window" in globalThis) {
 
   window.onbeforeunload = () => {
     const { popupWindow } = __useDevtoolsStore.getState()
-    if (!popupWindow) return
-    popupWindow.close()
+    popupWindow?.close()
   }
 }

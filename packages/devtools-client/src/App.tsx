@@ -1,6 +1,7 @@
 import { useDevtoolsStore } from "./store"
 import { SelectedNodeView } from "./components/SelectedNodeView"
 import { AppView } from "./components/AppView"
+import { Select } from "./components/Select"
 
 export function App() {
   const {
@@ -14,19 +15,20 @@ export function App() {
 
   return (
     <>
-      <main className="flex gap-2 items-start">
-        <div className="p-2 sticky top-0">
-          <h2 className="font-bold">App Selector</h2>
-          <ul>
-            {apps.map((app) => (
-              <li
-                className={`flex ${app === selectedApp ? "font-bold bg-primary" : ""}`}
-              >
-                <button onclick={() => setSelectedApp(app)}>{app.name}</button>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <header className="p-2 bg-neutral-700 border-b border-black border-opacity-30">
+        <Select
+          className="bg-neutral-800 text-white rounded"
+          options={[
+            { text: "Select App", key: "" },
+            ...apps.map((app) => app.name),
+          ]}
+          value={selectedApp?.name ?? ""}
+          onchange={(name) =>
+            setSelectedApp(apps.find((a) => a.name === name)!)
+          }
+        />
+      </header>
+      <main className="flex-grow flex gap-2 items-start">
         {selectedApp && <AppView />}
         {selectedNode && <SelectedNodeView />}
       </main>

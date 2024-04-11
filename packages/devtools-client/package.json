@@ -6,8 +6,8 @@
   "types": "types.d.ts",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "vite build --w",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "devDependencies": {

@@ -2,12 +2,16 @@ import { AppContext, createStore } from "kaioken"
 import { isDevtoolsApp } from "./utils"
 
 export const kaiokenGlobal = window.opener.__kaioken as typeof window.__kaioken
-
+const initialApps = (kaiokenGlobal?.apps ?? []).filter(
+  (app) => !isDevtoolsApp(app)
+)
+const initialApp = (initialApps[0] ?? null) as AppContext | null
+console.log({ initialApps, initialApp })
 export const useDevtoolsStore = createStore(
   {
-    apps: (kaiokenGlobal?.apps ?? []).filter((app) => !isDevtoolsApp(app)),
+    apps: initialApps,
     selectedElement: null as Element | null,
-    selectedApp: null as AppContext | null,
+    selectedApp: initialApp,
     selectedNode: null as (Kaioken.VNode & { type: Function }) | null,
     popupWindow: null as Window | null,
   },
@@ -36,8 +40,24 @@ export const useDevtoolsStore = createStore(
 kaiokenGlobal?.on("mount", (app) => {
   if (!isDevtoolsApp(app)) {
     useDevtoolsStore.methods.addApp(app)
+    const selected = useDevtoolsStore.getState().selectedApp
+    if (!selected) {
+      useDevtoolsStore.methods.setSelectedApp(app)
+    }
   }
 })
 kaiokenGlobal?.on("unmount", (app) => {
   useDevtoolsStore.methods.removeApp(app)
+  let nextSelected: AppContext | null = useDevtoolsStore.getState().selectedApp
+  if (useDevtoolsStore.getState().selectedApp === app) {
+    nextSelected = null
+  }
+
+  if (nextSelected === null) {
+    const apps = useDevtoolsStore.getState().apps
+    if (apps.length > 0) {
+      nextSelected = apps[0]
+    }
+  }
+  useDevtoolsStore.methods.setSelectedApp(nextSelected)
 })

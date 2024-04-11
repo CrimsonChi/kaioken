@@ -5,23 +5,25 @@ import { getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
 
 export function SelectedNodeView() {
-  const { value: app } = useDevtoolsStore(
-    (state) => state.selectedApp,
-    (prev, next) => prev === next
-  )
+  const {
+    value: { selectedApp, selectedNode },
+  } = useDevtoolsStore(({ selectedApp, selectedNode }) => ({
+    selectedApp,
+    selectedNode,
+  }))
   const node = getCurrentNode()
   const ctx = getNodeAppContext(node!)
 
   function handleUpdate(appCtx: AppContext) {
-    if (appCtx !== app || !node) return
+    if (appCtx !== selectedApp || !node) return
     ctx?.requestUpdate(node)
   }
+
   useEffect(() => {
     kaiokenGlobal?.on("update", handleUpdate)
     return () => kaiokenGlobal?.off("update", handleUpdate)
   }, [])
 
-  const { value: selectedNode } = useDevtoolsStore((s) => s.selectedNode)
   if (selectedNode === null) return null
   const props = { ...selectedNode.props } as Record<string, any>
   delete props.children
@@ -31,7 +33,9 @@ export function SelectedNodeView() {
         {"<" + getNodeName(selectedNode) + ">"}
       </h2>
       <NodeDataSection title="props">
-        {JSON.stringify(props, null, 2)}
+        <pre className="p-2 bg-neutral-800">
+          {JSON.stringify(props, null, 2)}
+        </pre>
       </NodeDataSection>
       <NodeDataSection title="state">
         {selectedNode.hooks && (
@@ -51,7 +55,9 @@ export function SelectedNodeView() {
                         <div className="flex gap-2 mb-2">
                           <b className="p-2">{key}:</b>{" "}
                           <pre className="p-2 bg-neutral-800">
-                            {JSON.stringify(value, null, 2)}
+                            {Array.isArray(value)
+                              ? JSON.stringify(value)
+                              : JSON.stringify(value, null, 2)}
                           </pre>
                         </div>
                       )
