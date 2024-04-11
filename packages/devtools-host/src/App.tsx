@@ -1,10 +1,28 @@
+import { useEffect as __devtoolsUseEffect } from "kaioken"
 import { __useDevtoolsStore } from "./store"
+
+function __devtoolsHandleDragOver(e: DragEvent) {
+  const dragging = __useDevtoolsStore.getState().dragging
+  if (!dragging) return
+  e.preventDefault()
+  e.stopPropagation()
+  e.dataTransfer && (e.dataTransfer.dropEffect = "move")
+}
 
 export default function __DevtoolsApp() {
   const {
-    value: { popupWindow },
+    value: { popupWindow, dragging },
     setPopupWindow,
+    setCorner,
+    setDragging,
   } = __useDevtoolsStore()
+
+  __devtoolsUseEffect(() => {
+    document.body.addEventListener("dragover", __devtoolsHandleDragOver)
+    return () => {
+      document.body.removeEventListener("dragover", __devtoolsHandleDragOver)
+    }
+  }, [])
 
   function handleOpen() {
     if (popupWindow) return popupWindow.focus()
@@ -22,16 +40,53 @@ export default function __DevtoolsApp() {
     }
   }
 
+  function handleDragStart() {
+    __useDevtoolsStore.setState((prev) => ({
+      ...prev,
+      dragging: true,
+    }))
+  }
+
+  function handleDrag(e: DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    let isLeft = true,
+      isTop = true
+    if (e.pageX > window.innerWidth / 2) isLeft = false
+    if (e.pageY > window.innerHeight / 2) isTop = false
+
+    const corner = isTop ? (isLeft ? "tl" : "tr") : isLeft ? "bl" : "br"
+    setCorner(corner)
+  }
+
+  function handleDragEnd(e: DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragging(false)
+  }
+
   return (
     <>
-      <button onclick={handleOpen}>
+      <button
+        draggable
+        onclick={handleOpen}
+        ondragstart={handleDragStart}
+        ondrag={handleDrag}
+        ondragend={handleDragEnd}
+        tabIndex={-1}
+        style={
+          "background:crimson;margin:0.5rem;border-radius:50%;padding:0.25rem;" +
+          (dragging ? "opacity: 0.5;" : "")
+        }
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width={30}
-          height={30}
+          width={20}
+          height={20}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="crimson"
+          stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
