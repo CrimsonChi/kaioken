@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "kaioken"
 
 const ThemeContext = createContext<"light" | "dark">("dark")
-const ThemeContextDispatcher = createContext<null | (() => void)>(null)
+const ThemeContextDispatcher = createContext<() => void>(() => {})
 
 export function ContextExample() {
   const [themeA, setThemeA] = useState<"light" | "dark">("light")
@@ -10,7 +10,9 @@ export function ContextExample() {
     <div className="flex flex-col gap-2">
       <ThemeContext.Provider value={themeA}>
         <ThemeContextDispatcher.Provider
-          value={() => setThemeA(themeA === "light" ? "dark" : "light")}
+          value={() =>
+            setThemeA((prev) => (prev === "light" ? "dark" : "light"))
+          }
         >
           <ThemeButton />
         </ThemeContextDispatcher.Provider>
@@ -18,7 +20,9 @@ export function ContextExample() {
       <br />
       <ThemeContext.Provider value={themeB}>
         <ThemeContextDispatcher.Provider
-          value={() => setThemeB(themeB === "light" ? "dark" : "light")}
+          value={() =>
+            setThemeB((prev) => (prev === "light" ? "dark" : "light"))
+          }
         >
           <ThemeButton />
         </ThemeContextDispatcher.Provider>
@@ -30,5 +34,5 @@ export function ContextExample() {
 function ThemeButton() {
   const theme = useContext(ThemeContext)
   const dispatch = useContext(ThemeContextDispatcher)
-  return <button onclick={() => dispatch?.()}>{theme}</button>
+  return <button onclick={() => dispatch()}>{theme}</button>
 }
