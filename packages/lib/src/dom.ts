@@ -22,8 +22,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
         ? document.createElementNS("http://www.w3.org/2000/svg", t)
         : document.createElement(t)
 
-  dom = updateDom(vNode, dom)
-  vNode.dom = dom
+  vNode.dom = updateDom(vNode, dom)
   return dom
 }
 
@@ -69,13 +68,8 @@ function setProp(
   value: unknown,
   prev: unknown
 ) {
-  switch (key) {
-    case "style":
-      setStyleProp(dom, value, prev)
-      break
-    default:
-      setDomAttribute(dom, propToHtmlAttr(key), value)
-  }
+  if (key === "style") return setStyleProp(dom, value, prev)
+  setDomAttribute(dom, propToHtmlAttr(key), value)
 }
 
 function setStyleProp(
