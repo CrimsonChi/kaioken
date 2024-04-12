@@ -2,7 +2,6 @@ import { Router, Route, useMemo } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
-import { Messages } from "./components/Messages"
 import { Link } from "./components/atoms/Link"
 import { GithubIcon } from "./components/GithubIcon"
 import { MemoDemo } from "./MemoDemo"
@@ -23,8 +22,7 @@ function Nav() {
         <Link to="/todos">Todos (state, model, memo)</Link>
         <Link to="/todos-with-store">Todos (with store)</Link>
         <Link to="/counter">Counter (store)</Link>
-        <Link to="/query?id=1">Query (useFetch)</Link>
-        <Link to="/messages">Messages (useOptimistic)</Link>
+        <Link to="/query?id=1">Query (useAsync)</Link>
         <Link to="/transitions">Dialogs (transitions, portal)</Link>
         <Link to="/memo">Memo demo</Link>
         <Link to="/big-list">Large-list rendering</Link>
@@ -104,7 +102,6 @@ export function App() {
           <Route path="/todos-with-store" element={TodosWithStore} />
           <Route path="/counter" element={Counter} />
           <Route path="/query" element={ProductPage} />
-          <Route path="/messages" element={Messages} />
           <Route path="/transitions" element={Transitions} />
           <Route path="/filtered-list" element={FilteredList} />
           <Route path="/keyed-list" element={KeyedList} />

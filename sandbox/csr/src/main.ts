@@ -11,3 +11,4 @@ if (testRenderToString) {
   const html = renderToString(() => App())
   console.log("renderToString", html)
 }
+// import("kaioken")

@@ -1,4 +1,4 @@
-import { memo, useFetch, type RouteChildProps } from "kaioken"
+import { memo, useAsync, type RouteChildProps } from "kaioken"
 import { Spinner } from "./atoms/Spinner"
 import { Link } from "./atoms/Link"
 import { H3 } from "./atoms/Heading"
@@ -10,14 +10,16 @@ interface Product {
 }
 
 export function ProductPage({ query: { id } }: RouteChildProps) {
-  const { loading, error, data } = useFetch<Product>(
-    `https://dummyjson.com/products/${id}`
+  const [data, loading, error] = useAsync<Product>(
+    () =>
+      fetch(`https://dummyjson.com/products/${id}`).then((res) => res.json()),
+    [id]
   )
 
   return (
     <>
       {loading && <Spinner />}
-      {error && <div>{error.message}</div>}
+      {error && <div>{error}</div>}
       {data && <Product product={data} />}
       <div className="flex items-center justify-center">
         {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}
