@@ -6,7 +6,7 @@ import { isVNode, isValidChild } from "./utils.js"
 type VNode = Kaioken.VNode
 
 export function reconcileChildren(
-  globalCtx: AppContext,
+  appCtx: AppContext,
   vNode: VNode,
   children: VNode[]
 ) {
@@ -19,7 +19,7 @@ export function reconcileChildren(
   let lastPlacedIndex = 0
 
   for (; !!oldNode && index < children.length; index++) {
-    newNode = updateSlot(globalCtx, vNode, children[index], oldNode, index)
+    newNode = updateSlot(appCtx, vNode, children[index], oldNode, index)
     if (!newNode) break
     lastPlacedIndex = placeChild(newNode, lastPlacedIndex, index)
 
@@ -43,7 +43,7 @@ export function reconcileChildren(
         prevOldNode.sibling = undefined
       }
       prevOldNode = oldNode
-      globalCtx.requestDelete(oldNode)
+      appCtx.requestDelete(oldNode)
       oldNode = oldNode.sibling
     }
     return resultingChild
@@ -97,7 +97,7 @@ export function reconcileChildren(
     }
   }
 
-  existingChildren.forEach((child) => globalCtx.requestDelete(child))
+  existingChildren.forEach((child) => appCtx.requestDelete(child))
   return resultingChild
 }
 
@@ -131,7 +131,7 @@ function createChild(parent: VNode, child: any, index: number): VNode {
 }
 
 function updateSlot(
-  globalCtx: AppContext,
+  appCtx: AppContext,
   parent: VNode,
   child: VNode,
   oldNode: VNode | undefined,
@@ -151,7 +151,7 @@ function updateSlot(
     newNode = createChild(parent, child, index)
   }
   if (oldNode && !sameType) {
-    globalCtx.requestDelete(oldNode)
+    appCtx.requestDelete(oldNode)
   }
   return newNode
 }
