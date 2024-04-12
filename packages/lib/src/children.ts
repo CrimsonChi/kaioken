@@ -20,5 +20,5 @@ Incorrect usage: <button>{children}</button> - results in children being rendere
     )
     hasWarned = true
   }
-  return renderToString(children())
+  return renderToString(children)
 }

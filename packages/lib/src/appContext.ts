@@ -1,5 +1,6 @@
 import { EffectTag } from "./constants.js"
-import { contexts, ctx, nodeToCtxMap } from "./globals.js"
+import { contexts } from "./globals.js"
+import { createElement } from "./index.js"
 import { Scheduler } from "./scheduler.js"
 import { vNodeContains } from "./utils.js"
 
@@ -21,24 +22,52 @@ export class AppContext {
   scheduler: Scheduler
   rootNode: VNode | undefined = undefined
   hookIndex = 0
+  root?: HTMLElement
+  mounted = false
 
-  constructor(options?: AppContextOptions) {
+  constructor(
+    private appFunc: (props: any) => JSX.Element,
+    private appProps = {},
+    options?: AppContextOptions
+  ) {
     this.id = Date.now()
-    contexts.push(this)
-    this.scheduler = new Scheduler(this, options?.maxFrameMs ?? 50)
     this.name = options?.name ?? "App-" + this.id
+    this.root = options?.root
+    this.scheduler = new Scheduler(this, options?.maxFrameMs ?? 50)
+    contexts.push(this)
   }
 
-  mount(node: VNode, container: HTMLElement) {
-    this.rootNode = node
-    nodeToCtxMap.set(this.rootNode, ctx.current)
+  mount() {
+    this.rootNode = createElement(
+      this.root!.nodeName.toLowerCase(),
+      {},
+      createElement(this.appFunc, this.appProps)
+    )
+    this.rootNode.dom = this.root
+    this.scheduler.queueUpdate(this.rootNode)
+    this.scheduler.wake()
+    return new Promise<AppContext>((resolve) => {
+      this.scheduler.nextIdle(() => {
+        this.mounted = true
+        window.__kaioken?.emit("mount", this)
+        resolve(this)
+      })
+    })
+  }
 
-    node.dom = container
-    this.scheduler.queueUpdate(node)
-    this.scheduler.workLoop()
+  unmount() {
+    return new Promise<AppContext>((resolve) => {
+      if (!this.rootNode?.child) return resolve(this)
+      this.requestDelete(this.rootNode.child)
 
-    window.__kaioken!.emit("mount", this)
-    return this.rootNode
+      this.scheduler.nextIdle(() => {
+        this.scheduler.sleep()
+        this.rootNode && (this.rootNode.child = undefined)
+        this.mounted = false
+        window.__kaioken?.emit("unmount", this)
+        resolve(this)
+      })
+    })
   }
 
   requestUpdate(node: VNode) {

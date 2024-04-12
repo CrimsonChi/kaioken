@@ -1,4 +1,4 @@
-import type { AppContextOptions } from "../appContext"
+import type { AppContext, AppContextOptions } from "../appContext"
 import { mount } from "../index.js"
 
 export interface SSRProps {
@@ -12,13 +12,13 @@ export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   container: AppContextOptions,
   appProps?: T
-): Kaioken.VNode
+): Promise<AppContext>
 
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   container: HTMLElement,
   appProps?: T
-): Kaioken.VNode
+): Promise<AppContext>
 
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,

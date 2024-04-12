@@ -37,34 +37,29 @@ function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   options: AppContextOptions,
   appProps?: T
-): Kaioken.VNode
+): Promise<AppContext>
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   root: HTMLElement,
   appProps?: T
-): Kaioken.VNode
+): Promise<AppContext>
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
-): Kaioken.VNode {
-  let opts, root
+): Promise<AppContext> {
+  let root: HTMLElement, opts: AppContextOptions | undefined
   if (optionsOrRoot instanceof HTMLElement) {
     root = optionsOrRoot
+    opts = { root }
   } else {
     opts = optionsOrRoot
     root = optionsOrRoot.root
   }
-
-  ctx.current = new AppContext(opts)
-  const node = createElement(
-    root.nodeName.toLowerCase(),
-    {},
-    createElement(appFunc, appProps)
-  )
-  return ctx.current.mount(node, root)
+  ctx.current = new AppContext(appFunc, appProps, opts)
+  return ctx.current.mount()
 }
 
 function createElement(
@@ -101,18 +96,16 @@ function fragment({
 }
 
 function renderToString<T extends Record<string, unknown>>(
-  el: JSX.Element | ((props: T) => JSX.Element),
+  el: (props: T) => JSX.Element,
   elProps = {} as T
 ) {
-  const c = new AppContext()
-  ctx.current = c
   const prev = renderMode.current
   renderMode.current = "string"
-  const n = el instanceof Function ? createElement(el, elProps) : el
-  c.rootNode = n as VNode
-  const res = renderToString_internal(n, undefined, elProps)
-  renderMode.current = prev
+  const c = (ctx.current = new AppContext(el, elProps))
+  c.rootNode = el instanceof Function ? createElement(el, elProps) : el
+  const res = renderToString_internal(c.rootNode, undefined, elProps)
   contexts.splice(contexts.indexOf(c), 1)
+  renderMode.current = prev
   return res
 }
 
@@ -141,7 +134,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
     return children.map((c) => renderToString_internal(c, el, props)).join("")
 
   if (typeof type === "string") {
-    const sc = selfClosingTags.includes(type)
+    const isSelfClosing = selfClosingTags.includes(type)
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
       .map(
@@ -152,9 +145,9 @@ function renderToString_internal<T extends Record<string, unknown>>(
     const open = `<${type} ${attrs}`
     return (
       open +
-      (!sc
-        ? `>${children.map((c) => renderToString_internal(c, el, c.props)).join("")}</${type}>`
-        : "/>")
+      (isSelfClosing
+        ? "/>"
+        : `>${children.map((c) => renderToString_internal(c, el, c.props)).join("")}</${type}>`)
     )
   }
 

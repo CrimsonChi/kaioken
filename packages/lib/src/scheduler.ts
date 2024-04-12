@@ -13,79 +13,27 @@ export class Scheduler {
   private treesInProgress: VNode[] = []
   private currentTreeIndex = 0
   private timeoutRef: number = -1
+  isRunning = false
   queuedNodeEffectSets: Function[][] = []
   nodeEffects: Function[] = []
+  nextIdleEffects: Function[] = []
   deletions: VNode[] = []
 
   constructor(
-    private globalContext: AppContext,
+    private appCtx: AppContext,
     private maxFrameMs = 50
   ) {}
 
-  workLoop(deadline?: IdleDeadline) {
-    let shouldYield = false
-    ctx.current = this.globalContext
-    while (this.nextUnitOfWork && !shouldYield) {
-      this.nextUnitOfWork =
-        this.performUnitOfWork(this.nextUnitOfWork) ??
-        this.treesInProgress[++this.currentTreeIndex]
+  wake() {
+    this.isRunning = true
+    this.workLoop()
+  }
 
-      shouldYield =
-        (deadline && deadline.timeRemaining() < 1) ??
-        (!deadline && !this.nextUnitOfWork)
-    }
-
-    if (!this.nextUnitOfWork && this.treesInProgress.length) {
-      this.currentTreeIndex = 0
-      while (this.deletions.length) {
-        commitWork(this.globalContext, this.deletions.pop()!)
-      }
-      while (this.treesInProgress.length) {
-        commitWork(this.globalContext, this.treesInProgress.pop()!)
-      }
-
-      this.treesInProgress = []
-      while (this.queuedNodeEffectSets.length) {
-        const effects = this.queuedNodeEffectSets.pop()! // consume from child before parent
-        while (effects.length) {
-          effects.shift()!() // fire in sequence
-        }
-      }
-      window.__kaioken!.emit("update", this.globalContext)
-    }
-    if ("requestIdleCallback" in window) {
-      let didExec = false
-
-      this.timeoutRef =
-        (this.timeoutRef !== -1 && window.clearTimeout(this.timeoutRef),
-        window.setTimeout(() => {
-          if (!didExec) {
-            this.workLoop()
-            didExec = true
-          }
-        }, this.maxFrameMs))
-
-      window.requestIdleCallback((deadline) => {
-        if (!didExec) {
-          this.workLoop(deadline)
-          didExec = true
-        }
-      })
-    } else {
-      const w = window as Window
-      w.requestAnimationFrame(() => {
-        const start = performance.now()
-        window.setTimeout(() => {
-          const elapsed = performance.now() - start
-          const deadline: IdleDeadline = {
-            didTimeout: false,
-            timeRemaining: function () {
-              return Math.max(0, 50 - elapsed) // Simulate 50ms max idle time
-            },
-          }
-          this.workLoop(deadline)
-        }, 0)
-      })
+  sleep() {
+    this.isRunning = false
+    if (this.timeoutRef !== -1) {
+      clearTimeout(this.timeoutRef)
+      this.timeoutRef = -1
     }
   }
 
@@ -153,6 +101,97 @@ export class Scheduler {
     this.deletions.push(node)
   }
 
+  queueCurrentNodeEffects() {
+    this.queuedNodeEffectSets.push(this.nodeEffects)
+    this.nodeEffects = []
+  }
+
+  nextIdle(fn: () => void) {
+    this.nextIdleEffects.push(fn)
+  }
+
+  private workLoop(deadline?: IdleDeadline) {
+    let shouldYield = false
+    ctx.current = this.appCtx
+    while (this.nextUnitOfWork && !shouldYield) {
+      this.nextUnitOfWork =
+        this.performUnitOfWork(this.nextUnitOfWork) ??
+        this.treesInProgress[++this.currentTreeIndex]
+
+      shouldYield =
+        (deadline && deadline.timeRemaining() < 1) ??
+        (!deadline && !this.nextUnitOfWork)
+    }
+
+    if (
+      !this.nextUnitOfWork &&
+      (this.deletions.length || this.treesInProgress.length)
+    ) {
+      while (this.deletions.length) {
+        commitWork(this.appCtx, this.deletions.pop()!)
+      }
+      if (this.treesInProgress.length) {
+        this.currentTreeIndex = 0
+        while (this.treesInProgress.length) {
+          commitWork(this.appCtx, this.treesInProgress.pop()!)
+        }
+
+        while (this.queuedNodeEffectSets.length) {
+          const effects = this.queuedNodeEffectSets.pop()! // consume from child before parent
+          while (effects.length) {
+            effects.shift()!() // fire in sequence
+          }
+        }
+      }
+      window.__kaioken!.emit("update", this.appCtx)
+    }
+
+    if (!this.nextUnitOfWork) {
+      while (this.nextIdleEffects.length) {
+        this.nextIdleEffects.shift()!()
+      }
+    }
+
+    if (!this.isRunning) return
+    if ("requestIdleCallback" in window) {
+      let didExec = false
+
+      this.timeoutRef =
+        (this.timeoutRef !== -1 && window.clearTimeout(this.timeoutRef),
+        window.setTimeout(() => {
+          if (!this.isRunning) return
+          if (!didExec) {
+            this.workLoop()
+            didExec = true
+          }
+        }, this.maxFrameMs))
+
+      window.requestIdleCallback((deadline) => {
+        if (!this.isRunning) return
+        if (!didExec) {
+          this.workLoop(deadline)
+          didExec = true
+        }
+      })
+    } else {
+      const w = window as Window
+      w.requestAnimationFrame(() => {
+        const start = performance.now()
+        window.setTimeout(() => {
+          if (!this.isRunning) return
+          const elapsed = performance.now() - start
+          const deadline: IdleDeadline = {
+            didTimeout: false,
+            timeRemaining: function () {
+              return Math.max(0, 50 - elapsed) // Simulate 50ms max idle time
+            },
+          }
+          this.workLoop(deadline)
+        }, 0)
+      })
+    }
+  }
+
   private performUnitOfWork(vNode: VNode): VNode | void {
     const frozen =
       elementFreezeSymbol in vNode && vNode[elementFreezeSymbol] === true
@@ -164,7 +203,7 @@ export class Scheduler {
         this.updateFunctionComponent(vNode)
       } else if (vNode.type === elementTypes.fragment) {
         vNode.child = reconcileChildren(
-          this.globalContext,
+          this.appCtx,
           vNode,
           vNode.props.children
         )
@@ -183,7 +222,7 @@ export class Scheduler {
   }
 
   private updateClassComponent(vNode: VNode) {
-    this.globalContext.hookIndex = 0
+    this.appCtx.hookIndex = 0
     node.current = vNode
     if (!vNode.instance) {
       const instance =
@@ -197,7 +236,7 @@ export class Scheduler {
     }
 
     vNode.child = reconcileChildren(
-      this.globalContext,
+      this.appCtx,
       vNode,
       [vNode.instance.render()].flat() as VNode[]
     )
@@ -206,10 +245,10 @@ export class Scheduler {
   }
 
   private updateFunctionComponent(vNode: VNode) {
-    this.globalContext.hookIndex = 0
+    this.appCtx.hookIndex = 0
     node.current = vNode
     vNode.child = reconcileChildren(
-      this.globalContext,
+      this.appCtx,
       vNode,
       [(vNode.type as Function)(vNode.props)].flat()
     )
@@ -217,22 +256,11 @@ export class Scheduler {
     node.current = undefined
   }
 
-  queueCurrentNodeEffects() {
-    if (this.nodeEffects.length) {
-      this.queuedNodeEffectSets.push(this.nodeEffects)
-      this.nodeEffects = []
-    }
-  }
-
   private updateHostComponent(vNode: VNode) {
     const dom = vNode.dom ?? createDom(vNode)
     if (vNode.props.ref) {
       vNode.props.ref.current = dom
     }
-    vNode.child = reconcileChildren(
-      this.globalContext,
-      vNode,
-      vNode.props.children
-    )
+    vNode.child = reconcileChildren(this.appCtx, vNode, vNode.props.children)
   }
 }
