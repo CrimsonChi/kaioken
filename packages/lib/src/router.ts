@@ -52,7 +52,7 @@ function Router(props: RouterProps) {
   } as RouterState)
 
   const query = useMemo(() => extractQueryParams(state.search), [state.search])
-  const parentPath = buildParentPath(node.current!)
+  const parentPath = useMemo(() => buildParentPath(node.current!), [])
 
   useEffect(() => {
     const handler = () => {
