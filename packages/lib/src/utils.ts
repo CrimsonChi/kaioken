@@ -347,10 +347,7 @@ function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
 }
 
 function propValueToHtmlAttrValue(key: string, value: unknown) {
-  switch (key) {
-    case "style":
-      if (typeof value === "object" && !!value) return styleObjectToCss(value)
-    default:
-      return String(value)
-  }
+  return key === "style" && typeof value === "object" && !!value
+    ? styleObjectToCss(value)
+    : String(value)
 }
