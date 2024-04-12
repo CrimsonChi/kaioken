@@ -1,5 +1,5 @@
 import type { AppContext } from "./appContext"
-import { contexts } from "./globals"
+import { contexts } from "./globals.js"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
