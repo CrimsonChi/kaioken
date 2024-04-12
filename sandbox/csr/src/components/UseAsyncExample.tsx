@@ -1,4 +1,5 @@
 import { useAsync, useState } from "kaioken"
+import { Spinner } from "./atoms/Spinner"
 
 interface Product {
   id: number
@@ -17,7 +18,7 @@ interface Product {
 export function UseAsyncExample() {
   const [productId, setProductId] = useState(1)
 
-  const data = useAsync(async () => {
+  const [data, loading, error] = useAsync(async () => {
     const res = await fetch(`https://dummyjson.com/products/${productId}`)
     await new Promise((res) => setTimeout(res, Math.random() * 3000))
     return res.json() as Promise<Product>
@@ -28,7 +29,13 @@ export function UseAsyncExample() {
   return (
     <div>
       <button onclick={() => setProductId((prev) => prev + 1)}>Next</button>
-      {data ? <ProductCard product={data} /> : <p>Loading...</p>}
+      {data ? (
+        <ProductCard product={data} />
+      ) : loading ? (
+        <Spinner />
+      ) : (
+        <p>{error.message}</p>
+      )}
     </div>
   )
 }
