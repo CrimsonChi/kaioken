@@ -17,7 +17,6 @@ export function useAsync<T>(
       data: null as T | null,
       error: null as any | null,
       loading: true as boolean,
-      promise: undefined as Promise<T> | undefined,
     },
     ({ hook, oldHook, update }) => {
       if (depsRequireChange(deps, oldHook?.deps)) {
@@ -25,8 +24,7 @@ export function useAsync<T>(
         hook.loading = true
         hook.error = null
         hook.deps = deps
-        hook.promise = func()
-        hook.promise
+        func()
           .then((data: T) => {
             if (!depsRequireChange(deps, hook.deps)) {
               hook.data = data
