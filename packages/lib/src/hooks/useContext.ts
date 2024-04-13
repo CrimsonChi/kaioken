@@ -15,30 +15,33 @@ export function useContext<T>(context: Kaioken.Context<T>): T {
       ctxNode: undefined as ContextNode<T> | undefined,
     },
     ({ hook, oldHook, vNode }) => {
-      if (oldHook) {
-        if (!oldHook.ctxNode) {
-          warnProviderNotFound()
-          return context.default() as T
-        }
-        return oldHook.ctxNode.props[contextDataSymbol].value
-      }
+      if (!oldHook) {
+        hook.debug = () => ({
+          value: hook.ctxNode
+            ? hook.ctxNode.props[contextDataSymbol].value
+            : context.default(),
+        })
 
-      let n = vNode.parent
-      while (n) {
-        if (contextDataSymbol in n.props) {
-          const ctxNodeData = n.props[
-            contextDataSymbol
-          ] as ContextNode<T>["props"]
-          if (ctxNodeData.ctx === context) {
-            hook.ctxNode = n as ContextNode<T>
-            return (n.props[contextDataSymbol] as ContextNode<T>["props"]).value
+        let n = vNode.parent
+        while (n) {
+          if (contextDataSymbol in n.props) {
+            const ctxNodeData = n.props[
+              contextDataSymbol
+            ] as ContextNode<T>["props"]
+            if (ctxNodeData.ctx === context) {
+              hook.ctxNode = n as ContextNode<T>
+              return (n.props[contextDataSymbol] as ContextNode<T>["props"])
+                .value
+            }
           }
+          n = n.parent
         }
-        n = n.parent
       }
-
-      warnProviderNotFound()
-      return context.default() as T
+      if (!hook.ctxNode) {
+        warnProviderNotFound()
+        return context.default() as T
+      }
+      return hook.ctxNode.props[contextDataSymbol].value
     }
   )
 }
@@ -46,10 +49,7 @@ export function useContext<T>(context: Kaioken.Context<T>): T {
 let hasWarned = false
 function warnProviderNotFound() {
   if (!hasWarned) {
-    console.warn(
-      `[kaioken]: Unable to find context in parent nodes. Did you forget to use the context provider?`,
-      new Error()
-    )
+    console.warn(`[kaioken]: Unable to find context provider`, new Error())
     hasWarned = true
   }
 }
