@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "kaioken"
 import { useDevtoolsStore } from "./store"
 
 function handleDragOver(e: DragEvent) {

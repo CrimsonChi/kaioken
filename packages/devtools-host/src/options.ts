@@ -20,8 +20,7 @@ export function writeFile(content: string) {
   fs.mkdirSync("dist")
   fs.writeFileSync(
     "dist/index.js",
-    `export default \`
-    ${content.replace(/[`\\$]/g, "\\$&").replaceAll(`from "kaioken"`, `from "./"`)}\``,
+    `export default \`${content.replace(/[`\\$]/g, "\\$&")}\``,
     {
       encoding: "utf-8",
     }

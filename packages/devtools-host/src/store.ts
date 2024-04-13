@@ -1,5 +1,3 @@
-import { createStore } from "kaioken"
-
 export type AnchorCorner = "br" | "bl" | "tl" | "tr"
 
 let initialCorner = "br"
