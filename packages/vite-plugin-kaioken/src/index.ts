@@ -26,12 +26,22 @@ export default function (
   let isProduction = false
   let isBuild = false
 
-  const kaiokenModuleId = require
+  let kaiokenModuleId = require
     .resolve("kaioken", {
       paths: [process.cwd()],
     })
     .replace(/\\/g, "/")
-    .replace("index.js", "dist/index.js")
+  if (kaiokenModuleId.endsWith("/lib/index.js")) {
+    kaiokenModuleId = kaiokenModuleId.replace(
+      "/lib/index.js",
+      "/lib/dist/index.js"
+    )
+  }
+
+  console.log(
+    "[vite-plugin-kaioken]: resolved kaioken module id",
+    kaiokenModuleId
+  )
 
   return {
     name: "vite-plugin-kaioken",
