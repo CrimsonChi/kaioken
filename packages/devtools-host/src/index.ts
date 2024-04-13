@@ -1,4 +1,3 @@
-import { mount } from "kaioken"
 import App from "./App"
 import { type AnchorCorner, useDevtoolsStore } from "./store"
 ;(() => {

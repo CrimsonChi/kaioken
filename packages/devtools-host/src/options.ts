@@ -21,8 +21,7 @@ export function writeFile(content: string) {
   fs.writeFileSync(
     "dist/index.js",
     `export default \`
-import {createElement,fragment} from "./dist/index.js"
-    ${content.replace(/[`\\$]/g, "\\$&").replaceAll(`from "kaioken"`, `from "./dist/index.js"`)}\``,
+    ${content.replace(/[`\\$]/g, "\\$&").replaceAll(`from "kaioken"`, `from "./"`)}\``,
     {
       encoding: "utf-8",
     }

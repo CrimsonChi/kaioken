@@ -31,6 +31,7 @@ export default function (
       paths: [process.cwd()],
     })
     .replace(/\\/g, "/")
+    .replace("index.js", "dist/index.js")
 
   return {
     name: "vite-plugin-kaioken",
