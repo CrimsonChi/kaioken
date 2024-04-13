@@ -87,7 +87,10 @@ export default function (
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (opts.devtools && id === kaiokenModuleId) {
+      if (
+        opts.devtools &&
+        (id === kaiokenModuleId || id.includes("/kaioken.js?"))
+      ) {
         code = code + devtoolsLinkScript
         return { code }
       }
