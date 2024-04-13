@@ -1,26 +1,27 @@
-import { useEffect as __devtoolsUseEffect } from "kaioken"
-import { __useDevtoolsStore } from "./store"
+import { useEffect, useRef } from "kaioken"
+import { useDevtoolsStore } from "./store"
 
-function __devtoolsHandleDragOver(e: DragEvent) {
-  const dragging = __useDevtoolsStore.getState().dragging
+function handleDragOver(e: DragEvent) {
+  const dragging = useDevtoolsStore.getState().dragging
   if (!dragging) return
   e.preventDefault()
   e.stopPropagation()
   e.dataTransfer && (e.dataTransfer.dropEffect = "move")
 }
 
-export default function __DevtoolsApp() {
+export default function App() {
+  const bgRef = useRef<HTMLDivElement>(null)
   const {
     value: { popupWindow, dragging },
     setPopupWindow,
     setCorner,
     setDragging,
-  } = __useDevtoolsStore()
+  } = useDevtoolsStore()
 
-  __devtoolsUseEffect(() => {
-    document.body.addEventListener("dragover", __devtoolsHandleDragOver)
+  useEffect(() => {
+    document.body.addEventListener("dragover", handleDragOver)
     return () => {
-      document.body.removeEventListener("dragover", __devtoolsHandleDragOver)
+      document.body.removeEventListener("dragover", handleDragOver)
     }
   }, [])
 
@@ -41,26 +42,26 @@ export default function __DevtoolsApp() {
   }
 
   function handleDragStart() {
-    __useDevtoolsStore.setState((prev) => ({
-      ...prev,
-      dragging: true,
-    }))
+    setDragging(true)
   }
 
   function handleDrag(e: DragEvent) {
+    if (!bgRef.current?.isConnected) return
     e.preventDefault()
     e.stopPropagation()
+    if (!useDevtoolsStore.getState().dragging) return
 
     let isLeft = true,
       isTop = true
-    if (e.pageX > window.innerWidth / 2) isLeft = false
-    if (e.pageY > window.innerHeight / 2) isTop = false
+    if (e.offsetX > window.innerWidth / 2 + window.scrollX) isLeft = false
+    if (e.offsetY > window.innerHeight / 2 + window.scrollY) isTop = false
 
     const corner = isTop ? (isLeft ? "tl" : "tr") : isLeft ? "bl" : "br"
     setCorner(corner)
   }
 
   function handleDragEnd(e: DragEvent) {
+    if (!bgRef.current?.isConnected) return
     e.preventDefault()
     e.stopPropagation()
     setDragging(false)
@@ -68,6 +69,12 @@ export default function __DevtoolsApp() {
 
   return (
     <>
+      {dragging ? (
+        <div
+          ref={bgRef}
+          style="position:fixed;top:0;left:0;width:100vw;height:100vh;"
+        />
+      ) : null}
       <button
         draggable
         onclick={handleOpen}

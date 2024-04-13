@@ -42,9 +42,8 @@ export function SelectedNodeView() {
         {selectedNode.hooks && (
           <div className="text-sm">
             {selectedNode.hooks.map((hookData) => {
-              const data = { ...hookData }
-              const name = data.name
-              delete data.name
+              const { name, debug, ...rest } = hookData
+              const data = debug ? debug() : rest
               return (
                 <div>
                   <b>{name || "anonymous hook"}</b>
@@ -56,9 +55,7 @@ export function SelectedNodeView() {
                         <div className="flex gap-2 mb-2">
                           <b className="p-2">{key}:</b>{" "}
                           <pre className="p-2 bg-neutral-800">
-                            {Array.isArray(value)
-                              ? JSON.stringify(value)
-                              : JSON.stringify(value, null, 2)}
+                            {JSON.stringify(value, null, 2)}
                           </pre>
                         </div>
                       )

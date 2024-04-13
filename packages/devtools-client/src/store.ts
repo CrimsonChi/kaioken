@@ -1,7 +1,11 @@
 import { AppContext, createStore } from "kaioken"
 import { isDevtoolsApp } from "./utils"
 
-export const kaiokenGlobal = window.opener.__kaioken as typeof window.__kaioken
+export const kaiokenGlobal =
+  "window" in globalThis
+    ? (window.opener.__kaioken as typeof window.__kaioken)
+    : undefined
+
 const initialApps = (kaiokenGlobal?.apps ?? []).filter(
   (app) => !isDevtoolsApp(app)
 )

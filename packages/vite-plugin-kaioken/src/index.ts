@@ -1,8 +1,9 @@
 import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
 import devtoolsLinkScript from "kaioken-devtools-host"
 import devtoolsUiScript from "kaioken-devtools-client"
+import { createRequire } from "node:module"
 
-// console.log("devtoolsUiServer", devtoolsUiServer)
+const require = createRequire(import.meta.url)
 
 const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -24,7 +25,12 @@ export default function (
 ): Plugin {
   let isProduction = false
   let isBuild = false
-  let devtoolsModuleId: string | null = null
+
+  const kaiokenModuleId = require
+    .resolve("kaioken", {
+      paths: [process.cwd()],
+    })
+    .replace(/\\/g, "/")
 
   return {
     name: "vite-plugin-kaioken",
@@ -41,7 +47,7 @@ export default function (
       isProduction = config.isProduction
       isBuild = config.command === "build"
     },
-    async configureServer(server) {
+    configureServer(server) {
       if (isProduction || isBuild || !opts.devtools) return
       server.middlewares.use("/__devtools__", (_, res) => {
         res.end(devtoolsUiScript)
@@ -70,14 +76,12 @@ export default function (
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (!/\.(tsx|jsx)$/.test(id)) return { code }
-      if (
-        opts.devtools &&
-        (devtoolsModuleId === null || devtoolsModuleId === id)
-      ) {
-        code = devtoolsLinkScript + code
-        devtoolsModuleId = id
+      if (opts.devtools && id === kaiokenModuleId) {
+        code = code + devtoolsLinkScript
+        return { code }
       }
+
+      if (!/\.(tsx|jsx)$/.test(id)) return { code }
       const ast = this.parse(code)
       try {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])

@@ -1,14 +1,19 @@
-import { createStore as __devtoolsCreateStore } from "kaioken"
+import { createStore } from "kaioken"
 
 export type AnchorCorner = "br" | "bl" | "tl" | "tr"
 
-const __devtoolsInitialCorner =
-  localStorage.getItem("kaioken.devtools.anchorCorner") ?? "br"
+let initialCorner = "br"
+if ("window" in globalThis) {
+  const corner = localStorage.getItem("kaioken.devtools.anchorCorner")
+  if (corner) {
+    initialCorner = corner as AnchorCorner
+  }
+}
 
-export const __useDevtoolsStore = __devtoolsCreateStore(
+export const useDevtoolsStore = createStore(
   {
     popupWindow: null as Window | null,
-    corner: __devtoolsInitialCorner as AnchorCorner,
+    corner: initialCorner as AnchorCorner,
     dragging: false,
   },
   (set, get) => ({

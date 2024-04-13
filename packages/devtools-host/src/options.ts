@@ -4,8 +4,8 @@ import fs from "node:fs"
 export const options: BuildOptions = {
   entryPoints: ["src/index.ts"],
   jsx: "transform",
-  jsxFactory: "devtoolsKaioken.createElement",
-  jsxFragment: "devtoolsKaioken.fragment",
+  jsxFactory: "createElement",
+  jsxFragment: "fragment",
   bundle: true,
   platform: "browser",
   target: "es2020",
@@ -20,7 +20,9 @@ export function writeFile(content: string) {
   fs.mkdirSync("dist")
   fs.writeFileSync(
     "dist/index.js",
-    `export default \`import * as devtoolsKaioken from 'kaioken';\n${content.replace(/[`\\$]/g, "\\$&")}\``,
+    `export default \`
+import {createElement,fragment} from "./dist/index.js"
+    ${content.replace(/[`\\$]/g, "\\$&").replaceAll(`from "kaioken"`, `from "./dist/index.js"`)}\``,
     {
       encoding: "utf-8",
     }

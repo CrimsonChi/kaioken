@@ -1,4 +1,4 @@
-import { AppContext } from "kaioken"
+import type { AppContext } from "kaioken"
 
 export function isDevtoolsApp(app: AppContext) {
   return app.name === "kaioken.devtools"
