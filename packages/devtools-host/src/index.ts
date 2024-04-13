@@ -1,4 +1,4 @@
-import { mount as __devtoolsMount } from "kaioken"
+import { mount } from "kaioken"
 import App from "./App"
 import { type AnchorCorner, useDevtoolsStore } from "./store"
 ;(() => {
@@ -21,7 +21,7 @@ import { type AnchorCorner, useDevtoolsStore } from "./store"
         root.setAttribute("style", "position:fixed;" + style)
       })
       //@ts-ignore
-      window.__kaiokenDevtools = __devtoolsMount(App, {
+      window.__kaiokenDevtools = mount(App, {
         root,
         name: "kaioken.devtools",
       })
