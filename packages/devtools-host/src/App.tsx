@@ -33,9 +33,9 @@ export default function App() {
 
     w.onload = () => {
       setPopupWindow(w)
-      console.log("[kaioken]: devtools window opened")
+      console.debug("[kaioken]: devtools window opened")
       w.onbeforeunload = () => {
-        console.log("[kaioken]: devtools window closed")
+        console.debug("[kaioken]: devtools window closed")
         setPopupWindow(null)
       }
     }

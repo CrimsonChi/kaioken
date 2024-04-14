@@ -20,7 +20,6 @@ export default defineConfig({
         ;(async () => {
           await new Promise((res) => setTimeout(res, 1000))
           const html = await fs.promises.readFile("dist/index.html", "utf-8")
-          console.log("read html", html.substring(0, 100))
           fs.rmSync("dist", { recursive: true, force: true })
           fs.mkdirSync("dist")
           fs.writeFileSync(
@@ -30,7 +29,6 @@ export default defineConfig({
               encoding: "utf-8",
             }
           )
-          console.log("write html")
         })()
       },
     } as PluginOption,

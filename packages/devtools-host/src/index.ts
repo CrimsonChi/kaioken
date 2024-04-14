@@ -1,7 +1,6 @@
 import { mount } from "kaioken"
 import App from "./App"
 import { type AnchorCorner, useDevtoolsStore } from "./store"
-console.log("__dt")
 ;(() => {
   if ("window" in globalThis) {
     //@ts-ignore
