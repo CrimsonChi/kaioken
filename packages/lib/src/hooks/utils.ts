@@ -1,4 +1,3 @@
-import { SignalKey } from "../constants.js"
 import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
 
 export {
@@ -6,8 +5,6 @@ export {
   depsRequireChange,
   useHook,
   shouldExecHook,
-  isSignal,
-  unsignal,
   type HookCallback,
   type HookCallbackState,
 }
@@ -46,8 +43,8 @@ function useHook<T, U>(
   const hook = oldHook ?? hookData
   if (!oldHook) hook.name = hookName
   else if (oldHook && oldHook.name !== hookName) {
-    throw new Error(
-      `[kaioken]: hooks must be called in the same order. Hook "${oldHook.name}" was called before hook "${hookName}".`
+    console.warn(
+      `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
     )
   }
 
@@ -69,14 +66,6 @@ function cleanupHook(hook: { cleanup?: () => void }) {
     hook.cleanup()
     hook.cleanup = undefined
   }
-}
-
-function isSignal(value: any): value is Kaioken.Signal<any> {
-  return typeof value === "object" && SignalKey in (value ?? {})
-}
-
-function unsignal<T>(value: T) {
-  return isSignal(value) ? value.value : value
 }
 
 function depsRequireChange(a?: unknown[], b?: unknown[]) {

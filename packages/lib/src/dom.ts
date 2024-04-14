@@ -8,6 +8,7 @@ import {
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
+import { Signal } from "./signal.js"
 
 export { commitWork, createDom }
 
@@ -97,9 +98,9 @@ function setStyleProp(
   if (typeof value !== "object" || !value) return
 
   if (prev == null) {
-  Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
-    (k) => (dom.style[k as any] = value[k as keyof typeof value] as any)
-  )
+    Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
+      (k) => (dom.style[k as any] = value[k as keyof typeof value] as any)
+    )
   } else if (typeof prev === "object") {
     Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
       (k) =>
@@ -278,9 +279,9 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
     const n = stack.pop()!
     if (Component.isCtor(n.type) && n.instance) {
       n.instance.componentWillUnmount?.()
-    } else if (n.type instanceof Function) {
-      while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     }
+    while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
+    while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
     if (n.dom?.isConnected) n.dom.remove()
     delete n.dom
     if (deleteSibling && n.sibling) stack.push(n.sibling)

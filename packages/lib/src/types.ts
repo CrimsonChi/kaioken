@@ -1,3 +1,4 @@
+import type { Signal as SignalClass } from "./signal"
 import type { Component } from "./component"
 import type { EffectTag } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
@@ -67,11 +68,7 @@ declare global {
       children?: JSX.Element[]
     }
 
-    type Signal<T> = {
-      value: T
-      subscribe: (fn: (value: T) => void) => () => void
-      notify: () => void
-    }
+    type Signal<T> = SignalClass<T>
 
     type VNode = {
       type: string | Function | typeof Component
@@ -85,6 +82,7 @@ declare global {
       }
       index: number
       hooks?: Hook<unknown>[]
+      subs?: Signal<any>[]
       parent?: VNode
       child?: VNode
       sibling?: VNode

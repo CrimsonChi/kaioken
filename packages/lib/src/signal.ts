@@ -1,58 +1,71 @@
 import { SignalKey } from "./constants.js"
 import { node } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
-import { getCurrentNode, getNodeAppContext } from "./utils.js"
-
-const subscribeCurrentNode = (subscribers: Set<Kaioken.VNode | Function>) => {
-  const n = node.current
-  if (!n || subscribers.has(n)) return
-  subscribers.add(n)
-  // NOTE: we didn't use useEffect, because it was firing unexpectedly with useMemo (for unknown reasons)
-  useHook("signalSubscribe", {}, ({ hook }) => {
-    hook.cleanup = () => subscribers.delete(n)
-  })
-}
-
-const emit = <T>(newValue: T, subscribers: Set<Kaioken.VNode | Function>) => {
-  subscribers.forEach((consumer) => {
-    if (consumer instanceof Function) {
-      return consumer(newValue)
-    }
-    getNodeAppContext(consumer)?.requestUpdate(consumer)
-  })
-}
+import { getNodeAppContext } from "./utils.js"
 
 export const signal = <T>(initial: T) => {
-  let value = initial
-  const subscribers = new Set<Kaioken.VNode | Function>()
+  return !node.current
+    ? new Signal(initial)
+    : useHook(
+        "useSignal",
+        { signal: undefined as any as Signal<T> },
+        ({ hook, oldHook }) => {
+          if (!oldHook) {
+            hook.signal = new Signal(initial)
+            hook.debug = () => ({ value: hook.signal.value })
+          }
+          return hook.signal
+        }
+      )
+}
 
-  const signal = {
-    [SignalKey]: true,
-    get value() {
-      subscribeCurrentNode(subscribers)
-      return value
-    },
-    set value(newValue) {
-      value = newValue
-      emit(newValue, subscribers)
-    },
-    toString() {
-      subscribeCurrentNode(subscribers)
-      return `${value}`
-    },
-    subscribe: (cb: (state: T) => void) => {
-      subscribers.add(cb)
-      return (() => (subscribers.delete(cb), void 0)) as () => void
-    },
-    notify: () => emit(value, subscribers),
-  } as Kaioken.Signal<T>
-
-  const currentNode = getCurrentNode()
-  if (currentNode) {
-    return useHook("useSignal", { signal }, ({ hook }) => {
-      return hook.signal
-    })
+export class Signal<T> {
+  [SignalKey] = true
+  #value: T
+  #subscribers = new Set<Kaioken.VNode | Function>()
+  constructor(initial: T) {
+    this.#value = initial
   }
 
-  return signal
+  get value() {
+    node.current && Signal.subscribeNode(node.current, this)
+    return this.#value
+  }
+
+  toString() {
+    node.current && Signal.subscribeNode(node.current, this)
+    return `${this.#value}`
+  }
+
+  set value(next: T) {
+    this.#value = next
+    this.notify()
+  }
+
+  static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
+    if (!node.subs) node.subs = [signal]
+    else if (node.subs.indexOf(signal) == -1) node.subs.push(signal)
+    signal.#subscribers.add(node)
+  }
+
+  static unsubscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
+    if (!node.subs) return
+    const index = node.subs.indexOf(signal)
+    if (index !== -1) node.subs.splice(index, 1)
+    signal.#subscribers.delete(node)
+  }
+
+  subscribe(cb: (state: T) => void) {
+    this.#subscribers.add(cb)
+    return () => this.#subscribers.delete(cb)
+  }
+
+  notify() {
+    this.#subscribers.forEach((consumer) => {
+      if (consumer instanceof Function) {
+        return consumer(this.#value)
+      }
+      getNodeAppContext(consumer)?.requestUpdate(consumer)
+    })
+  }
 }
