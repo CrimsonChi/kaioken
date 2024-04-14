@@ -1,4 +1,4 @@
-export const SignalKey = Symbol('kaioken.signal')
+export const SignalKey = Symbol.for("kaioken.signal")
 
 export const EffectTag = {
   UPDATE: 1,
