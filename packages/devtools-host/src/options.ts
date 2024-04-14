@@ -11,7 +11,7 @@ export const options: BuildOptions = {
   target: "es2020",
   format: "esm",
 
-  external: ["kaioken"],
+  // external: ["kaioken"],
   write: false,
 }
 
@@ -20,7 +20,7 @@ export function writeFile(content: string) {
   fs.mkdirSync("dist")
   fs.writeFileSync(
     "dist/index.js",
-    `export default \`${content.replace(/[`\\$]/g, "\\$&")}\``,
+    `export default \`(() => {\n${content.replace(/[`\\$]/g, "\\$&")}\n})()\``,
     {
       encoding: "utf-8",
     }
