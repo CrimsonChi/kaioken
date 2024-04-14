@@ -10,8 +10,7 @@ export const options: BuildOptions = {
   platform: "browser",
   target: "es2020",
   format: "esm",
-
-  // external: ["kaioken"],
+  minify: true,
   write: false,
 }
 
