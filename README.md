@@ -2,7 +2,7 @@
 
 Development monorepo for **Kaioken**.
 
-Kaioken is a very lightweight rendering library that aims to provide a familier development experience for those with HTML and Javascript experience.
+Kaioken is a lightweight rendering library that aims to provide a familier development experience for those with HTML and Javascript experience.
 
 ## Structure
 
@@ -16,6 +16,8 @@ Kaioken is a very lightweight rendering library that aims to provide a familier 
   - Contains the individual packages managed in the monorepo.
   - [kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/lib)
   - [vite-plugin-kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/vite-plugin-kaioken)
+  - [devtools-host](https://github.com/CrimsonChi/kaioken/blob/main/packages/devtools-host)
+  - [devtools-client](https://github.com/CrimsonChi/kaioken/blob/main/packages/devtools-client)
 - `sandbox`
   - Contains example applications and random tidbits.
 
