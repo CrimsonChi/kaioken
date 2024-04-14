@@ -78,7 +78,7 @@ function setStyleProp(
   prev: unknown
 ) {
   if (handleAttributeRemoval(dom, "style", value)) return
-  if (typeof value === "string") {
+  if (typeof value === "string" && value !== prev) {
     dom.setAttribute("style", value)
     return
   }
@@ -96,9 +96,17 @@ function setStyleProp(
 
   if (typeof value !== "object" || !value) return
 
+  if (prev == null) {
   Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
     (k) => (dom.style[k as any] = value[k as keyof typeof value] as any)
   )
+  } else if (typeof prev === "object") {
+    Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
+      (k) =>
+        value[k as keyof typeof value] !== prev[k as keyof typeof prev] &&
+        (dom.style[k as any] = value[k as keyof typeof value] as any)
+    )
+  }
 }
 
 function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
@@ -118,7 +126,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
       return
     }
 
-    if (!(dom instanceof Text)) {
+    if (!(dom instanceof Text) && prevProps[key] !== nextProps[key]) {
       setProp(dom, key, nextProps[key], prevProps[key])
       return
     }
