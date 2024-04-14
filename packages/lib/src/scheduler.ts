@@ -197,18 +197,22 @@ export class Scheduler {
       elementFreezeSymbol in vNode && vNode[elementFreezeSymbol] === true
     const skip = frozen && vNode.effectTag !== EffectTag.PLACEMENT
     if (!skip) {
-      if (Component.isCtor(vNode.type)) {
-        this.updateClassComponent(vNode)
-      } else if (vNode.type instanceof Function) {
-        this.updateFunctionComponent(vNode)
-      } else if (vNode.type === elementTypes.fragment) {
-        vNode.child = reconcileChildren(
-          this.appCtx,
-          vNode,
-          vNode.props.children
-        )
-      } else {
-        this.updateHostComponent(vNode)
+      try {
+        if (Component.isCtor(vNode.type)) {
+          this.updateClassComponent(vNode)
+        } else if (vNode.type instanceof Function) {
+          this.updateFunctionComponent(vNode)
+        } else if (vNode.type === elementTypes.fragment) {
+          vNode.child = reconcileChildren(
+            this.appCtx,
+            vNode,
+            vNode.props.children
+          )
+        } else {
+          this.updateHostComponent(vNode)
+        }
+      } catch (error) {
+        console.error(error)
       }
       if (vNode.child) return vNode.child
     }
