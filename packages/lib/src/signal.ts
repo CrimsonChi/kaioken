@@ -1,5 +1,5 @@
 import { SignalKey } from "./constants.js"
-import { node } from "./globals.js"
+import { node, renderMode } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
 import { getNodeAppContext } from "./utils.js"
 
@@ -28,12 +28,14 @@ export class Signal<T> {
   }
 
   get value() {
-    node.current && Signal.subscribeNode(node.current, this)
+    if (node.current && renderMode.current === "dom")
+      Signal.subscribeNode(node.current, this)
     return this.#value
   }
 
   toString() {
-    node.current && Signal.subscribeNode(node.current, this)
+    if (node.current && renderMode.current === "dom")
+      Signal.subscribeNode(node.current, this)
     return `${this.#value}`
   }
 
