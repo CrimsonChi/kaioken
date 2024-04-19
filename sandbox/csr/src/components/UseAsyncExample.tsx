@@ -18,10 +18,12 @@ interface Product {
 export function UseAsyncExample() {
   const [productId, setProductId] = useState(1)
 
-  const [data, loading, error] = useAsync(async () => {
-    const res = await fetch(`https://dummyjson.com/products/${productId}`)
-    await new Promise((res) => setTimeout(res, Math.random() * 3000))
-    return res.json() as Promise<Product>
+  const [data, loading, error] = useAsync<Product>(async () => {
+    const res = await fetch(`https://dummyjson.com/products/${productId}`).then(
+      (r) => r.json()
+    )
+    if ("message" in res) throw res.message
+    return res
   }, [productId])
 
   console.log("data", data)

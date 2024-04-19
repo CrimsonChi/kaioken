@@ -1,7 +1,7 @@
 import { navigate } from "kaioken"
 
 interface ProtectedRouteProps {
-  children?: JSX.Element
+  children?: JSX.Children
   enabled: boolean
   redirectPath: string
 }
@@ -11,7 +11,5 @@ export function ProtectedRoute({
   enabled,
   redirectPath,
 }: ProtectedRouteProps) {
-  if (enabled && children) return children
-  setTimeout(() => navigate(redirectPath))
-  return null
+  return enabled ? children : navigate(redirectPath)
 }
