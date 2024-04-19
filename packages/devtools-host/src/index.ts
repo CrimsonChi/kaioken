@@ -13,12 +13,12 @@ import { type AnchorCorner, useDevtoolsStore } from "./store"
         id: "devtools-root",
       })
       const style = getCornerStyle(useDevtoolsStore.getState().corner)
-      root.setAttribute("style", "position:fixed;" + style)
+      root.setAttribute("style", "position:fixed;z-index:9999999;" + style)
       document.body.appendChild(root)
 
       useDevtoolsStore.subscribe((state) => {
         const style = getCornerStyle(state.corner)
-        root.setAttribute("style", "position:fixed;" + style)
+        root.setAttribute("style", "position:fixed;z-index:9999999;" + style)
       })
       //@ts-ignore
       window.__kaiokenDevtools = mount(App, {
