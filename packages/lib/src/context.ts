@@ -6,7 +6,7 @@ export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
   const ctx = {
     Provider: ({ value, children = [] }: Kaioken.ProviderProps<T>) => {
       return fragment({
-        children,
+        children: children as JSX.Element[],
         [contextDataSymbol]: {
           value,
           ctx,

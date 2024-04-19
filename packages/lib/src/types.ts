@@ -12,24 +12,24 @@ import type {
 
 export type { ElementProps }
 
+type BaseElement = Element
+
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
-  JSX.IntrinsicElements[T] & {
-    children?: JSX.Element[]
-  }
+  JSX.IntrinsicElements[T]
 
 type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
     GlobalAttributes &
     EventAttributes<K> &
-    Kaioken.InternalProps &
-    Partial<ARIAMixin>
+    Partial<ARIAMixin> &
+    JSX.ElementAttributes
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
     SvgGlobalAttributes &
     GlobalAttributes &
     EventAttributes<K> &
-    Kaioken.InternalProps &
-    Partial<ARIAMixin>
+    Partial<ARIAMixin> &
+    JSX.ElementAttributes
 }
 
 declare global {
@@ -39,17 +39,42 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
 
+    interface ElementAttributesProperty {
+      props: {}
+    }
+    interface ElementChildrenAttribute {
+      children: {}
+    }
+
+    type Children = JSX.Element | JSX.Element[]
+
     type ElementKey = string | number
-    type Element = Kaioken.VNode | string | number | null
+    type Element =
+      | Kaioken.VNode
+      | string
+      | number
+      | null
+      | boolean
+      | Kaioken.Signal<any>
+
+    type ElementAttributes = {
+      ref?: Kaioken.Ref<BaseElement>
+      key?: JSX.ElementKey
+      children?: JSX.Children
+    }
   }
   export namespace Kaioken {
+    type ProviderProps<T> = {
+      value: T
+      children?: JSX.Children
+    }
     type Context<T> = {
       Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
       default: () => T | null
     }
 
     type FC<T = {}> = (props: FCProps<T>) => JSX.Element
-    type FCProps<T = {}> = T & { children?: JSX.Element[] }
+    type FCProps<T = {}> = T & { children?: JSX.Children }
 
     type Hook<T> = T & {
       cleanup?: () => void
@@ -57,16 +82,9 @@ declare global {
       name?: string
     }
 
-    type InternalProps = { ref?: Kaioken.Ref<Element>; key?: JSX.ElementKey }
-
     type Ref<T> = { current: T | null }
 
     type StateSetter<T> = T | ((prev: T) => T)
-
-    type ProviderProps<T> = {
-      value: T
-      children?: JSX.Element[]
-    }
 
     type Signal<T> = SignalClass<T>
 

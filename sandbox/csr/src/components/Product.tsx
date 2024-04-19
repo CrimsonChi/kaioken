@@ -19,7 +19,7 @@ export function ProductPage({ query: { id } }: RouteChildProps) {
   return (
     <>
       {loading && <Spinner />}
-      {error && <div>{error}</div>}
+      {error && <div>{error.message}</div>}
       {data && <Product product={data} />}
       <div className="flex items-center justify-center">
         {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}

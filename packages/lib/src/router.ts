@@ -13,7 +13,7 @@ interface LinkProps extends ElementProps<"a"> {
 
 interface RouterProps {
   basePath?: string
-  children?: JSX.Element[]
+  children?: JSX.Children
 }
 
 type RouterState = {
@@ -32,7 +32,7 @@ interface RouteProps {
    * ```
    */
   fallthrough?: boolean
-  element: (props: RouteChildProps) => JSX.Element | null
+  element: (props: RouteChildProps) => JSX.Children
 }
 
 interface RouteChildProps {
@@ -68,7 +68,7 @@ function Router(props: RouterProps) {
   const pathSegments = state.path.split("/")
 
   let fallbackRoute: RouteComponent | undefined
-  for (const child of props.children ?? []) {
+  for (const child of (props.children as Array<JSX.Element>) ?? []) {
     if (!isRoute(child)) continue
 
     if (child.props.path === "*") {
@@ -134,7 +134,7 @@ function Link({ to, children, ...props }: LinkProps) {
       },
       ...props,
     },
-    ...(children ?? [])
+    ...((children as Array<JSX.Element>) ?? [])
   )
 }
 
