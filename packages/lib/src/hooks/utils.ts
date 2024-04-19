@@ -39,10 +39,12 @@ function useHook<T, U>(
     throw new Error(
       `[kaioken]: an unknown error occured during execution of hook "${hookName}" (could not ascertain ctx). Seek help from the developers.`
     )
+
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
+
   if (!oldHook) hook.name = hookName
-  else if (oldHook && oldHook.name !== hookName) {
+  else if (oldHook.name !== hookName) {
     console.warn(
       `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
     )
@@ -51,14 +53,13 @@ function useHook<T, U>(
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
 
-  const res = callback({
+  return callback({
     hook,
     oldHook,
     update: () => ctx.requestUpdate(vNode),
     queueEffect: ctx.queueEffect.bind(ctx),
     vNode,
   })
-  return res
 }
 
 function cleanupHook(hook: { cleanup?: () => void }) {
