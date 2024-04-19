@@ -2,7 +2,6 @@ import { EffectTag } from "./constants.js"
 import { contexts } from "./globals.js"
 import { createElement } from "./index.js"
 import { Scheduler } from "./scheduler.js"
-// import { vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 
