@@ -1,4 +1,4 @@
-import { type ElementProps, children } from "kaioken"
+import { type ElementProps } from "kaioken"
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "success"
 
@@ -10,7 +10,7 @@ export function PrimaryButton({ className, ...props }: ElementProps<"button">) {
         className || ""
       }`}
     >
-      {children()}
+      {props.children}
     </button>
   )
 }
@@ -26,7 +26,7 @@ export function SecondaryButton({
         className || ""
       }`}
     >
-      {children()}
+      {props.children}
     </button>
   )
 }
@@ -39,7 +39,7 @@ export function DangerButton({ className, ...props }: ElementProps<"button">) {
         className || ""
       }`}
     >
-      {children()}
+      {props.children}
     </button>
   )
 }
@@ -52,7 +52,7 @@ export function SuccessButton({ className, ...props }: ElementProps<"button">) {
         className || ""
       }`}
     >
-      {children()}
+      {props.children}
     </button>
   )
 }
@@ -65,7 +65,7 @@ export function DefaultButton({ className, ...props }: ElementProps<"button">) {
         className || ""
       }`}
     >
-      {children()}
+      {props.children}
     </button>
   )
 }
@@ -76,14 +76,14 @@ export function Button({
 }: ElementProps<"button"> & { variant?: ButtonVariant }) {
   switch (variant) {
     case "primary":
-      return <PrimaryButton {...props}>{children()}</PrimaryButton>
+      return <PrimaryButton {...props}>{props.children}</PrimaryButton>
     case "secondary":
-      return <SecondaryButton {...props}>{children()}</SecondaryButton>
+      return <SecondaryButton {...props}>{props.children}</SecondaryButton>
     case "danger":
-      return <DangerButton {...props}>{children()}</DangerButton>
+      return <DangerButton {...props}>{props.children}</DangerButton>
     case "success":
-      return <SuccessButton {...props}>{children()}</SuccessButton>
+      return <SuccessButton {...props}>{props.children}</SuccessButton>
     default:
-      return <DefaultButton {...props}>{children()}</DefaultButton>
+      return <DefaultButton {...props}>{props.children}</DefaultButton>
   }
 }

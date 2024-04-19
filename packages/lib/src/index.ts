@@ -16,7 +16,6 @@ import { Signal } from "./signal.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
-export * from "./children.js"
 export * from "./component.js"
 export * from "./context.js"
 export * from "./appContext.js"
