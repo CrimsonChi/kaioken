@@ -11,6 +11,8 @@ import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
 import { contexts, ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { KaiokenGlobalContext } from "./globalContext.js"
+import { assertValidElementProps } from "./props.js"
+import { Signal } from "./signal.js"
 
 export type * from "./types"
 export * from "./hooks/index.js"
@@ -123,6 +125,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
     return renderToString_internal(createElement(el, elProps))
   if (el instanceof Array)
     return el.map((el) => renderToString_internal(el, el.props)).join("")
+  if (Signal.isSignal(el)) return encodeHtmlEntities(el.value.toString())
 
   el.parent = parent
   nodeToCtxMap.set(el, ctx.current)
@@ -134,6 +137,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
     return children.map((c) => renderToString_internal(c, el, props)).join("")
 
   if (typeof type === "string") {
+    assertValidElementProps(el)
     const isSelfClosing = selfClosingTags.includes(type)
     const attrs = Object.keys(props)
       .filter(propFilters.isProperty)
@@ -142,13 +146,11 @@ function renderToString_internal<T extends Record<string, unknown>>(
       )
       .join(" ")
 
-    const open = `<${type} ${attrs}`
-    return (
-      open +
-      (isSelfClosing
-        ? "/>"
-        : `>${children.map((c) => renderToString_internal(c, el, c.props)).join("")}</${type}>`)
-    )
+    const inner = !!props.innerHTML
+      ? props.innerHTML
+      : children.map((c) => renderToString_internal(c, el, c.props)).join("")
+
+    return `<${type} ${attrs}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
   }
 
   node.current = el
