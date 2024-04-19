@@ -3,6 +3,7 @@ import { Component } from "./component.js"
 import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
 import { commitWork, createDom } from "./dom.js"
 import { ctx, node } from "./globals.js"
+import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { vNodeContains } from "./utils.js"
 
@@ -261,6 +262,7 @@ export class Scheduler {
   }
 
   private updateHostComponent(vNode: VNode) {
+    assertValidElementProps(vNode)
     const dom = vNode.dom ?? createDom(vNode)
     if (vNode.props.ref) {
       vNode.props.ref.current = dom
