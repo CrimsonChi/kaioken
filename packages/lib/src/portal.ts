@@ -3,7 +3,7 @@ import { Component } from "./component.js"
 export { Portal }
 
 type PortalProps = {
-  children?: JSX.Element
+  children?: JSX.Children
   container: HTMLElement
 }
 
@@ -17,6 +17,6 @@ class Portal extends Component<PortalProps> {
   }
 
   render(): JSX.Element {
-    return this.props.children ?? null
+    return (this.props.children as JSX.Element) ?? null
   }
 }
