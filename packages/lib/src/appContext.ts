@@ -2,7 +2,7 @@ import { EffectTag } from "./constants.js"
 import { contexts } from "./globals.js"
 import { createElement } from "./index.js"
 import { Scheduler } from "./scheduler.js"
-import { vNodeContains } from "./utils.js"
+// import { vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 
@@ -72,7 +72,6 @@ export class AppContext {
 
   requestUpdate(node: VNode) {
     if (node.effectTag === EffectTag.DELETION) return
-    if (!vNodeContains(this.rootNode!, node)) return
     return this.scheduler.queueUpdate(node)
   }
 
