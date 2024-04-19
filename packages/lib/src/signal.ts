@@ -44,6 +44,10 @@ export class Signal<T> {
     this.notify()
   }
 
+  static isSignal(x: any): x is Signal<any> {
+    return x && x[SignalKey]
+  }
+
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
     if (!node.subs) node.subs = [signal]
     else if (node.subs.indexOf(signal) == -1) node.subs.push(signal)
