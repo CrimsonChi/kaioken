@@ -146,9 +146,12 @@ function renderToString_internal<T extends Record<string, unknown>>(
       )
       .join(" ")
 
-    const inner = !!props.innerHTML
-      ? props.innerHTML
-      : children.map((c) => renderToString_internal(c, el, c.props)).join("")
+    const inner =
+      "innerHTML" in props
+        ? Signal.isSignal(props.innerHTML)
+          ? props.innerHTML.value
+          : props.innerHTML
+        : children.map((c) => renderToString_internal(c, el, c.props)).join("")
 
     return `<${type} ${attrs}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
   }

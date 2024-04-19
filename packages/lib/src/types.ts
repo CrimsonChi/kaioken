@@ -61,6 +61,7 @@ declare global {
       ref?: Kaioken.Ref<BaseElement>
       key?: JSX.ElementKey
       children?: JSX.Children
+      innerHTML?: string | number | Kaioken.Signal<any>
     }
   }
   export namespace Kaioken {

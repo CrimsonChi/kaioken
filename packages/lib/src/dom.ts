@@ -73,6 +73,22 @@ function setProp(
   setDomAttribute(dom, propToHtmlAttr(key), value)
 }
 
+function setInnerHTML(
+  dom: HTMLElement | SVGElement,
+  value: unknown,
+  prev: unknown
+) {
+  if (Signal.isSignal(value)) {
+    dom.innerHTML = value.toString()
+  }
+  if (value === prev) return
+  if (value === null) {
+    dom.innerHTML = ""
+    return
+  }
+  dom.innerHTML = String(value)
+}
+
 function setStyleProp(
   dom: HTMLElement | SVGElement,
   value: unknown,
@@ -118,6 +134,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
+    if (key === "innerHTML") {
+      return setInnerHTML(dom as any, nextProps[key], prevProps[key])
+    }
+
     if (propFilters.internalProps.includes(key)) return
 
     if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {

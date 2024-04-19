@@ -62,6 +62,7 @@ export function App() {
                   <h1>Home</h1>
                   <button onclick={onInc}>{count}</button>
                   <p>{double}</p>
+                  <div innerHTML={`<p>asd</p>`} />
                 </div>
               )
             }}
