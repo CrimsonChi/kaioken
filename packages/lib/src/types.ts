@@ -50,11 +50,13 @@ declare global {
 
     type ElementKey = string | number
     type Element =
+      | Element[]
       | Kaioken.VNode
       | string
       | number
       | null
       | boolean
+      | undefined
       | Kaioken.Signal<any>
 
     type ElementAttributes = {

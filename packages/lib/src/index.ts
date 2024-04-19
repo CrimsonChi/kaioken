@@ -123,8 +123,13 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (typeof el === "number") return encodeHtmlEntities(el.toString())
   if (typeof el === "function")
     return renderToString_internal(createElement(el, elProps))
-  if (el instanceof Array)
-    return el.map((el) => renderToString_internal(el, el.props)).join("")
+  if (el instanceof Array) {
+    let s = ""
+    for (let i = 0; i < el.length; i++) {
+      s += renderToString_internal(el[i], parent, elProps)
+    }
+    return s
+  }
   if (Signal.isSignal(el)) return encodeHtmlEntities(el.value.toString())
 
   el.parent = parent
