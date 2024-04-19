@@ -1,8 +1,8 @@
 import { depsRequireChange, shouldExecHook, useHook } from "./utils.js"
 
 type UseAsyncResult<T> =
-  | [T, false, null] // loaded
   | [null, true, null] // loading
+  | [T, false, null] // loaded
   | [null, false, UseAsyncError] // error
 
 export class UseAsyncError extends Error {
