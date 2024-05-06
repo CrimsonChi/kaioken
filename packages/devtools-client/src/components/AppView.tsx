@@ -1,5 +1,5 @@
 import { AppContext, useEffect } from "kaioken"
-import { getCurrentNode, getNodeAppContext } from "kaioken/dist/utils"
+import { getCurrentNode, getNodeAppContext } from "kaioken/utils"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { NodeListItem } from "./NodeListItem"
 
@@ -23,7 +23,7 @@ export function AppView() {
       <h2 className="font-bold mb-2 pb-2 border-b-2 border-neutral-800">
         App View
       </h2>
-      <NodeListItem node={app?.rootNode} />
+      {app?.rootNode && <NodeListItem node={app.rootNode} />}
     </div>
   )
 }

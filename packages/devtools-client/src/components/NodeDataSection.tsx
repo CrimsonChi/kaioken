@@ -6,7 +6,7 @@ export function NodeDataSection({
   children,
 }: {
   title: string
-  children?: JSX.Element[]
+  children: JSX.Children
 }) {
   const [collapsed, setCollapsed] = useState(true)
   return (

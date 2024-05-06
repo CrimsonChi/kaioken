@@ -7,7 +7,7 @@ export function NodeListItem({
   node,
   traverseSiblings = true,
 }: {
-  node?: Kaioken.VNode
+  node: Kaioken.VNode
   traverseSiblings?: boolean
 }) {
   const { value: selectedNode, setSelectedNode } = useDevtoolsStore(
@@ -25,7 +25,7 @@ export function NodeListItem({
   )
     return (
       <>
-        <NodeListItem node={node.child} />
+        {node.child && <NodeListItem node={node.child} />}
         {traverseSiblings && <NodeListItemSiblings node={node} />}
       </>
     )
@@ -39,17 +39,19 @@ export function NodeListItem({
           onclick={() => setSelectedNode(isSelected ? null : (node as any))}
           className={`flex gap-2 items-center cursor-pointer mb-1 ${isSelected ? "font-medium bg-primary" : ""}`}
         >
-          <Chevron
-            className="cursor-pointer transform"
-            style={{
-              transform: "rotate(" + (collapsed ? 0 : 90) + "deg)",
-            }}
-            onclick={(e) => {
-              e.preventDefault()
-              e.stopImmediatePropagation()
-              setCollapsed((prev) => !prev)
-            }}
-          />
+          {node.child && (
+            <Chevron
+              className="cursor-pointer transform"
+              style={{
+                transform: "rotate(" + (collapsed ? 0 : 90) + "deg)",
+              }}
+              onclick={(e) => {
+                e.preventDefault()
+                e.stopImmediatePropagation()
+                setCollapsed((prev) => !prev)
+              }}
+            />
+          )}
           <div>
             <span className={isSelected ? "" : "text-neutral-400"}>{"<"}</span>
             <span className={isSelected ? "" : "text-primary"}>
@@ -58,7 +60,7 @@ export function NodeListItem({
             <span className={isSelected ? "" : "text-neutral-400"}>{">"}</span>
           </div>
         </h2>
-        {collapsed ? null : <NodeListItem node={node.child} />}
+        {collapsed || !node.child ? null : <NodeListItem node={node.child} />}
       </div>
       {traverseSiblings && <NodeListItemSiblings node={node} />}
     </>

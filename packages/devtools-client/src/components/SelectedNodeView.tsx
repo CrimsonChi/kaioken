@@ -1,5 +1,5 @@
 import { AppContext, useEffect } from "kaioken"
-import { getCurrentNode, getNodeAppContext } from "kaioken/dist/utils"
+import { getCurrentNode, getNodeAppContext } from "kaioken/utils"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
