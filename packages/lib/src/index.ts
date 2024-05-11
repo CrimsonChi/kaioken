@@ -28,6 +28,14 @@ export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }
 
+export function getProps<T>() {
+  return node.current?.props as T
+}
+// @ts-ignore
+export function onMounted(fn: () => void) {}
+// @ts-ignore
+export function onBeforeUnmounted(fn: () => void) {}
+
 if ("window" in globalThis) {
   window.__kaioken = window.__kaioken ?? new KaiokenGlobalContext()
 }

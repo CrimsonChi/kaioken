@@ -1,0 +1,40 @@
+import { getProps, onBeforeUnmounted, onMounted } from "kaioken"
+
+interface AvatarProps extends Kaioken.ElementProps<"div"> {
+  url: string
+  size?: number
+}
+
+const { url, size = 50, className } = getProps<AvatarProps>()
+
+onMounted(() => {
+  console.log("Avatar mounted")
+})
+
+onBeforeUnmounted(() => {
+  console.log("Avatar unmounted")
+})
+
+export default (
+  <template>
+    <div className={`flex p-2 rounded-full bg-white bg-opacity-15 w-fit ${className || ""}`}>
+      <img src={url} width={size} height={size} />
+    </div>
+  </template>
+) as any as (props: AvatarProps) => JSX.Element
+
+// function Avatar({ url, size = 50, className }: AvatarProps) {
+//   onMounted(() => {
+//     console.log("Avatar mounted")
+//   })
+
+//   onBeforeUnmounted(() => {
+//     console.log("Avatar unmounted")
+//   })
+
+//   return (
+//     <template className={`flex p-2 rounded-full bg-white bg-opacity-15 w-fit ${className || ""}`}>
+//       <img src={url} width={size} height={size} />
+//     </template>
+//   )
+// }

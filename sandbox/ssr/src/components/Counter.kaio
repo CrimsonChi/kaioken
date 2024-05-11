@@ -1,0 +1,21 @@
+import { signal, onMounted, onBeforeUnmounted } from "kaioken"
+
+const count = signal(0)
+
+onMounted(() => {
+  console.log("Mounted")
+})
+
+onBeforeUnmounted(() => {
+  console.log("Unmounted")
+})
+
+export default (
+  <template>
+    <span>count: {count}</span>
+    <br />
+    <button className="px-2 py-1 bg-indigo-700" onclick={() => count.value++}>
+      Increment
+    </button>
+  </template>
+)

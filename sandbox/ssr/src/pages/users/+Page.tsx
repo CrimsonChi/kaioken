@@ -1,4 +1,4 @@
-import { Avatar } from "$/components/Avatar"
+import Avatar from "$/components/Avatar"
 import { PageTitle } from "$/components/PageTitle"
 import type { ServerProps } from "./+data"
 

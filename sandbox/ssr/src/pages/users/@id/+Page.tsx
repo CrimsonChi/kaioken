@@ -1,4 +1,4 @@
-import { Avatar } from "$/components/Avatar"
+import Avatar from "$/components/Avatar"
 import { LocationIcon } from "$/components/icons/LocationIcon"
 import type { ServerProps } from "./+data"
 

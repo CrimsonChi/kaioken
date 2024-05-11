@@ -2,7 +2,7 @@ import { usePageContext } from "$/context/pageContext"
 import { Transition, useState } from "kaioken"
 import { Modal } from "./modal/Modal"
 import { GoogleIcon } from "./icons/auth/GoogleIcon"
-import { Avatar } from "./Avatar"
+import Avatar from "./Avatar.kaio"
 import { UserIcon } from "./icons/UserIcon"
 import { NavLink } from "./atoms/NavLink"
 
@@ -29,10 +29,7 @@ export function UserAuth() {
           <NavLink href="/logout">Log Out</NavLink>
         </div>
       ) : (
-        <button
-          onclick={() => setModalOpen(true)}
-          className="text-xs underline"
-        >
+        <button onclick={() => setModalOpen(true)} className="text-xs underline">
           Log in
         </button>
       )}
@@ -64,10 +61,7 @@ const AuthModalProviderList = () => {
   return (
     <div className="flex gap flex-column items-center justify-center">
       {options.map((Option) => (
-        <a
-          href={`/login/${Option.title.toLowerCase()}`}
-          className="flex gap-2 p-3 bg-white bg-opacity-15"
-        >
+        <a href={`/login/${Option.title.toLowerCase()}`} className="flex gap-2 p-3 bg-white bg-opacity-15">
           <Option.Icon />
           <small>Continue with {Option.title}</small>
         </a>

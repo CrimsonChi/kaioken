@@ -1,4 +1,4 @@
-import { Counter } from "$/components/Counter"
+import { Counter } from "$/components/Counter.kaio"
 import { PageTitle } from "$/components/PageTitle"
 
 export function Page() {

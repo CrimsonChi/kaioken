@@ -15,7 +15,7 @@ export type { ElementProps }
 type BaseElement = Element
 
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
-  JSX.IntrinsicElements[T]
+  Kaioken.ElementProps<T>
 
 type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
@@ -67,6 +67,9 @@ declare global {
     }
   }
   export namespace Kaioken {
+    type ElementProps<T extends keyof JSX.IntrinsicElements> =
+      JSX.IntrinsicElements[T]
+
     type ProviderProps<T> = {
       value: T
       children?: JSX.Children

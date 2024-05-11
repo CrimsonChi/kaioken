@@ -6,6 +6,7 @@ import kaioken from "vite-plugin-kaioken"
 export default defineConfig({
   esbuild: {
     sourcemap: false,
+    //include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/*.kaio"],
   },
   resolve: {
     alias: {

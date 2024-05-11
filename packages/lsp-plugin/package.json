@@ -1,0 +1,34 @@
+{
+  "name": "kaio-language-support",
+  "displayName": "kaio",
+  "description": "my desc",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "kaio",
+        "aliases": [
+          "kaio",
+          "kaio"
+        ],
+        "extensions": [
+          ".kaio"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "kaio",
+        "scopeName": "source.kaio",
+        "path": "./syntaxes/kaio.tmLanguage.json"
+      }
+    ]
+  }
+}
