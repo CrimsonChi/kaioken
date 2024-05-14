@@ -13,17 +13,30 @@ export class Scheduler {
   private nextUnitOfWork: VNode | undefined = undefined
   private treesInProgress: VNode[] = []
   private currentTreeIndex = 0
-  private timeoutRef: number = -1
-  isRunning = false
-  queuedNodeEffectSets: Function[][] = []
+  private isRunning = false
+  private queuedNodeEffectSets: Function[][] = []
+  private nextIdleEffects: Function[] = []
+  private deletions: VNode[] = []
+  private frameDeadline = 0
+  private pendingCallback: IdleRequestCallback | undefined
   nodeEffects: Function[] = []
-  nextIdleEffects: Function[] = []
-  deletions: VNode[] = []
 
   constructor(
     private appCtx: AppContext,
-    private maxFrameMs = 50
-  ) {}
+    private maxFrameMs = 50,
+    private channel = new MessageChannel()
+  ) {
+    const timeRemaining = () => this.frameDeadline - window.performance.now()
+    const deadline = {
+      didTimeout: false,
+      timeRemaining,
+    }
+    this.channel.port2.onmessage = () => {
+      if (typeof this.pendingCallback === "function") {
+        this.pendingCallback(deadline)
+      }
+    }
+  }
 
   wake() {
     this.isRunning = true
@@ -32,10 +45,6 @@ export class Scheduler {
 
   sleep() {
     this.isRunning = false
-    if (this.timeoutRef !== -1) {
-      clearTimeout(this.timeoutRef)
-      this.timeoutRef = -1
-    }
   }
 
   queueUpdate(node: VNode) {
@@ -154,43 +163,16 @@ export class Scheduler {
     }
 
     if (!this.isRunning) return
-    if ("requestIdleCallback" in window) {
-      let didExec = false
+    this.requestIdleCallback(this.workLoop)
+  }
 
-      this.timeoutRef =
-        (this.timeoutRef !== -1 && window.clearTimeout(this.timeoutRef),
-        window.setTimeout(() => {
-          if (!this.isRunning) return
-          if (!didExec) {
-            this.workLoop()
-            didExec = true
-          }
-        }, this.maxFrameMs))
-
-      window.requestIdleCallback((deadline) => {
-        if (!this.isRunning) return
-        if (!didExec) {
-          this.workLoop(deadline)
-          didExec = true
-        }
-      })
-    } else {
-      const w = window as Window
-      w.requestAnimationFrame(() => {
-        const start = performance.now()
-        window.setTimeout(() => {
-          if (!this.isRunning) return
-          const elapsed = performance.now() - start
-          const deadline: IdleDeadline = {
-            didTimeout: false,
-            timeRemaining: function () {
-              return Math.max(0, 50 - elapsed) // Simulate 50ms max idle time
-            },
-          }
-          this.workLoop(deadline)
-        }, 0)
-      })
-    }
+  private requestIdleCallback(callback: IdleRequestCallback) {
+    globalThis.requestAnimationFrame((time) => {
+      this.frameDeadline = time + this.maxFrameMs
+      this.pendingCallback = callback
+      this.channel.port1.postMessage(null)
+    })
+    return this.appCtx.id
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
