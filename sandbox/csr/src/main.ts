@@ -1,10 +1,20 @@
 import "./index.css"
 import { App } from "./App"
-import { mount, renderToString } from "kaioken"
+import { AppContext, mount, renderToString } from "kaioken"
 
 const root = document.getElementById("app")!
 
-mount(App, { root, maxFrameMs: 16, name: "CSR app" })
+declare global {
+  interface Window {
+    kaiokenInstance: AppContext
+  }
+}
+
+window.kaiokenInstance = await mount(App, {
+  root,
+  maxFrameMs: 16,
+  name: "CSR app",
+})
 
 let testRenderToString = false
 if (testRenderToString) {

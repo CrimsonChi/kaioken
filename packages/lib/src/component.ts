@@ -5,7 +5,7 @@ import { node, nodeToCtxMap } from "./globals.js"
 export { Component }
 
 abstract class Component<T = Record<string, unknown>> {
-  rootDom?: HTMLElement
+  doNotModifyDom = false
   static [componentSymbol] = true
   state = {} as Record<string, unknown>
   props: T
