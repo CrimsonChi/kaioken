@@ -1,24 +1,17 @@
 import type { AppContext, AppContextOptions } from "../appContext"
 import { mount } from "../index.js"
 
-export interface SSRProps {
-  request: {
-    path: string
-    query: string
-  }
-}
-
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   container: AppContextOptions,
   appProps?: T
-): Promise<AppContext>
+): Promise<AppContext<T>>
 
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   container: HTMLElement,
   appProps?: T
-): Promise<AppContext>
+): Promise<AppContext<T>>
 
 export function hydrate<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,

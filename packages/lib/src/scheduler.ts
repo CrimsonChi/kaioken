@@ -22,7 +22,7 @@ export class Scheduler {
   nodeEffects: Function[] = []
 
   constructor(
-    private appCtx: AppContext,
+    private appCtx: AppContext<any>,
     private maxFrameMs = 50,
     private channel = new MessageChannel()
   ) {

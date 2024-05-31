@@ -15,7 +15,7 @@ export interface AppContextOptions {
   name?: string
 }
 
-export class AppContext {
+export class AppContext<T extends Record<string, unknown> = {}> {
   id: number
   name: string
   scheduler: Scheduler
@@ -25,7 +25,7 @@ export class AppContext {
   mounted = false
 
   constructor(
-    private appFunc: (props: any) => JSX.Element,
+    private appFunc: (props: T) => JSX.Element,
     private appProps = {},
     options?: AppContextOptions
   ) {
@@ -45,17 +45,17 @@ export class AppContext {
     this.rootNode.dom = this.root
     this.scheduler.queueUpdate(this.rootNode)
     this.scheduler.wake()
-    return new Promise<AppContext>((resolve) => {
+    return new Promise<AppContext<T>>((resolve) => {
       this.scheduler.nextIdle(() => {
         this.mounted = true
-        window.__kaioken?.emit("mount", this)
+        window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)
       })
     })
   }
 
   unmount() {
-    return new Promise<AppContext>((resolve) => {
+    return new Promise<AppContext<T>>((resolve) => {
       if (!this.rootNode?.child) return resolve(this)
       this.requestDelete(this.rootNode.child)
 
@@ -63,10 +63,22 @@ export class AppContext {
         this.scheduler.sleep()
         this.rootNode && (this.rootNode.child = undefined)
         this.mounted = false
-        window.__kaioken?.emit("unmount", this)
+        window.__kaioken?.emit("unmount", this as AppContext<any>)
         resolve(this)
       })
     })
+  }
+
+  setProps(fn: (oldProps: T) => T) {
+    if (!this.mounted || !this.rootNode?.child)
+      return console.error(
+        "[kaioken]: failed to apply new props - ensure the app is mounted"
+      )
+
+    const { children, ref, key, ...rest } = this.rootNode.child.props
+    const args = rest as T
+    Object.assign(this.rootNode.child.props, fn(args))
+    this.requestUpdate(this.rootNode.child)
   }
 
   requestUpdate(node: VNode) {

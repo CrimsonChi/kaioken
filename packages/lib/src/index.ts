@@ -38,19 +38,19 @@ function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   options: AppContextOptions,
   appProps?: T
-): Promise<AppContext>
+): Promise<AppContext<T>>
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   root: HTMLElement,
   appProps?: T
-): Promise<AppContext>
+): Promise<AppContext<T>>
 
 function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
-): Promise<AppContext> {
+): Promise<AppContext<T>> {
   let root: HTMLElement, opts: AppContextOptions | undefined
   if (optionsOrRoot instanceof HTMLElement) {
     root = optionsOrRoot
@@ -59,7 +59,7 @@ function mount<T extends Record<string, unknown>>(
     opts = optionsOrRoot
     root = optionsOrRoot.root
   }
-  ctx.current = new AppContext(appFunc, appProps, opts)
+  ctx.current = new AppContext<T>(appFunc, appProps, opts)
   return ctx.current.mount()
 }
 

@@ -10,15 +10,17 @@ declare global {
   }
 }
 
-window.kaiokenInstance = await mount(App, {
+const kaiokenInstance = await mount(App, {
   root,
   maxFrameMs: 16,
   name: "CSR app",
 })
 
+kaiokenInstance.setProps((old) => ({ ...old, test: 456 }))
+
 let testRenderToString = false
 if (testRenderToString) {
-  const html = renderToString(() => App())
+  const html = renderToString(App, { test: 123 })
   console.log("renderToString", html)
 }
 // import("kaioken")

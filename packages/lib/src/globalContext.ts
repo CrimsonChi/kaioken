@@ -6,7 +6,8 @@ export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 type GlobalKaiokenEvent = "mount" | "unmount" | "update"
 
 class KaiokenGlobalContext {
-  listeners: Map<GlobalKaiokenEvent, Set<(ctx: AppContext) => void>> = new Map()
+  private listeners: Map<GlobalKaiokenEvent, Set<(ctx: AppContext) => void>> =
+    new Map()
   get apps() {
     return contexts
   }
