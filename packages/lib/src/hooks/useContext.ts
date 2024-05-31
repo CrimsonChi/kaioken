@@ -25,13 +25,10 @@ export function useContext<T>(context: Kaioken.Context<T>): T {
         let n = vNode.parent
         while (n) {
           if (contextDataSymbol in n.props) {
-            const ctxNodeData = n.props[
-              contextDataSymbol
-            ] as ContextNode<T>["props"]
-            if (ctxNodeData.ctx === context) {
-              hook.ctxNode = n as ContextNode<T>
-              return (n.props[contextDataSymbol] as ContextNode<T>["props"])
-                .value
+            const ctxNode = n as ContextNode<T>
+            if (ctxNode.props[contextDataSymbol].ctx === context) {
+              hook.ctxNode = ctxNode
+              return hook.ctxNode.props[contextDataSymbol].value
             }
           }
           n = n.parent
