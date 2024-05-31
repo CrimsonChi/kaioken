@@ -38,11 +38,6 @@ export default function (
     )
   }
 
-  console.log(
-    "[vite-plugin-kaioken]: resolved kaioken module id",
-    kaiokenModuleId
-  )
-
   return {
     name: "vite-plugin-kaioken",
     config(config) {
@@ -91,7 +86,7 @@ export default function (
         opts.devtools &&
         (id === kaiokenModuleId || id.includes("/kaioken.js?"))
       ) {
-        code = code + devtoolsLinkScript
+        code += devtoolsLinkScript
         return { code }
       }
 
