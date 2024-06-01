@@ -39,6 +39,10 @@ declare global {
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
 
+    interface IntrinsicAttributes {
+      key?: ElementKey
+    }
+
     interface ElementAttributesProperty {
       props: {}
     }
