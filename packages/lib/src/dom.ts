@@ -287,7 +287,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
         const onUpdated = instance.componentDidUpdate?.bind(instance)
         if (onUpdated) ctx.queueEffect(onUpdated)
       }
-      ctx.scheduler.queueCurrentNodeEffects()
+      ctx.scheduler?.queueCurrentNodeEffects()
     }
 
     n.effectTag = undefined
