@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && pnpm i && tsc",
-    "mocha": "pnpm build && ts-mocha --jsx ./dist/tests/*/**.test.js",
+    "test": "node --test",
     "dev": "tsc --watch"
   },
   "types": "index.d.ts",

@@ -18,7 +18,10 @@
     "outDir": "dist",
     "baseUrl": ".",
     "removeComments": true,
-    "sourceMap": false
+    "sourceMap": false,
+    "jsx": "react",
+    "jsxFactory": "kaioken.createElement",
+    "jsxFragmentFactory": "kaioken.fragment"
   },
   "include": ["./src/*", "./src/tests", "src/types.ts", "./src/ssr/*"],
   "exclude": ["dist"]
