@@ -17,8 +17,8 @@ export function Page({ users, page }: ServerProps) {
         ))}
       </div>
       <div className="sticky bottom-0 flex justify-between">
-        {page > 1 && <a href={`users?page=${page - 1}`}>Prev</a>}
-        <a href={`users?page=${page + 1}`}>Next</a>
+        {page > 1 && <a href={`/users?page=${page - 1}`}>Prev</a>}
+        <a href={`/users?page=${page + 1}`}>Next</a>
       </div>
     </>
   )
