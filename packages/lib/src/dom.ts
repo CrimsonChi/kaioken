@@ -9,7 +9,7 @@ import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
-import { renderMode } from "./globals"
+import { renderMode } from "./globals.js"
 
 export { commitWork, createDom, updateDom }
 
