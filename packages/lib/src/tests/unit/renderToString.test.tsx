@@ -36,4 +36,37 @@ describe("renderToString", () => {
     const res = renderToString(App)
     assert.strictEqual(res, expected)
   })
+  it("is able to use Signals for text content", () => {
+    const text = kaioken.signal("Hello world!")
+    const App = () => {
+      return (
+        <div>
+          <h1>{text}</h1>
+        </div>
+      )
+    }
+    const expected = `<div><h1>Hello world!</h1></div>`
+    const res = renderToString(App)
+
+    assert.strictEqual(res, expected)
+  })
+  it("does not render null, boolean or undefined values", () => {
+    const App = () => {
+      return (
+        <div>
+          <h1>Hello world!</h1>
+          <NullComponent />
+          <UndefinedComponent />
+          <BooleanComponent />
+        </div>
+      )
+    }
+    const NullComponent = () => null
+    const UndefinedComponent = () => null
+    const BooleanComponent = () => true
+    const expected = `<div><h1>Hello world!</h1></div>`
+    const res = renderToString(App)
+
+    assert.strictEqual(res, expected)
+  })
 })
