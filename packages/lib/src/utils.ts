@@ -11,6 +11,7 @@ export {
   shallowCompare,
   getNodeAppContext,
   getCurrentNode,
+  encodeHtmlEntities,
   noop,
   propFilters,
   selfClosingTags,
@@ -114,6 +115,16 @@ function shallowCompare<T>(objA: T, objB: T) {
     }
   }
   return true
+}
+
+function encodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/\//g, "&#47;")
 }
 
 const propFilters = {

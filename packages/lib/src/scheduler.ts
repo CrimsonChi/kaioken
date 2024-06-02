@@ -1,8 +1,18 @@
 import type { AppContext } from "./appContext"
 import { Component } from "./component.js"
-import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
-import { commitWork, createDom } from "./dom.js"
-import { ctx, node } from "./globals.js"
+import {
+  EffectTag,
+  elementFreezeSymbol,
+  elementTypes as et,
+} from "./constants.js"
+import { commitWork, createDom, updateDom } from "./dom.js"
+import {
+  childIndexStack,
+  ctx,
+  hydrationStack,
+  node,
+  renderMode,
+} from "./globals.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { vNodeContains } from "./utils.js"
@@ -185,7 +195,7 @@ export class Scheduler {
           this.updateClassComponent(vNode)
         } else if (vNode.type instanceof Function) {
           this.updateFunctionComponent(vNode)
-        } else if (vNode.type === elementTypes.fragment) {
+        } else if (vNode.type === et.fragment) {
           vNode.child = reconcileChildren(
             this.appCtx,
             vNode,
@@ -197,14 +207,27 @@ export class Scheduler {
       } catch (error) {
         console.error(error)
       }
-      if (vNode.child) return vNode.child
+      if (vNode.child) {
+        if (renderMode.current === "hydrate" && vNode.dom) {
+          hydrationStack.push(vNode.dom)
+          childIndexStack.push(0)
+        }
+        return vNode.child
+      }
     }
 
     let nextNode: VNode | undefined = vNode
     while (nextNode) {
       if (nextNode === this.treesInProgress[this.currentTreeIndex]) return
-      if (nextNode.sibling) return nextNode.sibling
+      if (nextNode.sibling) {
+        return nextNode.sibling
+      }
+
       nextNode = nextNode.parent
+      if (nextNode?.dom) {
+        hydrationStack.pop()
+        childIndexStack.pop()
+      }
     }
   }
 
@@ -245,10 +268,44 @@ export class Scheduler {
 
   private updateHostComponent(vNode: VNode) {
     assertValidElementProps(vNode)
-    const dom = vNode.dom ?? createDom(vNode)
+    if (!vNode.dom) {
+      if (renderMode.current === "hydrate") {
+        const dom = currentDom()!
+        if ((vNode.type as string) !== dom.nodeName.toLowerCase()) {
+          throw new Error(
+            `[kaioken]: Expected node of type ${vNode.type} but received ${dom.nodeName}`
+          )
+        }
+        vNode.dom = dom
+        if (vNode.type === et.text) {
+          handleTextNodeSplitting(vNode)
+        } else {
+          updateDom(vNode, vNode.dom)
+        }
+      } else {
+        vNode.dom = createDom(vNode)
+      }
+    }
     if (vNode.props.ref) {
-      vNode.props.ref.current = dom
+      vNode.props.ref.current = vNode.dom
     }
     vNode.child = reconcileChildren(this.appCtx, vNode, vNode.props.children)
   }
 }
+function handleTextNodeSplitting(vNode: VNode) {
+  if (vNode.sibling?.type === et.text) {
+    let prev = vNode
+    let sibling: VNode | undefined = vNode.sibling
+    while (sibling) {
+      if (sibling.type !== et.text) break
+      sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
+      prev = sibling
+      sibling = sibling.sibling
+    }
+  }
+}
+
+const currentDom = () =>
+  hydrationStack[hydrationStack.length - 1].childNodes[
+    childIndexStack[childIndexStack.length - 1]++
+  ] as HTMLElement | SVGElement | Text | undefined

@@ -1,4 +1,5 @@
 import type { AppContext, AppContextOptions } from "../appContext"
+import { renderMode } from "../globals.js"
 import { mount } from "../index.js"
 
 export function hydrate<T extends Record<string, unknown>>(
@@ -18,10 +19,12 @@ export function hydrate<T extends Record<string, unknown>>(
   optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
 ) {
-  if (optionsOrRoot instanceof HTMLElement) {
-    optionsOrRoot.innerHTML = ""
-    return mount(appFunc, optionsOrRoot, appProps)
-  }
-  optionsOrRoot.root.innerHTML = ""
-  return mount(appFunc, optionsOrRoot, appProps)
+  const prevRenderMode = renderMode.current
+  renderMode.current = "hydrate"
+  return new Promise((resolve) => {
+    mount(appFunc, optionsOrRoot as any, appProps).then((ctx) => {
+      renderMode.current = prevRenderMode
+      resolve(ctx)
+    })
+  })
 }

@@ -6,6 +6,7 @@ import {
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   selfClosingTags,
+  encodeHtmlEntities,
 } from "./utils.js"
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
@@ -169,14 +170,4 @@ function renderToString_internal<T extends Record<string, unknown>>(
   }
 
   return renderToString_internal(type(props), el, props)
-}
-
-function encodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-    .replace(/\//g, "&#47;")
 }

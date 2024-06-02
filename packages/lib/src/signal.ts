@@ -28,14 +28,12 @@ export class Signal<T> {
   }
 
   get value() {
-    if (node.current && renderMode.current === "dom")
-      Signal.subscribeNode(node.current, this)
+    if (node.current) Signal.subscribeNode(node.current, this)
     return this.#value
   }
 
   toString() {
-    if (node.current && renderMode.current === "dom")
-      Signal.subscribeNode(node.current, this)
+    if (node.current) Signal.subscribeNode(node.current, this)
     return `${this.#value}`
   }
 
@@ -49,6 +47,7 @@ export class Signal<T> {
   }
 
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
+    if (renderMode.current !== "dom" && renderMode.current !== "hydrate") return
     if (!node.subs) node.subs = [signal]
     else if (node.subs.indexOf(signal) == -1) node.subs.push(signal)
     signal.#subscribers.add(node)

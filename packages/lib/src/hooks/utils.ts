@@ -10,7 +10,7 @@ export {
 }
 
 const shouldExecHook = () => {
-  return renderMode.current === "dom"
+  return renderMode.current === "dom" || renderMode.current === "hydrate"
 }
 
 type Hook<T> = Kaioken.Hook<T>
