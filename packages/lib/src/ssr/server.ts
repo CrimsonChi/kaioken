@@ -97,7 +97,9 @@ function renderToStream_internal<T extends Record<string, unknown>>(
       )
       .join(" ")
 
-    state.stream.push(`<${type} ${attrs}${isSelfClosing ? "/>" : ">"}`)
+    state.stream.push(
+      `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : ">"}`
+    )
 
     if (!isSelfClosing) {
       if ("innerHTML" in props) {

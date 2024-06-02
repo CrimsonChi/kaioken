@@ -158,7 +158,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
           : props.innerHTML
         : children.map((c) => renderToString_internal(c, el, c.props)).join("")
 
-    return `<${type} ${attrs}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
+    return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
   }
 
   node.current = el
