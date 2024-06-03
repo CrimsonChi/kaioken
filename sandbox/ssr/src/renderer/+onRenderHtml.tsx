@@ -1,14 +1,14 @@
 // Environment: server
 import { escapeInject } from "vike/server"
 import type { OnRenderHtmlAsync } from "vike/types"
-import { renderToStream } from "kaioken/ssr/server"
+import { renderToReadableStream } from "kaioken/ssr/server"
 import { getTitle } from "./utils"
 import { App } from "./App"
 
 export const onRenderHtml: OnRenderHtmlAsync = async (
   pageContext
 ): ReturnType<OnRenderHtmlAsync> => {
-  const stream = renderToStream(App, { pageContext })
+  const stream = renderToReadableStream(App, { pageContext })
   return escapeInject`<!DOCTYPE html>
     <html>
       <head>
