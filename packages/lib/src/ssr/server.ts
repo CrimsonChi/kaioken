@@ -17,7 +17,7 @@ import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
   stream: Readable
-  c: AppContext
+  ctx: AppContext
 }
 
 export function renderToReadableStream<T extends Record<string, unknown>>(
@@ -29,14 +29,14 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
 
   const state: RequestState = {
     stream: new Readable(),
+    ctx: new AppContext<any>(el, elProps),
   }
-
-  const c = (ctx.current = new AppContext(el, elProps))
-  c.rootNode = el instanceof Function ? createElement(el, elProps) : el
-  renderToStream_internal(state, c.rootNode, undefined, elProps)
+  ctx.current = state.ctx
+  state.ctx.rootNode = el instanceof Function ? createElement(el, elProps) : el
+  renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
 
   state.stream.push(null)
-  contexts.splice(contexts.indexOf(c), 1)
+  contexts.splice(contexts.indexOf(state.ctx), 1)
   renderMode.current = prev
 
   return state.stream
