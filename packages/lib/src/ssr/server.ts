@@ -20,7 +20,7 @@ type RequestState = {
   c: AppContext
 }
 
-export function renderToStream<T extends Record<string, unknown>>(
+export function renderToReadableStream<T extends Record<string, unknown>>(
   el: (props: T) => JSX.Element,
   elProps = {} as T
 ): Readable {
