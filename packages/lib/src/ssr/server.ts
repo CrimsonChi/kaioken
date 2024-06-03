@@ -28,10 +28,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   renderMode.current = "stream"
 
   const state: RequestState = {
-    stream: new Readable({
-      objectMode: true,
-    }),
-    c: new AppContext<any>(el, elProps),
+    stream: new Readable(),
   }
 
   const c = (ctx.current = new AppContext(el, elProps))
