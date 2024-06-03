@@ -141,33 +141,33 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (type === et.fragment)
     return children.map((c) => renderToString_internal(c, el, props)).join("")
 
-  if (typeof type === "string") {
-    assertValidElementProps(el)
-    const isSelfClosing = selfClosingTags.includes(type)
-    const attrs = Object.keys(props)
-      .filter(propFilters.isProperty)
-      .map(
-        (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
-      )
-      .join(" ")
+  if (typeof type !== "string") {
+    node.current = el
+    if (Component.isCtor(type)) {
+      const instance = new (type as unknown as {
+        new (props: Record<string, unknown>): Component
+      })(props)
+      return renderToString_internal(instance.render(), el, props)
+    }
 
-    const inner =
-      "innerHTML" in props
-        ? Signal.isSignal(props.innerHTML)
-          ? props.innerHTML.value
-          : props.innerHTML
-        : children.map((c) => renderToString_internal(c, el, c.props)).join("")
-
-    return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
+    return renderToString_internal(type(props), el, props)
   }
 
-  node.current = el
-  if (Component.isCtor(type)) {
-    const instance = new (type as unknown as {
-      new (props: Record<string, unknown>): Component
-    })(props)
-    return renderToString_internal(instance.render(), el, props)
-  }
+  assertValidElementProps(el)
+  const isSelfClosing = selfClosingTags.includes(type)
+  const attrs = Object.keys(props)
+    .filter(propFilters.isProperty)
+    .map(
+      (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
+    )
+    .join(" ")
 
-  return renderToString_internal(type(props), el, props)
+  const inner =
+    "innerHTML" in props
+      ? Signal.isSignal(props.innerHTML)
+        ? props.innerHTML.value
+        : props.innerHTML
+      : children.map((c) => renderToString_internal(c, el, c.props)).join("")
+
+  return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
 }

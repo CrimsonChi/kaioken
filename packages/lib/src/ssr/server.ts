@@ -87,46 +87,44 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     return children.forEach((c) => renderToStream_internal(state, c, el, props))
   }
 
-  if (typeof type === "string") {
-    assertValidElementProps(el)
-    const isSelfClosing = selfClosingTags.includes(type)
-    const attrs = Object.keys(props)
-      .filter(propFilters.isProperty)
-      .map(
-        (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
-      )
-      .join(" ")
-
-    state.stream.push(
-      `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : ">"}`
-    )
-
-    if (!isSelfClosing) {
-      if ("innerHTML" in props) {
-        state.stream.push(
-          String(
-            Signal.isSignal(props.innerHTML)
-              ? props.innerHTML.value
-              : props.innerHTML
-          )
-        )
-      } else {
-        children.forEach((c) => renderToStream_internal(state, c, el, c.props))
-      }
-
-      state.stream.push(`</${type}>`)
+  if (typeof type !== "string") {
+    node.current = el
+    if (Component.isCtor(type)) {
+      el.instance = new (type as unknown as {
+        new (props: Record<string, unknown>): Component
+      })(props)
+      return renderToStream_internal(state, el.instance.render(), el, props)
     }
 
-    return
+    return renderToStream_internal(state, type(props), el, props)
   }
 
-  node.current = el
-  if (Component.isCtor(type)) {
-    el.instance = new (type as unknown as {
-      new (props: Record<string, unknown>): Component
-    })(props)
-    return renderToStream_internal(state, el.instance.render(), el, props)
-  }
+  assertValidElementProps(el)
+  const isSelfClosing = selfClosingTags.includes(type)
+  const attrs = Object.keys(props)
+    .filter(propFilters.isProperty)
+    .map(
+      (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
+    )
+    .join(" ")
 
-  return renderToStream_internal(state, type(props), el, props)
+  state.stream.push(
+    `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : ">"}`
+  )
+
+  if (!isSelfClosing) {
+    if ("innerHTML" in props) {
+      state.stream.push(
+        String(
+          Signal.isSignal(props.innerHTML)
+            ? props.innerHTML.value
+            : props.innerHTML
+        )
+      )
+    } else {
+      children.forEach((c) => renderToStream_internal(state, c, el, c.props))
+    }
+
+    state.stream.push(`</${type}>`)
+  }
 }
