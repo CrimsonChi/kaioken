@@ -29,18 +29,19 @@ export class Scheduler {
   private deletions: VNode[] = []
   private frameDeadline = 0
   private pendingCallback: IdleRequestCallback | undefined
+  private channel: MessageChannel
   nodeEffects: Function[] = []
 
   constructor(
     private appCtx: AppContext<any>,
-    private maxFrameMs = 50,
-    private channel = new MessageChannel()
+    private maxFrameMs = 50
   ) {
     const timeRemaining = () => this.frameDeadline - window.performance.now()
     const deadline = {
       didTimeout: false,
       timeRemaining,
     }
+    this.channel = new MessageChannel()
     this.channel.port2.onmessage = () => {
       if (typeof this.pendingCallback === "function") {
         this.pendingCallback(deadline)
