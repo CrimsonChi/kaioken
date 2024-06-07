@@ -30,6 +30,7 @@ export class Scheduler {
   private frameDeadline = 0
   private pendingCallback: IdleRequestCallback | undefined
   private channel: MessageChannel
+  private frameHandle: number | null = null
   nodeEffects: Function[] = []
 
   constructor(
@@ -50,12 +51,18 @@ export class Scheduler {
   }
 
   wake() {
+    if (this.isRunning) return
     this.isRunning = true
-    this.workLoop()
+    this.requestIdleCallback(this.workLoop.bind(this))
   }
 
   sleep() {
+    if (!this.isRunning) return
     this.isRunning = false
+    if (this.frameHandle !== null) {
+      globalThis.cancelAnimationFrame(this.frameHandle)
+      this.frameHandle = null
+    }
   }
 
   queueUpdate(node: VNode) {
@@ -64,7 +71,7 @@ export class Scheduler {
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(node)
       this.nextUnitOfWork = node
-      return
+      return this.wake()
     } else if (this.nextUnitOfWork === node) {
       return
     }
@@ -168,22 +175,22 @@ export class Scheduler {
     }
 
     if (!this.nextUnitOfWork) {
+      this.sleep()
       while (this.nextIdleEffects.length) {
         this.nextIdleEffects.shift()!()
       }
+      return
     }
 
-    if (!this.isRunning) return
-    this.requestIdleCallback(this.workLoop)
+    this.requestIdleCallback(this.workLoop.bind(this))
   }
 
   private requestIdleCallback(callback: IdleRequestCallback) {
-    globalThis.requestAnimationFrame((time) => {
+    this.frameHandle = globalThis.requestAnimationFrame((time) => {
       this.frameDeadline = time + this.maxFrameMs
       this.pendingCallback = callback
       this.channel.port1.postMessage(null)
     })
-    return this.appCtx.id
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
