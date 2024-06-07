@@ -10,13 +10,11 @@ declare global {
   }
 }
 
-const kaiokenInstance = await mount(App, {
+await mount(App, {
   root,
   maxFrameMs: 16,
   name: "CSR app",
 })
-
-kaiokenInstance.setProps((old) => ({ ...old, test: 456 }))
 
 let testRenderToString = false
 if (testRenderToString) {
