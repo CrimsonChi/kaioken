@@ -1,13 +1,5 @@
 let counterTsx = "",
   counterModifiedTsx = ""
-// const counterTsx = fs.readFileSync("../../src/Counter.tsx", {
-//   encoding: "utf-8",
-// })
-
-// const counterModifiedTsx = counterTsx.replace(
-//   `<div id="counter">`,
-//   `<div id="counter" data-changed="true">`
-// )
 
 describe("hot module reload", () => {
   before(() =>
@@ -26,6 +18,7 @@ describe("hot module reload", () => {
   afterEach(() => cy.writeFile("src/Counter.tsx", counterTsx))
 
   it("can update a component in the VDOM & DOM after changing the file, without causing full refresh", () => {
+    cy.get("#counter button").click() // set counter state to 1
     cy.window()
       .then((win) => {
         // @ts-expect-error
