@@ -97,7 +97,7 @@ function AlbumList({ albums }: { albums: Album[] }) {
     </>
   )
 }
-function AlbumItem({ album }: { album: Album; key: string }) {
+function AlbumItem({ album }: { album: Album }) {
   return (
     <div className="flex items-center gap-4">
       <button role="none" className="p-2 border-2 border-light rounded">
