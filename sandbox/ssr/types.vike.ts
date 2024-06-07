@@ -10,14 +10,14 @@ declare global {
       abortStatusCode?: number
       is404?: boolean
 
-      Page: () => JSX.Element
-      Layout: () => JSX.Element
+      Page: Kaioken.FC
+      Layout: Kaioken.FC
       title: string | ((ctx: PageContext) => string)
 
       config: {
         title: string | ((ctx: PageContext) => string)
-        Page: () => JSX.Element
-        Layout?: () => JSX.Element
+        Page: Kaioken.FC
+        Layout?: Kaioken.FC
       }
 
       routeParams: Record<string, string>

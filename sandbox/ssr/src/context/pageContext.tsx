@@ -11,7 +11,7 @@ function PageContextProvider({
   children,
 }: {
   pageContext: Vike.PageContext
-  children?: JSX.Element[]
+  children: JSX.Children
 }) {
   return (
     <Context.Provider

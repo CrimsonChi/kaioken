@@ -1,6 +1,6 @@
 import { Navbar } from "$/components/Navbar"
 
-export function LayoutDefault({ children }: { children?: JSX.Element[] }) {
+export function LayoutDefault({ children }: { children: JSX.Children }) {
   return (
     <div className="flex flex-col m-auto w-full">
       <Navbar />
@@ -9,6 +9,6 @@ export function LayoutDefault({ children }: { children?: JSX.Element[] }) {
   )
 }
 
-function Content({ children }: { children?: JSX.Element[] }) {
+function Content({ children }: { children: JSX.Children }) {
   return <div className="p-5 pb-10min-h-screen flex-grow">{children}</div>
 }
