@@ -1,5 +1,5 @@
 import { nodeToCtxMap } from "./globals.js"
-import { cleanupHook, shouldExecHook, useHook } from "./hooks/utils.js"
+import { shouldExecHook, useHook } from "./hooks/utils.js"
 import { shallowCompare } from "./utils.js"
 
 export { createStore }
@@ -87,22 +87,23 @@ function createStore<T, U extends MethodFactory<T>>(
     }
 
     return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
-      if (oldHook) {
-        cleanupHook(oldHook)
+      if (!oldHook) {
+        subscribers.add(vNode)
+        hook.cleanup = () => {
+          nodeToSliceComputeMap.delete(vNode)
+          subscribers.delete(vNode)
+        }
+        hook.debug = () => ({ value: stateSlice })
+      } else {
+        nodeToSliceComputeMap.delete(vNode)
       }
+
       const stateSlice = sliceFn ? sliceFn(value) : value
       if (sliceFn || equality) {
         const computes = nodeToSliceComputeMap.get(vNode) ?? []
         computes.push([sliceFn ?? null, equality, stateSlice])
         nodeToSliceComputeMap.set(vNode, computes)
       }
-
-      subscribers.add(vNode)
-      hook.cleanup = () => {
-        nodeToSliceComputeMap.delete(vNode)
-        subscribers.delete(vNode)
-      }
-      hook.debug = () => ({ value: stateSlice })
 
       return { value: stateSlice, ...methods }
     })
