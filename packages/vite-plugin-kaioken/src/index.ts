@@ -18,7 +18,7 @@ export interface KaiokenPluginOptions {
   devtools?: boolean
 }
 
-export default function (
+export default function kaioken(
   opts: KaiokenPluginOptions = {
     devtools: true,
   }

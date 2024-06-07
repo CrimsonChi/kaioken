@@ -1,4 +1,5 @@
 import esbuild from "esbuild"
+import fs from "node:fs"
 
 esbuild.buildSync({
   entryPoints: ["src/index.ts"],
@@ -10,3 +11,5 @@ esbuild.buildSync({
   external: ["kaioken"],
   write: true,
 })
+
+fs.copyFileSync("./types.d.ts", "dist/index.d.ts")

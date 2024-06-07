@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
@@ -20,6 +21,6 @@
     "sourceMap": false,
     "jsx": "preserve"
   },
-  "include": ["./src/*"],
+  "include": ["./src/*", "build.ts"],
   "exclude": ["dist"]
 }
