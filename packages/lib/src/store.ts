@@ -103,6 +103,7 @@ function createStore<T, U extends MethodFactory<T>>(
         nodeToSliceComputeMap.delete(vNode)
         subscribers.delete(vNode)
       }
+      hook.debug = () => ({ value: stateSlice })
 
       return { value: stateSlice, ...methods }
     })
