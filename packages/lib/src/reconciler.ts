@@ -139,7 +139,7 @@ function updateSlot(
 ) {
   let newNode: VNode | undefined
   const sameType = oldNode && child && child.type == oldNode.type
-  if (oldNode && child && child.type == oldNode.type) {
+  if (sameType) {
     if (oldNode.props.key !== child.props.key) return undefined
     newNode = oldNode
     newNode.props = child.props
@@ -147,7 +147,7 @@ function updateSlot(
     newNode.effectTag = EffectTag.UPDATE
     copyNodeMemoization(child, newNode)
     nodeToCtxMap.set(newNode, ctx.current)
-  } else if (isValidChild(child) && !sameType) {
+  } else if (isValidChild(child)) {
     newNode = createChild(parent, child, index)
   }
   if (oldNode && !sameType) {
