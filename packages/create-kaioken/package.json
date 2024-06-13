@@ -1,0 +1,42 @@
+{
+  "name": "create-kaioken",
+  "version": "0.0.1",
+  "type": "module",
+  "license": "ISC",
+  "author": "Evan You",
+  "bin": {
+    "create-kaioken": "index.js"
+  },
+  "files": [
+    "index.js",
+    "template-*",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrimsonChi/kaioken.git",
+    "directory": "packages/create-kaioken"
+  },
+  "bugs": {
+    "url": "https://github.com/CrimsonChi/kaioken/issues"
+  },
+  "homepage": "https://github.com/CrimsonChi/kaioken/tree/main/packages/create-kaioken#readme",
+  "funding": "https://github.com/CrimsonChi/kaioken?sponsor=1",
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "@types/prompts": "^2.4.9",
+    "cross-spawn": "^7.0.3",
+    "execa": "^9.2.0",
+    "minimist": "^1.2.8",
+    "prompts": "^2.4.2",
+    "unbuild": "^2.0.0"
+  },
+  "scripts": {
+    "dev": "unbuild --stub",
+    "build": "unbuild",
+    "typecheck": "tsc --noEmit"
+  }
+}
