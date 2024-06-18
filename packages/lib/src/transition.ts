@@ -33,16 +33,25 @@ export class Transition extends Component<TransitionProps> {
     }
   }
   componentDidUpdate(): void {
-    if (this.props.in && this.state.transitionState === "exited") {
+    if (
+      this.props.in &&
+      this.state.transitionState !== "entered" &&
+      this.state.transitionState !== "entering"
+    ) {
       this.setTransitionState("entering")
       this.queueStateChange("entered")
-    } else if (!this.props.in && this.state.transitionState === "entered") {
+    } else if (
+      !this.props.in &&
+      this.state.transitionState !== "exited" &&
+      this.state.transitionState !== "exiting"
+    ) {
       this.setTransitionState("exiting")
       this.queueStateChange("exited")
     }
   }
 
   setTransitionState(transitionState: TransitionState): void {
+    this.clearTimeout()
     this.setState((prev) => ({
       ...prev,
       transitionState,
@@ -64,9 +73,9 @@ export class Transition extends Component<TransitionProps> {
   }
 
   queueStateChange(transitionState: TransitionState): void {
-    this.state.timeoutRef = window.setTimeout(() => {
-      this.clearTimeout()
-      this.setTransitionState(transitionState)
-    }, this.getTiming())
+    this.state.timeoutRef = window.setTimeout(
+      () => this.setTransitionState(transitionState),
+      this.getTiming()
+    )
   }
 }
