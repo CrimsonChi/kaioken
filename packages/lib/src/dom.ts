@@ -266,6 +266,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     commitSibling = true
 
     if (n.effectTag === EffectTag.DELETION) {
+      n.instance?.componentWillUnmount?.()
       commitDeletion(n)
       continue
     }
