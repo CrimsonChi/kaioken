@@ -1,6 +1,6 @@
 import { Component } from "./component.js"
 
-type TransitionState = "entering" | "entered" | "exiting" | "exited"
+export type TransitionState = "entering" | "entered" | "exiting" | "exited"
 type TransitionProps = {
   in: boolean
   timings?: [number, number]

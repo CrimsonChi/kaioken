@@ -12,7 +12,7 @@ export function DrawerDemo() {
       <Portal container={document.getElementById("portal-root")!}>
         <Transition
           in={open}
-          timings={[40, 150, 150, 150]}
+          timings={[40, 150]}
           element={(state) => (
             <Drawer state={state} close={() => setOpen(false)} />
           )}
