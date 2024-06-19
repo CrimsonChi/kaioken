@@ -14,6 +14,12 @@ import { renderMode } from "./globals.js"
 export { commitWork, createDom, updateDom }
 
 type VNode = Kaioken.VNode
+type DomParentSearchResult = {
+  node: VNode
+  element: HTMLElement | SVGElement | Text
+}
+type MaybeDom = HTMLElement | SVGElement | Text | undefined
+type CommitStackItem = [VNode, MaybeDom, DomParentSearchResult | undefined]
 
 function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   const t = vNode.type as string
@@ -162,10 +168,7 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 
   return dom
 }
-type DomParentSearchResult = {
-  node: VNode
-  element: HTMLElement | SVGElement | Text
-}
+
 function getDomParent(node: VNode): DomParentSearchResult {
   let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
   let domParent = domParentNode?.dom
@@ -190,7 +193,7 @@ function getDomParent(node: VNode): DomParentSearchResult {
 function placeDom(
   vNode: VNode,
   dom: HTMLElement | SVGElement | Text,
-  prevSiblingDom: HTMLElement | SVGElement | Text | undefined,
+  prevSiblingDom: MaybeDom,
   mntParent: DomParentSearchResult
 ) {
   if (prevSiblingDom) {
@@ -238,26 +241,21 @@ function placeDom(
 
 function commitWork(ctx: AppContext, vNode: VNode) {
   let commitSibling = false
-  type MaybeDom = HTMLElement | SVGElement | Text | undefined
-  type StackItem = [VNode, MaybeDom, DomParentSearchResult | undefined]
-
-  const stack: StackItem[] = [[vNode, undefined, undefined]]
+  const stack: CommitStackItem[] = [[vNode, undefined, undefined]]
 
   while (stack.length) {
     let [n, prevSiblingDom, mntParent] = stack.pop()!
     const dom = n.dom
 
-    if (dom && renderMode.current !== "hydrate") {
-      if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-        if (!mntParent) {
-          mntParent = getDomParent(n)
-        }
-        placeDom(n, dom, prevSiblingDom, mntParent)
-      } else if (n.effectTag === EffectTag.UPDATE) {
-        updateDom(n, dom)
+    if (dom) {
+      mntParent = commitDom(n, dom, prevSiblingDom, mntParent) || mntParent
+    } else if (n.effectTag === EffectTag.PLACEMENT) {
+      // propagate the effect to children
+      let c = n.child
+      while (c) {
+        c.effectTag = EffectTag.PLACEMENT
+        c = c.sibling
       }
-    } else if (dom && n.props.ref) {
-      n.props.ref.current = dom
     }
 
     if (commitSibling && n.sibling) {
@@ -294,6 +292,28 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     n.effectTag = undefined
     n.prev = { ...n, prev: undefined }
   }
+}
+
+function commitDom(
+  n: VNode,
+  dom: HTMLElement | SVGElement | Text,
+  prevSiblingDom: MaybeDom,
+  mntParent: DomParentSearchResult | undefined
+) {
+  if (renderMode.current === "hydrate") {
+    if (n.props.ref) {
+      n.props.ref.current = dom
+    }
+    return
+  }
+  if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
+    const p = mntParent ?? getDomParent(n)
+    placeDom(n, dom, prevSiblingDom, p)
+    return p
+  } else if (n.effectTag === EffectTag.UPDATE) {
+    updateDom(n, dom)
+  }
+  return
 }
 
 function commitDeletion(vNode: VNode, deleteSibling = false) {
