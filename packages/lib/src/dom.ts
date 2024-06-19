@@ -191,6 +191,7 @@ function getDomParent(node: VNode): DomParentSearchResult {
 }
 
 function placeDom(
+  appCtx: AppContext,
   vNode: VNode,
   dom: HTMLElement | SVGElement | Text,
   prevSiblingDom: MaybeDom,
@@ -209,7 +210,7 @@ function placeDom(
     // edge cases are encountered.
 
     // first, try to find next dom by traversing through siblings
-    let nextDom = findMountedDomRecursive(vNode.sibling)
+    let nextDom = findMountedDomRecursive(appCtx, vNode.sibling)
     if (nextDom === undefined) {
       // try to find next dom by traversing (up and across) through the tree
       // handles cases like the following:
@@ -226,7 +227,7 @@ function placeDom(
       let parent = vNode.parent
 
       while (!nextDom && parent && parent !== node) {
-        nextDom = findMountedDomRecursive(parent.sibling)
+        nextDom = findMountedDomRecursive(appCtx, parent.sibling)
         parent = parent.parent
       }
     }
@@ -248,7 +249,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     const dom = n.dom
 
     if (dom) {
-      mntParent = commitDom(n, dom, prevSiblingDom, mntParent) || mntParent
+      mntParent = commitDom(ctx, n, dom, prevSiblingDom, mntParent) || mntParent
     } else if (n.effectTag === EffectTag.PLACEMENT) {
       // propagate the effect to children
       let c = n.child
@@ -295,6 +296,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
 }
 
 function commitDom(
+  appCtx: AppContext,
   n: VNode,
   dom: HTMLElement | SVGElement | Text,
   prevSiblingDom: MaybeDom,
@@ -306,9 +308,10 @@ function commitDom(
     }
     return
   }
+  if (n.instance?.doNotModifyDom) return
   if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
     const p = mntParent ?? getDomParent(n)
-    placeDom(n, dom, prevSiblingDom, p)
+    placeDom(appCtx, n, dom, prevSiblingDom, p)
     return p
   } else if (n.effectTag === EffectTag.UPDATE) {
     updateDom(n, dom)
@@ -336,13 +339,15 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
 }
 
 function findMountedDomRecursive(
+  appCtx: AppContext,
   vNode?: VNode
 ): HTMLElement | SVGElement | Text | undefined {
   if (!vNode) return
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
-    if (n.dom?.isConnected) return n.dom
+    if (n.dom?.isConnected && appCtx.rootNode?.dom?.contains(n.dom))
+      return n.dom
     if (n.sibling) stack.push(n.sibling)
     if (n.child) stack.push(n.child)
   }
