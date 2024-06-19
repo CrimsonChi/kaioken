@@ -113,6 +113,9 @@ export class Scheduler {
           this.currentTreeIndex--
           this.treesInProgress.splice(i, 1)
           this.treesInProgress.push(node)
+        } else {
+          // node contains a tree that has not yet been processed, 'usurp' the tree
+          this.treesInProgress.splice(i, 1, node)
         }
         return
       }
