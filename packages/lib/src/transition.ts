@@ -3,13 +3,18 @@ import { Component } from "./component.js"
 export type TransitionState = "entering" | "entered" | "exiting" | "exited"
 type TransitionProps = {
   in: boolean
-  timings?: [number, number]
+  duration?:
+    | number
+    | {
+        in: number
+        out: number
+      }
   element: (state: "entering" | "entered" | "exiting" | "exited") => JSX.Element
   onAnimationEnd?: (state: "entered" | "exited") => void
 }
 
 export class Transition extends Component<TransitionProps> {
-  defaultTimings = [20, 150]
+  defaultDuration = 150
   state = {
     transitionState: "exited" as TransitionState,
     timeoutRef: null as number | null,
@@ -30,8 +35,10 @@ export class Transition extends Component<TransitionProps> {
 
   componentDidMount(): void {
     if (this.props.in) {
-      this.setTransitionState("entering")
-      this.queueStateChange("entered")
+      this.ctx.scheduler?.nextIdle(() => {
+        this.setTransitionState("entering")
+        this.queueStateChange("entered")
+      })
     }
   }
   componentDidUpdate(): void {
@@ -69,20 +76,23 @@ export class Transition extends Component<TransitionProps> {
     }
   }
 
-  getTiming(transitionState: "entered" | "exited"): number {
-    const timings = this.props.timings ?? this.defaultTimings
-    switch (transitionState) {
-      case "entered":
-        return timings[0]
-      case "exited":
-        return timings[1]
-    }
-  }
-
   queueStateChange(transitionState: "entered" | "exited"): void {
     this.state.timeoutRef = window.setTimeout(
       () => this.setTransitionState(transitionState),
       this.getTiming(transitionState)
     )
+  }
+
+  getTiming(transitionState: "entered" | "exited"): number {
+    switch (transitionState) {
+      case "entered":
+        return typeof this.props.duration === "number"
+          ? this.props.duration
+          : this.props.duration?.in ?? this.defaultDuration
+      case "exited":
+        return typeof this.props.duration === "number"
+          ? this.props.duration
+          : this.props.duration?.out ?? this.defaultDuration
+    }
   }
 }
