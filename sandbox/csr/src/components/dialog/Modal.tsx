@@ -18,7 +18,6 @@ export function ModalDemo() {
       <Portal container={document.getElementById("portal-root")!}>
         <Transition
           in={open}
-          timings={[40, 150]}
           element={(state) => (
             <Modal state={state} close={() => setOpen(false)} />
           )}

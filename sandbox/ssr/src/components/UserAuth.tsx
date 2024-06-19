@@ -38,7 +38,6 @@ export function UserAuth() {
       )}
       <Transition
         in={modalOpen}
-        timings={[40, 150]}
         element={(state) => (
           <Modal state={state} close={() => setModalOpen(false)}>
             <h4 className="text-lg font-bold text-center">Log in</h4>
