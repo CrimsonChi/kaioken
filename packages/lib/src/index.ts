@@ -23,7 +23,8 @@ export * from "./appContext.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
-export { signal } from "./signal.js"
+export { signal, Signal } from "./signal.js"
+
 export * from "./store.js"
 export * from "./transition.js"
 
