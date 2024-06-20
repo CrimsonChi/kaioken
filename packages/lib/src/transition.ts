@@ -84,15 +84,12 @@ export class Transition extends Component<TransitionProps> {
   }
 
   getTiming(transitionState: "entered" | "exited"): number {
+    if (typeof this.props.duration === "number") return this.props.duration
     switch (transitionState) {
       case "entered":
-        return typeof this.props.duration === "number"
-          ? this.props.duration
-          : this.props.duration?.in ?? this.defaultDuration
+        return this.props.duration?.in ?? this.defaultDuration
       case "exited":
-        return typeof this.props.duration === "number"
-          ? this.props.duration
-          : this.props.duration?.out ?? this.defaultDuration
+        return this.props.duration?.out ?? this.defaultDuration
     }
   }
 }
