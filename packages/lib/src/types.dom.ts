@@ -200,6 +200,8 @@ type InputEvent<T extends "input" | "select" | "textarea"> = Omit<
       : HTMLTextAreaElement
 }
 type InputEventAttributes<T extends "input" | "select" | "textarea"> = {
+  onblur?: (e: InputEvent<T>) => void
+  onfocus?: (e: InputEvent<T>) => void
   onchange?: (e: InputEvent<T>) => void
   oninput?: (e: InputEvent<T>) => void
   onreset?: (e: InputEvent<T>) => void
@@ -560,6 +562,7 @@ interface HtmlElementAttributes {
     required?: boolean
     rows?: string | number
     wrap?: "hard" | "soft"
+    value?: string
   }
   tfoot: {}
   th: {
