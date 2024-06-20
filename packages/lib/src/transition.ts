@@ -10,7 +10,7 @@ type TransitionProps = {
         out: number
       }
   element: (state: "entering" | "entered" | "exiting" | "exited") => JSX.Element
-  onAnimationEnd?: (state: "entered" | "exited") => void
+  onTransitionEnd?: (state: "entered" | "exited") => void
 }
 
 export class Transition extends Component<TransitionProps> {
@@ -68,10 +68,10 @@ export class Transition extends Component<TransitionProps> {
 
     if (
       (transitionState === "exited" || transitionState === "entered") &&
-      this.props.onAnimationEnd
+      this.props.onTransitionEnd
     ) {
       this.ctx.scheduler?.nextIdle(() =>
-        this.props.onAnimationEnd!(transitionState)
+        this.props.onTransitionEnd!(transitionState)
       )
     }
   }
