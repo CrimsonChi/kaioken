@@ -18,7 +18,7 @@ interface Product {
 export function UseAsyncExample() {
   const [productId, setProductId] = useState(1)
 
-  const [data, loading, error] = useAsync<Product>(async () => {
+  const { data, loading, error } = useAsync<Product>(async () => {
     const res = await fetch(`https://dummyjson.com/products/${productId}`).then(
       (r) => r.json()
     )
@@ -26,7 +26,7 @@ export function UseAsyncExample() {
     return res
   }, [productId])
 
-  console.log("data", data)
+  console.log("result", data)
 
   return (
     <div>

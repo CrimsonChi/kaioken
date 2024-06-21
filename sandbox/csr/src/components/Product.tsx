@@ -10,20 +10,30 @@ interface Product {
 }
 
 export function ProductPage({ query: { id } }: RouteChildProps) {
-  const [data, loading, error] = useAsync<Product>(
+  const { data, loading, error, invalidate } = useAsync<Product>(
     () =>
       fetch(`https://dummyjson.com/products/${id}`).then((res) => res.json()),
     [id]
   )
 
+  console.log("product", data)
+
   return (
     <>
+      {data ? (
+        <Product product={data} />
+      ) : loading ? (
+        <Spinner />
+      ) : (
+        <div>{error.message}</div>
+      )}
       {loading && <Spinner />}
       {error && <div>{error.message}</div>}
       {data && <Product product={data} />}
       <div className="flex items-center justify-center">
         {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}
         <Link to={`/query?id=${Number(id) + 1}`}>Next</Link>
+        <button onclick={() => invalidate(true)}>Invalidate</button>
       </div>
     </>
   )
