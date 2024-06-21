@@ -18,7 +18,7 @@ type UseAsyncResult<T> = (
       error: UseAsyncError
     }
 ) & {
-  invalidate: (fullRefresh?: boolean) => void
+  invalidate: (forceUpdate?: boolean) => void
 }
 
 export class UseAsyncError extends Error {
@@ -78,9 +78,9 @@ export function useAsync<T>(
         load()
       }
       if (!oldHook) {
-        hook.invalidate = (fullRefresh?: boolean) => {
+        hook.invalidate = (forceUpdate?: boolean) => {
           load()
-          fullRefresh && update()
+          forceUpdate && update()
         }
       }
       return {
