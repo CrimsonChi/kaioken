@@ -8,7 +8,7 @@ export type { Store, MethodFactory }
 type MethodFactory<T> = (
   setState: (setter: Kaioken.StateSetter<T>) => void,
   getState: () => T
-) => Record<string, (...args: any[]) => void>
+) => Record<string, Function>
 
 type StoreHook<T, U extends MethodFactory<T>> = {
   <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
