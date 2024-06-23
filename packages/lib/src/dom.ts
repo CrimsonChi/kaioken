@@ -10,7 +10,6 @@ import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
-import { Portal } from "./portal.js"
 
 export { commitWork, createDom, updateDom }
 
@@ -192,7 +191,6 @@ function getDomParent(node: VNode): DomParentSearchResult {
 }
 
 function placeDom(
-  appCtx: AppContext,
   vNode: VNode,
   dom: HTMLElement | SVGElement | Text,
   prevSiblingDom: MaybeDom,
@@ -211,8 +209,7 @@ function placeDom(
     // edge cases are encountered.
 
     // first, try to find next dom by traversing through siblings
-    const rootDom = Portal.isPortal(node.type) ? element : appCtx.rootNode?.dom
-    let nextDom = findMountedDomRecursive(rootDom, vNode.sibling)
+    let nextDom = findMountedDomRecursive(element, vNode.sibling)
     if (nextDom === undefined) {
       // try to find next dom by traversing (up and across) through the tree
       // handles cases like the following:
@@ -229,7 +226,7 @@ function placeDom(
       let parent = vNode.parent
 
       while (!nextDom && parent && parent !== node) {
-        nextDom = findMountedDomRecursive(rootDom, parent.sibling)
+        nextDom = findMountedDomRecursive(element, parent.sibling)
         parent = parent.parent
       }
     }
@@ -251,7 +248,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     const dom = n.dom
 
     if (dom) {
-      mntParent = commitDom(ctx, n, dom, prevSiblingDom, mntParent) || mntParent
+      mntParent = commitDom(n, dom, prevSiblingDom, mntParent) || mntParent
     } else if (n.effectTag === EffectTag.PLACEMENT) {
       // propagate the effect to children
       let c = n.child
@@ -298,7 +295,6 @@ function commitWork(ctx: AppContext, vNode: VNode) {
 }
 
 function commitDom(
-  appCtx: AppContext,
   n: VNode,
   dom: HTMLElement | SVGElement | Text,
   prevSiblingDom: MaybeDom,
@@ -313,7 +309,7 @@ function commitDom(
   if (n.instance?.doNotModifyDom) return
   if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
     const p = mntParent ?? getDomParent(n)
-    placeDom(appCtx, n, dom, prevSiblingDom, p)
+    placeDom(n, dom, prevSiblingDom, p)
     return p
   } else if (n.effectTag === EffectTag.UPDATE) {
     updateDom(n, dom)
@@ -341,14 +337,14 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
 }
 
 function findMountedDomRecursive(
-  rootDom: HTMLElement | SVGElement | Text | undefined,
+  rootDom: HTMLElement | SVGElement | Text,
   vNode?: VNode
 ): HTMLElement | SVGElement | Text | undefined {
   if (!vNode) return
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
-    if (n.dom?.isConnected && rootDom?.contains(n.dom)) return n.dom
+    if (n.dom?.isConnected && rootDom.contains(n.dom)) return n.dom
     if (n.sibling) stack.push(n.sibling)
     if (n.child) stack.push(n.child)
   }
