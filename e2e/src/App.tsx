@@ -2,13 +2,18 @@ import { Link, Route, Router, memo, useModel, useState } from "kaioken"
 import { Counter } from "./Counter"
 
 export function App() {
+  const [toggled, setToggled] = useState(false)
   return (
     <main>
       <header>
         <h1>Hello World</h1>
       </header>
+      {toggled && <p>Toggled</p>}
       <Counter />
       <TodoList />
+      <button id="toggle-btn" onclick={() => setToggled(!toggled)}>
+        toggle
+      </button>
       <nav>
         <ul>
           <li>

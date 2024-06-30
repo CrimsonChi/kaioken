@@ -14,6 +14,12 @@ describe("basic reactivity & state", () => {
     cy.get("main #counter button").click().click()
     cy.get("main #counter p").should("exist")
   })
+
+  it("correctly persists component state when order of children changes", () => {
+    cy.get("main #counter button").click().click()
+    cy.get("main #toggle-btn").click()
+    cy.get("main #counter span").should("have.text", "2")
+  })
 })
 
 describe("hooks & data", () => {
