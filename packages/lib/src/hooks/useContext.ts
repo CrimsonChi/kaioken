@@ -1,6 +1,5 @@
 import { useHook } from "./utils.js"
-
-const contextDataSymbol = Symbol.for("kaioken.contextData")
+import { contextDataSymbol } from "../constants.js"
 
 type ContextNode<T> = Kaioken.VNode & {
   props: {

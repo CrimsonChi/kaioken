@@ -5,6 +5,7 @@ import { renderMode, ctx, node, contexts, nodeToCtxMap } from "../globals.js"
 
 import {
   encodeHtmlEntities,
+  isVNode,
   propFilters,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
@@ -44,7 +45,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
 
 function renderToStream_internal<T extends Record<string, unknown>>(
   state: RequestState,
-  el: JSX.Element,
+  el: unknown,
   parent?: Kaioken.VNode | undefined,
   elProps = {} as T
 ): void {
@@ -68,6 +69,11 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   }
   if (Signal.isSignal(el)) {
     state.stream.push(encodeHtmlEntities(el.value.toString()))
+    return
+  }
+
+  if (!isVNode(el)) {
+    state.stream.push(String(el))
     return
   }
 
@@ -119,7 +125,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
         )
       )
     } else {
-      children.forEach((c) => renderToStream_internal(state, c, el, c.props))
+      children.forEach((c) => renderToStream_internal(state, c, el))
     }
 
     state.stream.push(`</${type}>`)

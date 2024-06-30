@@ -1,5 +1,6 @@
 import { useAsync, useState } from "kaioken"
 import { Spinner } from "./atoms/Spinner"
+import { Button } from "./atoms/Button"
 
 interface Product {
   id: number
@@ -30,7 +31,9 @@ export function UseAsyncExample() {
 
   return (
     <div>
-      <button onclick={() => setProductId((prev) => prev + 1)}>Next</button>
+      <Button onclick={() => setProductId((prev) => prev + 1)}>
+        Next ({productId})
+      </Button>
       {data ? (
         <ProductCard product={data} />
       ) : loading ? (

@@ -1,10 +1,6 @@
 import type { AppContext } from "./appContext"
 import { Component } from "./component.js"
-import {
-  EffectTag,
-  elementFreezeSymbol,
-  elementTypes as et,
-} from "./constants.js"
+import { EffectTag, elementTypes as et } from "./constants.js"
 import { commitWork, createDom, updateDom } from "./dom.js"
 import {
   childIndexStack,
@@ -197,8 +193,7 @@ export class Scheduler {
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
-    const frozen =
-      elementFreezeSymbol in vNode && vNode[elementFreezeSymbol] === true
+    const frozen = "frozen" in vNode && vNode.frozen === true
     const skip = frozen && vNode.effectTag !== EffectTag.PLACEMENT
     if (!skip) {
       try {
@@ -207,11 +202,12 @@ export class Scheduler {
         } else if (vNode.type instanceof Function) {
           this.updateFunctionComponent(vNode)
         } else if (vNode.type === et.fragment) {
-          vNode.child = reconcileChildren(
-            this.appCtx,
-            vNode,
-            vNode.props.children
-          )
+          vNode.child =
+            reconcileChildren(
+              vNode,
+              vNode.child || null,
+              vNode.props.children || []
+            ) || undefined
         } else {
           this.updateHostComponent(vNode)
         }
@@ -256,11 +252,10 @@ export class Scheduler {
       vNode.instance.props = vNode.props
     }
 
-    vNode.child = reconcileChildren(
-      this.appCtx,
-      vNode,
-      [vNode.instance.render()].flat() as VNode[]
-    )
+    vNode.child =
+      reconcileChildren(vNode, vNode.child || null, [
+        vNode.instance.render(),
+      ] as VNode[]) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -268,11 +263,10 @@ export class Scheduler {
   private updateFunctionComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
-    vNode.child = reconcileChildren(
-      this.appCtx,
-      vNode,
-      [(vNode.type as Function)(vNode.props)].flat()
-    )
+    vNode.child =
+      reconcileChildren(vNode, vNode.child || null, [
+        (vNode.type as Function)(vNode.props),
+      ]) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -300,7 +294,12 @@ export class Scheduler {
     if (vNode.props.ref) {
       vNode.props.ref.current = vNode.dom
     }
-    vNode.child = reconcileChildren(this.appCtx, vNode, vNode.props.children)
+    vNode.child =
+      reconcileChildren(
+        vNode,
+        vNode.child || null,
+        vNode.props.children || []
+      ) || undefined
   }
 }
 function handleTextNodeSplitting(vNode: VNode) {

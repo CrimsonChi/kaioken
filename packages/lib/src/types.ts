@@ -101,7 +101,7 @@ declare global {
       instance?: Component
       props: {
         [key: string]: any
-        children: VNode[]
+        children?: unknown[]
         key?: JSX.ElementKey
         ref?: Kaioken.Ref<unknown>
       }
@@ -113,6 +113,7 @@ declare global {
       sibling?: VNode
       prev?: VNode
       effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
+      frozen?: boolean
     }
   }
 }

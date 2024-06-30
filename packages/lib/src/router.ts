@@ -98,7 +98,11 @@ function Router(props: RouterProps) {
   }
 
   if (fallbackRoute) {
-    return createElement(fallbackRoute.props.element, { params: {}, query })
+    return fragment({
+      children: [
+        createElement(fallbackRoute.props.element, { params: {}, query }),
+      ],
+    })
   }
 
   return null

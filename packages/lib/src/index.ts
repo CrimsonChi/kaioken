@@ -1,6 +1,5 @@
 import { AppContext, AppContextOptions } from "./appContext.js"
 import {
-  isValidChild,
   isVNode,
   propFilters,
   propToHtmlAttr,
@@ -67,34 +66,22 @@ function mount<T extends Record<string, unknown>>(
 
 function createElement(
   type: string | Function | typeof Component,
-  props = {},
-  ...children: JSX.Element[]
+  props: null | Record<string, unknown> = null,
+  ...children: unknown[]
 ): VNode {
-  const node = {
+  const node: VNode = {
     type,
     index: 0,
-    props: {
-      ...props,
-      children: children.flat().filter(isValidChild).map(createChildElement),
-    },
+    props: children.length ? { ...props, children } : props ?? {},
   }
   nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
-function createChildElement(child: JSX.Element): VNode {
-  if (isVNode(child)) return child
-  return createTextElement(String(child))
-}
-
-function createTextElement(nodeValue: string): VNode {
-  return createElement(et.text, { nodeValue })
-}
-
 function fragment({
   children,
   ...rest
-}: { children: JSX.Element[] } & Record<string, unknown>) {
+}: { children: unknown[] } & Record<string, unknown>) {
   return createElement(et.fragment, rest, ...children)
 }
 
@@ -113,7 +100,7 @@ function renderToString<T extends Record<string, unknown>>(
 }
 
 function renderToString_internal<T extends Record<string, unknown>>(
-  el: JSX.Element,
+  el: unknown,
   parent?: VNode | undefined,
   elProps = {} as T
 ): string {
@@ -121,7 +108,8 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (el === undefined) return ""
   if (typeof el === "boolean") return ""
   if (typeof el === "string") return encodeHtmlEntities(el)
-  if (typeof el === "number") return encodeHtmlEntities(el.toString())
+  if (typeof el === "number" || typeof el === "bigint")
+    return encodeHtmlEntities(el.toString())
   if (typeof el === "function")
     return renderToString_internal(createElement(el, elProps))
   if (el instanceof Array) {
@@ -132,6 +120,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
     return s
   }
   if (Signal.isSignal(el)) return encodeHtmlEntities(el.value.toString())
+  if (!isVNode(el)) return String(el)
 
   el.parent = parent
   nodeToCtxMap.set(el, ctx.current)
@@ -168,7 +157,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
       ? Signal.isSignal(props.innerHTML)
         ? props.innerHTML.value
         : props.innerHTML
-      : children.map((c) => renderToString_internal(c, el, c.props)).join("")
+      : children.map((c) => renderToString_internal(c, el)).join("")
 
   return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
 }

@@ -1,4 +1,3 @@
-import { elementFreezeSymbol } from "./constants.js"
 import { createElement } from "./index.js"
 
 type Rec = Record<string, unknown>
@@ -20,7 +19,8 @@ export function memo<Props extends Record<string, unknown>>(
   return Object.assign(
     (props: Props) => {
       if (node && arePropsEqual(oldProps, props)) {
-        return Object.assign(node, { [elementFreezeSymbol]: true })
+        node.frozen = true
+        return node
       }
       oldProps = props
       if (!node) {
@@ -28,7 +28,8 @@ export function memo<Props extends Record<string, unknown>>(
       } else {
         Object.assign(node.props, props)
       }
-      return Object.assign(node, { [elementFreezeSymbol]: false })
+      node.frozen = false
+      return node
     },
     { displayName: "Kaioken.memo" }
   )

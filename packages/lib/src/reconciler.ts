@@ -1,64 +1,72 @@
-import { EffectTag, elementTypes, elementFreezeSymbol } from "./constants.js"
-import type { AppContext } from "./appContext"
+import { EffectTag, elementTypes } from "./constants.js"
 import { ctx, nodeToCtxMap } from "./globals.js"
-import { isVNode, isValidChild } from "./utils.js"
+import { isVNode } from "./utils.js"
+import { createElement } from "./index.js"
 
 type VNode = Kaioken.VNode
 
 export function reconcileChildren(
-  appCtx: AppContext,
   vNode: VNode,
-  children: VNode[]
+  currentFirstChild: VNode | null,
+  children: unknown[]
 ) {
-  let index = 0
-  let prevOldNode: VNode | undefined = undefined
-  let oldNode: VNode | undefined = vNode.prev && vNode.prev.child
-  let prevNewNode: VNode | undefined = undefined
-  let newNode: VNode | undefined = undefined
-  let resultingChild: VNode | undefined = undefined
+  // if (vNode.type instanceof Function && "test" in vNode.type) {
+  //   debugger
+  // }
+  let resultingChild: VNode | null = null
+  let prevNewNode: VNode | null = null
+
+  let oldNode = currentFirstChild
   let lastPlacedIndex = 0
+  let newIdx = 0
+  let nextOldNode = null
 
-  for (; !!oldNode && index < children.length; index++) {
-    newNode = updateSlot(appCtx, vNode, children[index], oldNode, index)
-    if (!newNode) break
-    lastPlacedIndex = placeChild(newNode, lastPlacedIndex, index)
-
-    if (oldNode) {
-      prevOldNode = oldNode
-      oldNode = oldNode.sibling
+  for (; !!oldNode && newIdx < children.length; newIdx++) {
+    if (oldNode.index > newIdx) {
+      nextOldNode = oldNode
+      oldNode = null
+    } else {
+      nextOldNode = oldNode.sibling || null
     }
-    if (prevNewNode) {
+    const newNode = updateSlot(vNode, oldNode, children[newIdx])
+    if (newNode === null) {
+      if (oldNode === null) {
+        oldNode = nextOldNode
+      }
+      break
+    }
+    if (oldNode && !newNode.prev) {
+      ctx.current.requestDelete(oldNode)
+    }
+    lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
+    if (prevNewNode === null) {
+      resultingChild = newNode
+    } else {
       prevNewNode.sibling = newNode
     }
     prevNewNode = newNode
-    if (index === 0) {
-      resultingChild = newNode
-    }
+    oldNode = nextOldNode
   }
 
   // matched all children?
-  if (index === children.length) {
-    while (oldNode) {
-      if (prevOldNode) {
-        prevOldNode.sibling = undefined
-      }
-      prevOldNode = oldNode
-      appCtx.requestDelete(oldNode)
-      oldNode = oldNode.sibling
+  if (newIdx === children.length) {
+    while (oldNode !== null) {
+      ctx.current.requestDelete(oldNode)
+      oldNode = oldNode.sibling || null
     }
     return resultingChild
   }
 
   // just some good ol' insertions, baby
-  if (!oldNode) {
-    for (; index < children.length; index++) {
-      const child = children[index]
-      if (!isValidChild(child)) continue
-      newNode = createChild(vNode, child, index)
-      lastPlacedIndex = placeChild(newNode, lastPlacedIndex, index)
-      if (index === 0) {
+  if (oldNode === null) {
+    for (; newIdx < children.length; newIdx++) {
+      const newNode = createChild(vNode, children[newIdx])
+      if (newNode === null) continue
+
+      lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
+      if (prevNewNode === null) {
         resultingChild = newNode
-      } else if (prevNewNode) {
+      } else {
         prevNewNode.sibling = newNode
       }
       prevNewNode = newNode
@@ -69,10 +77,14 @@ export function reconcileChildren(
   // deal with mismatched keys / unmatched children
   const existingChildren = mapRemainingChildren(oldNode)
 
-  for (; index < children.length; index++) {
-    const child = children[index]
-    const newNode = updateFromMap(existingChildren, vNode, index, child)
-    if (newNode !== undefined) {
+  for (; newIdx < children.length; newIdx++) {
+    const newNode = updateFromMap(
+      existingChildren,
+      vNode,
+      newIdx,
+      children[newIdx]
+    )
+    if (newNode !== null) {
       if (newNode.prev !== undefined) {
         // node persisted, remove it from the list so it doesn't get deleted
         existingChildren.delete(
@@ -81,87 +93,130 @@ export function reconcileChildren(
             : newNode.prev.props.key
         )
       }
-      copyNodeMemoization(child, newNode)
-      lastPlacedIndex = placeChild(newNode, lastPlacedIndex, index)
-      nodeToCtxMap.set(newNode, ctx.current)
-
-      if (index === 0) {
+      lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
+      if (prevNewNode === null) {
         resultingChild = newNode
-      } else if (prevNewNode) {
+      } else {
         prevNewNode.sibling = newNode
       }
       prevNewNode = newNode
-      if (index === children.length - 1) {
-        newNode.sibling = undefined
-      }
     }
   }
 
-  existingChildren.forEach((child) => appCtx.requestDelete(child))
+  existingChildren.forEach((child) => ctx.current.requestDelete(child))
   return resultingChild
 }
 
-function createChild(parent: VNode, child: any, index: number): VNode {
-  let newNode: VNode
+function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
+  // Update the node if the keys match, otherwise return undefined.
+  const key = oldNode !== null ? oldNode.props.key : undefined
+  if (
+    (typeof child === "string" && child !== "") ||
+    typeof child === "number" ||
+    typeof child === "bigint"
+  ) {
+    if (key !== undefined) return null
+    return updateTextNode(parent, oldNode, "" + child)
+  }
   if (isVNode(child)) {
-    newNode = {
-      type: child.type,
-      props: child.props,
-      parent,
-      effectTag: EffectTag.PLACEMENT,
-      index,
-    }
-  } else {
-    newNode = {
-      type: elementTypes.text,
-      props: {
-        nodeValue: String(child),
-        children: [],
-      },
-      parent,
-      effectTag: EffectTag.PLACEMENT,
-      index,
-    }
+    if (child.props.key !== key) return null
+    return updateNode(parent, oldNode, child)
   }
-
-  copyNodeMemoization(child, newNode)
-  nodeToCtxMap.set(newNode, ctx.current)
-
-  return newNode
+  if (Array.isArray(child)) {
+    if (key !== undefined) return null
+    return updateFragment(parent, oldNode, child)
+  }
+  return null
 }
 
-function updateSlot(
-  appCtx: AppContext,
-  parent: VNode,
-  child: VNode,
-  oldNode: VNode | undefined,
-  index: number
-) {
-  let newNode: VNode | undefined
-  const sameType = oldNode && child && child.type == oldNode.type
-  if (oldNode && child && child.type == oldNode.type) {
-    if (oldNode.props.key !== child.props.key) return undefined
-    newNode = oldNode
-    newNode.props = child.props
+function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
+  if (oldNode === null || oldNode.type !== elementTypes.text) {
+    const newNode = createElement(elementTypes.text, { nodeValue: content })
     newNode.parent = parent
+    return newNode
+  } else {
+    const newNode = oldNode
+    newNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
+    newNode.props.nodeValue = content
     newNode.effectTag = EffectTag.UPDATE
-    copyNodeMemoization(child, newNode)
-    nodeToCtxMap.set(newNode, ctx.current)
-  } else if (isValidChild(child) && !sameType) {
-    newNode = createChild(parent, child, index)
+    newNode.sibling = undefined
+    return oldNode
   }
-  if (oldNode && !sameType) {
-    appCtx.requestDelete(oldNode)
-  }
-  return newNode
 }
 
-function copyNodeMemoization(child: VNode, vNode: VNode) {
-  if (elementFreezeSymbol in child) {
-    Object.assign(vNode, {
-      [elementFreezeSymbol]: child[elementFreezeSymbol],
-    })
+function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
+  const nodeType = newNode.type
+  if (nodeType === elementTypes.fragment) {
+    return updateFragment(
+      parent,
+      oldNode,
+      newNode.props.children || [],
+      newNode.props
+    )
   }
+  if (oldNode?.type === nodeType) {
+    oldNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
+    oldNode.index = 0
+    oldNode.props = newNode.props
+    oldNode.parent = parent
+    oldNode.sibling = undefined
+    oldNode.effectTag = EffectTag.UPDATE
+    oldNode.frozen = newNode.frozen
+    return oldNode
+  }
+  const created = createElement(nodeType, newNode.props)
+  created.parent = parent
+  return created
+}
+
+function updateFragment(
+  parent: VNode,
+  oldNode: VNode | null,
+  children: unknown[],
+  newProps = {}
+) {
+  if (oldNode === null || oldNode.type !== elementTypes.fragment) {
+    const el = createElement(elementTypes.fragment, { children })
+    el.parent = parent
+    return el
+  }
+  oldNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
+  oldNode.props = { ...newProps, children }
+  oldNode.parent = parent
+  oldNode.effectTag = EffectTag.UPDATE
+  oldNode.sibling = undefined
+  return oldNode
+}
+
+function createChild(parent: VNode, child: unknown): VNode | null {
+  if (
+    (typeof child === "string" && child !== "") ||
+    typeof child === "number" ||
+    typeof child === "bigint"
+  ) {
+    const el = createElement(elementTypes.text, { nodeValue: "" + child })
+    el.parent = parent
+    return el
+  }
+
+  if (typeof child === "object" && child !== null) {
+    if (isVNode(child)) {
+      const newNode: VNode = {
+        type: child.type,
+        props: child.props,
+        parent,
+        effectTag: EffectTag.PLACEMENT,
+        index: 0,
+      }
+      nodeToCtxMap.set(newNode, ctx.current)
+      return newNode
+    } else if (Array.isArray(child)) {
+      const el = createElement(elementTypes.fragment, { children: child })
+      el.parent = parent
+      return el
+    }
+  }
+  return null
 }
 
 function placeChild(
@@ -190,13 +245,19 @@ function updateFromMap(
   parent: VNode,
   index: number,
   newChild: any
-): VNode | undefined {
+): VNode | null {
   if (
     (typeof newChild === "string" && newChild !== "") ||
-    typeof newChild === "number"
+    typeof newChild === "number" ||
+    typeof newChild === "bigint"
   ) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
+      oldChild.prev = {
+        ...oldChild,
+        props: { ...oldChild.props },
+        prev: undefined,
+      }
       oldChild.effectTag = EffectTag.UPDATE
       oldChild.props.nodeValue = newChild
       return oldChild
@@ -221,6 +282,8 @@ function updateFromMap(
     if (oldChild) {
       oldChild.effectTag = EffectTag.UPDATE
       oldChild.props = newChild.props
+      oldChild.frozen = newChild.frozen
+      oldChild.sibling = undefined
       return oldChild
     } else {
       return {
@@ -233,7 +296,7 @@ function updateFromMap(
     }
   }
 
-  return
+  return null
 }
 
 function mapRemainingChildren(vNode: VNode) {
