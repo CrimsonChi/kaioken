@@ -12,7 +12,7 @@ function handleDragOver(e: DragEvent) {
 export default function App() {
   const bgRef = useRef<HTMLDivElement>(null)
   const {
-    value: { popupWindow, dragging },
+    value: { popupWindow, dragging, corner },
     setPopupWindow,
     setCorner,
     setDragging,
@@ -53,11 +53,13 @@ export default function App() {
 
     let isLeft = true,
       isTop = true
-    if (e.offsetX > window.innerWidth / 2 + window.scrollX) isLeft = false
-    if (e.offsetY > window.innerHeight / 2 + window.scrollY) isTop = false
+    if (e.pageX > window.innerWidth / 2 + window.scrollX) isLeft = false
+    if (e.pageY > window.innerHeight / 2 + window.scrollY) isTop = false
 
-    const corner = isTop ? (isLeft ? "tl" : "tr") : isLeft ? "bl" : "br"
-    setCorner(corner)
+    const newCorner = isTop ? (isLeft ? "tl" : "tr") : isLeft ? "bl" : "br"
+    if (newCorner !== corner) {
+      setCorner(newCorner)
+    }
   }
 
   function handleDragEnd(e: DragEvent) {
