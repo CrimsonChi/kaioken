@@ -262,7 +262,7 @@ function updateFromMap(
       oldChild.props.nodeValue = newChild
       return oldChild
     } else {
-      return {
+      const n: VNode = {
         type: elementTypes.text,
         props: {
           nodeValue: newChild,
@@ -272,6 +272,8 @@ function updateFromMap(
         effectTag: EffectTag.PLACEMENT,
         index,
       }
+      nodeToCtxMap.set(n, ctx.current)
+      return n
     }
   }
 
@@ -286,13 +288,15 @@ function updateFromMap(
       oldChild.sibling = undefined
       return oldChild
     } else {
-      return {
+      const n: VNode = {
         type: newChild.type,
         props: newChild.props,
         parent,
         effectTag: EffectTag.PLACEMENT,
         index,
       }
+      nodeToCtxMap.set(n, ctx.current)
+      return n
     }
   }
 
