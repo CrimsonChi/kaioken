@@ -231,7 +231,7 @@ export class Scheduler {
       }
 
       nextNode = nextNode.parent
-      if (nextNode?.dom) {
+      if (renderMode.current === "hydrate" && nextNode?.dom) {
         hydrationStack.pop()
         childIndexStack.pop()
       }
