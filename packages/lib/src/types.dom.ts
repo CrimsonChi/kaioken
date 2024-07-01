@@ -352,6 +352,7 @@ interface HtmlElementAttributes {
   }
   i: {}
   iframe: {
+    allow?: string
     src?: ValidUrlOrPath
     srcdoc?: string
     name?: string
