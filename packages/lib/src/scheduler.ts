@@ -62,8 +62,6 @@ export class Scheduler {
   }
 
   queueUpdate(node: VNode) {
-    node.prev = { ...node, prev: undefined }
-
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(node)
       this.nextUnitOfWork = node
