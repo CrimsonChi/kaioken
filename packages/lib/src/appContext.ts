@@ -71,15 +71,20 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   }
 
   setProps(fn: (oldProps: T) => T) {
-    if (!this.mounted || !this.rootNode?.child)
+    const rootChild = this.rootNode?.child
+    const scheduler = this.scheduler
+    if (!this.mounted || !rootChild || !scheduler)
       return console.error(
         "[kaioken]: failed to apply new props - ensure the app is mounted"
       )
-
-    const { children, ref, key, ...rest } = this.rootNode.child.props
-    const args = rest as T
-    Object.assign(this.rootNode.child.props, fn(args))
-    this.requestUpdate(this.rootNode.child)
+    return new Promise<AppContext<T>>((resolve) => {
+      scheduler.clear()
+      const { children, ref, key, ...rest } = rootChild.props
+      const args = rest as T
+      Object.assign(rootChild.props, fn(args))
+      scheduler.queueUpdate(rootChild)
+      scheduler.nextIdle(() => resolve(this))
+    })
   }
 
   requestUpdate(node: VNode) {

@@ -46,6 +46,17 @@ export class Scheduler {
     }
   }
 
+  clear() {
+    this.nextUnitOfWork = undefined
+    this.treesInProgress = []
+    this.currentTreeIndex = 0
+    this.queuedNodeEffectSets = []
+    this.nextIdleEffects = []
+    this.deletions = []
+    this.frameDeadline = 0
+    this.pendingCallback = undefined
+  }
+
   wake() {
     if (this.isRunning) return
     this.isRunning = true
