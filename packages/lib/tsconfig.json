@@ -17,7 +17,7 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "baseUrl": ".",
-    "removeComments": true,
+    "removeComments": false,
     "sourceMap": false,
     "jsx": "react",
     "jsxFactory": "kaioken.createElement",
