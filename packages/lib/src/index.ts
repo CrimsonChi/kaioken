@@ -74,7 +74,7 @@ function createElement(
     index: 0,
     props: children.length ? { ...props, children } : props ?? {},
   }
-  nodeToCtxMap.set(node, ctx.current)
+  if (type instanceof Function) nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
@@ -123,7 +123,6 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (!isVNode(el)) return String(el)
 
   el.parent = parent
-  nodeToCtxMap.set(el, ctx.current)
   const props = el.props ?? {}
   const children = props.children ?? []
   const type = el.type
@@ -139,7 +138,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
       })(props)
       return renderToString_internal(instance.render(), el, props)
     }
-
+    nodeToCtxMap.set(el, ctx.current)
     return renderToString_internal(type(props), el, props)
   }
 

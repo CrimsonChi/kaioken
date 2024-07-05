@@ -78,7 +78,6 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   }
 
   el.parent = parent
-  nodeToCtxMap.set(el, ctx.current)
   const props = el.props ?? {}
   const children = props.children ?? []
   const type = el.type
@@ -98,7 +97,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
       })(props)
       return renderToStream_internal(state, el.instance.render(), el, props)
     }
-
+    nodeToCtxMap.set(el, ctx.current)
     return renderToStream_internal(state, type(props), el, props)
   }
 

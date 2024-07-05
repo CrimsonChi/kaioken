@@ -1,5 +1,5 @@
 import { EffectTag, elementTypes } from "./constants.js"
-import { ctx, nodeToCtxMap } from "./globals.js"
+import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { createElement } from "./index.js"
 
@@ -10,9 +10,6 @@ export function reconcileChildren(
   currentFirstChild: VNode | null,
   children: unknown[]
 ) {
-  // if (vNode.type instanceof Function && "test" in vNode.type) {
-  //   debugger
-  // }
   let resultingChild: VNode | null = null
   let prevNewNode: VNode | null = null
 
@@ -158,7 +155,6 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
     oldNode.index = 0
     oldNode.props = newNode.props
-    oldNode.parent = parent
     oldNode.sibling = undefined
     oldNode.effectTag = EffectTag.UPDATE
     oldNode.frozen = newNode.frozen
@@ -182,7 +178,6 @@ function updateFragment(
   }
   oldNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
   oldNode.props = { ...newProps, children }
-  oldNode.parent = parent
   oldNode.effectTag = EffectTag.UPDATE
   oldNode.sibling = undefined
   return oldNode
@@ -201,14 +196,9 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (typeof child === "object" && child !== null) {
     if (isVNode(child)) {
-      const newNode: VNode = {
-        type: child.type,
-        props: child.props,
-        parent,
-        effectTag: EffectTag.PLACEMENT,
-        index: 0,
-      }
-      nodeToCtxMap.set(newNode, ctx.current)
+      const newNode = createElement(child.type, child.props)
+      newNode.parent = parent
+      newNode.effectTag = EffectTag.PLACEMENT
       return newNode
     } else if (Array.isArray(child)) {
       const el = createElement(elementTypes.fragment, { children: child })
@@ -262,17 +252,12 @@ function updateFromMap(
       oldChild.props.nodeValue = newChild
       return oldChild
     } else {
-      const n: VNode = {
-        type: elementTypes.text,
-        props: {
-          nodeValue: newChild,
-          children: [],
-        },
-        parent,
-        effectTag: EffectTag.PLACEMENT,
-        index,
-      }
-      nodeToCtxMap.set(n, ctx.current)
+      const n = createElement(elementTypes.text, {
+        nodeValue: newChild,
+      })
+      n.parent = parent
+      n.effectTag = EffectTag.PLACEMENT
+      n.index = index
       return n
     }
   }
@@ -288,14 +273,10 @@ function updateFromMap(
       oldChild.sibling = undefined
       return oldChild
     } else {
-      const n: VNode = {
-        type: newChild.type,
-        props: newChild.props,
-        parent,
-        effectTag: EffectTag.PLACEMENT,
-        index,
-      }
-      nodeToCtxMap.set(n, ctx.current)
+      const n = createElement(newChild.type, newChild.props)
+      n.parent = parent
+      n.effectTag = EffectTag.PLACEMENT
+      n.index = index
       return n
     }
   }
