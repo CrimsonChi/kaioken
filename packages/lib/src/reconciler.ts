@@ -136,7 +136,6 @@ function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
     return newNode
   } else {
     const newNode = oldNode
-    newNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
     newNode.props.nodeValue = content
     newNode.effectTag = EffectTag.UPDATE
     newNode.sibling = undefined
@@ -155,7 +154,6 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     )
   }
   if (oldNode?.type === nodeType) {
-    oldNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
     oldNode.index = 0
     oldNode.props = newNode.props
     oldNode.sibling = undefined
@@ -179,7 +177,6 @@ function updateFragment(
     el.parent = parent
     return el
   }
-  oldNode.prev = { ...oldNode, props: { ...oldNode.props }, prev: undefined }
   oldNode.props = { ...newProps, children }
   oldNode.effectTag = EffectTag.UPDATE
   oldNode.sibling = undefined
@@ -250,11 +247,6 @@ function updateFromMap(
   ) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
-      oldChild.prev = {
-        ...oldChild,
-        props: { ...oldChild.props },
-        prev: undefined,
-      }
       oldChild.effectTag = EffectTag.UPDATE
       oldChild.props.nodeValue = newChild
       return oldChild

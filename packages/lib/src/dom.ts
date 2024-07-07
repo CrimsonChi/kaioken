@@ -308,7 +308,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     }
 
     n.effectTag = undefined
-    n.prev = { ...n, prev: undefined }
+    n.prev = { ...n, props: { ...n.props }, prev: undefined }
   }
 }
 
