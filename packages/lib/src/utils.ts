@@ -63,13 +63,15 @@ function vNodeContains(
 
 function applyRecursive(
   node: Kaioken.VNode,
-  func: (node: Kaioken.VNode) => void
+  func: (node: Kaioken.VNode) => void,
+  includeSiblings = true
 ) {
   const nodes: Kaioken.VNode[] = [node]
   const apply = (node: Kaioken.VNode) => {
     func(node)
     node.child && nodes.push(node.child)
-    node.sibling && nodes.push(node.sibling)
+    includeSiblings && node.sibling && nodes.push(node.sibling)
+    includeSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
 }

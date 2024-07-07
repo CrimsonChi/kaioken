@@ -6,7 +6,7 @@ import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { vNodeContains } from "./utils.js"
+import { applyRecursive, vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 
@@ -125,7 +125,13 @@ export class Scheduler {
   }
 
   queueDelete(node: VNode) {
-    node.effectTag = EffectTag.DELETION
+    applyRecursive(
+      node,
+      (n) => {
+        n.effectTag = EffectTag.DELETION
+      },
+      false
+    )
     if (node.props.ref) {
       node.props.ref.current = null
     }
