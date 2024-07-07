@@ -12,12 +12,11 @@
     "test": "echo \"Error: no test specified\""
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.12.5",
+    "@types/node": "^20.14.10",
     "esbuild": "^0.20.2",
-    "tsx": "^4.7.0"
+    "tsx": "^4.16.2"
   },
   "dependencies": {
     "@kaioken-core/hooks": "0.0.1-56",
