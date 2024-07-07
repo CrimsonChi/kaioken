@@ -65,10 +65,10 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   }
 
   if (el instanceof Array) {
-    return el.forEach((c) => renderToStream_internal(state, c, parent, elProps))
+    return el.forEach((c) => renderToStream_internal(state, c, parent))
   }
   if (Signal.isSignal(el)) {
-    state.stream.push(encodeHtmlEntities(el.value.toString()))
+    state.stream.push(renderToStream_internal(state, el.value, parent))
     return
   }
 

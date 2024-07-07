@@ -1,7 +1,7 @@
 import { EffectTag, elementTypes } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
-import { createElement } from "./index.js"
+import { createElement, Signal } from "./index.js"
 
 type VNode = Kaioken.VNode
 
@@ -123,6 +123,9 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
     if (key !== undefined) return null
     return updateFragment(parent, oldNode, child)
   }
+  if (Signal.isSignal(child)) {
+    return updateSlot(parent, oldNode, child.value)
+  }
   return null
 }
 
@@ -200,10 +203,14 @@ function createChild(parent: VNode, child: unknown): VNode | null {
       newNode.parent = parent
       newNode.effectTag = EffectTag.PLACEMENT
       return newNode
-    } else if (Array.isArray(child)) {
+    }
+    if (Array.isArray(child)) {
       const el = createElement(elementTypes.fragment, { children: child })
       el.parent = parent
       return el
+    }
+    if (Signal.isSignal(child)) {
+      return createChild(parent, child.value)
     }
   }
   return null

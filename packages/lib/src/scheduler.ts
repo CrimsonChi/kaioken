@@ -282,6 +282,7 @@ export class Scheduler {
 
   private updateHostComponent(vNode: VNode) {
     assertValidElementProps(vNode)
+    node.current = vNode
     if (!vNode.dom) {
       if (renderMode.current === "hydrate") {
         const dom = currentDom()!
@@ -309,22 +310,6 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children || []
       ) || undefined
+    node.current = undefined
   }
 }
-function handleTextNodeSplitting(vNode: VNode) {
-  if (vNode.sibling?.type === et.text) {
-    let prev = vNode
-    let sibling: VNode | undefined = vNode.sibling
-    while (sibling) {
-      if (sibling.type !== et.text) break
-      sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
-      prev = sibling
-      sibling = sibling.sibling
-    }
-  }
-}
-
-const currentDom = () =>
-  hydrationStack[hydrationStack.length - 1].childNodes[
-    childIndexStack[childIndexStack.length - 1]++
-  ] as HTMLElement | SVGElement | Text | undefined

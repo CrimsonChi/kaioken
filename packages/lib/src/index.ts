@@ -74,7 +74,7 @@ function createElement(
     index: 0,
     props: children.length ? { ...props, children } : props ?? {},
   }
-  if (type instanceof Function) nodeToCtxMap.set(node, ctx.current)
+  nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
@@ -115,11 +115,11 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (el instanceof Array) {
     let s = ""
     for (let i = 0; i < el.length; i++) {
-      s += renderToString_internal(el[i], parent, elProps)
+      s += renderToString_internal(el[i], parent)
     }
     return s
   }
-  if (Signal.isSignal(el)) return encodeHtmlEntities(el.value.toString())
+  if (Signal.isSignal(el)) return renderToString_internal(el.value, parent)
   if (!isVNode(el)) return String(el)
 
   el.parent = parent
