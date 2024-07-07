@@ -1,14 +1,9 @@
 import type { AppContext } from "./appContext"
 import { Component } from "./component.js"
 import { EffectTag, elementTypes as et } from "./constants.js"
-import { commitWork, createDom, updateDom } from "./dom.js"
-import {
-  childIndexStack,
-  ctx,
-  hydrationStack,
-  node,
-  renderMode,
-} from "./globals.js"
+import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
+import { ctx, node, renderMode } from "./globals.js"
+import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { vNodeContains } from "./utils.js"
@@ -226,7 +221,6 @@ export class Scheduler {
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
           hydrationStack.push(vNode.dom)
-          childIndexStack.push(0)
         }
         return vNode.child
       }
@@ -242,7 +236,6 @@ export class Scheduler {
       nextNode = nextNode.parent
       if (renderMode.current === "hydrate" && nextNode?.dom) {
         hydrationStack.pop()
-        childIndexStack.pop()
       }
     }
   }
@@ -285,20 +278,10 @@ export class Scheduler {
     node.current = vNode
     if (!vNode.dom) {
       if (renderMode.current === "hydrate") {
-        const dom = currentDom()!
-        if ((vNode.type as string) !== dom.nodeName.toLowerCase()) {
-          throw new Error(
-            `[kaioken]: Expected node of type ${vNode.type} but received ${dom.nodeName}`
-          )
-        }
-        vNode.dom = dom
-        if (vNode.type === et.text) {
-          handleTextNodeSplitting(vNode)
-        } else {
-          updateDom(vNode, vNode.dom)
-        }
+        hydrateDom(vNode)
       } else {
         vNode.dom = createDom(vNode)
+        updateDom(vNode)
       }
     }
     if (vNode.props.ref) {

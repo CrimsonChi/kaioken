@@ -36,17 +36,18 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   }
 
   mount() {
-    this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
-    this.rootNode = createElement(
-      this.root!.nodeName.toLowerCase(),
-      {},
-      createElement(this.appFunc, this.appProps)
-    )
-    this.rootNode.dom = this.root
-    this.scheduler.queueUpdate(this.rootNode)
-    this.scheduler.wake()
     return new Promise<AppContext<T>>((resolve) => {
-      this.scheduler!.nextIdle(() => {
+      if (this.mounted) return resolve(this)
+      this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
+      this.rootNode = createElement(
+        this.root!.nodeName.toLowerCase(),
+        {},
+        createElement(this.appFunc, this.appProps)
+      )
+      this.rootNode.dom = this.root
+      this.scheduler.queueUpdate(this.rootNode)
+      this.scheduler.wake()
+      this.scheduler.nextIdle(() => {
         this.mounted = true
         window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)
@@ -55,8 +56,8 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   }
 
   unmount() {
-    if (!this.mounted) return this
     return new Promise<AppContext<T>>((resolve) => {
+      if (!this.mounted) return resolve(this)
       if (!this.rootNode?.child) return resolve(this)
       this.requestDelete(this.rootNode.child)
 
@@ -74,7 +75,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     const rootChild = this.rootNode?.child
     const scheduler = this.scheduler
     if (!this.mounted || !rootChild || !scheduler)
-      return console.error(
+      throw new Error(
         "[kaioken]: failed to apply new props - ensure the app is mounted"
       )
     return new Promise<AppContext<T>>((resolve) => {

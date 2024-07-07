@@ -10,8 +10,9 @@ import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
+import { hydrationStack } from "./hydration.js"
 
-export { commitWork, createDom, updateDom }
+export { commitWork, createDom, updateDom, hydrateDom }
 
 type VNode = Kaioken.VNode
 type DomParentSearchResult = {
@@ -23,15 +24,68 @@ type CommitStackItem = [VNode, MaybeDom, DomParentSearchResult | undefined]
 
 function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
   const t = vNode.type as string
-  let dom =
-    t == elementTypes.text
-      ? document.createTextNode(vNode.props?.nodeValue ?? "")
-      : svgTags.includes(t)
-        ? document.createElementNS("http://www.w3.org/2000/svg", t)
-        : document.createElement(t)
+  return t == elementTypes.text
+    ? document.createTextNode(vNode.props.nodeValue ?? "")
+    : svgTags.includes(t)
+      ? document.createElementNS("http://www.w3.org/2000/svg", t)
+      : document.createElement(t)
+}
 
-  vNode.dom = updateDom(vNode, dom)
-  return dom
+function updateDom(node: VNode) {
+  if (node.instance?.doNotModifyDom) return
+  const dom = node.dom as HTMLElement | SVGElement | Text
+  const prevProps: Record<string, any> = node.prev?.props ?? {}
+  const nextProps: Record<string, any> = node.props ?? {}
+
+  const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
+
+  keys.forEach((key) => {
+    if (key === "innerHTML") {
+      return setInnerHTML(node.dom as any, nextProps[key], prevProps[key])
+    }
+
+    if (propFilters.internalProps.includes(key)) return
+
+    if (
+      propFilters.isEvent(key) &&
+      (prevProps[key] !== nextProps[key] || renderMode.current === "hydrate")
+    ) {
+      const eventType = key.toLowerCase().substring(2)
+      if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
+      if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
+      return
+    }
+
+    if (!(dom instanceof Text) && prevProps[key] !== nextProps[key]) {
+      setProp(dom, key, nextProps[key], prevProps[key])
+      return
+    }
+    if (node.prev?.props && prevProps.nodeValue !== nextProps.nodeValue) {
+      dom.nodeValue = nextProps.nodeValue
+    }
+  })
+}
+
+function hydrateDom(vNode: VNode) {
+  const dom = hydrationStack.nextChild()
+  const nodeName = dom?.nodeName.toLowerCase()
+  if ((vNode.type as string) !== nodeName) {
+    throw new Error(
+      `[kaioken]: Hydration mismatch - expected node of type ${vNode.type} but received ${nodeName}`
+    )
+  }
+  vNode.dom = dom
+  if (vNode.type !== elementTypes.text) {
+    updateDom(vNode)
+    return
+  }
+  let prev = vNode
+  let sibling = vNode.sibling
+  while (sibling && sibling.type === elementTypes.text) {
+    sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
+    prev = sibling
+    sibling = sibling.sibling
+  }
 }
 
 function handleAttributeRemoval(
@@ -133,42 +187,6 @@ function setStyleProp(
   }
 }
 
-function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
-  if (node.instance?.doNotModifyDom) return node.dom
-  const prevProps: Record<string, any> = node.prev?.props ?? {}
-  const nextProps: Record<string, any> = node.props ?? {}
-
-  const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
-
-  keys.forEach((key) => {
-    if (key === "innerHTML") {
-      return setInnerHTML(dom as any, nextProps[key], prevProps[key])
-    }
-
-    if (propFilters.internalProps.includes(key)) return
-
-    if (
-      propFilters.isEvent(key) &&
-      (prevProps[key] !== nextProps[key] || renderMode.current === "hydrate")
-    ) {
-      const eventType = key.toLowerCase().substring(2)
-      if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
-      if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
-      return
-    }
-
-    if (!(dom instanceof Text) && prevProps[key] !== nextProps[key]) {
-      setProp(dom, key, nextProps[key], prevProps[key])
-      return
-    }
-    if (node.prev?.props && prevProps.nodeValue !== nextProps.nodeValue) {
-      dom.nodeValue = nextProps.nodeValue
-    }
-  })
-
-  return dom
-}
-
 function getDomParent(node: VNode): DomParentSearchResult {
   let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
   let domParent = domParentNode?.dom
@@ -192,10 +210,10 @@ function getDomParent(node: VNode): DomParentSearchResult {
 
 function placeDom(
   vNode: VNode,
-  dom: HTMLElement | SVGElement | Text,
   prevSiblingDom: MaybeDom,
   mntParent: DomParentSearchResult
 ) {
+  const dom = vNode.dom as HTMLElement | SVGElement | Text
   if (prevSiblingDom) {
     prevSiblingDom.after(dom)
     return
@@ -248,7 +266,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     const dom = n.dom
 
     if (dom) {
-      mntParent = commitDom(n, dom, prevSiblingDom, mntParent) || mntParent
+      mntParent = commitDom(n, prevSiblingDom, mntParent) || mntParent
     } else if (n.effectTag === EffectTag.PLACEMENT) {
       // propagate the effect to children
       let c = n.child
@@ -296,10 +314,10 @@ function commitWork(ctx: AppContext, vNode: VNode) {
 
 function commitDom(
   n: VNode,
-  dom: HTMLElement | SVGElement | Text,
   prevSiblingDom: MaybeDom,
   mntParent: DomParentSearchResult | undefined
 ) {
+  const dom = n.dom as HTMLElement | SVGElement | Text
   if (renderMode.current === "hydrate") {
     if (n.props.ref) {
       n.props.ref.current = dom
@@ -309,10 +327,10 @@ function commitDom(
   if (n.instance?.doNotModifyDom) return
   if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
     const p = mntParent ?? getDomParent(n)
-    placeDom(n, dom, prevSiblingDom, p)
+    placeDom(n, prevSiblingDom, p)
     return p
   } else if (n.effectTag === EffectTag.UPDATE) {
-    updateDom(n, dom)
+    updateDom(n)
   }
   return
 }
