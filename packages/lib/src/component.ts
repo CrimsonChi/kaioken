@@ -1,6 +1,5 @@
 import { componentSymbol } from "./constants.js"
-import type { AppContext } from "./appContext.js"
-import { node, nodeToCtxMap } from "./globals.js"
+import { node } from "./globals.js"
 
 export { Component }
 
@@ -10,18 +9,16 @@ abstract class Component<T = Record<string, unknown>> {
   state = {} as Record<string, unknown>
   props: T
   vNode: Kaioken.VNode
-  ctx: AppContext
   constructor(props: T) {
     this.props = props
     this.vNode = node.current!
-    this.ctx = nodeToCtxMap.get(this.vNode)!
   }
   abstract render(): JSX.Element
 
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {
-      queueMicrotask(() => this.ctx.requestUpdate(this.vNode))
+      queueMicrotask(() => this.vNode.ctx.requestUpdate(this.vNode))
     }
   }
 

@@ -1,4 +1,3 @@
-import { nodeToCtxMap } from "./globals.js"
 import { shouldExecHook, useHook } from "./hooks/utils.js"
 import { shallowCompare } from "./utils.js"
 
@@ -70,7 +69,7 @@ function createStore<T, U extends MethodFactory<T>>(
         }
         if (!computeChanged) return
       }
-      nodeToCtxMap.get(n)!.requestUpdate(n)
+      n.ctx.requestUpdate(n)
     })
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>

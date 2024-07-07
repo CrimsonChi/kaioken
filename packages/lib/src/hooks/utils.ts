@@ -1,12 +1,19 @@
-import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
+import { ctx, node, renderMode } from "../globals.js"
 
 export {
   cleanupHook,
   depsRequireChange,
   useHook,
   shouldExecHook,
+  useCurrentNode,
   type HookCallback,
   type HookCallbackState,
+}
+
+const useCurrentNode = () => {
+  const n = node.current
+  if (!n) error_hookMustBeCalledTopLevel("useCurrentNode")
+  return n
 }
 
 const shouldExecHook = () => {
@@ -24,22 +31,21 @@ type HookCallbackState<T> = {
 }
 type HookCallback<T, U> = (state: HookCallbackState<T>) => U
 
+let currentHookName: string | null = null
+
 function useHook<T, U>(
   hookName: string,
   hookData: Hook<T>,
   callback: HookCallback<T, U>
 ): U {
+  if (currentHookName !== null) {
+    throw new Error(
+      `[kaioken]: nested primitive 'useHook' calls are not supported. "${hookName}" was called inside "${currentHookName}".`
+    )
+  }
   const vNode = node.current
-  if (!vNode)
-    throw new Error(
-      `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another hook.`
-    )
-  const ctx = nodeToCtxMap.get(vNode)
-  if (!ctx)
-    throw new Error(
-      `[kaioken]: an unknown error occured during execution of hook "${hookName}" (could not ascertain ctx). Seek help from the developers.`
-    )
-
+  if (!vNode) error_hookMustBeCalledTopLevel(hookName)
+  const ctx = vNode.ctx
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook = oldHook ?? hookData
 
@@ -50,16 +56,27 @@ function useHook<T, U>(
     )
   }
 
+  currentHookName = hookName
+
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
 
-  return callback({
+  const res = callback({
     hook,
     oldHook,
     update: () => ctx.requestUpdate(vNode),
     queueEffect: ctx.queueEffect.bind(ctx),
     vNode,
   })
+
+  currentHookName = null
+  return res
+}
+
+function error_hookMustBeCalledTopLevel(hookName: string): never {
+  throw new Error(
+    `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another composite hook.`
+  )
 }
 
 function cleanupHook(hook: { cleanup?: () => void }) {

@@ -1,4 +1,4 @@
-import { node, nodeToCtxMap } from "./globals.js"
+import { node } from "./globals.js"
 import type { AppContext } from "./appContext"
 
 export {
@@ -21,8 +21,15 @@ export {
 
 const noop = Object.freeze(() => {})
 
+let hasWarned_getNodeAppContext = false
 function getNodeAppContext(node: Kaioken.VNode): AppContext | undefined {
-  return nodeToCtxMap.get(node)
+  if (!hasWarned_getNodeAppContext) {
+    hasWarned_getNodeAppContext = true
+    console.warn(
+      "[kaioken]: getNodeAppContext is deprecated and will be removed in future versions. Use the node.ctx field instead."
+    )
+  }
+  return node.ctx
 }
 
 function getCurrentNode() {

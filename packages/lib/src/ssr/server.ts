@@ -1,7 +1,7 @@
 import { Readable } from "node:stream"
 import { Component, createElement } from "../index.js"
 import { AppContext } from "../appContext.js"
-import { renderMode, ctx, node, contexts, nodeToCtxMap } from "../globals.js"
+import { renderMode, ctx, node, contexts } from "../globals.js"
 
 import {
   encodeHtmlEntities,
@@ -97,7 +97,6 @@ function renderToStream_internal<T extends Record<string, unknown>>(
       })(props)
       return renderToStream_internal(state, el.instance.render(), el, props)
     }
-    nodeToCtxMap.set(el, ctx.current)
     return renderToStream_internal(state, type(props), el, props)
   }
 

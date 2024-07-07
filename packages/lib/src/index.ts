@@ -9,7 +9,7 @@ import {
 } from "./utils.js"
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
-import { contexts, ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
+import { contexts, ctx, node, renderMode } from "./globals.js"
 import { KaiokenGlobalContext } from "./globalContext.js"
 import { assertValidElementProps } from "./props.js"
 import { Signal } from "./signal.js"
@@ -70,11 +70,11 @@ function createElement(
   ...children: unknown[]
 ): VNode {
   const node: VNode = {
+    ctx: ctx.current,
     type,
     index: 0,
     props: children.length ? { ...props, children } : props ?? {},
   }
-  nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
@@ -138,7 +138,6 @@ function renderToString_internal<T extends Record<string, unknown>>(
       })(props)
       return renderToString_internal(instance.render(), el, props)
     }
-    nodeToCtxMap.set(el, ctx.current)
     return renderToString_internal(type(props), el, props)
   }
 

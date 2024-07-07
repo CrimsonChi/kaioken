@@ -1,17 +1,15 @@
 import { AppContext, useEffect } from "kaioken"
-import { getCurrentNode, getNodeAppContext } from "kaioken/utils"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { NodeListItem } from "./NodeListItem"
+import { useRequestUpdate } from "../hooks/useRequestUpdate"
 
 export function AppView() {
   const { value: app } = useDevtoolsStore((state) => state.selectedApp)
-
-  const node = getCurrentNode()
-  const ctx = getNodeAppContext(node!)
+  const requestUpdate = useRequestUpdate()
 
   function handleUpdate(appCtx: AppContext) {
-    if (appCtx !== app || !node) return
-    ctx?.requestUpdate(node)
+    if (appCtx !== app) return
+    requestUpdate()
   }
   useEffect(() => {
     kaiokenGlobal?.on("update", handleUpdate)

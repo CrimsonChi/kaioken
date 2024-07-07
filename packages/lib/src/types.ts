@@ -9,6 +9,7 @@ import type {
   SvgElementAttributes,
   SvgGlobalAttributes,
 } from "./types.dom"
+import type { AppContext } from "./appContext"
 
 export type { ElementProps }
 
@@ -67,7 +68,7 @@ declare global {
       ref?: Kaioken.Ref<BaseElement>
       key?: JSX.ElementKey
       children?: JSX.Children
-      innerHTML?: string | number | Kaioken.Signal<any>
+      innerHTML?: string | number | Kaioken.Signal<string | number>
     }
   }
   export namespace Kaioken {
@@ -105,6 +106,7 @@ declare global {
         key?: JSX.ElementKey
         ref?: Kaioken.Ref<unknown>
       }
+      ctx: AppContext
       index: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]

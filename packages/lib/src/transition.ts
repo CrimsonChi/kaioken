@@ -35,7 +35,7 @@ export class Transition extends Component<TransitionProps> {
 
   componentDidMount(): void {
     if (this.props.in) {
-      this.ctx.scheduler?.nextIdle(() => {
+      this.vNode.ctx.scheduler?.nextIdle(() => {
         this.setTransitionState("entering")
         this.queueStateChange("entered")
       })
@@ -70,7 +70,7 @@ export class Transition extends Component<TransitionProps> {
       (transitionState === "exited" || transitionState === "entered") &&
       this.props.onTransitionEnd
     ) {
-      this.ctx.scheduler?.nextIdle(() =>
+      this.vNode.ctx.scheduler?.nextIdle(() =>
         this.props.onTransitionEnd!(transitionState)
       )
     }
