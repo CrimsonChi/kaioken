@@ -265,7 +265,7 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     let [n, prevSiblingDom, mntParent] = stack.pop()!
     const dom = n.dom
 
-    if (dom) {
+    if (dom && n.effectTag !== EffectTag.DELETION) {
       mntParent = commitDom(n, prevSiblingDom, mntParent) || mntParent
     } else if (n.effectTag === EffectTag.PLACEMENT) {
       // propagate the effect to children
