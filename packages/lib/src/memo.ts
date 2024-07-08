@@ -1,9 +1,12 @@
 import { createElement } from "./index.js"
 
-type Rec = Record<string, unknown>
-
-function _arePropsEqual(prevProps: Rec, nextProps: Rec) {
-  return JSON.stringify(prevProps) === JSON.stringify(nextProps)
+function _arePropsEqual(
+  prevProps: Record<string, unknown>,
+  nextProps: Record<string, unknown>
+) {
+  return Object.keys(prevProps).every(
+    ([key]) => prevProps[key] === nextProps[key]
+  )
 }
 
 export function memo<Props extends Record<string, unknown>>(
