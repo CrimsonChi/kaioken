@@ -1,5 +1,6 @@
 import { EffectTag } from "./constants.js"
-import { contexts } from "./globals.js"
+import { contexts, renderMode } from "./globals.js"
+import { hydrationStack } from "./hydration.js"
 import { createElement } from "./index.js"
 import { Scheduler } from "./scheduler.js"
 
@@ -39,6 +40,9 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     return new Promise<AppContext<T>>((resolve) => {
       if (this.mounted) return resolve(this)
       this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
+      if (renderMode.current === "hydrate") {
+        hydrationStack.captureEvents(this.root!, this.scheduler)
+      }
       this.rootNode = createElement(
         this.root!.nodeName.toLowerCase(),
         {},
