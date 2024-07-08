@@ -1,4 +1,4 @@
-import { shouldExecHook, useHook } from "./hooks/utils.js"
+import { sideEffectsEnabled, useHook } from "./hooks/utils.js"
 import { shallowCompare } from "./utils.js"
 
 export { createStore }
@@ -78,7 +78,7 @@ function createStore<T, U extends MethodFactory<T>>(
     sliceFn?: null | ((state: T) => R),
     equality?: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ) {
-    if (!shouldExecHook()) {
+    if (!sideEffectsEnabled()) {
       if (sliceFn) {
         return { value: sliceFn(value), ...methods }
       }
