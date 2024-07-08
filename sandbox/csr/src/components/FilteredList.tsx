@@ -41,7 +41,7 @@ const albums: Album[] = [
 ]
 
 export function FilteredList() {
-  const [inputRef, inputValue] = useModel<HTMLInputElement, string>("")
+  const [inputRef, inputValue] = useModel("")
   useEffect(() => {
     inputRef.current?.focus()
   }, [])

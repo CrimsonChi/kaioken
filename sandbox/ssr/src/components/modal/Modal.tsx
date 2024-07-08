@@ -9,7 +9,7 @@ type ModalProps = {
 }
 
 export function Modal({ state, close, children }: ModalProps) {
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
   if (state == "exited") return null
   const opacity = state === "entered" ? "1" : "0"
   const scale = state === "entered" ? 1 : 0.85

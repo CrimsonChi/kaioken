@@ -10,7 +10,7 @@ function handleDragOver(e: DragEvent) {
 }
 
 export default function App() {
-  const bgRef = useRef<HTMLDivElement>(null)
+  const bgRef = useRef<HTMLDivElement | null>(null)
   const {
     value: { popupWindow, dragging, corner },
     setPopupWindow,

@@ -36,10 +36,7 @@ export function App() {
 }
 
 function TodoList() {
-  const [inputRef, inputValue, setInputValue] = useModel<
-    HTMLInputElement,
-    string
-  >("")
+  const [inputRef, inputValue, setInputValue] = useModel("")
   const [items, setItems] = useState<{ text: string }[]>([
     { text: "buy coffee" },
     { text: "walk the dog" },
