@@ -46,7 +46,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       )
       this.rootNode.dom = this.root
       this.scheduler.queueUpdate(this.rootNode)
-      this.scheduler.wake()
       this.scheduler.nextIdle(() => {
         this.mounted = true
         window.__kaioken?.emit("mount", this as AppContext<any>)
