@@ -65,7 +65,7 @@ declare global {
       | Kaioken.Signal<any>
 
     type ElementAttributes = {
-      ref?: Kaioken.Ref<BaseElement>
+      ref?: Kaioken.Ref<BaseElement | null>
       key?: JSX.ElementKey
       children?: JSX.Children
       innerHTML?: string | number | Kaioken.Signal<string | number>
@@ -78,7 +78,7 @@ declare global {
     }
     type Context<T> = {
       Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
-      default: () => T | null
+      default: () => T
     }
 
     type FC<T = {}> = (props: FCProps<T>) => JSX.Element
@@ -90,7 +90,7 @@ declare global {
       name?: string
     }
 
-    type Ref<T> = { current: T | null }
+    type Ref<T> = { current: T }
 
     type StateSetter<T> = T | ((prev: T) => T)
 
