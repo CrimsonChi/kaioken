@@ -1,4 +1,4 @@
-import { useHook } from "./utils.js"
+import { Hook, HookCallbackState, useHook } from "./utils.js"
 import { contextDataSymbol } from "../constants.js"
 
 type ContextNode<T> = Kaioken.VNode & {
@@ -7,45 +7,54 @@ type ContextNode<T> = Kaioken.VNode & {
   }
 }
 
+type UseContextHook<T> = Hook<{
+  ctxNode: ContextNode<T> | undefined
+  context: Kaioken.Context<T>
+}>
+
 export function useContext<T>(context: Kaioken.Context<T>): T {
   return useHook(
     "useContext",
-    {
-      ctxNode: undefined as ContextNode<T> | undefined,
-    },
-    ({ hook, oldHook, vNode }) => {
-      if (!oldHook) {
-        hook.debug = () => ({
-          value: hook.ctxNode
-            ? hook.ctxNode.props[contextDataSymbol].value
-            : context.default(),
-        })
-
-        let n = vNode.parent
-        while (n) {
-          if (contextDataSymbol in n.props) {
-            const ctxNode = n as ContextNode<T>
-            if (ctxNode.props[contextDataSymbol].ctx === context) {
-              hook.ctxNode = ctxNode
-              return hook.ctxNode.props[contextDataSymbol].value
-            }
-          }
-          n = n.parent
-        }
-      }
-      if (!hook.ctxNode) {
-        warnProviderNotFound()
-        return context.default() as T
-      }
-      return hook.ctxNode.props[contextDataSymbol].value
-    }
+    { ctxNode: undefined, context },
+    useContextCallback as typeof useContextCallback<T>
   )
 }
 
-let hasWarned = false
-function warnProviderNotFound() {
-  if (!hasWarned) {
-    console.warn(`[kaioken]: Unable to find context provider`, new Error())
-    hasWarned = true
+const useContextCallback = <T>({
+  hook,
+  oldHook,
+  vNode,
+}: HookCallbackState<UseContextHook<T>>) => {
+  if (!oldHook) {
+    hook.debug = () => ({
+      value: hook.ctxNode
+        ? hook.ctxNode.props[contextDataSymbol].value
+        : hook.context.default(),
+    })
+
+    let n = vNode.parent
+    while (n) {
+      if (contextDataSymbol in n.props) {
+        const ctxNode = n as ContextNode<T>
+        if (ctxNode.props[contextDataSymbol].ctx === hook.context) {
+          hook.ctxNode = ctxNode
+          return hook.ctxNode.props[contextDataSymbol].value
+        }
+      }
+      n = n.parent
+    }
+  }
+  if (!hook.ctxNode) {
+    warnProviderNotFound(hook.context)
+    return hook.context.default()
+  }
+  return hook.ctxNode.props[contextDataSymbol].value
+}
+
+const contextsNotFound = new Set<Kaioken.Context<any>>()
+function warnProviderNotFound(ctx: Kaioken.Context<any>) {
+  if (!contextsNotFound.has(ctx)) {
+    contextsNotFound.add(ctx)
+    console.warn("[kaioken]: Unable to find context provider")
   }
 }

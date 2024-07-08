@@ -1,5 +1,5 @@
 import { noop } from "../utils.js"
-import { depsRequireChange, shouldExecHook, useHook } from "./utils.js"
+import { depsRequireChange, sideEffectsEnabled, useHook } from "./utils.js"
 
 type UseAsyncResult<T> = (
   | /** loading*/ {
@@ -33,7 +33,7 @@ export function useAsync<T>(
   func: () => Promise<T>,
   deps: unknown[]
 ): UseAsyncResult<T> {
-  if (!shouldExecHook())
+  if (!sideEffectsEnabled())
     return {
       data: null,
       loading: true,

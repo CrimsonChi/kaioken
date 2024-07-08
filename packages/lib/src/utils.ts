@@ -1,5 +1,6 @@
-import { node } from "./globals.js"
+import { node, renderMode } from "./globals.js"
 import type { AppContext } from "./appContext"
+import { warnDeprecated } from "./warning.js"
 
 export {
   isVNode,
@@ -11,6 +12,7 @@ export {
   shallowCompare,
   getNodeAppContext,
   getCurrentNode,
+  sideEffectsEnabled,
   encodeHtmlEntities,
   noop,
   propFilters,
@@ -25,11 +27,13 @@ let hasWarned_getNodeAppContext = false
 function getNodeAppContext(node: Kaioken.VNode): AppContext | undefined {
   if (!hasWarned_getNodeAppContext) {
     hasWarned_getNodeAppContext = true
-    console.warn(
-      "[kaioken]: getNodeAppContext is deprecated and will be removed in future versions. Use the node.ctx field instead."
-    )
+    warnDeprecated("getNodeAppContext", "", "Use the node.ctx field instead")
   }
   return node.ctx
+}
+
+function sideEffectsEnabled() {
+  return renderMode.current === "dom" || renderMode.current === "hydrate"
 }
 
 function getCurrentNode() {

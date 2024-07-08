@@ -1,18 +1,23 @@
 import { noop } from "../utils.js"
-import { shouldExecHook, useHook } from "./utils.js"
+import { sideEffectsEnabled, useHook } from "./utils.js"
+
+const createUseStateHookState = <T>() => ({
+  state: undefined as T,
+  dispatch: noop as (value: Kaioken.StateSetter<T>) => void,
+})
 
 export function useState<T>(
   initial: T | (() => T)
 ): [T, (value: Kaioken.StateSetter<T>) => void] {
-  if (!shouldExecHook()) {
+  if (!sideEffectsEnabled()) {
     return [initial instanceof Function ? initial() : initial, noop]
   }
 
   return useHook(
     "useState",
-    {
-      state: undefined as T,
-      dispatch: noop as (value: Kaioken.StateSetter<T>) => void,
+    createUseStateHookState as any as {
+      state: T
+      dispatch: (value: Kaioken.StateSetter<T>) => void
     },
     ({ hook, oldHook, update }) => {
       if (!oldHook) {
@@ -27,7 +32,10 @@ export function useState<T>(
         }
       }
 
-      return [hook.state, hook.dispatch]
+      return [hook.state, hook.dispatch] as [
+        T,
+        (value: Kaioken.StateSetter<T>) => void,
+      ]
     }
   )
 }

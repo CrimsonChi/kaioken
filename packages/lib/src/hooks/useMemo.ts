@@ -1,7 +1,7 @@
-import { depsRequireChange, shouldExecHook, useHook } from "./utils.js"
+import { depsRequireChange, sideEffectsEnabled, useHook } from "./utils.js"
 
 export function useMemo<T>(factory: () => T, deps: unknown[]): T {
-  if (!shouldExecHook()) return factory()
+  if (!sideEffectsEnabled()) return factory()
   return useHook(
     "useMemo",
     { deps, value: undefined as T },

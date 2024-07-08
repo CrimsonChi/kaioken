@@ -1,10 +1,10 @@
-import { depsRequireChange, useHook, shouldExecHook } from "./utils.js"
+import { depsRequireChange, useHook, sideEffectsEnabled } from "./utils.js"
 
-export function useCallback<T extends (...args: any[]) => any>(
+export function useCallback<T extends Function>(
   callback: T,
   deps: unknown[]
 ): T {
-  if (!shouldExecHook()) return callback
+  if (!sideEffectsEnabled()) return callback
 
   return useHook("useCallback", { callback, deps }, ({ hook, oldHook }) => {
     if (depsRequireChange(deps, oldHook?.deps)) {

@@ -1,11 +1,11 @@
 import { noop } from "../utils.js"
-import { shouldExecHook, useHook } from "./utils.js"
+import { sideEffectsEnabled, useHook } from "./utils.js"
 
 export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
   state: T
 ): [T, (action: A) => void] {
-  if (!shouldExecHook()) return [state, noop]
+  if (!sideEffectsEnabled()) return [state, noop]
 
   return useHook(
     "useReducer",
@@ -20,7 +20,7 @@ export function useReducer<T, A>(
           }
         }
       }
-      return [hook.state, hook.dispatch]
+      return [hook.state, hook.dispatch] as [T, (action: A) => void]
     }
   )
 }
