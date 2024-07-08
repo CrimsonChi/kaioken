@@ -223,6 +223,11 @@ export class Scheduler {
         }
       } catch (error) {
         console.error(error)
+        window.__kaioken?.emit(
+          "error",
+          this.appCtx,
+          error instanceof Error ? error : new Error(String(error))
+        )
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {

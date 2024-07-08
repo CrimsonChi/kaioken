@@ -3,24 +3,50 @@ import { contexts } from "./globals.js"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
-type GlobalKaiokenEvent = "mount" | "unmount" | "update"
+type Evt =
+  | {
+      name: "mount"
+      data?: undefined
+    }
+  | {
+      name: "unmount"
+      data?: undefined
+    }
+  | {
+      name: "update"
+      data?: undefined
+    }
+  | {
+      name: "error"
+      data: Error
+    }
+
+type GlobalKaiokenEvent = Evt["name"]
 
 class KaiokenGlobalContext {
-  private listeners: Map<GlobalKaiokenEvent, Set<(ctx: AppContext) => void>> =
-    new Map()
+  private listeners: Map<
+    GlobalKaiokenEvent,
+    Set<(ctx: AppContext, data?: Evt["data"]) => void>
+  > = new Map()
   get apps() {
     return contexts
   }
-  emit(event: GlobalKaiokenEvent, ctx: AppContext) {
-    this.listeners.get(event)?.forEach((cb) => cb(ctx))
+  emit<T extends Evt>(event: T["name"], ctx: AppContext, data?: T["data"]) {
+    this.listeners.get(event)?.forEach((cb) => cb(ctx, data))
   }
-  on(event: GlobalKaiokenEvent, callback: (ctx: AppContext) => void) {
+  on<T extends Evt>(
+    event: T["name"],
+    callback: (ctx: AppContext, data: T["data"]) => void
+  ) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set())
     }
     this.listeners.get(event)!.add(callback)
   }
-  off(event: GlobalKaiokenEvent, callback: (ctx: AppContext) => void) {
+  off<T extends Evt>(
+    event: T["name"],
+    callback: (ctx: AppContext, data?: T["data"]) => void
+  ) {
     if (!this.listeners.has(event)) {
       return
     }
