@@ -22,11 +22,10 @@ type UseAsyncResult<T> = (
 }
 
 export class UseAsyncError extends Error {
-  rawValue: any
   constructor(message: unknown) {
     super(message instanceof Error ? message.message : String(message))
     this.name = "UseAsyncError"
-    this.rawValue = message
+    this.cause = message
   }
 }
 
