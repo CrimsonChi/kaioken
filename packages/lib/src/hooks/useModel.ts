@@ -1,10 +1,14 @@
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 
+type ValueSetter<U extends string | number | boolean> = (
+  newValue: U extends string ? string : U extends number ? number : U
+) => void
+
 export function useModel<
   T extends HTMLElement,
   U extends string | number | boolean = string,
->(initial: U): [Kaioken.Ref<T | null>, U, (newValue: U) => void] {
+>(initial: U): [Kaioken.Ref<T | null>, U, ValueSetter<U>] {
   if (!sideEffectsEnabled()) {
     return [{ current: null }, initial, noop]
   }
@@ -44,7 +48,7 @@ export function useModel<
       return [hook.ref, hook.value, hook.dispatch] as [
         Kaioken.Ref<T>,
         U,
-        (newValue: U) => void,
+        ValueSetter<U>,
       ]
     }
   )

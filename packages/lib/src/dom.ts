@@ -124,6 +124,14 @@ export function setDomAttribute(dom: Element, key: string, value: unknown) {
   dom.setAttribute(key, isBoolAttr ? "" : String(value))
 }
 
+const explicitValueElementTags = ["INPUT", "TEXTAREA", "SELECT"]
+
+const needsExplicitValueSet = (
+  dom: HTMLElement | SVGElement
+): dom is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
+  return explicitValueElementTags.indexOf(dom.nodeName) > -1
+}
+
 function setProp(
   dom: HTMLElement | SVGElement,
   key: string,
@@ -131,6 +139,11 @@ function setProp(
   prev: unknown
 ) {
   if (key === "style") return setStyleProp(dom, value, prev)
+  if (key === "value" && needsExplicitValueSet(dom)) {
+    dom.value = String(value)
+    return
+  }
+
   setDomAttribute(dom, propToHtmlAttr(key), value)
 }
 
