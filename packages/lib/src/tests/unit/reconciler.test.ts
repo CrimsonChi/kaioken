@@ -20,6 +20,7 @@ describe("reconciler", () => {
     node.child = reconcileChildren(node, null, [
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
     ])!
+    // node.child.child = {type: "fragment", props: {children: [...items.map(i => kaioken.createElement("div", {key: i}, i))]}}
 
     const commitFragmentChildren = () => {
       let n: Kaioken.VNode | undefined = node.child!.child
@@ -32,7 +33,7 @@ describe("reconciler", () => {
       node.child!.child =
         reconcileChildren(
           node.child!,
-          node.child!.child!,
+          node.child!.child || null,
           items.map((i) => kaioken.createElement("div", { key: i }, i))
         ) || undefined
     }
