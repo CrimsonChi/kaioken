@@ -54,6 +54,12 @@ describe("reconciler", () => {
         )
         c = c?.sibling
       }
+
+      assert.strictEqual(
+        c,
+        undefined,
+        `[${opName}]: should be no more children`
+      )
     }
 
     reconcileFragmentChildren()
