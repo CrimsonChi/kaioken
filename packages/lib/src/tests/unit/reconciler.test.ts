@@ -8,15 +8,14 @@ import { shuffle } from "./utils.js"
 
 describe("reconciler", () => {
   it("correctly handles reordered Array children with keys", (t) => {
-    const items = "abcdefghijklmnopqrstuvwxyz".split("")
-    const node = kaioken.createElement("div", null)
-
     ctx.current = new kaioken.AppContext(() => null)
     const mockRequestDeleteFn = t.mock.fn<(node: Kaioken.VNode) => void>(
       () => {}
     )
     ctx.current.requestDelete = mockRequestDeleteFn
 
+    const items = "abcdefghijklmnopqrstuvwxyz".split("")
+    const node = kaioken.createElement("div")
     node.child = reconcileChildren(node, null, [
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
     ])!
