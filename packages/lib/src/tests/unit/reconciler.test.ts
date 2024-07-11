@@ -1,10 +1,9 @@
 import { describe, it } from "node:test"
 import assert from "node:assert"
-//import { renderToString } from "../../index.js"
 import { reconcileChildren } from "../../reconciler.js"
 import { ctx } from "../../globals.js"
 import * as kaioken from "../../index.js"
-import { EffectTag, elementTypes } from "../../constants.js"
+import { EffectTag } from "../../constants.js"
 import { shuffle } from "./utils.js"
 
 describe("reconciler", () => {
@@ -18,17 +17,17 @@ describe("reconciler", () => {
     )
     ctx.current.requestDelete = mockRequestDeleteFn
 
-    node.child =
-      reconcileChildren(node, null, [
-        items.map((i) => kaioken.createElement("div", { key: i }, i)),
-      ]) || undefined
+    node.child = reconcileChildren(node, null, [
+      items.map((i) => kaioken.createElement("div", { key: i }, i)),
+    ])!
 
-    assert.strictEqual(
-      node.child?.type,
-      elementTypes.fragment,
-      "node's child is a fragment"
-    )
-
+    const commitFragmentChildren = () => {
+      let n: Kaioken.VNode | undefined = node.child!.child
+      while (n) {
+        n.prev = { ...n, props: { ...n.props }, prev: undefined }
+        n = n.sibling
+      }
+    }
     const reconcileFragmentChildren = () => {
       node.child!.child =
         reconcileChildren(
@@ -36,15 +35,8 @@ describe("reconciler", () => {
           node.child!.child!,
           items.map((i) => kaioken.createElement("div", { key: i }, i))
         ) || undefined
-
-      // pseudo 'commit' step
-      let n: Kaioken.VNode | undefined = node.child!.child
-      while (n) {
-        n.prev = { ...n, props: { ...n.props }, prev: undefined }
-        n = n.sibling
-      }
     }
-    const ensureFragmentChildKeys = (opName: string) => {
+    const assertFragmentChildStates = (opName: string) => {
       let c: Kaioken.VNode | undefined = node.child!.child!
       for (let i = 0; i < items.length; i++) {
         assert.strictEqual(
@@ -52,11 +44,12 @@ describe("reconciler", () => {
           items[i],
           `[${opName}]: key for ${i}th child should be ${items[i]}`
         )
-        if (c!.prev!.index < i) {
+        const prev = c?.prev
+        if (prev === undefined || prev.index < i) {
           assert.strictEqual(
             c!.effectTag,
             EffectTag.PLACEMENT,
-            `[${opName}]: effectTag for ${i}th child whos index is < prev index should be "placement"`
+            `[${opName}]: effectTag for ${i}th child should be "placement"`
           )
         }
         c = c!.sibling
@@ -70,15 +63,19 @@ describe("reconciler", () => {
     }
 
     reconcileFragmentChildren()
+    assertFragmentChildStates("initial")
+    commitFragmentChildren()
 
     for (let i = 0; i < 20; i++) {
       items.reverse()
       reconcileFragmentChildren()
-      ensureFragmentChildKeys("list_reversal")
+      assertFragmentChildStates("list_reversal")
+      commitFragmentChildren()
 
       shuffle(items)
       reconcileFragmentChildren()
-      ensureFragmentChildKeys("list_randomization")
+      assertFragmentChildStates("list_randomization")
+      commitFragmentChildren()
 
       // should not have any more delete calls yet
       assert.strictEqual(
@@ -89,7 +86,8 @@ describe("reconciler", () => {
 
       items.splice(Math.floor(Math.random() * items.length), 1)
       reconcileFragmentChildren()
-      ensureFragmentChildKeys("item_removal")
+      assertFragmentChildStates("item_removal")
+      commitFragmentChildren()
 
       // should have called delete i + 1 times
       assert.strictEqual(
