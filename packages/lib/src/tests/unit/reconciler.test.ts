@@ -38,14 +38,14 @@ describe("reconciler", () => {
         ) || undefined
 
       // pseudo 'commit' step
-      let n: Kaioken.VNode | undefined = node.child?.child
+      let n: Kaioken.VNode | undefined = node.child!.child
       while (n) {
         n.prev = { ...n, props: { ...n.props }, prev: undefined }
         n = n.sibling
       }
     }
     const ensureFragmentChildKeys = (opName: string) => {
-      let c: Kaioken.VNode | undefined = node.child?.child
+      let c: Kaioken.VNode | undefined = node.child!.child!
       for (let i = 0; i < items.length; i++) {
         assert.strictEqual(
           c!.props.key,
@@ -59,7 +59,7 @@ describe("reconciler", () => {
             `[${opName}]: effectTag for ${i}th child whos index is < prev index should be "placement"`
           )
         }
-        c = c?.sibling
+        c = c!.sibling
       }
 
       assert.strictEqual(
