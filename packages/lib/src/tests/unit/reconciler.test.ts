@@ -4,7 +4,7 @@ import assert from "node:assert"
 import { reconcileChildren } from "../../reconciler.js"
 import { ctx } from "../../globals.js"
 import * as kaioken from "../../index.js"
-import { elementTypes } from "../../constants.js"
+import { EffectTag, elementTypes } from "../../constants.js"
 import { shuffle } from "./utils.js"
 
 describe("reconciler", () => {
@@ -48,10 +48,17 @@ describe("reconciler", () => {
       let c: Kaioken.VNode | undefined = node.child?.child
       for (let i = 0; i < items.length; i++) {
         assert.strictEqual(
-          c?.props.key,
+          c!.props.key,
           items[i],
-          `[${opName}]: key for ${i}th should be ${items[i]}`
+          `[${opName}]: key for ${i}th child should be ${items[i]}`
         )
+        if (c!.prev!.index < i) {
+          assert.strictEqual(
+            c!.effectTag,
+            EffectTag.PLACEMENT,
+            `[${opName}]: effectTag for ${i}th child whos index is < prev index should be "placement"`
+          )
+        }
         c = c?.sibling
       }
 
