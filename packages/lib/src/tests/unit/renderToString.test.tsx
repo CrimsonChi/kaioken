@@ -62,7 +62,7 @@ describe("renderToString", () => {
       )
     }
     const NullComponent = () => null
-    const UndefinedComponent = () => null
+    const UndefinedComponent = () => undefined
     const BooleanComponent = () => true
     const expected = `<div><h1>Hello world!</h1></div>`
     const res = renderToString(App)
