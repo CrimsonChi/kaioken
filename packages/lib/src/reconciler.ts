@@ -270,6 +270,7 @@ function updateFromMap(
       oldChild.props = newChild.props
       oldChild.frozen = newChild.frozen
       oldChild.sibling = undefined
+      oldChild.index = index
       return oldChild
     } else {
       const n = createElement(newChild.type, newChild.props)

@@ -13,7 +13,7 @@ describe("hot module reload", () => {
   )
   beforeEach(() => {
     const port = Cypress.env("port")
-    cy.visit(`http://localhost:${port}`)
+    cy.visit(`http://localhost:${port}/counter`)
   })
   afterEach(() => cy.writeFile("src/Counter.tsx", counterTsx))
 

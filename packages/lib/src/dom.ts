@@ -287,6 +287,12 @@ function commitWork(ctx: AppContext, vNode: VNode) {
         c.effectTag = EffectTag.PLACEMENT
         c = c.sibling
       }
+      // if we're trying to place a non-html-producing node, process sibling first
+      // this prepares us to properly take advantage of the algorithm used by placeDom
+      if (commitSibling && n.sibling?.effectTag === EffectTag.PLACEMENT) {
+        stack.push([n, prevSiblingDom, mntParent], [n.sibling, dom, mntParent])
+        continue
+      }
     }
 
     if (commitSibling && n.sibling) {
