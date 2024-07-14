@@ -239,7 +239,7 @@ function placeDom(
   }
 }
 
-const hostDpStack: [DomParentSearchResult, SomeDom][] = []
+const hostDpStack: [DomParentSearchResult, MaybeDom][] = []
 type ElementVNode = VNode & { dom: SomeElement }
 function useHostContext(node: ElementVNode): [DomParentSearchResult, MaybeDom] {
   const dp = getDomParent(node)
@@ -251,7 +251,7 @@ function useHostContext(node: ElementVNode): [DomParentSearchResult, MaybeDom] {
       return [hostDpStack[i][0], prev]
     }
   }
-  hostDpStack.push([dp, node.dom])
+  hostDpStack.push([dp, node.dom === dp.element ? undefined : node.dom])
   return [dp, undefined]
 }
 
