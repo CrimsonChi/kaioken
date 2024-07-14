@@ -1,6 +1,7 @@
 import type { Scheduler } from "./scheduler"
+import type { MaybeDom, SomeDom } from "./types.dom"
 
-const parentStack = [] as Array<HTMLElement | SVGElement | Text>
+const parentStack = [] as Array<SomeDom>
 const childIdxStack = [] as Array<number>
 const eventDeferrals = [] as Array<Function>
 
@@ -13,14 +14,14 @@ export const hydrationStack = {
     parentStack.pop()
     childIdxStack.pop()
   },
-  push: (el: HTMLElement | SVGElement | Text) => {
+  push: (el: SomeDom) => {
     parentStack.push(el)
     childIdxStack.push(0)
   },
   nextChild: () => {
     return parentStack[parentStack.length - 1].childNodes[
       childIdxStack[childIdxStack.length - 1]++
-    ] as HTMLElement | SVGElement | Text | undefined
+    ] as MaybeDom
   },
   captureEvents: (element: Element, scheduler: Scheduler) => {
     toggleEvtListeners(element, true)

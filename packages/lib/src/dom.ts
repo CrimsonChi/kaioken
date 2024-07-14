@@ -1,4 +1,3 @@
-import type { AppContext } from "./appContext"
 import {
   booleanAttributes,
   propFilters,
@@ -11,18 +10,17 @@ import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
+import { MaybeDom, SomeDom, SomeElement } from "./types.dom.js"
+import { Portal } from "./portal.js"
 
 export { commitWork, createDom, updateDom, hydrateDom }
 
 type VNode = Kaioken.VNode
 type DomParentSearchResult = {
   node: VNode
-  element: HTMLElement | SVGElement | Text
+  element: SomeDom
 }
-type MaybeDom = HTMLElement | SVGElement | Text | undefined
-type CommitStackItem = [VNode, MaybeDom, DomParentSearchResult | undefined]
-
-function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
+function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
   return t == elementTypes.text
     ? document.createTextNode(vNode.props.nodeValue ?? "")
@@ -33,7 +31,7 @@ function createDom(vNode: VNode): HTMLElement | SVGElement | Text {
 
 function updateDom(node: VNode) {
   if (node.instance?.doNotModifyDom) return
-  const dom = node.dom as HTMLElement | SVGElement | Text
+  const dom = node.dom as SomeDom
   const prevProps: Record<string, any> = node.prev?.props ?? {}
   const nextProps: Record<string, any> = node.props ?? {}
 
@@ -127,17 +125,12 @@ export function setDomAttribute(dom: Element, key: string, value: unknown) {
 const explicitValueElementTags = ["INPUT", "TEXTAREA", "SELECT"]
 
 const needsExplicitValueSet = (
-  dom: HTMLElement | SVGElement
+  dom: SomeElement
 ): dom is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
   return explicitValueElementTags.indexOf(dom.nodeName) > -1
 }
 
-function setProp(
-  dom: HTMLElement | SVGElement,
-  key: string,
-  value: unknown,
-  prev: unknown
-) {
+function setProp(dom: SomeElement, key: string, value: unknown, prev: unknown) {
   if (key === "style") return setStyleProp(dom, value, prev)
   if (key === "value" && needsExplicitValueSet(dom)) {
     dom.value = String(value)
@@ -147,11 +140,7 @@ function setProp(
   setDomAttribute(dom, propToHtmlAttr(key), value)
 }
 
-function setInnerHTML(
-  dom: HTMLElement | SVGElement,
-  value: unknown,
-  prev: unknown
-) {
+function setInnerHTML(dom: SomeElement, value: unknown, prev: unknown) {
   if (Signal.isSignal(value)) {
     dom.innerHTML = value.toString()
   }
@@ -163,11 +152,7 @@ function setInnerHTML(
   dom.innerHTML = String(value)
 }
 
-function setStyleProp(
-  dom: HTMLElement | SVGElement,
-  value: unknown,
-  prev: unknown
-) {
+function setStyleProp(dom: SomeElement, value: unknown, prev: unknown) {
   if (handleAttributeRemoval(dom, "style", value)) return
   if (typeof value === "string" && value !== prev) {
     dom.setAttribute("style", value)
@@ -201,14 +186,14 @@ function setStyleProp(
 }
 
 function getDomParent(node: VNode): DomParentSearchResult {
-  let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
-  let domParent = domParentNode?.dom
-  while (domParentNode && !domParent) {
-    domParentNode = domParentNode.parent
-    domParent = domParentNode?.dom
+  let parentNode: VNode | undefined = node.parent ?? node.prev?.parent
+  let parentNodeElement = parentNode?.dom
+  while (parentNode && !parentNodeElement) {
+    parentNode = parentNode.parent
+    parentNodeElement = parentNode?.dom
   }
 
-  if (!domParent || !domParentNode) {
+  if (!parentNodeElement || !parentNode) {
     if (!node.parent) {
       // handle app entry
       if (node.dom) return { node, element: node.dom }
@@ -218,68 +203,74 @@ function getDomParent(node: VNode): DomParentSearchResult {
       "[kaioken]: no domParent found - seek help!\n" + String(node)
     )
   }
-  return { node: domParentNode, element: domParent }
+  return { node: parentNode, element: parentNodeElement }
 }
 
 function placeDom(
   vNode: VNode,
-  prevSiblingDom: MaybeDom,
-  mntParent: DomParentSearchResult
+  mntParent: DomParentSearchResult,
+  prevSiblingDom?: MaybeDom
 ) {
-  const dom = vNode.dom as HTMLElement | SVGElement | Text
+  const dom = vNode.dom as SomeDom
   if (prevSiblingDom) {
     prevSiblingDom.after(dom)
     return
   }
-  const { element, node } = mntParent
+  const { element, node: mountParentNode } = mntParent
   if (element.childNodes.length === 0) {
     element.appendChild(dom)
   } else {
-    // the following is likely a somewhat naiive implementation of the algorithm
-    // but it should be good enough for most cases. Will be improved as/when
-    // edge cases are encountered.
+    const stack = [mountParentNode.child]
+    let prevDom: MaybeDom
 
-    // first, try to find next dom by traversing through siblings
-    let nextDom = findMountedDomRecursive(element, vNode.sibling)
-    if (nextDom === undefined) {
-      // try to find next dom by traversing (up and across) through the tree
-      // handles cases like the following:
-      /**
-       * <div>
-       *    <>
-       *      <TheComponentThatIsUpdating />
-       *    <>
-       *    <>
-       *      <div></div> <- find this node
-       *    </>
-       * </div>
-       */
-      let parent = vNode.parent
-
-      while (!nextDom && parent && parent !== node) {
-        nextDom = findMountedDomRecursive(element, parent.sibling)
-        parent = parent.parent
-      }
+    while (stack.length) {
+      const n = stack.pop()!
+      const isPortal = Portal.isPortal(n.type)
+      if (n.dom === dom) break // once we meet the dom we're placing, stop
+      if (!isPortal && n.dom) prevDom = n.dom
+      if (n.sibling) stack.push(n.sibling)
+      if (!isPortal && !n.dom && n.child) stack.push(n.child)
     }
-
-    if (nextDom) {
-      nextDom.before(dom)
+    if (!prevDom) {
+      element.insertBefore(dom, element.firstChild)
     } else {
-      element.appendChild(dom)
+      prevDom.after(dom)
     }
   }
 }
 
-function commitWork(ctx: AppContext, vNode: VNode) {
+const hostDpStack: [DomParentSearchResult, SomeDom][] = []
+type ElementVNode = VNode & { dom: SomeElement }
+function useHostContext(node: ElementVNode): [DomParentSearchResult, MaybeDom] {
+  const dp = getDomParent(node)
+  let i = hostDpStack.length
+  while (i--) {
+    if (hostDpStack[i][0].node === dp.node) {
+      const prev = hostDpStack[i][1]
+      hostDpStack[i][1] = node.dom
+      return [hostDpStack[i][0], prev]
+    }
+  }
+  hostDpStack.push([dp, node.dom])
+  return [dp, undefined]
+}
+
+function resetHostContext() {
+  hostDpStack.length = 0
+}
+
+function commitWork(vNode: VNode) {
   let commitSibling = false
-  const stack: CommitStackItem[] = [[vNode, undefined, undefined]]
+  const stack: VNode[] = [vNode]
+  resetHostContext()
 
   while (stack.length) {
-    let [n, prevSiblingDom, mntParent] = stack.pop()!
+    const n = stack.pop()!
     const dom = n.dom
 
     if (dom && n.effectTag !== EffectTag.DELETION) {
-      mntParent = commitDom(n, prevSiblingDom, mntParent) || mntParent
+      const [mntParent, prevDom] = useHostContext(n as ElementVNode)
+      commitDom(n, mntParent, prevDom)
     } else if (n.effectTag === EffectTag.PLACEMENT) {
       // propagate the effect to children
       let c = n.child
@@ -287,16 +278,14 @@ function commitWork(ctx: AppContext, vNode: VNode) {
         c.effectTag = EffectTag.PLACEMENT
         c = c.sibling
       }
-      // if we're trying to place a non-html-producing node, process sibling first
-      // this prepares us to properly take advantage of the algorithm used by placeDom
-      if (commitSibling && n.sibling?.effectTag === EffectTag.PLACEMENT) {
-        stack.push([n, prevSiblingDom, mntParent], [n.sibling, dom, mntParent])
-        continue
-      }
+    }
+
+    if (!n.sibling && !n.child) {
+      hostDpStack.pop()
     }
 
     if (commitSibling && n.sibling) {
-      stack.push([n.sibling, dom, mntParent])
+      stack.push(n.sibling)
     }
     commitSibling = true
 
@@ -306,36 +295,35 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     }
 
     if (n.child) {
-      stack.push([
-        n.child,
-        undefined,
-        dom ? { element: dom, node: n } : undefined,
-      ])
+      stack.push(n.child)
     }
 
-    const instance = n.instance
-    if (instance) {
-      const onMounted = instance.componentDidMount?.bind(instance)
-      if (!n.prev && onMounted) {
-        ctx.queueEffect(onMounted)
-      } else if (n.effectTag === EffectTag.UPDATE) {
-        const onUpdated = instance.componentDidUpdate?.bind(instance)
-        if (onUpdated) ctx.queueEffect(onUpdated)
-      }
-      ctx.scheduler?.queueCurrentNodeEffects()
-    }
-
+    onNodeUpdated(n)
     n.effectTag = undefined
     n.prev = { ...n, props: { ...n.props }, prev: undefined }
   }
 }
 
+function onNodeUpdated(n: VNode) {
+  const instance = n.instance
+  if (instance) {
+    const onMounted = instance.componentDidMount?.bind(instance)
+    if (!n.prev && onMounted) {
+      n.ctx.queueEffect(onMounted)
+    } else if (n.effectTag === EffectTag.UPDATE) {
+      const onUpdated = instance.componentDidUpdate?.bind(instance)
+      if (onUpdated) n.ctx.queueEffect(onUpdated)
+    }
+    n.ctx.scheduler?.queueCurrentNodeEffects()
+  }
+}
+
 function commitDom(
   n: VNode,
-  prevSiblingDom: MaybeDom,
-  mntParent: DomParentSearchResult | undefined
+  mntParent: DomParentSearchResult,
+  prevSiblingDom?: MaybeDom
 ) {
-  const dom = n.dom as HTMLElement | SVGElement | Text
+  const dom = n.dom as SomeDom
   if (renderMode.current === "hydrate") {
     if (n.props.ref) {
       n.props.ref.current = dom
@@ -344,10 +332,9 @@ function commitDom(
   }
   if (n.instance?.doNotModifyDom) return
   if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-    const p = mntParent ?? getDomParent(n)
-    placeDom(n, prevSiblingDom, p)
-    return p
-  } else if (n.effectTag === EffectTag.UPDATE) {
+    placeDom(n, mntParent, prevSiblingDom)
+  }
+  if (n.effectTag === EffectTag.UPDATE) {
     updateDom(n)
   }
   return
@@ -370,19 +357,4 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
     if (n.child) stack.push(n.child)
     deleteSibling = true
   }
-}
-
-function findMountedDomRecursive(
-  rootDom: HTMLElement | SVGElement | Text,
-  vNode?: VNode
-): HTMLElement | SVGElement | Text | undefined {
-  if (!vNode) return
-  const stack: VNode[] = [vNode]
-  while (stack.length) {
-    const n = stack.pop()!
-    if (n.dom?.isConnected && rootDom.contains(n.dom)) return n.dom
-    if (n.sibling) stack.push(n.sibling)
-    if (n.child) stack.push(n.child)
-  }
-  return void 0
 }

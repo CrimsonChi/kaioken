@@ -6,6 +6,7 @@ import type {
   EventAttributes,
   GlobalAttributes,
   HtmlElementAttributes,
+  SomeDom,
   SvgElementAttributes,
   SvgGlobalAttributes,
 } from "./types.dom"
@@ -98,7 +99,7 @@ declare global {
 
     type VNode = {
       type: string | Function | typeof Component
-      dom?: HTMLElement | SVGElement | Text
+      dom?: SomeDom
       instance?: Component
       props: {
         [key: string]: any

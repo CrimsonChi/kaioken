@@ -4,7 +4,14 @@ export type {
   SvgGlobalAttributes,
   GlobalAttributes,
   EventAttributes,
+  SomeDom,
+  SomeElement,
+  MaybeDom,
 }
+
+type SomeElement = HTMLElement | SVGElement
+type SomeDom = HTMLElement | SVGElement | Text
+type MaybeDom = SomeDom | undefined
 
 type ValidUrl = `http${"s" | ""}://${string}`
 type ValidPath = `/${string}`
