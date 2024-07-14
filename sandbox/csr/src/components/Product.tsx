@@ -20,13 +20,13 @@ export function ProductPage({ query: { id } }: RouteChildProps) {
 
   return (
     <>
-      {data ? (
+      {/* {data ? (
         <Product product={data} />
       ) : loading ? (
         <Spinner />
       ) : (
         <div>{error.message}</div>
-      )}
+      )} */}
       {loading && <Spinner />}
       {error && <div>{error.message}</div>}
       {data && <Product product={data} />}

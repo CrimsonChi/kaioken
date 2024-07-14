@@ -68,12 +68,6 @@ export function Todos() {
         className="flex gap-2 mb-5 items-center justify-center"
       >
         <Input ref={ref} />
-        <textarea value={text} oninput={(e) => setText(e.target.value)} />
-        <select value={text} onchange={(e) => setText(e.target.value)}>
-          <option value="">Blank</option>
-          <option value="Hello">Hello</option>
-        </select>
-        <input type="checkbox" checked={!!text} />
         <Button>Add</Button>
       </form>
       <ToDoList
