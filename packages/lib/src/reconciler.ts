@@ -131,7 +131,7 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
   }
   if (Array.isArray(child)) {
     if (key !== undefined) return null
-    return updateFragment(parent, oldNode, child, { array: true })
+    return updateFragment(parent, oldNode, child /*, { array: true }*/)
   }
   if (Signal.isSignal(child)) {
     return updateSlot(parent, oldNode, child.value)
@@ -214,7 +214,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     if (Array.isArray(child)) {
       const el = createElement(elementTypes.fragment, {
         children: child,
-        array: true,
+        //array: true,
       })
       el.parent = parent
       return el
