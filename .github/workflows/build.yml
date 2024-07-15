@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - main
-
+env:
+  NODE_ENV: production
 jobs:
   build:
     runs-on: ubuntu-latest
