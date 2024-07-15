@@ -16,7 +16,7 @@ export class Scheduler {
   private currentTreeIndex = 0
   private isRunning = false
   private queuedNodeEffectSets: Function[][] = []
-  private nextIdleEffects: Function[] = []
+  private nextIdleEffects: ((scheduler: this) => void)[] = []
   private deletions: VNode[] = []
   private frameDeadline = 0
   private pendingCallback: IdleRequestCallback | undefined
@@ -143,7 +143,7 @@ export class Scheduler {
     this.nodeEffects = []
   }
 
-  nextIdle(fn: () => void) {
+  nextIdle(fn: (scheduler: this) => void) {
     this.nextIdleEffects.push(fn)
   }
 
@@ -186,7 +186,7 @@ export class Scheduler {
     if (!this.nextUnitOfWork) {
       this.sleep()
       while (this.nextIdleEffects.length) {
-        this.nextIdleEffects.shift()!()
+        this.nextIdleEffects.shift()!(this)
       }
       return
     }

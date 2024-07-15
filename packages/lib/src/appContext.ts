@@ -93,11 +93,21 @@ export class AppContext<T extends Record<string, unknown> = {}> {
 
   requestUpdate(node: VNode) {
     if (node.effectTag === EffectTag.DELETION) return
-    return this.scheduler?.queueUpdate(node)
+    if (renderMode.current === "hydrate") {
+      return this.scheduler?.nextIdle((s) => {
+        node.effectTag !== EffectTag.DELETION && s.queueUpdate(node)
+      })
+    }
+    this.scheduler?.queueUpdate(node)
   }
 
   requestDelete(node: VNode) {
     if (node.effectTag === EffectTag.DELETION) return
+    if (renderMode.current === "hydrate") {
+      return this.scheduler?.nextIdle((s) => {
+        node.effectTag !== EffectTag.DELETION && s.queueDelete(node)
+      })
+    }
     this.scheduler?.queueDelete(node)
   }
 
