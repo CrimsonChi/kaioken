@@ -1,8 +1,8 @@
 import { createElement } from "./index.js"
 
-function _arePropsEqual(
-  prevProps: Record<string, unknown>,
-  nextProps: Record<string, unknown>
+function _arePropsEqual<T extends Record<string, unknown>>(
+  prevProps: T,
+  nextProps: T
 ) {
   return Object.keys(prevProps).every(
     ([key]) => prevProps[key] === nextProps[key]
@@ -12,13 +12,12 @@ function _arePropsEqual(
 export function memo<Props extends Record<string, unknown>>(
   fn: (props: Props) => JSX.Element,
   arePropsEqual: (
-    prevProps: Record<string, unknown>,
-    nextProps: Record<string, unknown>
+    prevProps: Props,
+    nextProps: Props
   ) => boolean = _arePropsEqual
 ): (props: Props) => JSX.Element {
   let node: Kaioken.VNode
-  let oldProps = {}
-
+  let oldProps = {} as Props
   return Object.assign(
     (props: Props) => {
       if (node && arePropsEqual(oldProps, props)) {
