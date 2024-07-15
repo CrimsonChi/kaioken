@@ -2,6 +2,7 @@ import { EffectTag, elementTypes } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { createElement, Signal } from "./index.js"
+import { __DEV__ } from "./env.js"
 
 type VNode = Kaioken.VNode
 
@@ -10,6 +11,7 @@ export function reconcileChildren(
   currentFirstChild: VNode | null,
   children: unknown[]
 ) {
+  let knownKeys: Set<string> | null = null
   let resultingChild: VNode | null = null
   let prevNewNode: VNode | null = null
 
@@ -31,6 +33,9 @@ export function reconcileChildren(
         oldNode = nextOldNode
       }
       break
+    }
+    if (__DEV__) {
+      knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
     }
     if (oldNode && !newNode.prev) {
       ctx.current.requestDelete(oldNode)
@@ -59,7 +64,9 @@ export function reconcileChildren(
     for (; newIdx < children.length; newIdx++) {
       const newNode = createChild(vNode, children[newIdx])
       if (newNode === null) continue
-
+      if (__DEV__) {
+        knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
+      }
       lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
       if (prevNewNode === null) {
         resultingChild = newNode
@@ -82,6 +89,9 @@ export function reconcileChildren(
       children[newIdx]
     )
     if (newNode !== null) {
+      if (__DEV__) {
+        knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
+      }
       if (newNode.prev !== undefined) {
         // node persisted, remove it from the list so it doesn't get deleted
         existingChildren.delete(
@@ -121,7 +131,7 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
   }
   if (Array.isArray(child)) {
     if (key !== undefined) return null
-    return updateFragment(parent, oldNode, child)
+    return updateFragment(parent, oldNode, child, { array: true })
   }
   if (Signal.isSignal(child)) {
     return updateSlot(parent, oldNode, child.value)
@@ -173,11 +183,11 @@ function updateFragment(
   newProps = {}
 ) {
   if (oldNode === null || oldNode.type !== elementTypes.fragment) {
-    const el = createElement(elementTypes.fragment, { children })
+    const el = createElement(elementTypes.fragment, { children, ...newProps })
     el.parent = parent
     return el
   }
-  oldNode.props = { ...newProps, children }
+  oldNode.props = { ...oldNode.props, ...newProps, children }
   oldNode.effectTag = EffectTag.UPDATE
   oldNode.sibling = undefined
   return oldNode
@@ -202,7 +212,10 @@ function createChild(parent: VNode, child: unknown): VNode | null {
       return newNode
     }
     if (Array.isArray(child)) {
-      const el = createElement(elementTypes.fragment, { children: child })
+      const el = createElement(elementTypes.fragment, {
+        children: child,
+        array: true,
+      })
       el.parent = parent
       return el
     }
@@ -292,4 +305,76 @@ function mapRemainingChildren(vNode: VNode) {
     n = n.sibling
   }
   return map
+}
+
+const missingKeyWarnings = new Set()
+function warnForMissingKey(parent: VNode, child: VNode) {
+  if (!__DEV__) return
+  if (missingKeyWarnings.has(parent)) return
+  if (parent.type === elementTypes.fragment && parent.props.array) {
+    if (child.props.key === null || child.props.key === undefined) {
+      const fn = getNearestParentFcTag(parent)
+      keyWarn(
+        `${fn} component produced a child in a list without a valid key prop`
+      )
+      missingKeyWarnings.add(parent)
+    }
+  }
+}
+
+const duplicateKeyWarnings = new Set()
+function warnOnInvalidKey(
+  parent: VNode,
+  child: unknown,
+  knownKeys: Set<string> | null
+): Set<string> | null {
+  if (!__DEV__) return null
+  if (!isVNode(child)) {
+    return knownKeys
+  }
+  warnForMissingKey(parent, child)
+  const key = child.props.key
+  if (typeof key !== "string") {
+    return knownKeys
+  }
+  if (knownKeys === null) {
+    knownKeys = new Set()
+    knownKeys.add(key)
+    return knownKeys
+  }
+  if (!knownKeys.has(key)) {
+    knownKeys.add(key)
+    return knownKeys
+  }
+
+  if (duplicateKeyWarnings.has(parent)) {
+    return knownKeys
+  }
+  const fn = getNearestParentFcTag(parent)
+  keyWarn(
+    `${fn} component produced a child in a list with a duplicate key prop: "${key}"`
+  )
+  return knownKeys
+}
+
+function keyWarn(str: string) {
+  console.error(
+    `[kaioken]: ${str}. See https://kaioken.dev/keys-warning for more information.`
+  )
+}
+const parentFcTagLookups = new WeakMap<VNode, string>()
+function getNearestParentFcTag(vNode: VNode) {
+  if (!parentFcTagLookups.has(vNode)) {
+    let p: VNode | undefined = vNode.parent
+    let fn: (Function & { displayName?: string }) | undefined
+    while (!fn && p) {
+      if (typeof p.type === "function") fn = p.type
+      p = p.parent
+    }
+    parentFcTagLookups.set(
+      vNode,
+      `<${fn?.displayName || fn?.name || "Anonymous Function"} />`
+    )
+  }
+  return parentFcTagLookups.get(vNode)
 }
