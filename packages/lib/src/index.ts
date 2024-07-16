@@ -108,16 +108,11 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (el === undefined) return ""
   if (typeof el === "boolean") return ""
   if (typeof el === "string") return encodeHtmlEntities(el)
-  if (typeof el === "number" || typeof el === "bigint")
-    return encodeHtmlEntities(el.toString())
+  if (typeof el === "number" || typeof el === "bigint") return el.toString()
   if (typeof el === "function")
-    return renderToString_internal(createElement(el, elProps))
+    return renderToString_internal(createElement(el, elProps), parent)
   if (el instanceof Array) {
-    let s = ""
-    for (let i = 0; i < el.length; i++) {
-      s += renderToString_internal(el[i], parent)
-    }
-    return s
+    return el.map((c) => renderToString_internal(c, parent)).join("")
   }
   if (Signal.isSignal(el)) return renderToString_internal(el.value, parent)
   if (!isVNode(el)) return String(el)
@@ -133,10 +128,8 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (typeof type !== "string") {
     node.current = el
     if (Component.isCtor(type)) {
-      const instance = new (type as unknown as {
-        new (props: Record<string, unknown>): Component
-      })(props)
-      return renderToString_internal(instance.render(), el, props)
+      el.instance = new type(props)
+      return renderToString_internal(el.instance.render(), parent, props)
     }
     return renderToString_internal(type(props), el, props)
   }

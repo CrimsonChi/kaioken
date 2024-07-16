@@ -3,6 +3,10 @@ import { node } from "./globals.js"
 
 export { Component }
 
+export type ComponentConstructor = new <T = Record<string, unknown>>(
+  props: T
+) => Component<T>
+
 abstract class Component<T = Record<string, unknown>> {
   doNotModifyDom = false
   static [componentSymbol] = true
@@ -22,8 +26,8 @@ abstract class Component<T = Record<string, unknown>> {
     }
   }
 
-  static isCtor(type: unknown): type is typeof Component {
-    return !!type && typeof type === "function" && componentSymbol in type
+  static isCtor(type: unknown): type is ComponentConstructor {
+    return typeof type === "function" && componentSymbol in type
   }
 
   componentDidMount?(): void

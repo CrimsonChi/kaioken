@@ -51,27 +51,27 @@ function renderToStream_internal<T extends Record<string, unknown>>(
 ): void {
   if (el === null) return
   if (el === undefined) return
-  switch (typeof el) {
-    case "boolean":
-      return
-    case "string":
-      state.stream.push(encodeHtmlEntities(el))
-      return
-    case "number":
-      state.stream.push(encodeHtmlEntities(el.toString()))
-      return
-    case "function":
-      return renderToStream_internal(state, createElement(el, elProps))
-  }
-
-  if (el instanceof Array) {
-    return el.forEach((c) => renderToStream_internal(state, c, parent))
-  }
-  if (Signal.isSignal(el)) {
-    state.stream.push(renderToStream_internal(state, el.value, parent))
+  if (typeof el === "boolean") return
+  if (typeof el === "string") {
+    state.stream.push(encodeHtmlEntities(el))
     return
   }
-
+  if (typeof el === "number" || typeof el === "bigint") {
+    state.stream.push(el.toString())
+    return
+  }
+  if (typeof el === "function") {
+    renderToStream_internal(state, createElement(el, elProps), parent)
+    return
+  }
+  if (el instanceof Array) {
+    el.forEach((c) => renderToStream_internal(state, c, parent))
+    return
+  }
+  if (Signal.isSignal(el)) {
+    renderToStream_internal(state, el.value, parent)
+    return
+  }
   if (!isVNode(el)) {
     state.stream.push(String(el))
     return
@@ -86,18 +86,16 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     return
   }
   if (type === et.fragment) {
-    return children.forEach((c) => renderToStream_internal(state, c, el, props))
+    return children.forEach((c) => renderToStream_internal(state, c, el))
   }
 
   if (typeof type !== "string") {
     node.current = el
     if (Component.isCtor(type)) {
-      el.instance = new (type as unknown as {
-        new (props: Record<string, unknown>): Component
-      })(props)
-      return renderToStream_internal(state, el.instance.render(), el, props)
+      el.instance = new type(props)
+      return renderToStream_internal(state, el.instance.render(), parent, props)
     }
-    return renderToStream_internal(state, type(props), el, props)
+    return renderToStream_internal(state, type(props), parent, props)
   }
 
   assertValidElementProps(el)

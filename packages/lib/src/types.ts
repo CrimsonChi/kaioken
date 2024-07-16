@@ -1,5 +1,5 @@
 import type { Signal as SignalClass } from "./signal"
-import type { Component } from "./component"
+import type { Component, ComponentConstructor } from "./component"
 import type { EffectTag } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
@@ -98,7 +98,7 @@ declare global {
     type Signal<T> = SignalClass<T>
 
     type VNode = {
-      type: string | Function | typeof Component
+      type: string | Function | ComponentConstructor
       dom?: SomeDom
       instance?: Component
       props: {
