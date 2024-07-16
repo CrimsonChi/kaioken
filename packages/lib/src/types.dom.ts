@@ -739,6 +739,15 @@ interface SvgElementAttributes {
     opacity?: string | number
     pathLength?: string | number
   }
+  pattern: {
+    x?: string | number
+    y?: string | number
+    width?: string | number
+    height?: string | number
+    patternUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    patternTransform?: string
+    patternContentUnits?: "userSpaceOnUse" | "objectBoundingBox"
+  }
   polygon: SvgStrokeAttributes & {
     points?: string
     animatedPoints?: string
@@ -750,6 +759,13 @@ interface SvgElementAttributes {
     animatedPoints?: string
     opacity?: string | number
     pathLength?: string | number
+  }
+  radialGradient: {
+    cx?: string | number
+    cy?: string | number
+    r?: string | number
+    gradientUnits?: "userSpaceOnUse" | "objectBoundingBox"
+    gradientTransform?: string
   }
   rect: SvgStrokeAttributes & {
     x?: string | number
@@ -777,6 +793,8 @@ interface SvgElementAttributes {
     version?: string
     mask?: string
     opacity?: string | number
+    x?: string | number
+    y?: string | number
   }
   text: SvgStrokeAttributes & {
     mask?: string
