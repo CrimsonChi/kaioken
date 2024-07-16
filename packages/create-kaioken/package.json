@@ -1,0 +1,19 @@
+{
+  "name": "create-kaioken",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "A command-line tool for quickly creating Kaioken applications from a template.",
+  "scripts": {
+    "build": "echo \"No build script specified for cli.\"",
+    "test": "echo \"Error: no test specified\""
+  },
+  "bin": {
+    "create-kaioken": "./index.js"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "download-git-repo": "^3.0.2",
+    "inquirer": "^10.0.1"
+  },
+  "license": "ISC"
+}
