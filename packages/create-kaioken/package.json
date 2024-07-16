@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "commander": "^12.1.0",
-    "download-git-repo": "^3.0.2",
-    "inquirer": "^10.0.1"
+    "inquirer": "^10.0.1",
+    "simple-git": "^3.25.0"
   },
   "license": "ISC"
 }
