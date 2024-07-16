@@ -42,7 +42,7 @@ export class Signal<T> {
   }
 
   static isSignal(x: any): x is Signal<any> {
-    return x && x[SignalKey]
+    return typeof x === "object" && !!x && SignalKey in x
   }
 
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {

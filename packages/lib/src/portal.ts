@@ -18,7 +18,7 @@ class Portal extends Component<PortalProps> {
   }
 
   static isPortal(type: unknown): type is typeof Portal {
-    return !!type && typeof type === "function" && portalIdentifier in type
+    return typeof type === "function" && portalIdentifier in type
   }
 
   render(): JSX.Element {
