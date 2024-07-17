@@ -4,27 +4,31 @@ import { shallowCompare } from "./utils.js"
 export { createStore }
 export type { Store, MethodFactory }
 
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
+
 type MethodFactory<T> = (
   setState: (setter: Kaioken.StateSetter<T>) => void,
   getState: () => T
 ) => Record<string, Function>
 
-type StoreHook<T, U extends MethodFactory<T>> = {
-  <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
+type StoreHook<T, U extends Record<string, Function>> = {
+  <R>(sliceFn: (state: T) => R): Prettify<{ value: R } & U>
   <
     F extends null | ((state: T) => unknown),
     R extends F extends Function ? ReturnType<F> : T,
   >(
     sliceFn: F,
     equality: (prev: R, next: R, compare: typeof shallowCompare) => boolean
-  ): { value: R } & ReturnType<U>
-  (): { value: T } & ReturnType<U>
+  ): Prettify<{ value: R } & U>
+  (): Prettify<{ value: T } & U>
 }
 
-type Store<T, U extends MethodFactory<T>> = StoreHook<T, U> & {
+type Store<T, U extends Record<string, Function>> = StoreHook<T, U> & {
   getState: () => T
   setState: (setter: Kaioken.StateSetter<T>) => void
-  methods: ReturnType<U>
+  methods: U
   subscribe: (fn: (value: T) => void) => () => void
 }
 
@@ -40,7 +44,7 @@ type NodeSliceCompute = [
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
   methodFactory: U
-): Store<T, U> {
+): Store<T, ReturnType<U>> {
   let state = initial
   let stateIteration = 0
   const subscribers = new Set<Kaioken.VNode | Function>()
@@ -78,7 +82,7 @@ function createStore<T, U extends MethodFactory<T>>(
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
   function useStore<R>(
-    sliceFn?: null | ((state: T) => R),
+    sliceFn: null | ((state: T) => R) = null,
     equality?: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ) {
     if (!sideEffectsEnabled()) {
@@ -110,7 +114,7 @@ function createStore<T, U extends MethodFactory<T>>(
           if (sliceFn || equality) {
             const computes = nodeToSliceComputeMap.get(vNode) ?? []
             computes[vNode.ctx.hookIndex - 1] = [
-              sliceFn ?? null,
+              sliceFn,
               equality,
               hook.stateSlice,
             ]
