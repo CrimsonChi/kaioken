@@ -32,14 +32,13 @@ type Store<T, U extends Record<string, Function>> = StoreHook<T, U> & {
   subscribe: (fn: (value: T) => void) => () => void
 }
 
-type NodeSliceCompute = [
-  Function | null,
-  (
+type NodeSliceCompute = {
+  sliceFn: Function | null
+  eq:
     | ((prev: any, next: any, compare: typeof shallowCompare) => boolean)
     | undefined
-  ),
-  unknown,
-]
+  slice: any
+}
 
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
@@ -60,9 +59,9 @@ function createStore<T, U extends MethodFactory<T>>(
         let computeChanged = false
         for (let i = 0; i < computes.length; i++) {
           if (!computes[i]) continue
-          const [sliceFn, eq, slice] = computes[i]
+          const { sliceFn, eq, slice } = computes[i]
           const computeRes = sliceFn === null ? state : sliceFn(state)
-          computes[i] = [sliceFn, eq, computeRes]
+          computes[i] = { sliceFn, eq, slice: computeRes }
 
           if (computeChanged) continue
           if (eq && eq(slice, computeRes, shallowCompare)) {
@@ -86,10 +85,7 @@ function createStore<T, U extends MethodFactory<T>>(
     equality?: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ) {
     if (!sideEffectsEnabled()) {
-      if (sliceFn) {
-        return { value: sliceFn(state), ...methods }
-      }
-      return { value: state, ...methods }
+      return { value: sliceFn ? sliceFn(state) : state, ...methods }
     }
 
     return useHook(
@@ -98,6 +94,16 @@ function createStore<T, U extends MethodFactory<T>>(
       ({ hook, oldHook, vNode }) => {
         if (!oldHook) {
           subscribers.add(vNode)
+          hook.stateSlice = sliceFn ? sliceFn(state) : state
+          if (sliceFn || equality) {
+            const computes = nodeToSliceComputeMap.get(vNode) ?? []
+            computes[vNode.ctx.hookIndex - 1] = {
+              sliceFn,
+              eq: equality,
+              slice: hook.stateSlice,
+            }
+            nodeToSliceComputeMap.set(vNode, computes)
+          }
           hook.cleanup = () => {
             nodeToSliceComputeMap.delete(vNode)
             subscribers.delete(vNode)
@@ -108,18 +114,10 @@ function createStore<T, U extends MethodFactory<T>>(
         }
 
         if (hook.lastChangeSync !== stateIteration) {
-          hook.stateSlice = sliceFn ? sliceFn(state) : state
           hook.lastChangeSync = stateIteration
-
-          if (sliceFn || equality) {
-            const computes = nodeToSliceComputeMap.get(vNode) ?? []
-            computes[vNode.ctx.hookIndex - 1] = [
-              sliceFn,
-              equality,
-              hook.stateSlice,
-            ]
-            nodeToSliceComputeMap.set(vNode, computes)
-          }
+          const computes = nodeToSliceComputeMap.get(vNode) ?? []
+          const slice = computes[vNode.ctx.hookIndex - 1]?.slice
+          hook.stateSlice = slice ?? state
         }
 
         return { value: hook.stateSlice, ...methods }
