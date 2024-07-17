@@ -115,9 +115,10 @@ function createStore<T, U extends MethodFactory<T>>(
 
         if (hook.lastChangeSync !== stateIteration) {
           hook.lastChangeSync = stateIteration
-          const computes = nodeToSliceComputeMap.get(vNode) ?? []
-          const slice = computes[vNode.ctx.hookIndex - 1]?.slice
-          hook.stateSlice = slice ?? state
+          const compute = (nodeToSliceComputeMap.get(vNode) ?? [])?.[
+            vNode.ctx.hookIndex - 1
+          ]
+          hook.stateSlice = compute ? compute.slice : state
         }
 
         return { value: hook.stateSlice, ...methods }
