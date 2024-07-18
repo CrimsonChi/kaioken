@@ -7,6 +7,7 @@ import { useRequestUpdate } from "../hooks/useRequestUpdate"
 export function SelectedNodeView() {
   const {
     value: { selectedApp, selectedNode },
+    setSelectedNode,
   } = useDevtoolsStore(({ selectedApp, selectedNode }) => ({
     selectedApp,
     selectedNode,
@@ -14,8 +15,14 @@ export function SelectedNodeView() {
   const requestUpdate = useRequestUpdate()
 
   useEffect(() => {
-    const handleUpdate = (appCtx: AppContext) =>
-      appCtx === selectedApp && requestUpdate()
+    const handleUpdate = (appCtx: AppContext) => {
+      if (appCtx !== selectedApp) return
+      if (selectedNode?.effectTag === 3) {
+        setSelectedNode(null)
+      } else {
+        requestUpdate()
+      }
+    }
 
     kaiokenGlobal?.on("update", handleUpdate)
     return () => kaiokenGlobal?.off("update", handleUpdate)
