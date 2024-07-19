@@ -11,10 +11,10 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.7",
-    "@types/node": "^20.14.10",
-    "cypress": "^13.13.0",
+    "@types/node": "^20.14.11",
+    "cypress": "^13.13.1",
     "typescript": "^5.5.3",
-    "vite": "^5.3.3",
+    "vite": "^5.3.4",
     "vite-plugin-kaioken": "workspace:^"
   },
   "dependencies": {
