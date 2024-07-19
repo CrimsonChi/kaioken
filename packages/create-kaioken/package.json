@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "commander": "^12.1.0",
-    "inquirer": "^10.0.1",
+    "inquirer": "^10.0.3",
     "simple-git": "^3.25.0"
   },
   "license": "ISC"
