@@ -294,6 +294,23 @@ function updateFromMap(
     }
   }
 
+  if (Array.isArray(newChild)) {
+    const oldChild = existingChildren.get(index)
+    if (oldChild) {
+      oldChild.effectTag = EffectTag.UPDATE
+      oldChild.props.children = newChild
+      return oldChild
+    } else {
+      const n = createElement(elementTypes.fragment, {
+        children: newChild,
+      })
+      n.parent = parent
+      n.effectTag = EffectTag.PLACEMENT
+      n.index = index
+      return n
+    }
+  }
+
   return null
 }
 

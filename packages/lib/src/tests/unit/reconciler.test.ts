@@ -7,6 +7,52 @@ import { EffectTag } from "../../constants.js"
 import { shuffle } from "./utils.js"
 
 describe("reconciler", () => {
+  it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", (t) => {
+    ctx.current = new kaioken.AppContext(() => null)
+    const mockRequestDeleteFn = t.mock.fn<(node: Kaioken.VNode) => void>(
+      () => {}
+    )
+    ctx.current.requestDelete = mockRequestDeleteFn
+    const items = "abcdefghijklmnopqrstuvwxyz".split("")
+    const node = kaioken.createElement("div")
+    node.child = reconcileChildren(node, null, [
+      false,
+      items.map((i) => kaioken.createElement("div", { key: i }, i)),
+    ])!
+
+    const mockCommit = () => {
+      let stack: Kaioken.VNode[] = [node.child!]
+      while (stack.length) {
+        const n = stack.pop()!
+        if (n.child) stack.push(n.child)
+        if (n.sibling) stack.push(n.sibling)
+        n.prev = { ...n, props: { ...n.props }, prev: undefined }
+      }
+    }
+
+    const mockReconcile = () => {
+      node.child = reconcileChildren(node, node.child!, [
+        false,
+        items.map((i) => kaioken.createElement("div", { key: i }, i)),
+      ])!
+    }
+
+    mockCommit()
+    shuffle(items)
+    mockReconcile()
+    mockCommit()
+    shuffle(items)
+    mockReconcile()
+    mockCommit()
+    shuffle(items)
+    mockReconcile()
+    // should not have any delete calls
+    assert.strictEqual(
+      mockRequestDeleteFn.mock.calls.length,
+      0,
+      `delete was called but should not have`
+    )
+  })
   it("correctly handles reordered Array children with keys", (t) => {
     ctx.current = new kaioken.AppContext(() => null)
     const mockRequestDeleteFn = t.mock.fn<(node: Kaioken.VNode) => void>(
