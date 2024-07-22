@@ -340,10 +340,7 @@ function commitDom(
   if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
     placeDom(n, mntParent, prevSiblingDom)
   }
-  if (n.effectTag === EffectTag.UPDATE) {
-    updateDom(n)
-  }
-  return
+  updateDom(n)
 }
 
 function commitDeletion(vNode: VNode, deleteSibling = false) {
