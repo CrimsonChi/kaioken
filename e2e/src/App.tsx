@@ -30,11 +30,11 @@ export function App() {
       </nav>
       <div id="router-outlet">
         <Router>
-          <Route path="/" element={() => <h2>Home</h2>} />
-          <Route path="/about" element={() => <h2>About</h2>} />
-          <Route path="/counter" element={Counter} />
-          <Route path="/todos" element={TodoList} />
-          <Route path="/memo" element={MemoTest} />
+          <Route path="/" element={<h2>Home</h2>} />
+          <Route path="/about" element={<h2>About</h2>} />
+          <Route path="/counter" element={<Counter />} />
+          <Route path="/todos" element={<TodoList />} />
+          <Route path="/memo" element={<MemoTest />} />
         </Router>
       </div>
     </main>

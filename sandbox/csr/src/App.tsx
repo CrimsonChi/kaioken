@@ -152,49 +152,19 @@ export function App() {
       <Nav />
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route path="/" element={Test} />
-          <Route
-            path="/test/:id"
-            fallthrough
-            element={({ params, query }) => (
-              <div className="flex flex-col">
-                <p>
-                  id param: <i>{params.id}</i>
-                </p>
-                <p>
-                  sort query: <i>{query.sort}</i>
-                </p>
-                <Link to={`/test/${params.id}/info?sort=${query.sort}`}>
-                  Child Router
-                </Link>
-                <Router>
-                  <Route
-                    path="/info"
-                    element={() => (
-                      <>
-                        <h1>info</h1>
-                        <Link to={`/test/${params.id}?sort=${query.sort}`}>
-                          Back to parent
-                        </Link>
-                      </>
-                    )}
-                  />
-                </Router>
-              </div>
-            )}
-          />
-          <Route path="/big-list" element={BigListComponent} />
-          <Route path="/memo" element={MemoDemo} />
-          <Route path="/todos" element={Todos} />
-          <Route path="/todos-with-store" element={TodosWithStore} />
-          <Route path="/counter" element={Counter} />
-          <Route path="/query" element={ProductPage} />
-          <Route path="/transitions" element={Transitions} />
-          <Route path="/filtered-list" element={FilteredList} />
-          <Route path="/keyed-list" element={KeyedList} />
-          <Route path="/context" element={ContextExample} />
-          <Route path="/useAsync" element={UseAsyncExample} />
-          <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
+          <Route path="/" element={<Test />} />
+          <Route path="/big-list" element={<BigListComponent />} />
+          <Route path="/memo" element={<MemoDemo />} />
+          <Route path="/todos" element={<Todos />} />
+          <Route path="/todos-with-store" element={<TodosWithStore />} />
+          <Route path="/counter" element={<Counter />} />
+          <Route path="/query" element={<ProductPage />} />
+          <Route path="/transitions" element={<Transitions />} />
+          <Route path="/filtered-list" element={<FilteredList />} />
+          <Route path="/keyed-list" element={<KeyedList />} />
+          <Route path="/context" element={<ContextExample />} />
+          <Route path="/useAsync" element={<UseAsyncExample />} />
+          <Route path="*" element={<h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>
     </>

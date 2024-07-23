@@ -1,5 +1,5 @@
 import { contextDataSymbol } from "./constants.js"
-import { fragment } from "./index.js"
+import { fragment } from "./element.js"
 
 export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
   const ctx = {

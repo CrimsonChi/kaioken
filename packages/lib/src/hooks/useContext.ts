@@ -1,5 +1,6 @@
 import { Hook, HookCallbackState, useHook } from "./utils.js"
 import { contextDataSymbol } from "../constants.js"
+import { __DEV__ } from "../env.js"
 
 type ContextNode<T> = Kaioken.VNode & {
   props: {
@@ -10,12 +11,16 @@ type ContextNode<T> = Kaioken.VNode & {
 type UseContextHook<T> = Hook<{
   ctxNode: ContextNode<T> | undefined
   context: Kaioken.Context<T>
+  warnIfNotFound: boolean
 }>
 
-export function useContext<T>(context: Kaioken.Context<T>): T {
+export function useContext<T>(
+  context: Kaioken.Context<T>,
+  warnIfNotFound = true
+): T {
   return useHook(
     "useContext",
-    { ctxNode: undefined, context },
+    { ctxNode: undefined, context, warnIfNotFound },
     useContextCallback as typeof useContextCallback<T>
   )
 }
@@ -45,7 +50,9 @@ const useContextCallback = <T>({
     }
   }
   if (!hook.ctxNode) {
-    warnProviderNotFound(hook.context)
+    if (__DEV__) {
+      hook.warnIfNotFound && warnProviderNotFound(hook.context)
+    }
     return hook.context.default()
   }
   return hook.ctxNode.props[contextDataSymbol].value

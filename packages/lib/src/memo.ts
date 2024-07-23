@@ -1,4 +1,4 @@
-import { createElement } from "./index.js"
+import { createElement } from "./element.js"
 
 function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,

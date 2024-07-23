@@ -1,6 +1,6 @@
 import { describe, it } from "node:test"
 import assert from "node:assert"
-import { renderToString } from "../../index.js"
+import { renderToString } from "../../renderToString.js"
 import * as kaioken from "../../index.js"
 
 describe("renderToString", () => {

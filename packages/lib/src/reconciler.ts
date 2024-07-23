@@ -1,8 +1,9 @@
 import { EffectTag, elementTypes } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
-import { createElement, Signal } from "./index.js"
+import { Signal } from "./index.js"
 import { __DEV__ } from "./env.js"
+import { createElement } from "./element.js"
 
 type VNode = Kaioken.VNode
 

@@ -1,5 +1,5 @@
 import type { Component } from "./component"
-import { createElement } from "./index.js"
+import { createElement } from "./element.js"
 
 export { jsx }
 

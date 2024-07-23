@@ -1,4 +1,4 @@
-import { memo, useAsync, type RouteChildProps } from "kaioken"
+import { memo, useAsync, useRouter } from "kaioken"
 import { Spinner } from "./atoms/Spinner"
 import { Link } from "./atoms/Link"
 import { H3 } from "./atoms/Heading"
@@ -9,7 +9,9 @@ interface Product {
   thumbnail: string
 }
 
-export function ProductPage({ query: { id } }: RouteChildProps) {
+export function ProductPage() {
+  const router = useRouter()
+  const id = router.query.id
   const { data, loading, error, invalidate } = useAsync<Product>(
     () =>
       fetch(`https://dummyjson.com/products/${id}`).then((res) => res.json()),

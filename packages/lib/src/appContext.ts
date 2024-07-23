@@ -1,7 +1,7 @@
 import { EffectTag } from "./constants.js"
+import { createElement } from "./element.js"
 import { contexts, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
-import { createElement } from "./index.js"
 import { Scheduler } from "./scheduler.js"
 
 type VNode = Kaioken.VNode
@@ -46,7 +46,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       this.rootNode = createElement(
         this.root!.nodeName.toLowerCase(),
         {},
-        createElement(this.appFunc, this.appProps)
+        createElement(this.appFunc, this.appProps as T)
       )
       this.rootNode.dom = this.root
       this.scheduler.queueUpdate(this.rootNode)
