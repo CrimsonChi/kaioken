@@ -1,7 +1,9 @@
 import { createContext, useContext, useState } from "kaioken"
 
 const ThemeContext = createContext<"light" | "dark">("dark")
+ThemeContext.displayName = "ThemeContext"
 const ThemeContextDispatcher = createContext<() => void>(() => {})
+ThemeContextDispatcher.displayName = "ThemeContextDispatcher"
 
 export function ContextExample() {
   const [themeA, setThemeA] = useState<"light" | "dark">("light")

@@ -78,7 +78,9 @@ declare global {
       children?: JSX.Children
     }
     type Context<T> = {
-      Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
+      Provider: (({ value, children }: ProviderProps<T>) => JSX.Element) & {
+        displayName?: string
+      }
       default: () => T
       /** Used to display the name of the context in devtools  */
       displayName?: string
