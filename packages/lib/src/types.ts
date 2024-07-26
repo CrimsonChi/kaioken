@@ -80,9 +80,14 @@ declare global {
     type Context<T> = {
       Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
       default: () => T
+      /** Used to display the name of the context in devtools  */
+      displayName?: string
     }
 
-    type FC<T = {}> = (props: FCProps<T>) => JSX.Element
+    type FC<T = {}> = ((props: FCProps<T>) => JSX.Element) & {
+      /** Used to display the name of the component in devtools  */
+      displayName?: string
+    }
     type FCProps<T = {}> = T & { children?: JSX.Children }
 
     type Hook<T> = T & {
