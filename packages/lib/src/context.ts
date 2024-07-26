@@ -14,7 +14,6 @@ export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
     },
     default: () => defaultValue,
     set displayName(name: string) {
-      this.displayName = name
       this.Provider.displayName = name
     },
     get displayName() {
