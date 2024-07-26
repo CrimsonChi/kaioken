@@ -1,4 +1,4 @@
-import { Router, Route, useState } from "kaioken"
+import { Router, Route, useState, useRouter } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -113,7 +113,7 @@ function Nav() {
         <Link to="/transitions">Dialogs (transitions, portal)</Link>
         <Link to="/memo">Memo demo</Link>
         <Link to="/big-list">Large-list rendering</Link>
-        <Link to="/test/123?sort=desc">Route Params / Query</Link>
+        <Link to="/router-test/123?sort=desc">Route Params / Query</Link>
         <Link to="/unhandled-route">Unhandled Route</Link>
         <Link to="/filtered-list">Filtered list</Link>
         <Link to="/keyed-list">Keyed list</Link>
@@ -154,6 +154,7 @@ export function App() {
         <Router>
           <Route path="/" element={<Test />} />
           <Route path="/big-list" element={<BigListComponent />} />
+          <Route path="/router-test/:id" element={<RouterTest />} fallthrough />
           <Route path="/memo" element={<MemoDemo />} />
           <Route path="/todos" element={<Todos />} />
           <Route path="/todos-with-store" element={<TodosWithStore />} />
@@ -168,5 +169,37 @@ export function App() {
         </Router>
       </main>
     </>
+  )
+}
+
+function RouterTest() {
+  const { params, query } = useRouter()
+  return (
+    <div>
+      <p>query: {query.sort}</p>
+      <p>params: {JSON.stringify(params, null, 2)}</p>
+      <Link to="/router-test/123?sort=desc">Home</Link>
+      <Link to="/router-test/123/child-route/420?sort=desc">Child Route</Link>
+      <Router>
+        <Route path="/" element={<h2>Home</h2>} />
+        <Route path="/child-route/:test" element={<ChildRoute />} />
+      </Router>
+    </div>
+  )
+}
+
+function ChildRoute() {
+  const { params, query, setQuery } = useRouter()
+  return (
+    <div>
+      <h2>Child Route - {params.test}</h2>
+      <button
+        onclick={() =>
+          setQuery({ sort: query.sort === "desc" ? "asc" : "desc" })
+        }
+      >
+        Sort
+      </button>
+    </div>
   )
 }

@@ -5,22 +5,31 @@ import { isRoute } from "./route.js"
 import { createContext } from "../context.js"
 
 type RouterCtx = {
-  parsedParams: Record<string, string>
-  parsedQuery: Record<string, string>
+  params: Record<string, string>
+  query: Record<string, string>
   routePath: string
   basePath?: string
   isDefault: boolean
 }
 const RouterContext = createContext<RouterCtx>({
-  parsedParams: {},
-  parsedQuery: {},
+  params: {},
+  query: {},
   routePath: "/",
   basePath: undefined,
   isDefault: true,
 })
+RouterContext.displayName = "RouterContextProvider"
+
+const setQuery = (query: Record<string, string>) => {
+  const url = new URL(window.location.href)
+  Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v))
+  window.history.pushState({}, "", url.toString())
+  window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
+}
+
 export const useRouter = () => {
-  const { parsedParams: params, parsedQuery: query } = useContext(RouterContext)
-  return { params, query }
+  const { params, query } = useContext(RouterContext)
+  return { params, query, setQuery }
 }
 
 interface RouterProps {
@@ -42,7 +51,7 @@ export function Router(props: RouterProps) {
     pathname: window.location.pathname,
     search: window.location.search,
   })
-  const parsedQuery = useMemo(() => parseSearchParams(loc.search), [loc.search])
+  const query = useMemo(() => parseSearchParams(loc.search), [loc.search])
   const realPathSegments = useMemo(
     () => loc.pathname.split("/").filter(Boolean),
     [loc.pathname]
@@ -104,14 +113,14 @@ export function Router(props: RouterProps) {
       realPathSegments
     )
   }
-  const params = { ...parentRouterContext.parsedParams, ...parsedParams }
+  const params = { ...parentRouterContext.params, ...parsedParams }
 
   return createElement(
     RouterContext.Provider,
     {
       value: {
-        parsedParams: params,
-        parsedQuery: parsedQuery,
+        params,
+        query,
         basePath: props.basePath,
         routePath:
           (dynamicParentPath || "") +
