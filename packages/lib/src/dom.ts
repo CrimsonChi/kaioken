@@ -74,16 +74,14 @@ function hydrateDom(vNode: VNode) {
     )
   }
   vNode.dom = dom
-  if (vNode.type !== elementTypes.text) {
-    updateDom(vNode)
-    return
+  if (vNode.type === elementTypes.text) {
+    const vNodeText = normalizeText(vNode.props.nodeValue)
+    const domText = normalizeText((dom as Text).nodeValue)
+    if (vNodeText.length !== domText.length) {
+      ;(vNode.dom as Text).splitText(vNodeText.length)
+    }
   }
-
-  const vNodeText = normalizeText(vNode.props.nodeValue)
-  const domText = normalizeText((dom as Text).nodeValue)
-  if (vNodeText !== domText) {
-    ;(vNode.dom as Text).splitText(vNodeText.length)
-  }
+  updateDom(vNode)
 }
 
 function normalizeText(text: string | null) {
