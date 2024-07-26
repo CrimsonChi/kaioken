@@ -25,6 +25,9 @@ export const hydrationStack = {
       this.childIdxStack[this.childIdxStack.length - 1]++
     ] as MaybeDom
   },
+  bumpChildIndex: function () {
+    this.childIdxStack[this.childIdxStack.length - 1]++
+  },
   captureEvents: function (element: Element, scheduler: Scheduler) {
     toggleEvtListeners(element, true)
     scheduler.nextIdle(() => {

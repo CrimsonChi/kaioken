@@ -5,13 +5,14 @@ import {
   svgTags,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EffectTag, elementTypes, regexUnits } from "./constants.js"
+import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { MaybeDom, SomeDom, SomeElement } from "./types.dom.js"
 import { Portal } from "./portal.js"
+import { __DEV__ } from "./env.js"
 
 export { commitWork, createDom, updateDom, hydrateDom }
 
@@ -74,19 +75,18 @@ function hydrateDom(vNode: VNode) {
     )
   }
   vNode.dom = dom
-  if (vNode.type === elementTypes.text) {
-    const vNodeText = normalizeText(vNode.props.nodeValue)
-    const domText = normalizeText((dom as Text).nodeValue)
-    if (vNodeText.length !== domText.length) {
-      ;(vNode.dom as Text).splitText(vNodeText.length)
-    }
+  if (vNode.type !== elementTypes.text) {
+    updateDom(vNode)
+    return
   }
-  updateDom(vNode)
-}
-
-function normalizeText(text: string | null) {
-  if (!text) return ""
-  return text.replace(regexUnits.SLASHN_SLASHR_G, " ")
+  let prev = vNode
+  let sibling = vNode.sibling
+  while (sibling && sibling.type === elementTypes.text) {
+    hydrationStack.bumpChildIndex()
+    sibling.dom = (prev.dom as Text).splitText(prev.props.nodeValue.length)
+    prev = sibling
+    sibling = sibling.sibling
+  }
 }
 
 function handleAttributeRemoval(
