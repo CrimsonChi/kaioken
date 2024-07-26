@@ -5,8 +5,8 @@ import { isRoute } from "./route.js"
 import { createContext } from "../context.js"
 
 type RouterCtx = {
-  parsedParams: Record<string, any>
-  parsedQuery: Record<string, any>
+  parsedParams: Record<string, string>
+  parsedQuery: Record<string, string>
   routePath: string
   basePath?: string
   isDefault: boolean
