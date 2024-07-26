@@ -5,7 +5,7 @@ import {
   svgTags,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EffectTag, elementTypes } from "./constants.js"
+import { EffectTag, elementTypes, regexUnits } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
@@ -66,7 +66,8 @@ function updateDom(node: VNode) {
 
 function hydrateDom(vNode: VNode) {
   const dom = hydrationStack.nextChild()
-  const nodeName = dom?.nodeName.toLowerCase()
+  if (!dom) throw new Error(`[kaioken]: Hydration mismatch - no node found`)
+  const nodeName = dom.nodeName.toLowerCase()
   if ((vNode.type as string) !== nodeName) {
     throw new Error(
       `[kaioken]: Hydration mismatch - expected node of type ${vNode.type} but received ${nodeName}`
@@ -77,13 +78,17 @@ function hydrateDom(vNode: VNode) {
     updateDom(vNode)
     return
   }
-  let prev = vNode
-  let sibling = vNode.sibling
-  while (sibling && sibling.type === elementTypes.text) {
-    sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
-    prev = sibling
-    sibling = sibling.sibling
+
+  const vNodeText = normalizeText(vNode.props.nodeValue)
+  const domText = normalizeText((dom as Text).nodeValue)
+  if (vNodeText !== domText) {
+    ;(vNode.dom as Text).splitText(vNodeText.length)
   }
+}
+
+function normalizeText(text: string | null) {
+  if (!text) return ""
+  return text.replace(regexUnits.SLASHN_SLASHR_G, " ")
 }
 
 function handleAttributeRemoval(

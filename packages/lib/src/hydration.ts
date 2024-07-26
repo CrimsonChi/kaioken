@@ -1,33 +1,35 @@
 import type { Scheduler } from "./scheduler"
 import type { MaybeDom, SomeDom } from "./types.dom"
 
-const parentStack = [] as Array<SomeDom>
-const childIdxStack = [] as Array<number>
-const eventDeferrals = [] as Array<Function>
-
 export const hydrationStack = {
-  clear: () => {
-    parentStack.length = 0
-    childIdxStack.length = 0
+  parentStack: [] as Array<SomeDom>,
+  childIdxStack: [] as Array<number>,
+  eventDeferrals: [] as Array<Function>,
+  parent: function () {
+    return this.parentStack[this.parentStack.length - 1]
   },
-  pop: () => {
-    parentStack.pop()
-    childIdxStack.pop()
+  clear: function () {
+    this.parentStack.length = 0
+    this.childIdxStack.length = 0
   },
-  push: (el: SomeDom) => {
-    parentStack.push(el)
-    childIdxStack.push(0)
+  pop: function () {
+    this.parentStack.pop()
+    this.childIdxStack.pop()
   },
-  nextChild: () => {
-    return parentStack[parentStack.length - 1].childNodes[
-      childIdxStack[childIdxStack.length - 1]++
+  push: function (el: SomeDom) {
+    this.parentStack.push(el)
+    this.childIdxStack.push(0)
+  },
+  nextChild: function () {
+    return this.parentStack[this.parentStack.length - 1].childNodes[
+      this.childIdxStack[this.childIdxStack.length - 1]++
     ] as MaybeDom
   },
-  captureEvents: (element: Element, scheduler: Scheduler) => {
+  captureEvents: function (element: Element, scheduler: Scheduler) {
     toggleEvtListeners(element, true)
     scheduler.nextIdle(() => {
       toggleEvtListeners(element, false)
-      while (eventDeferrals.length) eventDeferrals.shift()!()
+      while (this.eventDeferrals.length) this.eventDeferrals.shift()!()
     })
   },
 }
@@ -35,7 +37,7 @@ export const hydrationStack = {
 const captureEvent = (e: Event) => {
   const t = e.target
   if (!e.isTrusted || !t) return
-  eventDeferrals.push(() => t.dispatchEvent(e))
+  hydrationStack.eventDeferrals.push(() => t.dispatchEvent(e))
 }
 const toggleEvtListeners = (element: Element, value: boolean) => {
   for (const key in element) {
