@@ -1,4 +1,4 @@
-import { ctx, node, contexts, renderMode } from "./globals.js"
+import { ctx, node, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
 import { createElement } from "./element.js"
 import {
@@ -20,11 +20,12 @@ export function renderToString<T extends Record<string, unknown>>(
 ) {
   const prev = renderMode.current
   renderMode.current = "string"
+  const prevCtx = ctx.current
   const c = (ctx.current = new AppContext(el, elProps))
   c.rootNode = el instanceof Function ? createElement(el, elProps) : el
   const res = renderToString_internal(c.rootNode, undefined, elProps)
-  contexts.splice(contexts.indexOf(c), 1)
   renderMode.current = prev
+  ctx.current = prevCtx
   return res
 }
 

@@ -1,7 +1,7 @@
 import { Readable } from "node:stream"
 import { Component, createElement } from "../index.js"
 import { AppContext } from "../appContext.js"
-import { renderMode, ctx, node, contexts } from "../globals.js"
+import { renderMode, ctx, node } from "../globals.js"
 
 import {
   encodeHtmlEntities,
@@ -27,18 +27,18 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
 ): Readable {
   const prev = renderMode.current
   renderMode.current = "stream"
-
   const state: RequestState = {
     stream: new Readable(),
     ctx: new AppContext<any>(el, elProps),
   }
+  const prevCtx = ctx.current
   ctx.current = state.ctx
   state.ctx.rootNode = el instanceof Function ? createElement(el, elProps) : el
   renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
 
   state.stream.push(null)
-  contexts.splice(contexts.indexOf(state.ctx), 1)
   renderMode.current = prev
+  ctx.current = prevCtx
 
   return state.stream
 }

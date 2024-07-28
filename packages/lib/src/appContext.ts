@@ -33,7 +33,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     this.id = Date.now()
     this.name = options?.name ?? "App-" + this.id
     this.root = options?.root
-    contexts.push(this)
   }
 
   mount() {
@@ -52,6 +51,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       this.scheduler.queueUpdate(this.rootNode)
       this.scheduler.nextIdle(() => {
         this.mounted = true
+        contexts.push(this)
         window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)
       })
@@ -68,6 +68,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
         this.scheduler = undefined
         this.rootNode && (this.rootNode.child = undefined)
         this.mounted = false
+        contexts.splice(contexts.indexOf(this), 1)
         window.__kaioken?.emit("unmount", this as AppContext<any>)
         resolve(this)
       })
