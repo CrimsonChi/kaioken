@@ -380,7 +380,7 @@ function mapRemainingChildren(vNode: VNode) {
 function deleteRemainingChildren(vNode: VNode) {
   let n: VNode | undefined = vNode
   while (n) {
-    n.effectTag = EffectTag.DELETION
+    n.ctx.requestDelete(n)
     n = n.sibling
   }
 }
