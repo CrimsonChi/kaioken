@@ -22,6 +22,6 @@ class Portal extends Component<PortalProps> {
   }
 
   render(): JSX.Element {
-    return (this.props.children as JSX.Element) ?? null
+    return this.props.children ?? null
   }
 }

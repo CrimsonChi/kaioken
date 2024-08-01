@@ -7,11 +7,13 @@ export function createElement<T extends string | Function | typeof Component>(
   props: null | Record<string, unknown> = null,
   ...children: unknown[]
 ): Kaioken.VNode {
+  const _children =
+    children.length === 1 ? children[0] : children.length > 1 ? children : null
   const node: Kaioken.VNode = {
     ctx: ctx.current,
     type,
     index: 0,
-    props: children.length ? { ...props, children } : props ?? {},
+    props: _children !== null ? { ...props, children: _children } : props ?? {},
   }
   return node
 }
@@ -19,6 +21,7 @@ export function createElement<T extends string | Function | typeof Component>(
 export function fragment({
   children,
   ...rest
-}: { children: unknown[] } & Record<string, unknown>) {
-  return createElement(elementTypes.fragment, rest, ...children)
+}: { children: unknown } & Record<string, unknown>) {
+  const c = Array.isArray(children) ? children : [children]
+  return createElement(elementTypes.fragment, rest, ...c)
 }

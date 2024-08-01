@@ -10,6 +10,58 @@ type VNode = Kaioken.VNode
 export function reconcileChildren(
   vNode: VNode,
   currentFirstChild: VNode | null,
+  children: unknown
+) {
+  if (Array.isArray(children)) {
+    return reconcileChildrenArray(vNode, currentFirstChild, children)
+  }
+  return reconcileSingleChild(vNode, currentFirstChild, children)
+}
+
+function reconcileSingleChild(
+  vNode: VNode,
+  oldChild: VNode | null,
+  child: unknown
+) {
+  if (oldChild === null) {
+    return createChild(vNode, child)
+  }
+  const oldSibling = oldChild.sibling
+  const newNode = updateSlot(vNode, oldChild, child)
+  if (newNode !== null) {
+    if (oldChild && !newNode.prev) {
+      deleteRemainingChildren(oldChild)
+    } else if (oldSibling) {
+      deleteRemainingChildren(oldSibling)
+    }
+    return newNode
+  }
+  if (oldChild === null) {
+    return createChild(vNode, child)
+  }
+  {
+    // handle keyed children array -> keyed child
+    const existingChildren = mapRemainingChildren(oldChild)
+    const newNode = updateFromMap(existingChildren, vNode, 0, child)
+    if (newNode !== null) {
+      if (newNode.prev !== undefined) {
+        // node persisted, remove it from the list so it doesn't get deleted
+        existingChildren.delete(
+          newNode.prev.props.key === undefined
+            ? newNode.prev.index
+            : newNode.prev.props.key
+        )
+      }
+      placeChild(newNode, 0, 0)
+    }
+    existingChildren.forEach((child) => child.ctx.requestDelete(child))
+    return newNode
+  }
+}
+
+function reconcileChildrenArray(
+  vNode: VNode,
+  currentFirstChild: VNode | null,
   children: unknown[]
 ) {
   let knownKeys: Set<string> | null = null
@@ -111,7 +163,7 @@ export function reconcileChildren(
     }
   }
 
-  existingChildren.forEach((child) => ctx.current.requestDelete(child))
+  existingChildren.forEach((child) => child.ctx.requestDelete(child))
   return resultingChild
 }
 
@@ -160,7 +212,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     return updateFragment(
       parent,
       oldNode,
-      newNode.props.children || [],
+      (newNode.props.children as VNode[]) || [],
       newNode.props
     )
   }
@@ -323,6 +375,14 @@ function mapRemainingChildren(vNode: VNode) {
     n = n.sibling
   }
   return map
+}
+
+function deleteRemainingChildren(vNode: VNode) {
+  let n: VNode | undefined = vNode
+  while (n) {
+    n.effectTag = EffectTag.DELETION
+    n = n.sibling
+  }
 }
 
 const missingKeyWarnings = new Set()

@@ -16,5 +16,5 @@ export const onRenderClient: OnRenderClientAsync = async (pageContext) => {
   }
 
   document.title = getTitle(pageContext)
-  appCtx.setProps(() => ({ pageContext }))
+  await appCtx.setProps(() => ({ pageContext }))
 }

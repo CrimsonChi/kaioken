@@ -1,4 +1,4 @@
-import { useModel, useEffect } from "kaioken"
+import { useModel, useEffect, useState } from "kaioken"
 
 interface Album {
   id: number
@@ -41,20 +41,35 @@ const albums: Album[] = [
 ]
 
 export function FilteredList() {
+  const [sort, setSort] = useState<"asc" | "desc">("asc")
   const [inputRef, inputValue] = useModel("")
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  const filteredAlbums = albums.filter(
-    (a) => a.title.toLowerCase().indexOf(inputValue.toLowerCase()) > -1
-  )
+  const filteredAlbums = albums
+    .filter((a) => a.title.toLowerCase().indexOf(inputValue.toLowerCase()) > -1)
+    .sort((a, b) => {
+      if (sort === "asc") {
+        return a.id - b.id
+      } else {
+        return b.id - a.id
+      }
+    })
 
   return (
     <div>
       <div className="max-w-[340px] p-0 overflow-hidden">
         <div className=" p-4">
-          <h2 className="mb-4 font-bold text-lg">Albums</h2>
+          <div className="flex w-full justify-between">
+            <h2 className="mb-4 font-bold text-lg">Albums</h2>
+            <button
+              onclick={() => setSort(sort === "asc" ? "desc" : "asc")}
+              className="text-sm underline"
+            >
+              Sort
+            </button>
+          </div>
           <div className="sticky top-0 bg-stone-700 mb-4 flex rounded z-10 shadow-md shadow-stone-900">
             <input
               ref={inputRef}
@@ -79,11 +94,6 @@ export function FilteredList() {
           <AlbumList albums={filteredAlbums} />
         </div>
       </div>
-      <span className="block text-neutral-400 w-5/12">
-        This component also demonstrates the ability to accurately update the
-        DOM and keep children ordering correct, even when a tag is dynamically
-        swapped
-      </span>
     </div>
   )
 }

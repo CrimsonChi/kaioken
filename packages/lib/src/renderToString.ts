@@ -49,12 +49,14 @@ function renderToString_internal<T extends Record<string, unknown>>(
 
   el.parent = parent
   const props = el.props ?? {}
-  const children = props.children ?? []
+  const children = props.children
   const type = el.type
   if (type === elementTypes.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
-  if (type === elementTypes.fragment)
+  if (type === elementTypes.fragment) {
+    if (!Array.isArray(children)) return renderToString_internal(children, el)
     return children.map((c) => renderToString_internal(c, el, props)).join("")
+  }
 
   if (typeof type !== "string") {
     node.current = el
@@ -79,7 +81,9 @@ function renderToString_internal<T extends Record<string, unknown>>(
       ? Signal.isSignal(props.innerHTML)
         ? props.innerHTML.value
         : props.innerHTML
-      : children.map((c) => renderToString_internal(c, el)).join("")
+      : Array.isArray(children)
+        ? children.map((c) => renderToString_internal(c, el)).join("")
+        : renderToString_internal(children, el)
 
   return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
 }

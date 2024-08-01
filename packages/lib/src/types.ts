@@ -110,7 +110,7 @@ declare global {
       instance?: Component
       props: {
         [key: string]: any
-        children?: unknown[]
+        children?: unknown
         key?: JSX.ElementKey
         ref?: Kaioken.Ref<unknown>
       }

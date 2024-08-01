@@ -216,7 +216,7 @@ export class Scheduler {
             reconcileChildren(
               vNode,
               vNode.child || null,
-              vNode.props.children || []
+              vNode.props.children
             ) || undefined
         } else {
           this.updateHostComponent(vNode)
@@ -266,9 +266,8 @@ export class Scheduler {
     }
 
     vNode.child =
-      reconcileChildren(vNode, vNode.child || null, [
-        vNode.instance.render(),
-      ] as VNode[]) || undefined
+      reconcileChildren(vNode, vNode.child || null, vNode.instance.render()) ||
+      undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -277,9 +276,11 @@ export class Scheduler {
     this.appCtx.hookIndex = 0
     node.current = vNode
     vNode.child =
-      reconcileChildren(vNode, vNode.child || null, [
-        (vNode.type as Function)(vNode.props),
-      ]) || undefined
+      reconcileChildren(
+        vNode,
+        vNode.child || null,
+        (vNode.type as Function)(vNode.props)
+      ) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -299,11 +300,8 @@ export class Scheduler {
       vNode.props.ref.current = vNode.dom
     }
     vNode.child =
-      reconcileChildren(
-        vNode,
-        vNode.child || null,
-        vNode.props.children || []
-      ) || undefined
+      reconcileChildren(vNode, vNode.child || null, vNode.props.children) ||
+      undefined
     node.current = undefined
   }
 }

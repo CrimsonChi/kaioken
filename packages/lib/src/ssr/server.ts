@@ -79,13 +79,15 @@ function renderToStream_internal<T extends Record<string, unknown>>(
 
   el.parent = parent
   const props = el.props ?? {}
-  const children = props.children ?? []
+  const children = props.children
   const type = el.type
   if (type === et.text) {
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
   if (type === et.fragment) {
+    if (!Array.isArray(children))
+      return renderToStream_internal(state, children, el)
     return children.forEach((c) => renderToStream_internal(state, c, el))
   }
 
@@ -121,7 +123,11 @@ function renderToStream_internal<T extends Record<string, unknown>>(
         )
       )
     } else {
-      children.forEach((c) => renderToStream_internal(state, c, el))
+      if (Array.isArray(children)) {
+        children.forEach((c) => renderToStream_internal(state, c, el))
+      } else {
+        renderToStream_internal(state, children, el)
+      }
     }
 
     state.stream.push(`</${type}>`)

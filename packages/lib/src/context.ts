@@ -3,9 +3,9 @@ import { fragment } from "./element.js"
 
 export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
   const ctx: Kaioken.Context<T> = {
-    Provider: ({ value, children = [] }: Kaioken.ProviderProps<T>) => {
+    Provider: ({ value, children }: Kaioken.ProviderProps<T>) => {
       return fragment({
-        children: children as JSX.Element[],
+        children,
         [contextDataSymbol]: {
           value,
           ctx,
