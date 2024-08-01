@@ -285,16 +285,11 @@ function commitWork(vNode: VNode) {
       }
     }
 
-    if (!n.sibling && !n.child) {
+    if (!n.sibling) {
       hostDpStack.pop()
     }
-
-    if (commitSibling) {
-      if (n.sibling) {
-        stack.push(n.sibling)
-      } else if (n.parent && Portal.isPortal(n.parent.type)) {
-        hostDpStack.pop()
-      }
+    if (commitSibling && n.sibling) {
+      stack.push(n.sibling)
     }
     commitSibling = true
 
