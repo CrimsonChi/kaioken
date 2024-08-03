@@ -5,17 +5,21 @@ import { navigate } from "./navigate.js"
 export interface LinkProps extends ElementProps<"a"> {
   to: string
 }
-export function Link({ to, children, ...props }: LinkProps) {
+export function Link(props: LinkProps) {
   return createElement(
     "a",
     {
-      href: to,
+      href: props.to,
       onclick: (e: Event) => {
         e.preventDefault()
-        navigate(to)
+        navigate(props.to)
       },
       ...props,
     },
-    ...((children as Array<JSX.Element>) ?? [])
+    ...(!("children" in props)
+      ? []
+      : Array.isArray(props.children)
+        ? props.children
+        : [props.children])
   )
 }

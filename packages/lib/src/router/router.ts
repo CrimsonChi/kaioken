@@ -129,7 +129,7 @@ export function Router(props: RouterProps) {
         isDefault: false,
       },
     },
-    [route ?? fallbackRoute ?? null]
+    route ?? fallbackRoute ?? null
   )
 }
 
