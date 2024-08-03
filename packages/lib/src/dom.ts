@@ -275,8 +275,6 @@ function commitWork(vNode: VNode) {
       const [mntParent, prevDom] = useHostContext(n as ElementVNode)
       commitDom(n, mntParent, prevDom)
     } else if (n.effectTag === EffectTag.PLACEMENT) {
-      // i dislike this but it prevents event listeners from sometimes being added twice.. to be investigated
-      n.prev = { ...n, props: { ...n.props }, prev: undefined }
       // propagate the effect to children
       let c = n.child
       while (c) {
@@ -342,6 +340,9 @@ function commitDom(
 }
 
 function commitDeletion(vNode: VNode, deleteSibling = false) {
+  if (vNode === vNode.parent?.child) {
+    vNode.parent.child = vNode.sibling
+  }
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!

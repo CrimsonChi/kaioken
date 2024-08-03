@@ -1,5 +1,5 @@
 import type { AppContext } from "./appContext"
-import { Component } from "./component.js"
+import { Component, ComponentConstructor } from "./component.js"
 import { EffectTag, elementTypes as et } from "./constants.js"
 import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
 import { ctx, node, renderMode } from "./globals.js"
@@ -254,12 +254,9 @@ export class Scheduler {
   private updateClassComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
+    const type = vNode.type as ComponentConstructor
     if (!vNode.instance) {
-      const instance =
-        vNode.prev?.instance ??
-        new (vNode.type as { new (props: Record<string, unknown>): Component })(
-          vNode.props
-        )
+      const instance = vNode.prev?.instance ?? new type(vNode.props)
       vNode.instance = instance
     } else {
       vNode.instance.props = vNode.props
