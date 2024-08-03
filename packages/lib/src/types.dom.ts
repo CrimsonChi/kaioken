@@ -650,6 +650,27 @@ interface SvgColorInterpolation {
 // colorInterpolationFilters
 
 interface SvgElementAttributes {
+  animateTransform: {
+    begin?: string
+    dur?: string
+    end?: string
+    min?: string
+    max?: string
+    restart?: "always" | "whenNotActive" | "never"
+    repeatCount?: "indefinite" | number
+    repeatDur?: string
+    fill?: "freeze" | "remove" | "default"
+    calcMode?: "linear" | "discrete" | "spline" | "paced"
+    keyTimes?: string
+    keySplines?: string
+    from?: string
+    to?: string
+    by?: string
+    attributeName?: string
+    attributeType?: "CSS" | "XML"
+    additive?: "replace" | "sum"
+    accumulate?: "none" | "sum"
+  }
   circle: SvgStrokeAttributes & {
     cx?: string | number
     cy?: string | number

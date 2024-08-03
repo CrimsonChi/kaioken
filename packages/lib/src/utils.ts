@@ -181,6 +181,7 @@ const svgTags = [
   "tspan",
   "use",
   "foreignObject",
+  "animateTransform",
   "desc",
   "title",
   "switch",
