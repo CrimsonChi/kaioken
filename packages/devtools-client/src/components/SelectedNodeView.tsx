@@ -1,8 +1,7 @@
-import { AppContext, useEffect } from "kaioken"
+import { AppContext, useEffect, useRequestUpdate } from "kaioken"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
-import { useRequestUpdate } from "../hooks/useRequestUpdate"
 
 export function SelectedNodeView() {
   const {
