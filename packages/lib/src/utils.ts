@@ -1,6 +1,4 @@
-import { node, renderMode } from "./globals.js"
-import type { AppContext } from "./appContext"
-import { warnDeprecated } from "./warning.js"
+import { renderMode } from "./globals.js"
 import { regexUnits } from "./constants.js"
 
 export {
@@ -11,8 +9,6 @@ export {
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   shallowCompare,
-  getNodeAppContext,
-  getCurrentNode,
   sideEffectsEnabled,
   encodeHtmlEntities,
   noop,
@@ -24,21 +20,8 @@ export {
 
 const noop = Object.freeze(() => {})
 
-let hasWarned_getNodeAppContext = false
-function getNodeAppContext(node: Kaioken.VNode): AppContext | undefined {
-  if (!hasWarned_getNodeAppContext) {
-    hasWarned_getNodeAppContext = true
-    warnDeprecated("getNodeAppContext", "", "Use the node.ctx field instead")
-  }
-  return node.ctx
-}
-
 function sideEffectsEnabled() {
   return renderMode.current === "dom" || renderMode.current === "hydrate"
-}
-
-function getCurrentNode() {
-  return node.current
 }
 
 function isVNode(thing: unknown): thing is Kaioken.VNode {

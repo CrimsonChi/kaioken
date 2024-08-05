@@ -1,5 +1,6 @@
 import { componentSymbol } from "./constants.js"
 import { node } from "./globals.js"
+import { useAppContext } from "./hooks/utils.js"
 
 export { Component }
 
@@ -22,7 +23,8 @@ abstract class Component<T = Record<string, unknown>> {
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {
-      queueMicrotask(() => this.vNode.ctx.requestUpdate(this.vNode))
+      const ctx = useAppContext(this.vNode)
+      queueMicrotask(() => ctx.requestUpdate(this.vNode))
     }
   }
 

@@ -15,7 +15,7 @@ describe("reconciler", () => {
     ctx.current.requestDelete = mockRequestDeleteFn
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kaioken.createElement("div")
-    node.child = reconcileChildren(node, null, [
+    node.child = reconcileChildren(ctx.current, node, null, [
       false,
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
     ])!
@@ -31,7 +31,7 @@ describe("reconciler", () => {
     }
 
     const mockReconcile = () => {
-      node.child = reconcileChildren(node, node.child!, [
+      node.child = reconcileChildren(ctx.current, node, node.child!, [
         false,
         items.map((i) => kaioken.createElement("div", { key: i }, i)),
       ])!
@@ -62,7 +62,7 @@ describe("reconciler", () => {
 
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kaioken.createElement("div")
-    node.child = reconcileChildren(node, null, [
+    node.child = reconcileChildren(ctx.current, node, null, [
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
     ])!
     // node.child.child = {type: "fragment", props: {children: [...items.map(i => kaioken.createElement("div", {key: i}, i))]}}
@@ -77,6 +77,7 @@ describe("reconciler", () => {
     const reconcileFragmentChildren = () => {
       node.child!.child =
         reconcileChildren(
+          ctx.current,
           node.child!,
           node.child!.child || null,
           items.map((i) => kaioken.createElement("div", { key: i }, i))

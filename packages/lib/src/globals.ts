@@ -1,6 +1,6 @@
 import type { AppContext } from "./appContext"
 
-export { ctx, node, contexts, renderMode }
+export { ctx, node, contexts, renderMode, nodeToCtxMap }
 
 const contexts: Array<AppContext<any>> = []
 
@@ -15,3 +15,5 @@ const ctx = {
 const renderMode = {
   current: "dom" as "dom" | "hydrate" | "string" | "stream",
 }
+
+const nodeToCtxMap = new WeakMap<Kaioken.VNode, AppContext<any>>()

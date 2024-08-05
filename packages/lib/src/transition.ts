@@ -1,4 +1,6 @@
+import { AppContext } from "./appContext.js"
 import { Component } from "./component.js"
+import { useAppContext } from "./hooks/utils.js"
 
 export type TransitionState = "entering" | "entered" | "exiting" | "exited"
 type TransitionProps = {
@@ -19,6 +21,12 @@ export class Transition extends Component<TransitionProps> {
     transitionState: "exited" as TransitionState,
     timeoutRef: null as number | null,
   }
+  ctx: AppContext
+
+  constructor(props: TransitionProps) {
+    super(props)
+    this.ctx = useAppContext(this.vNode)
+  }
 
   render(): JSX.Element {
     return this.props.element(this.state.transitionState)
@@ -35,7 +43,7 @@ export class Transition extends Component<TransitionProps> {
 
   componentDidMount(): void {
     if (this.props.in) {
-      this.vNode.ctx.scheduler?.nextIdle(() => {
+      this.ctx.scheduler?.nextIdle(() => {
         this.setTransitionState("entering")
         this.queueStateChange("entered")
       })
@@ -70,7 +78,7 @@ export class Transition extends Component<TransitionProps> {
       (transitionState === "exited" || transitionState === "entered") &&
       this.props.onTransitionEnd
     ) {
-      this.vNode.ctx.scheduler?.nextIdle(() =>
+      this.ctx.scheduler?.nextIdle(() =>
         this.props.onTransitionEnd!(transitionState)
       )
     }

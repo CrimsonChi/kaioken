@@ -1,6 +1,6 @@
 import { SignalKey } from "./constants.js"
 import { node, renderMode } from "./globals.js"
-import { useHook } from "./hooks/utils.js"
+import { useAppContext, useHook } from "./hooks/utils.js"
 
 export const signal = <T>(initial: T) => {
   return !node.current
@@ -69,7 +69,8 @@ export class Signal<T> {
       if (consumer instanceof Function) {
         return consumer(this.#value)
       }
-      consumer.ctx.requestUpdate(consumer)
+      const ctx = useAppContext(consumer)
+      ctx.requestUpdate(consumer)
     })
   }
 }

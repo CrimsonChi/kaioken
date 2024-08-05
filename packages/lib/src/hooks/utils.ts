@@ -1,34 +1,44 @@
-import { warnDeprecated } from "../warning.js"
-import { ctx, node, renderMode } from "../globals.js"
+import { ctx, node, nodeToCtxMap } from "../globals.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
   depsRequireChange,
   useHook,
-  shouldExecHook,
-  useCurrentNode,
+  useVNode,
+  useAppContext,
+  useRequestUpdate,
   type Hook,
   type HookCallback,
   type HookCallbackState,
 }
+/**
+ * Used obtain an 'requestUpdate' function for the current component.
+ */
+const useRequestUpdate = () => {
+  const n = node.current
+  if (!n) error_hookMustBeCalledTopLevel("useRequestUpdate")
+  const ctx = useAppContext(n)
+  return () => ctx.requestUpdate(n)
+}
 
-const useCurrentNode = () => {
+/**
+ * Used to obtain the 'AppContext' for the current component.
+ */
+const useAppContext = (n?: Kaioken.VNode) => {
+  let _n = n || node.current
+  if (!_n) error_hookMustBeCalledTopLevel("useAppContext")
+  const ctx = nodeToCtxMap.get(_n)
+  if (!ctx) throw new Error("[kaioken]: Unable to find node's AppContext")
+  return ctx
+}
+
+/**
+ * Used to obtain the 'VNode' for the current component.
+ */
+const useVNode = () => {
   const n = node.current
   if (!n) error_hookMustBeCalledTopLevel("useCurrentNode")
   return n
-}
-
-let hasWarnedShouldExecHook = false
-const shouldExecHook = () => {
-  if (!hasWarnedShouldExecHook) {
-    hasWarnedShouldExecHook = true
-    warnDeprecated(
-      "shouldExecHook()",
-      "due to ambiguity",
-      "Use sideEffectsEnabled() instead"
-    )
-  }
-  return renderMode.current === "dom" || renderMode.current === "hydrate"
 }
 
 type Hook<T> = Kaioken.Hook<T>
@@ -61,7 +71,7 @@ function useHook<T, U extends HookCallback<T>>(
   }
   const vNode = node.current
   if (!vNode) error_hookMustBeCalledTopLevel(hookName)
-  const ctx = vNode.ctx
+  const ctx = useAppContext(vNode)
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
   const hook =
     oldHook ??

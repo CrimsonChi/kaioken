@@ -10,7 +10,6 @@ import type {
   SvgElementAttributes,
   SvgGlobalAttributes,
 } from "./types.dom"
-import type { AppContext } from "./appContext"
 
 export type { ElementProps }
 
@@ -114,7 +113,6 @@ declare global {
         key?: JSX.ElementKey
         ref?: Kaioken.Ref<unknown>
       }
-      ctx: AppContext
       index: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]

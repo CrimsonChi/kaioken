@@ -165,12 +165,12 @@ export class Scheduler {
       (this.deletions.length || this.treesInProgress.length)
     ) {
       while (this.deletions.length) {
-        commitWork(this.deletions.pop()!)
+        commitWork(this.deletions.pop()!, this.appCtx)
       }
       if (this.treesInProgress.length) {
         this.currentTreeIndex = 0
         while (this.treesInProgress.length) {
-          commitWork(this.treesInProgress.pop()!)
+          commitWork(this.treesInProgress.pop()!, this.appCtx)
         }
 
         while (this.queuedNodeEffectSets.length) {
@@ -214,6 +214,7 @@ export class Scheduler {
         } else if (vNode.type === et.fragment) {
           vNode.child =
             reconcileChildren(
+              this.appCtx,
               vNode,
               vNode.child || null,
               vNode.props.children
@@ -263,8 +264,12 @@ export class Scheduler {
     }
 
     vNode.child =
-      reconcileChildren(vNode, vNode.child || null, vNode.instance.render()) ||
-      undefined
+      reconcileChildren(
+        this.appCtx,
+        vNode,
+        vNode.child || null,
+        vNode.instance.render()
+      ) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -274,6 +279,7 @@ export class Scheduler {
     node.current = vNode
     vNode.child =
       reconcileChildren(
+        this.appCtx,
         vNode,
         vNode.child || null,
         (vNode.type as Function)(vNode.props)
@@ -297,8 +303,12 @@ export class Scheduler {
       vNode.props.ref.current = vNode.dom
     }
     vNode.child =
-      reconcileChildren(vNode, vNode.child || null, vNode.props.children) ||
-      undefined
+      reconcileChildren(
+        this.appCtx,
+        vNode,
+        vNode.child || null,
+        vNode.props.children
+      ) || undefined
     node.current = undefined
   }
 }

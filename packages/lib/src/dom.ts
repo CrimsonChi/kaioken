@@ -4,6 +4,7 @@ import {
   propToHtmlAttr,
   svgTags,
 } from "./utils.js"
+import type { AppContext } from "./appContext"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
@@ -262,7 +263,7 @@ function resetHostContext() {
   hostDpStack.length = 0
 }
 
-function commitWork(vNode: VNode) {
+function commitWork(vNode: VNode, appCtx: AppContext) {
   let commitSibling = false
   const stack: VNode[] = [vNode]
   resetHostContext()
@@ -300,23 +301,23 @@ function commitWork(vNode: VNode) {
       stack.push(n.child)
     }
 
-    onNodeUpdated(n)
+    onNodeUpdated(n, appCtx)
     n.effectTag = undefined
     n.prev = { ...n, props: { ...n.props }, prev: undefined }
   }
 }
 
-function onNodeUpdated(n: VNode) {
+function onNodeUpdated(n: VNode, appCtx: AppContext) {
   const instance = n.instance
   if (instance) {
     const onMounted = instance.componentDidMount?.bind(instance)
     if (!n.prev && onMounted) {
-      n.ctx.queueEffect(onMounted)
+      appCtx.queueEffect(onMounted)
     } else if (n.effectTag === EffectTag.UPDATE) {
       const onUpdated = instance.componentDidUpdate?.bind(instance)
-      if (onUpdated) n.ctx.queueEffect(onUpdated)
+      if (onUpdated) appCtx.queueEffect(onUpdated)
     }
-    n.ctx.scheduler?.queueCurrentNodeEffects()
+    appCtx.scheduler?.queueCurrentNodeEffects()
   }
 }
 

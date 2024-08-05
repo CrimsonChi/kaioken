@@ -1,24 +1,27 @@
+import type { AppContext } from "./appContext"
 import { EffectTag, elementTypes } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
-import { Signal } from "./index.js"
+import { Signal } from "./signal.js"
 import { __DEV__ } from "./env.js"
 import { createElement } from "./element.js"
 
 type VNode = Kaioken.VNode
 
 export function reconcileChildren(
+  appCtx: AppContext,
   vNode: VNode,
   currentFirstChild: VNode | null,
   children: unknown
 ) {
   if (Array.isArray(children)) {
-    return reconcileChildrenArray(vNode, currentFirstChild, children)
+    return reconcileChildrenArray(appCtx, vNode, currentFirstChild, children)
   }
-  return reconcileSingleChild(vNode, currentFirstChild, children)
+  return reconcileSingleChild(appCtx, vNode, currentFirstChild, children)
 }
 
 function reconcileSingleChild(
+  appCtx: AppContext,
   vNode: VNode,
   oldChild: VNode | null,
   child: unknown
@@ -30,9 +33,9 @@ function reconcileSingleChild(
   const newNode = updateSlot(vNode, oldChild, child)
   if (newNode !== null) {
     if (oldChild && !newNode.prev) {
-      deleteRemainingChildren(oldChild)
+      deleteRemainingChildren(appCtx, oldChild)
     } else if (oldSibling) {
-      deleteRemainingChildren(oldSibling)
+      deleteRemainingChildren(appCtx, oldSibling)
     }
     return newNode
   }
@@ -54,12 +57,13 @@ function reconcileSingleChild(
       }
       placeChild(newNode, 0, 0)
     }
-    existingChildren.forEach((child) => child.ctx.requestDelete(child))
+    existingChildren.forEach((child) => appCtx.requestDelete(child))
     return newNode
   }
 }
 
 function reconcileChildrenArray(
+  appCtx: AppContext,
   vNode: VNode,
   currentFirstChild: VNode | null,
   children: unknown[]
@@ -163,7 +167,7 @@ function reconcileChildrenArray(
     }
   }
 
-  existingChildren.forEach((child) => child.ctx.requestDelete(child))
+  existingChildren.forEach((child) => appCtx.requestDelete(child))
   return resultingChild
 }
 
@@ -377,10 +381,10 @@ function mapRemainingChildren(vNode: VNode) {
   return map
 }
 
-function deleteRemainingChildren(vNode: VNode) {
+function deleteRemainingChildren(appCtx: AppContext, vNode: VNode) {
   let n: VNode | undefined = vNode
   while (n) {
-    n.ctx.requestDelete(n)
+    appCtx.requestDelete(n)
     n = n.sibling
   }
 }

@@ -1,6 +1,6 @@
 import type { Component } from "./component"
 import { elementTypes } from "./constants.js"
-import { ctx } from "./globals.js"
+import { ctx, nodeToCtxMap } from "./globals.js"
 
 export function createElement<T extends string | Function | typeof Component>(
   type: T,
@@ -10,11 +10,12 @@ export function createElement<T extends string | Function | typeof Component>(
   const _children =
     children.length === 1 ? children[0] : children.length > 1 ? children : null
   const node: Kaioken.VNode = {
-    ctx: ctx.current,
     type,
     index: 0,
-    props: _children !== null ? { ...props, children: _children } : props ?? {},
+    props:
+      _children !== null ? { ...props, children: _children } : (props ?? {}),
   }
+  nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
