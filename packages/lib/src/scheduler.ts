@@ -145,6 +145,7 @@ export class Scheduler {
 
   nextIdle(fn: (scheduler: this) => void) {
     this.nextIdleEffects.push(fn)
+    this.wake()
   }
 
   private workLoop(deadline?: IdleDeadline) {
