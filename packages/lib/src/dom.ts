@@ -2,6 +2,7 @@ import {
   booleanAttributes,
   propFilters,
   propToHtmlAttr,
+  styleObjectToCss,
   svgTags,
 } from "./utils.js"
 import type { AppContext } from "./appContext"
@@ -158,34 +159,21 @@ function setInnerHTML(dom: SomeElement, value: unknown, prev: unknown) {
 
 function setStyleProp(dom: SomeElement, value: unknown, prev: unknown) {
   if (handleAttributeRemoval(dom, "style", value)) return
-  if (typeof value === "string" && value !== prev) {
-    dom.setAttribute("style", value)
-    return
-  }
-
-  if (
-    !!prev &&
-    typeof prev === "object" &&
-    !!value &&
-    typeof value === "object"
-  ) {
-    Object.keys(prev).forEach((k) => {
-      if (!(k in value)) dom.style[k as any] = ""
-    })
-  }
-
-  if (typeof value !== "object" || !value) return
-
-  if (prev == null) {
-    Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
-      (k) => (dom.style[k as any] = value[k as keyof typeof value] as any)
-    )
-  } else if (typeof prev === "object") {
-    Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
-      (k) =>
-        value[k as keyof typeof value] !== prev[k as keyof typeof prev] &&
-        (dom.style[k as any] = value[k as keyof typeof value] as any)
-    )
+  if (prev === value) return
+  switch (typeof value) {
+    case "string":
+      dom.setAttribute("style", value)
+      break
+    case "object":
+      const newStyleString = styleObjectToCss(
+        value as Partial<CSSStyleDeclaration>
+      )
+      if (newStyleString !== prev) {
+        dom.setAttribute("style", newStyleString)
+      }
+      break
+    default:
+      break
   }
 }
 

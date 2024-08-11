@@ -8,6 +8,7 @@ export {
   applyRecursive,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
+  styleObjectToCss,
   shallowCompare,
   sideEffectsEnabled,
   encodeHtmlEntities,
