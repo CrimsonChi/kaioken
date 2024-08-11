@@ -37,7 +37,7 @@ const useAppContext = (n?: Kaioken.VNode) => {
  */
 const useVNode = () => {
   const n = node.current
-  if (!n) error_hookMustBeCalledTopLevel("useCurrentNode")
+  if (!n) error_hookMustBeCalledTopLevel("useVNode")
   return n
 }
 
