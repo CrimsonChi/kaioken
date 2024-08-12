@@ -39,9 +39,6 @@ function reconcileSingleChild(
     }
     return newNode
   }
-  if (oldChild === null) {
-    return createChild(vNode, child)
-  }
   {
     // handle keyed children array -> keyed child
     const existingChildren = mapRemainingChildren(oldChild)
