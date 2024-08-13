@@ -18,6 +18,8 @@ type BaseElement = Element
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
   JSX.IntrinsicElements[T]
 
+type WebComponentTag = `${string}-${string}`
+
 type ElementMap = {
   [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
     GlobalAttributes &
@@ -31,6 +33,8 @@ type ElementMap = {
     EventAttributes<K> &
     Partial<ARIAMixin> &
     JSX.ElementAttributes
+} & {
+  [K in WebComponentTag]: Record<string, any>
 }
 
 declare global {
