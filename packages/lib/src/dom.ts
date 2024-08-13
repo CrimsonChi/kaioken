@@ -198,12 +198,9 @@ function getDomParent(node: VNode): DomParentSearchResult {
   return { node: parentNode, element: parentNodeElement }
 }
 
-function placeDom(
-  vNode: VNode,
-  mntParent: DomParentSearchResult,
-  prevSiblingDom?: MaybeDom
-) {
+function placeDom(vNode: VNode) {
   const dom = vNode.dom as SomeDom
+  const [mntParent, prevSiblingDom] = useHostContext(vNode as ElementVNode)
   if (prevSiblingDom) {
     prevSiblingDom.after(dom)
     return
@@ -212,6 +209,10 @@ function placeDom(
   if (element.childNodes.length === 0) {
     element.appendChild(dom)
   } else {
+    /**
+     * scan depth-first through the tree from the mount parent
+     * and find the previous dom node (if any)
+     */
     const stack = [mountParentNode.child]
     let prevDom: MaybeDom
 
@@ -261,8 +262,7 @@ function commitWork(vNode: VNode, appCtx: AppContext) {
     const dom = n.dom
 
     if (dom && n.effectTag !== EffectTag.DELETION) {
-      const [mntParent, prevDom] = useHostContext(n as ElementVNode)
-      commitDom(n, mntParent, prevDom)
+      commitDom(n)
     } else if (n.effectTag === EffectTag.PLACEMENT) {
       // propagate the effect to children
       let c = n.child
@@ -309,11 +309,7 @@ function onNodeUpdated(n: VNode, appCtx: AppContext) {
   }
 }
 
-function commitDom(
-  n: VNode,
-  mntParent: DomParentSearchResult,
-  prevSiblingDom?: MaybeDom
-) {
+function commitDom(n: VNode) {
   const dom = n.dom as SomeDom
   if (renderMode.current === "hydrate") {
     if (n.props.ref) {
@@ -323,7 +319,7 @@ function commitDom(
   }
   if (n.instance?.doNotModifyDom) return
   if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-    placeDom(n, mntParent, prevSiblingDom)
+    placeDom(n)
   }
   updateDom(n)
 }

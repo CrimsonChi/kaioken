@@ -1,9 +1,11 @@
 //import { useState } from "kaioken"
 
-import { signal, useState } from "kaioken"
+import { usePageContext } from "$/context/pageContext"
+import { Portal, signal, useState } from "kaioken"
 
 const key = signal(0)
 export function Page() {
+  const { isClient } = usePageContext()
   return (
     <div>
       <h1>Hello world !</h1>
@@ -18,6 +20,18 @@ export function Page() {
           </div>
         )}
       </Counter>
+
+      <div id="test">
+        {isClient && (
+          <Portal container={document.getElementById("portal")!}>
+            <div>Content 0</div>
+          </Portal>
+        )}
+        <div>Content 1</div>
+        <div>Content 2</div>
+        <div>Content 3</div>
+        <div>Content 4</div>
+      </div>
     </div>
   )
 }
