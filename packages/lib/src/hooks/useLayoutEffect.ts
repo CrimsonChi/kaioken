@@ -10,7 +10,7 @@ export function useLayoutEffect(
   deps?: unknown[]
 ): void {
   if (!sideEffectsEnabled()) return
-  return useHook("useEffect", { deps }, ({ hook, oldHook }) => {
+  return useHook("useLayoutEffect", { deps }, ({ hook, oldHook }) => {
     if (depsRequireChange(deps, oldHook?.deps)) {
       hook.deps = deps
       if (oldHook) {
