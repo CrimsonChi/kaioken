@@ -15,10 +15,7 @@ export function useState<T>(
 
   return useHook(
     "useState",
-    createUseStateHookState as any as {
-      state: T
-      dispatch: (value: Kaioken.StateSetter<T>) => void
-    },
+    createUseStateHookState as typeof createUseStateHookState<T>,
     ({ hook, oldHook, update }) => {
       if (!oldHook) {
         hook.state = initial instanceof Function ? initial() : initial
