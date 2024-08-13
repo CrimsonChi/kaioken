@@ -5,7 +5,7 @@ import {
   useHook,
 } from "./utils.js"
 
-export function useEffect(
+export function useLayoutEffect(
   callback: () => void | (() => void),
   deps?: unknown[]
 ): void {
