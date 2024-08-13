@@ -166,12 +166,12 @@ export class Scheduler {
       (this.deletions.length || this.treesInProgress.length)
     ) {
       while (this.deletions.length) {
-        commitWork(this.deletions.pop()!, this.appCtx)
+        commitWork(this.deletions.shift()!, this.appCtx)
       }
       if (this.treesInProgress.length) {
         this.currentTreeIndex = 0
         while (this.treesInProgress.length) {
-          commitWork(this.treesInProgress.pop()!, this.appCtx)
+          commitWork(this.treesInProgress.shift()!, this.appCtx)
         }
 
         while (this.queuedNodeEffectSets.length) {

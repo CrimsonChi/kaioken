@@ -206,6 +206,10 @@ function placeDom(vNode: VNode) {
     return
   }
   const { element, node: mountParentNode } = mntParent
+  if (Portal.isPortal(mountParentNode.type) && !dom.isConnected) {
+    element.appendChild(dom)
+    return
+  }
   if (element.childNodes.length === 0) {
     element.appendChild(dom)
   } else {
