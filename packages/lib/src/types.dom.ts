@@ -44,6 +44,16 @@ type InputType =
   | "url"
   | "week"
 
+type InputMode =
+  | "decimal"
+  | "email"
+  | "none"
+  | "numeric"
+  | "search"
+  | "text"
+  | "tel"
+  | "url"
+
 type LanguageCode =
   | "en"
   | "fr"
@@ -170,6 +180,8 @@ type GlobalAttributes = {
   draggable?: boolean | "auto"
   hidden?: boolean
   id?: string
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#inputmode) */
+  inputMode?: InputMode
   lang?: LanguageCode
   spellcheck?: boolean | "default"
   style?: string | Partial<CSSStyleDeclaration>
