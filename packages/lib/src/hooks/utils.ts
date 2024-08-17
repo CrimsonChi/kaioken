@@ -1,4 +1,4 @@
-import { ctx, node, nodeToCtxMap } from "../globals.js"
+import { node, nodeToCtxMap } from "../globals.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
@@ -47,7 +47,7 @@ type HookCallbackState<T> = {
   hook: Hook<T>
   oldHook?: Hook<T>
   update: () => void
-  queueEffect: typeof ctx.current.queueEffect
+  queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
   vNode: Kaioken.VNode
 }
 type HookCallback<T> = (state: HookCallbackState<T>) => any
@@ -72,7 +72,11 @@ function useHook<T, U extends HookCallback<T>>(
   const vNode = node.current
   if (!vNode) error_hookMustBeCalledTopLevel(hookName)
   const ctx = useAppContext(vNode)
-  const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
+  const oldHook = (
+    vNode.prev
+      ? vNode.prev.hooks?.at(ctx.hookIndex)
+      : vNode.hooks?.at(ctx.hookIndex)
+  ) as Hook<T> | undefined
   const hook =
     oldHook ??
     (typeof hookDataOrInitializer === "function"
@@ -95,7 +99,12 @@ function useHook<T, U extends HookCallback<T>>(
       hook,
       oldHook,
       update: () => ctx.requestUpdate(vNode),
-      queueEffect: ctx.queueEffect.bind(ctx),
+      queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
+        if (opts?.immediate) {
+          return ctx.queueImmediateEffect(vNode, callback)
+        }
+        ctx.queueEffect(vNode, callback)
+      },
       vNode,
     })
     return res

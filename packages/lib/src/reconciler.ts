@@ -32,7 +32,7 @@ function reconcileSingleChild(
   const oldSibling = oldChild.sibling
   const newNode = updateSlot(vNode, oldChild, child)
   if (newNode !== null) {
-    if (oldChild && !newNode.prev) {
+    if (oldChild && oldChild !== newNode && !newNode.prev) {
       deleteRemainingChildren(appCtx, oldChild)
     } else if (oldSibling) {
       deleteRemainingChildren(appCtx, oldSibling)

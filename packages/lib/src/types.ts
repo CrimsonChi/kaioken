@@ -126,6 +126,8 @@ declare global {
       prev?: VNode
       effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
       frozen?: boolean
+      effects?: Array<Function>
+      immediateEffects?: Array<Function>
     }
   }
 }
