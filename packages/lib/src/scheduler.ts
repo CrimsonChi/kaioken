@@ -223,6 +223,7 @@ export class Scheduler {
       }
       const tip = [...this.treesInProgress]
       this.treesInProgress = []
+      this.currentTreeIndex = 0
       for (const t of tip) {
         commitWork(t)
       }
