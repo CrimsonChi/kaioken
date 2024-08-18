@@ -92,9 +92,9 @@ function createStore<T, U extends MethodFactory<T>>(
     return useHook(
       "useStore",
       { stateSlice: null as any as T | R, lastChangeSync: -1 },
-      ({ hook, oldHook, vNode }) => {
+      ({ hook, isInit, vNode }) => {
         const ctx = useAppContext(vNode)
-        if (!oldHook) {
+        if (isInit) {
           subscribers.add(vNode)
           hook.stateSlice = sliceFn ? sliceFn(state) : state
           if (sliceFn || equality) {

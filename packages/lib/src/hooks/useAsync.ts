@@ -49,7 +49,7 @@ export function useAsync<T>(
       loading: true as boolean,
       invalidate: noop,
     },
-    ({ hook, oldHook, update }) => {
+    ({ hook, isInit, update }) => {
       const load = (force: boolean = false) => {
         hook.data = null
         hook.loading = true
@@ -73,10 +73,10 @@ export function useAsync<T>(
             }
           })
       }
-      if (depsRequireChange(deps, oldHook?.deps)) {
+      if (isInit || depsRequireChange(deps, hook.deps)) {
         load()
       }
-      if (!oldHook) {
+      if (isInit) {
         hook.invalidate = (forceUpdate?: boolean) => {
           load()
           forceUpdate && update()

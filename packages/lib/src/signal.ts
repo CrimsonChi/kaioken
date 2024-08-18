@@ -8,8 +8,8 @@ export const signal = <T>(initial: T) => {
     : useHook(
         "useSignal",
         { signal: undefined as any as Signal<T> },
-        ({ hook, oldHook }) => {
-          if (!oldHook) {
+        ({ hook, isInit }) => {
+          if (isInit) {
             hook.signal = new Signal(initial)
             hook.debug = () => ({ value: hook.signal.value })
           }

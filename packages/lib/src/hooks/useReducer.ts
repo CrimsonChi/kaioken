@@ -10,8 +10,8 @@ export function useReducer<T, A>(
   return useHook(
     "useReducer",
     { state, dispatch: noop as (action: A) => void },
-    ({ hook, oldHook, update }) => {
-      if (!oldHook) {
+    ({ hook, isInit, update }) => {
+      if (isInit) {
         hook.dispatch = (action: A) => {
           const newState = reducer(hook.state, action)
           if (newState !== hook.state) {

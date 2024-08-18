@@ -14,8 +14,8 @@ export function useState<T>(
       state: undefined as T,
       dispatch: noop as (value: Kaioken.StateSetter<T>) => void,
     },
-    ({ hook, oldHook, update }) => {
-      if (!oldHook) {
+    ({ hook, isInit, update }) => {
+      if (isInit) {
         hook.state = initial instanceof Function ? initial() : initial
         hook.dispatch = (setter: Kaioken.StateSetter<T>) => {
           const newState =

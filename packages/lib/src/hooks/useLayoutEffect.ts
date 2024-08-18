@@ -13,12 +13,10 @@ export function useLayoutEffect(
   return useHook(
     "useLayoutEffect",
     { deps },
-    ({ hook, oldHook, queueEffect }) => {
-      if (depsRequireChange(deps, oldHook?.deps)) {
+    ({ hook, isInit, queueEffect }) => {
+      if (isInit || depsRequireChange(deps, hook.deps)) {
         hook.deps = deps
-        if (oldHook) {
-          cleanupHook(oldHook)
-        }
+        cleanupHook(hook)
         queueEffect(
           () => {
             const cleanup = callback()

@@ -45,7 +45,7 @@ type Hook<T> = Kaioken.Hook<T>
 
 type HookCallbackState<T> = {
   hook: Hook<T>
-  oldHook?: Hook<T>
+  isInit: boolean
   update: () => void
   queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
   vNode: Kaioken.VNode
@@ -97,7 +97,7 @@ function useHook<T, U extends HookCallback<T>>(
   try {
     const res = callback({
       hook,
-      oldHook,
+      isInit: !oldHook,
       update: () => ctx.requestUpdate(vNode),
       queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
         if (opts?.immediate) {

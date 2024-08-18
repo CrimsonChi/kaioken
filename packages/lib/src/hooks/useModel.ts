@@ -19,8 +19,8 @@ export function useModel<
       ref: { current: null } as Kaioken.Ref<T | null>,
       dispatch: noop as (value: U) => void,
     },
-    ({ hook, oldHook, update, queueEffect }) => {
-      if (!oldHook) {
+    ({ hook, isInit, update, queueEffect }) => {
+      if (isInit) {
         hook.dispatch = (value: U) => {
           if (value !== hook.value) {
             hook.value = value
@@ -35,7 +35,7 @@ export function useModel<
         if (!element) {
           return
         }
-        if (!oldHook) setElementValue(element, hook.value)
+        if (isInit) setElementValue(element, hook.value)
 
         const listener = () => hook.dispatch(getElementValue(element) as U)
 

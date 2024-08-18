@@ -27,10 +27,10 @@ export function useContext<T>(
 
 const useContextCallback = <T>({
   hook,
-  oldHook,
+  isInit,
   vNode,
 }: HookCallbackState<UseContextHook<T>>) => {
-  if (!oldHook) {
+  if (isInit) {
     hook.debug = () => ({
       contextName: hook.context.Provider.displayName || "",
       value: hook.ctxNode

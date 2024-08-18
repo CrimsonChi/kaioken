@@ -10,12 +10,10 @@ export function useEffect(
   deps?: unknown[]
 ): void {
   if (!sideEffectsEnabled()) return
-  return useHook("useEffect", { deps }, ({ hook, oldHook, queueEffect }) => {
-    if (depsRequireChange(deps, oldHook?.deps)) {
+  return useHook("useEffect", { deps }, ({ hook, isInit, queueEffect }) => {
+    if (isInit || depsRequireChange(deps, hook.deps)) {
       hook.deps = deps
-      if (oldHook) {
-        cleanupHook(oldHook)
-      }
+      cleanupHook(hook)
       queueEffect(() => {
         const cleanup = callback()
         if (cleanup && typeof cleanup === "function") {
