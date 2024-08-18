@@ -5,7 +5,6 @@ import {
   styleObjectToCss,
   svgTags,
 } from "./utils.js"
-import type { AppContext } from "./appContext"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
@@ -61,7 +60,8 @@ function updateDom(node: VNode) {
       setProp(dom, key, nextProps[key], prevProps[key])
       return
     }
-    if (node.prev?.props && prevProps.nodeValue !== nextProps.nodeValue) {
+
+    if (dom.nodeValue !== nextProps.nodeValue) {
       dom.nodeValue = nextProps.nodeValue
     }
   })
@@ -256,7 +256,7 @@ function resetHostContext() {
   hostDpStack.length = 0
 }
 
-function commitWork(vNode: VNode, appCtx: AppContext) {
+function commitWork(vNode: VNode) {
   let commitSibling = false
   const stack: VNode[] = [vNode]
   resetHostContext()
@@ -293,23 +293,8 @@ function commitWork(vNode: VNode, appCtx: AppContext) {
       stack.push(n.child)
     }
 
-    onNodeUpdated(n, appCtx)
     n.effectTag = undefined
     n.prev = { ...n, props: { ...n.props }, prev: undefined }
-  }
-}
-
-function onNodeUpdated(n: VNode, appCtx: AppContext) {
-  const instance = n.instance
-  if (instance) {
-    const onMounted = instance.componentDidMount?.bind(instance)
-    if (!n.prev && onMounted) {
-      appCtx.queueEffect(onMounted)
-    } else if (n.effectTag === EffectTag.UPDATE) {
-      const onUpdated = instance.componentDidUpdate?.bind(instance)
-      if (onUpdated) appCtx.queueEffect(onUpdated)
-    }
-    appCtx.scheduler?.queueCurrentNodeEffects()
   }
 }
 

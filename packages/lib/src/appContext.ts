@@ -112,7 +112,11 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     this.scheduler?.queueDelete(node)
   }
 
-  queueEffect(callback: Function) {
-    this.scheduler?.nodeEffects.push(callback)
+  queueEffect(vNode: VNode, effect: Function) {
+    this.scheduler?.queueEffect(vNode, effect)
+  }
+
+  queueImmediateEffect(vNode: VNode, effect: Function) {
+    this.scheduler?.queueImmediateEffect(vNode, effect)
   }
 }

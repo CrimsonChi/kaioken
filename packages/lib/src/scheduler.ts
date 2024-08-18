@@ -8,21 +8,58 @@ import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { applyRecursive, vNodeContains } from "./utils.js"
 
+const CONSECUTIVE_DIRTY_LIMIT = 50
+
 type VNode = Kaioken.VNode
+
+function fireEffects(tree: VNode, immediate?: boolean) {
+  const root = tree
+  // traverse tree in a depth first manner
+  // fire effects from the child to the root
+  const rootChild = root.child
+  if (!rootChild) {
+    const arr = immediate ? tree.immediateEffects : tree.effects
+    while (arr?.length) arr.shift()!()
+    return
+  }
+
+  let branch = root.child!
+  while (branch) {
+    let c = branch
+    while (c) {
+      if (!c.child) break
+      c = c.child
+    }
+    inner: while (c && c !== root) {
+      const arr = immediate ? c.immediateEffects : c.effects
+      while (arr?.length) arr.shift()!()
+      if (c.sibling) {
+        branch = c.sibling
+        break inner
+      }
+      c = c.parent!
+    }
+    if (c === root) break
+  }
+
+  const arr = immediate ? root.immediateEffects : root.effects
+  while (arr?.length) arr.shift()!()
+}
 
 export class Scheduler {
   private nextUnitOfWork: VNode | undefined = undefined
   private treesInProgress: VNode[] = []
   private currentTreeIndex = 0
   private isRunning = false
-  private queuedNodeEffectSets: Function[][] = []
   private nextIdleEffects: ((scheduler: this) => void)[] = []
   private deletions: VNode[] = []
   private frameDeadline = 0
   private pendingCallback: IdleRequestCallback | undefined
   private channel: MessageChannel
   private frameHandle: number | null = null
-  nodeEffects: Function[] = []
+  private isImmediateCallbacksMode = false
+  private isRenderDirtied = false
+  private consecutiveDirtyCount = 0
 
   constructor(
     private appCtx: AppContext<any>,
@@ -45,7 +82,6 @@ export class Scheduler {
     this.nextUnitOfWork = undefined
     this.treesInProgress = []
     this.currentTreeIndex = 0
-    this.queuedNodeEffectSets = []
     this.nextIdleEffects = []
     this.deletions = []
     this.frameDeadline = 0
@@ -67,88 +103,108 @@ export class Scheduler {
     }
   }
 
-  queueUpdate(node: VNode) {
-    if (this.nextUnitOfWork === undefined) {
-      this.treesInProgress.push(node)
-      this.nextUnitOfWork = node
-      return this.wake()
-    } else if (this.nextUnitOfWork === node) {
+  nextIdle(fn: (scheduler: this) => void) {
+    this.nextIdleEffects.push(fn)
+    this.wake()
+  }
+
+  queueUpdate(vNode: VNode) {
+    if (this.isImmediateCallbacksMode) {
+      this.isRenderDirtied = true
+    }
+
+    if (this.nextUnitOfWork === vNode) {
       return
     }
 
-    const treeIdx = this.treesInProgress.indexOf(node)
+    if (this.nextUnitOfWork === undefined) {
+      this.treesInProgress.push(vNode)
+      this.nextUnitOfWork = vNode
+      return this.wake()
+    }
+
+    const treeIdx = this.treesInProgress.indexOf(vNode)
     // handle node as queued tree
     if (treeIdx !== -1) {
       if (treeIdx === this.currentTreeIndex) {
-        this.treesInProgress[this.currentTreeIndex] = node
-        this.nextUnitOfWork = node
+        this.treesInProgress[this.currentTreeIndex] = vNode
+        this.nextUnitOfWork = vNode
       } else if (treeIdx < this.currentTreeIndex) {
         this.currentTreeIndex--
         this.treesInProgress.splice(treeIdx, 1)
-        this.treesInProgress.push(node)
+        this.treesInProgress.push(vNode)
       }
       return
     }
 
     // handle node as child or parent of queued trees
     for (let i = 0; i < this.treesInProgress.length; i++) {
-      if (vNodeContains(this.treesInProgress[i], node)) {
+      if (vNodeContains(this.treesInProgress[i], vNode)) {
         if (i === this.currentTreeIndex) {
           // if req node is child of work node we can skip
-          if (vNodeContains(this.nextUnitOfWork, node)) return
+          if (vNodeContains(this.nextUnitOfWork, vNode)) return
           // otherwise work node is a child of req node so we need to cancel & replace it
-          this.nextUnitOfWork = node // jump back up the tree
+          this.nextUnitOfWork = vNode // jump back up the tree
         } else if (i < this.currentTreeIndex) {
           // already processed tree, create new tree with the node
-          this.treesInProgress.push(node)
+          this.treesInProgress.push(vNode)
         }
+
         return
-      } else if (vNodeContains(node, this.treesInProgress[i])) {
+      } else if (vNodeContains(vNode, this.treesInProgress[i])) {
         if (i === this.currentTreeIndex) {
           // node contains current tree, replace it
-          this.treesInProgress.splice(i, 1, node)
-          this.nextUnitOfWork = node
+          this.treesInProgress.splice(i, 1, vNode)
+          this.nextUnitOfWork = vNode
         } else if (i < this.currentTreeIndex) {
           // node contains a tree that has already been processed
           this.currentTreeIndex--
           this.treesInProgress.splice(i, 1)
-          this.treesInProgress.push(node)
+          this.treesInProgress.push(vNode)
         } else {
           // node contains a tree that has not yet been processed, 'usurp' the tree
-          this.treesInProgress.splice(i, 1, node)
+          this.treesInProgress.splice(i, 1, vNode)
         }
         return
       }
     }
     // node is not a child or parent of any queued trees, queue new tree
-    this.treesInProgress.push(node)
+    this.treesInProgress.push(vNode)
   }
 
-  queueDelete(node: VNode) {
+  queueDelete(vNode: VNode) {
+    //if (this.isPreFlush) return
     applyRecursive(
-      node,
+      vNode,
       (n) => {
         n.effectTag = EffectTag.DELETION
       },
       false
     )
-    if (node.props.ref) {
-      node.props.ref.current = null
+    if (vNode.props.ref) {
+      vNode.props.ref.current = null
     }
-    this.deletions.push(node)
+    this.deletions.push(vNode)
   }
 
-  queueCurrentNodeEffects() {
-    this.queuedNodeEffectSets.push(this.nodeEffects)
-    this.nodeEffects = []
+  queueEffect(vNode: VNode, effect: Function) {
+    //if (this.isPreFlush) return
+    ;(vNode.effects ??= []).push(effect)
   }
 
-  nextIdle(fn: (scheduler: this) => void) {
-    this.nextIdleEffects.push(fn)
-    this.wake()
+  queueImmediateEffect(vNode: VNode, effect: Function) {
+    //if (this.isPreFlush) return
+    ;(vNode.immediateEffects ??= []).push(effect)
   }
 
-  private workLoop(deadline?: IdleDeadline) {
+  private isFlushReady() {
+    return (
+      !this.nextUnitOfWork &&
+      (this.deletions.length || this.treesInProgress.length)
+    )
+  }
+
+  private workLoop(deadline?: IdleDeadline): void {
     let shouldYield = false
     ctx.current = this.appCtx
     while (this.nextUnitOfWork && !shouldYield) {
@@ -161,25 +217,35 @@ export class Scheduler {
         (!deadline && !this.nextUnitOfWork)
     }
 
-    if (
-      !this.nextUnitOfWork &&
-      (this.deletions.length || this.treesInProgress.length)
-    ) {
+    if (this.isFlushReady()) {
       while (this.deletions.length) {
-        commitWork(this.deletions.shift()!, this.appCtx)
+        commitWork(this.deletions.shift()!)
       }
-      if (this.treesInProgress.length) {
-        this.currentTreeIndex = 0
-        while (this.treesInProgress.length) {
-          commitWork(this.treesInProgress.shift()!, this.appCtx)
-        }
+      const tip = [...this.treesInProgress]
+      this.treesInProgress = []
+      for (const t of tip) {
+        commitWork(t)
+      }
 
-        while (this.queuedNodeEffectSets.length) {
-          const effects = this.queuedNodeEffectSets.pop()! // consume from child before parent
-          while (effects.length) {
-            effects.shift()!() // fire in sequence
-          }
+      this.isImmediateCallbacksMode = true
+      for (const t of tip) {
+        fireEffects(t, true)
+      }
+      this.isImmediateCallbacksMode = false
+
+      if (this.isRenderDirtied) {
+        this.checkForTooManyConsecutiveDirty()
+        while (tip.length) {
+          fireEffects(tip.shift()!)
         }
+        this.isRenderDirtied = false
+        this.consecutiveDirtyCount++
+        return this.workLoop()
+      }
+      this.consecutiveDirtyCount = 0
+
+      while (tip.length) {
+        fireEffects(tip.shift()!)
       }
       window.__kaioken!.emit("update", this.appCtx)
     }
@@ -254,7 +320,6 @@ export class Scheduler {
   }
 
   private updateClassComponent(vNode: VNode) {
-    this.appCtx.hookIndex = 0
     node.current = vNode
     const type = vNode.type as ComponentConstructor
     if (!vNode.instance) {
@@ -271,27 +336,30 @@ export class Scheduler {
         vNode.child || null,
         vNode.instance.render()
       ) || undefined
-    this.queueCurrentNodeEffects()
+
+    if (!vNode.prev) {
+      const onMounted = vNode.instance.componentDidMount?.bind(vNode.instance)
+      if (onMounted) this.appCtx.queueEffect(vNode, onMounted)
+    } else {
+      const onUpdated = vNode.instance.componentDidUpdate?.bind(vNode.instance)
+      if (onUpdated) this.appCtx.queueEffect(vNode, onUpdated)
+    }
+
     node.current = undefined
   }
 
   private updateFunctionComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
+    const children = (vNode.type as Function)(vNode.props)
     vNode.child =
-      reconcileChildren(
-        this.appCtx,
-        vNode,
-        vNode.child || null,
-        (vNode.type as Function)(vNode.props)
-      ) || undefined
-    this.queueCurrentNodeEffects()
+      reconcileChildren(this.appCtx, vNode, vNode.child || null, children) ||
+      undefined
     node.current = undefined
   }
 
   private updateHostComponent(vNode: VNode) {
     assertValidElementProps(vNode)
-    node.current = vNode
     if (!vNode.dom) {
       if (renderMode.current === "hydrate") {
         hydrateDom(vNode)
@@ -310,6 +378,13 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children
       ) || undefined
-    node.current = undefined
+  }
+
+  private checkForTooManyConsecutiveDirty() {
+    if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
+      throw new Error(
+        "[kiakoken]: Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
+      )
+    }
   }
 }
