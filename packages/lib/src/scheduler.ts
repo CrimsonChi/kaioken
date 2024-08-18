@@ -8,6 +8,8 @@ import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { applyRecursive, vNodeContains } from "./utils.js"
 
+const CONSECUTIVE_DIRTY_LIMIT = 50
+
 type VNode = Kaioken.VNode
 
 function fireEffects(tree: VNode, immediate?: boolean) {
@@ -55,8 +57,9 @@ export class Scheduler {
   private pendingCallback: IdleRequestCallback | undefined
   private channel: MessageChannel
   private frameHandle: number | null = null
-  private isPreFlush = false
+  private isImmediateCallbacksMode = false
   private isRenderDirtied = false
+  private consecutiveDirtyCount = 0
 
   constructor(
     private appCtx: AppContext<any>,
@@ -106,22 +109,15 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
-    if (this.isPreFlush) {
+    if (this.isImmediateCallbacksMode) {
       this.isRenderDirtied = true
-      applyRecursive(vNode, (n) => {
-        n.prev = { ...n, props: { ...n.props }, prev: undefined }
-      })
-      return
     }
 
     if (this.nextUnitOfWork === vNode) {
       return
     }
 
-    if (
-      this.nextUnitOfWork === undefined &&
-      this.treesInProgress.length === 0
-    ) {
+    if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
       return this.wake()
@@ -144,11 +140,6 @@ export class Scheduler {
     // handle node as child or parent of queued trees
     for (let i = 0; i < this.treesInProgress.length; i++) {
       if (vNodeContains(this.treesInProgress[i], vNode)) {
-        if (!this.nextUnitOfWork) {
-          this.nextUnitOfWork = vNode
-          this.currentTreeIndex = i
-          return
-        }
         if (i === this.currentTreeIndex) {
           // if req node is child of work node we can skip
           if (vNodeContains(this.nextUnitOfWork, vNode)) return
@@ -182,7 +173,7 @@ export class Scheduler {
   }
 
   queueDelete(vNode: VNode) {
-    if (this.isPreFlush) return
+    //if (this.isPreFlush) return
     applyRecursive(
       vNode,
       (n) => {
@@ -197,12 +188,12 @@ export class Scheduler {
   }
 
   queueEffect(vNode: VNode, effect: Function) {
-    if (this.isPreFlush) return
+    //if (this.isPreFlush) return
     ;(vNode.effects ??= []).push(effect)
   }
 
   queueImmediateEffect(vNode: VNode, effect: Function) {
-    if (this.isPreFlush) return
+    //if (this.isPreFlush) return
     ;(vNode.immediateEffects ??= []).push(effect)
   }
 
@@ -213,7 +204,7 @@ export class Scheduler {
     )
   }
 
-  private workLoop(deadline?: IdleDeadline) {
+  private workLoop(deadline?: IdleDeadline): void {
     let shouldYield = false
     ctx.current = this.appCtx
     while (this.nextUnitOfWork && !shouldYield) {
@@ -226,21 +217,36 @@ export class Scheduler {
         (!deadline && !this.nextUnitOfWork)
     }
 
-    flush: if (this.isFlushReady()) {
-      this.isPreFlush = true
-      for (const t of this.treesInProgress) {
-        fireEffects(t, true)
+    if (this.isFlushReady()) {
+      while (this.deletions.length) {
+        commitWork(this.deletions.shift()!)
       }
-      this.isPreFlush = false
-      if (this.isRenderDirtied) {
-        this.isRenderDirtied = false
-        for (const t of this.treesInProgress) {
-          fireEffects(t)
-        }
-        break flush
+      const tip = [...this.treesInProgress]
+      this.treesInProgress = []
+      for (const t of tip) {
+        commitWork(t)
       }
 
-      this.doCommit()
+      this.isImmediateCallbacksMode = true
+      for (const t of tip) {
+        fireEffects(t, true)
+      }
+      this.isImmediateCallbacksMode = false
+
+      if (this.isRenderDirtied) {
+        this.checkForTooManyConsecutiveDirty()
+        while (tip.length) {
+          fireEffects(tip.shift()!)
+        }
+        this.isRenderDirtied = false
+        this.consecutiveDirtyCount++
+        return this.workLoop()
+      }
+      this.consecutiveDirtyCount = 0
+
+      while (tip.length) {
+        fireEffects(tip.shift()!)
+      }
       window.__kaioken!.emit("update", this.appCtx)
     }
 
@@ -253,22 +259,6 @@ export class Scheduler {
     }
 
     this.requestIdleCallback(this.workLoop.bind(this))
-  }
-
-  private doCommit() {
-    while (this.deletions.length) {
-      commitWork(this.deletions.shift()!)
-    }
-    if (this.treesInProgress.length) {
-      this.currentTreeIndex = 0
-      const tip = [...this.treesInProgress]
-      this.treesInProgress = []
-      while (tip.length) {
-        const t = tip.shift()!
-        commitWork(t)
-        fireEffects(t)
-      }
-    }
   }
 
   private requestIdleCallback(callback: IdleRequestCallback) {
@@ -388,5 +378,13 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children
       ) || undefined
+  }
+
+  private checkForTooManyConsecutiveDirty() {
+    if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
+      throw new Error(
+        "[kiakoken]: Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
+      )
+    }
   }
 }
