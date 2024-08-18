@@ -108,6 +108,9 @@ export class Scheduler {
   queueUpdate(vNode: VNode) {
     if (this.isPreFlush) {
       this.isRenderDirtied = true
+      applyRecursive(vNode, (n) => {
+        n.prev = { ...n, props: { ...n.props }, prev: undefined }
+      })
       return
     }
 
@@ -210,15 +213,6 @@ export class Scheduler {
     )
   }
 
-  private preFlush() {
-    if (this.isPreFlush) return
-    this.isPreFlush = true
-    for (const t of this.treesInProgress) {
-      fireEffects(t, true)
-    }
-    this.isPreFlush = false
-  }
-
   private workLoop(deadline?: IdleDeadline) {
     let shouldYield = false
     ctx.current = this.appCtx
@@ -233,7 +227,11 @@ export class Scheduler {
     }
 
     flush: if (this.isFlushReady()) {
-      this.preFlush()
+      this.isPreFlush = true
+      for (const t of this.treesInProgress) {
+        fireEffects(t, true)
+      }
+      this.isPreFlush = false
       if (this.isRenderDirtied) {
         this.isRenderDirtied = false
         for (const t of this.treesInProgress) {
@@ -332,6 +330,7 @@ export class Scheduler {
   }
 
   private updateClassComponent(vNode: VNode) {
+    node.current = vNode
     const type = vNode.type as ComponentConstructor
     if (!vNode.instance) {
       const instance = vNode.prev?.instance ?? new type(vNode.props)
@@ -355,7 +354,8 @@ export class Scheduler {
       const onUpdated = vNode.instance.componentDidUpdate?.bind(vNode.instance)
       if (onUpdated) this.appCtx.queueEffect(vNode, onUpdated)
     }
-    vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
+
+    node.current = undefined
   }
 
   private updateFunctionComponent(vNode: VNode) {
@@ -365,7 +365,6 @@ export class Scheduler {
     vNode.child =
       reconcileChildren(this.appCtx, vNode, vNode.child || null, children) ||
       undefined
-    vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
     node.current = undefined
   }
 
@@ -389,6 +388,5 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children
       ) || undefined
-    vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
   }
 }
