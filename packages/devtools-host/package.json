@@ -7,19 +7,29 @@
   "type": "module",
   "types": "types.d.ts",
   "scripts": {
-    "build": "tsx src/build.ts",
-    "dev": "tsx src/build.dev.ts",
+    "build:css": "tailwindcss -i ./src/style.css -o ./src/styleProd.css --minify",
+    "build": "pnpm build:css && tsx src/build.ts",
+    "watch:css": "tailwindcss -i ./src/style.css -o ./src/styleProd.css --minify --watch",
+    "watch:esbuild": "tsx src/build.dev.ts",
+    "dev": "npm-run-all --parallel watch:*",
     "test": "echo \"Error: no test specified\""
   },
   "keywords": [],
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.14.11",
+    "autoprefixer": "^10.4.20",
     "esbuild": "^0.20.2",
+    "esbuild-plugin-inline-import": "^1.1.0",
+    "esbuild-style-plugin": "^1.6.3",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
     "tsx": "^4.16.2"
   },
   "dependencies": {
-    "@kaioken-core/hooks": "0.0.1-56",
-    "kaioken": "workspace:^"
+    "@kaioken-core/hooks": "0.0.4-8",
+    "kaioken": "workspace:^",
+    "tailwind-merge": "^2.5.2"
   }
 }

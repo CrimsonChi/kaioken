@@ -1,5 +1,6 @@
 import esbuild from "esbuild"
 import { options, writeFile } from "./options"
 
-const res = esbuild.buildSync(options)
-writeFile(res.outputFiles![0].text)
+esbuild.build(options).then(res => {
+  writeFile(res.outputFiles![0].text)
+})

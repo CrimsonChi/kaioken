@@ -1,6 +1,9 @@
 import { mount } from "kaioken"
 import App from "./App"
-import { type AnchorCorner, useDevtoolsStore } from "./store"
+import { useDevtoolsStore } from "./store"
+import tailwindCssKaiokenDevToolCssInline from 'inline:./styleProd.css'
+
+
 ;(() => {
   if ("window" in globalThis) {
     //@ts-ignore
@@ -9,17 +12,22 @@ import { type AnchorCorner, useDevtoolsStore } from "./store"
     window.__kaioken?.on("mount", () => {
       //@ts-ignore
       if (window.__kaiokenDevtools) return
+
+      const dummy = document.createElement('div')
+      dummy.setAttribute('style', 'display: contents')
+      document.body.appendChild(dummy)
+      
+      const shadow = dummy.attachShadow({ mode: 'open' })
+      const sheet = new CSSStyleSheet()
+      sheet.replaceSync(tailwindCssKaiokenDevToolCssInline)
+      shadow.adoptedStyleSheets = [sheet]
+
       const root = Object.assign(document.createElement("div"), {
         id: "devtools-root",
       })
-      const style = getCornerStyle(useDevtoolsStore.getState().corner)
-      root.setAttribute("style", "position:fixed;z-index:9999999;" + style)
-      document.body.appendChild(root)
+      root.setAttribute("class", "fixed flex bottom-0 right-0 z-[9999999]")
+      shadow.appendChild(root)
 
-      useDevtoolsStore.subscribe((state) => {
-        const style = getCornerStyle(state.corner)
-        root.setAttribute("style", "position:fixed;z-index:9999999;" + style)
-      })
       //@ts-ignore
       window.__kaiokenDevtools = mount(App, {
         root,
@@ -30,17 +38,5 @@ import { type AnchorCorner, useDevtoolsStore } from "./store"
         popupWindow?.close()
       })
     })
-    function getCornerStyle(corner: AnchorCorner) {
-      switch (corner) {
-        case "br":
-          return "bottom:0;right:0;"
-        case "bl":
-          return "bottom:0;left:0;"
-        case "tl":
-          return "top:0;left:0;"
-        case "tr":
-          return "top:0;right:0;"
-      }
-    }
   }
 })()

@@ -1,9 +1,11 @@
 import type { BuildOptions } from "esbuild"
 import fs from "node:fs"
+import esbuildPluginInlineImport from "esbuild-plugin-inline-import"
 
 export const options: BuildOptions = {
-  entryPoints: ["src/index.ts"],
+  entryPoints: ["src/index.ts", 'src/style.css'],
   jsx: "transform",
+  outdir: 'dist',
   jsxFactory: "createElement",
   jsxFragment: "fragment",
   bundle: true,
@@ -12,6 +14,9 @@ export const options: BuildOptions = {
   format: "esm",
   minify: true,
   write: false,
+  plugins: [
+    esbuildPluginInlineImport(),
+  ]
 }
 
 export function writeFile(content: string) {
@@ -19,7 +24,7 @@ export function writeFile(content: string) {
   fs.mkdirSync("dist")
   fs.writeFileSync(
     "dist/index.js",
-    `export default \`(() => {\n${content.replace(/[`\\$]/g, "\\$&")}\n})()\``,
+    `export default \`(() => {${content.replace(/[`\\$]/g, "\\$&")}\n})()\``,
     {
       encoding: "utf-8",
     }
