@@ -24,7 +24,6 @@ export function useSyncExternalStore<T>(
     ({ hook, isInit, update }) => {
       if (isInit) {
         hook.state = getState()
-        console.log("hook subscribe")
         hook.unsubscribe = subscribe(() => {
           const newState = getState()
           if (Object.is(hook.state, newState)) return
@@ -33,7 +32,6 @@ export function useSyncExternalStore<T>(
         })
         hook.cleanup = () => {
           hook.unsubscribe()
-          console.log("hook unsubscribe")
           hook.unsubscribe = noop
         }
       }
