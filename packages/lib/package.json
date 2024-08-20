@@ -1,10 +1,42 @@
 {
   "name": "kaioken",
-  "version": "0.26.0",
+  "version": "0.26.1-0",
   "description": "A powerful, easy-to-use rendering library with a tiny footprint",
   "main": "index.js",
   "type": "module",
   "homepage": "https://kaioken.dev",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      },
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      }
+    },
+    "./utils": {
+      "require": {
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
+      },
+      "import": {
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
+      }
+    },
+    "./exotic-hooks": {
+      "require": {
+        "types": "./exotic-hooks.d.ts",
+        "default": "./exotic-hooks.js"
+      },
+      "import": {
+        "types": "./exotic-hooks.d.ts",
+        "default": "./exotic-hooks.js"
+      }
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/CrimsonChi/kaioken"
@@ -31,5 +63,8 @@
     "mocha": "^10.7.0",
     "ts-mocha": "^10.0.0",
     "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "@kaioken-core/hooks": "0.0.4-12"
   }
 }
