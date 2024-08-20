@@ -6,7 +6,7 @@ import {
   svgTags,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EffectTag, elementTypes } from "./constants.js"
+import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
@@ -24,7 +24,7 @@ type DomParentSearchResult = {
 }
 function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
-  return t == elementTypes.text
+  return t == ELEMENT_TYPE.text
     ? document.createTextNode(vNode.props.nodeValue ?? "")
     : svgTags.includes(t)
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
@@ -77,13 +77,13 @@ function hydrateDom(vNode: VNode) {
     )
   }
   vNode.dom = dom
-  if (vNode.type !== elementTypes.text) {
+  if (vNode.type !== ELEMENT_TYPE.text) {
     updateDom(vNode)
     return
   }
   let prev = vNode
   let sibling = vNode.sibling
-  while (sibling && sibling.type === elementTypes.text) {
+  while (sibling && sibling.type === ELEMENT_TYPE.text) {
     hydrationStack.bumpChildIndex()
     sibling.dom = (prev.dom as Text).splitText(prev.props.nodeValue.length)
     prev = sibling
@@ -168,9 +168,10 @@ function setStyleProp(dom: SomeElement, value: unknown, prev: unknown) {
       const newStyleString = styleObjectToCss(
         value as Partial<CSSStyleDeclaration>
       )
-			const prevStyleString = prev == null ? null : styleObjectToCss(
-        prev as Partial<CSSStyleDeclaration>
-      )
+      const prevStyleString =
+        prev == null
+          ? null
+          : styleObjectToCss(prev as Partial<CSSStyleDeclaration>)
       if (newStyleString !== prevStyleString) {
         dom.setAttribute("style", newStyleString)
       }
@@ -268,13 +269,13 @@ function commitWork(vNode: VNode) {
     const n = stack.pop()!
     const dom = n.dom
 
-    if (dom && n.effectTag !== EffectTag.DELETION) {
+    if (dom && n.effectTag !== EFFECT_TAG.DELETION) {
       commitDom(n)
-    } else if (n.effectTag === EffectTag.PLACEMENT) {
+    } else if (n.effectTag === EFFECT_TAG.PLACEMENT) {
       // propagate the effect to children
       let c = n.child
       while (c) {
-        c.effectTag = EffectTag.PLACEMENT
+        c.effectTag = EFFECT_TAG.PLACEMENT
         c = c.sibling
       }
     }
@@ -287,7 +288,7 @@ function commitWork(vNode: VNode) {
     }
     commitSibling = true
 
-    if (n.effectTag === EffectTag.DELETION) {
+    if (n.effectTag === EFFECT_TAG.DELETION) {
       commitDeletion(n)
       continue
     }
@@ -310,7 +311,7 @@ function commitDom(n: VNode) {
     return
   }
   if (n.instance?.doNotModifyDom) return
-  if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
+  if (!dom.isConnected || n.effectTag === EFFECT_TAG.PLACEMENT) {
     placeDom(n)
   }
   updateDom(n)

@@ -1,5 +1,5 @@
 import { renderMode } from "./globals.js"
-import { regexUnits } from "./constants.js"
+import { REGEX_UNIT } from "./constants.js"
 
 export {
   isVNode,
@@ -117,12 +117,12 @@ function shallowCompare<T>(objA: T, objB: T) {
 
 function encodeHtmlEntities(text: string): string {
   return text
-    .replace(regexUnits.AMP_G, "&amp;")
-    .replace(regexUnits.LT_G, "&lt;")
-    .replace(regexUnits.GT_G, "&gt;")
-    .replace(regexUnits.DBLQT_G, "&quot;")
-    .replace(regexUnits.SQT_G, "&#039;")
-    .replace(regexUnits.SLASH_G, "&#47;")
+    .replace(REGEX_UNIT.AMP_G, "&amp;")
+    .replace(REGEX_UNIT.LT_G, "&lt;")
+    .replace(REGEX_UNIT.GT_G, "&gt;")
+    .replace(REGEX_UNIT.DBLQT_G, "&quot;")
+    .replace(REGEX_UNIT.SQT_G, "&#039;")
+    .replace(REGEX_UNIT.SLASH_G, "&#47;")
 }
 
 const propFilters = {
@@ -350,7 +350,7 @@ const snakeCaseAttrs = new Map([
 function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
   let cssString = ""
   for (const key in obj) {
-    const cssKey = key.replace(regexUnits.ALPHA_UPPER_G, "-$&").toLowerCase()
+    const cssKey = key.replace(REGEX_UNIT.ALPHA_UPPER_G, "-$&").toLowerCase()
     cssString += `${cssKey}:${obj[key]};`
   }
   return cssString

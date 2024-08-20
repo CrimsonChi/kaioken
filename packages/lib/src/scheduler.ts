@@ -1,14 +1,16 @@
 import type { AppContext } from "./appContext"
 import { Component, ComponentConstructor } from "./component.js"
-import { EffectTag, elementTypes as et } from "./constants.js"
+import {
+  CONSECUTIVE_DIRTY_LIMIT,
+  EFFECT_TAG,
+  ELEMENT_TYPE as et,
+} from "./constants.js"
 import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
 import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { applyRecursive, vNodeContains } from "./utils.js"
-
-const CONSECUTIVE_DIRTY_LIMIT = 50
 
 type VNode = Kaioken.VNode
 
@@ -177,7 +179,7 @@ export class Scheduler {
     applyRecursive(
       vNode,
       (n) => {
-        n.effectTag = EffectTag.DELETION
+        n.effectTag = EFFECT_TAG.DELETION
       },
       false
     )
@@ -235,7 +237,7 @@ export class Scheduler {
       this.isImmediateCallbacksMode = false
 
       if (this.isRenderDirtied) {
-        this.checkForTooManyConsecutiveDirty()
+        this.checkForTooManyConsecutiveDirtyRenders()
         while (tip.length) {
           fireEffects(tip.shift()!)
         }
@@ -272,7 +274,7 @@ export class Scheduler {
 
   private performUnitOfWork(vNode: VNode): VNode | void {
     const frozen = "frozen" in vNode && vNode.frozen === true
-    const skip = frozen && vNode.effectTag !== EffectTag.PLACEMENT
+    const skip = frozen && vNode.effectTag !== EFFECT_TAG.PLACEMENT
     if (!skip) {
       try {
         if (Component.isCtor(vNode.type)) {
@@ -381,7 +383,7 @@ export class Scheduler {
       ) || undefined
   }
 
-  private checkForTooManyConsecutiveDirty() {
+  private checkForTooManyConsecutiveDirtyRenders() {
     if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
       throw new Error(
         "[kiakoken]: Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."

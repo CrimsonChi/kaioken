@@ -1,4 +1,4 @@
-import { EffectTag } from "./constants.js"
+import { EFFECT_TAG } from "./constants.js"
 import { createElement } from "./element.js"
 import { contexts, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
@@ -24,6 +24,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   hookIndex = 0
   root?: HTMLElement
   mounted = false
+  elementCounter = 0
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
@@ -93,20 +94,20 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   }
 
   requestUpdate(node: VNode) {
-    if (node.effectTag === EffectTag.DELETION) return
+    if (node.effectTag === EFFECT_TAG.DELETION) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        node.effectTag !== EffectTag.DELETION && s.queueUpdate(node)
+        node.effectTag !== EFFECT_TAG.DELETION && s.queueUpdate(node)
       })
     }
     this.scheduler?.queueUpdate(node)
   }
 
   requestDelete(node: VNode) {
-    if (node.effectTag === EffectTag.DELETION) return
+    if (node.effectTag === EFFECT_TAG.DELETION) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        node.effectTag !== EffectTag.DELETION && s.queueDelete(node)
+        node.effectTag !== EFFECT_TAG.DELETION && s.queueDelete(node)
       })
     }
     this.scheduler?.queueDelete(node)

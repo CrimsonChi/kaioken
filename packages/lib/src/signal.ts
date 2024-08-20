@@ -1,4 +1,4 @@
-import { SignalKey } from "./constants.js"
+import { signalSymbol } from "./constants.js"
 import { node, renderMode } from "./globals.js"
 import { useAppContext, useHook } from "./hooks/utils.js"
 
@@ -19,7 +19,7 @@ export const signal = <T>(initial: T) => {
 }
 
 export class Signal<T> {
-  [SignalKey] = true
+  [signalSymbol] = true
   #value: T
   #subscribers = new Set<Kaioken.VNode | Function>()
   constructor(initial: T) {
@@ -42,7 +42,7 @@ export class Signal<T> {
   }
 
   static isSignal(x: any): x is Signal<any> {
-    return typeof x === "object" && !!x && SignalKey in x
+    return typeof x === "object" && !!x && signalSymbol in x
   }
 
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
