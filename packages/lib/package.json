@@ -16,16 +16,6 @@
         "default": "./index.js"
       }
     },
-    "./utils": {
-      "require": {
-        "types": "./dist/utils.d.ts",
-        "default": "./dist/utils.js"
-      },
-      "import": {
-        "types": "./dist/utils.d.ts",
-        "default": "./dist/utils.js"
-      }
-    },
     "./exotic-hooks": {
       "require": {
         "types": "./exotic-hooks.d.ts",
@@ -34,6 +24,56 @@
       "import": {
         "types": "./exotic-hooks.d.ts",
         "default": "./exotic-hooks.js"
+      }
+    },
+    "./utils": {
+      "require": {
+        "types": "./utils.d.ts",
+        "default": "./utils.js"
+      },
+      "import": {
+        "types": "./utils.d.ts",
+        "default": "./utils.js"
+      }
+    },
+    "./ssr/client": {
+      "require": {
+        "types": "./ssr/client.d.ts",
+        "default": "./ssr/client.js"
+      },
+      "import": {
+        "types": "./ssr/client.d.ts",
+        "default": "./ssr/client.js"
+      }
+    },
+    "./ssr/server": {
+      "require": {
+        "types": "./ssr/server.d.ts",
+        "default": "./ssr/server.js"
+      },
+      "import": {
+        "types": "./ssr/server.d.ts",
+        "default": "./ssr/server.js"
+      }
+    },
+    "./jsx-dev-runtime": {
+      "require": {
+        "types": "./jsx-dev-runtime.d.ts",
+        "default": "./jsx-dev-runtime.js"
+      },
+      "import": {
+        "types": "./jsx-dev-runtime.d.ts",
+        "default": "./jsx-dev-runtime.js"
+      }
+    },
+    "./jsx-runtime": {
+      "require": {
+        "types": "./jsx-runtime.d.ts",
+        "default": "./jsx-runtime.js"
+      },
+      "import": {
+        "types": "./jsx-runtime.d.ts",
+        "default": "./jsx-runtime.js"
       }
     }
   },
