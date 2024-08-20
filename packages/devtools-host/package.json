@@ -7,11 +7,8 @@
   "type": "module",
   "types": "types.d.ts",
   "scripts": {
-    "build:css": "tailwindcss -i ./src/style.css -o ./src/styleProd.css --minify",
-    "build": "pnpm build:css && tsx src/build.ts",
-    "watch:css": "tailwindcss -i ./src/style.css -o ./src/styleProd.css --minify --watch",
-    "watch:esbuild": "tsx src/build.dev.ts",
-    "dev": "npm-run-all --parallel watch:*",
+    "build": "tsx src/build.ts",
+    "dev": "tsx src/build.dev.ts",
     "test": "echo \"Error: no test specified\""
   },
   "keywords": [],
@@ -28,8 +25,9 @@
     "tsx": "^4.16.2"
   },
   "dependencies": {
-    "@kaioken-core/hooks": "0.0.4-8",
+    "@kaioken-core/hooks": "0.0.4-12",
     "kaioken": "workspace:^",
+    "lightningcss": "^1.26.0",
     "tailwind-merge": "^2.5.2"
   }
 }

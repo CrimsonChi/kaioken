@@ -1,8 +1,7 @@
 import { mount } from "kaioken"
 import App from "./App"
 import { useDevtoolsStore } from "./store"
-import tailwindCssKaiokenDevToolCssInline from 'inline:./styleProd.css'
-
+import tailwindCssKaiokenDevToolCssInline from 'inline:./style.css'
 
 ;(() => {
   if ("window" in globalThis) {

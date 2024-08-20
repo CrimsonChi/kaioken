@@ -1,6 +1,31 @@
 import type { BuildOptions } from "esbuild"
 import fs from "node:fs"
 import esbuildPluginInlineImport from "esbuild-plugin-inline-import"
+import postCss from 'postcss'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
+import { transform as minifyCssTransform } from 'lightningcss'
+
+const postCssInstance = postCss([
+  tailwindcss,
+  autoprefixer,
+])
+
+type EsbuildInlineTransform = NonNullable<Parameters<typeof esbuildPluginInlineImport>[0]>['transform']
+export const esbuildPluginTransform: EsbuildInlineTransform = async (content, file) => {
+  if (file.path.includes('devtools-host/src/style.css')) {
+    const newContent = await postCssInstance.process(content, { from: file.path })
+    const minify = minifyCssTransform({
+      code: Buffer.from(newContent.css),
+      minify: true,
+      filename: file.path
+    })
+
+    return minify.code.toString()
+  }
+
+  return content
+}
 
 export const options: BuildOptions = {
   entryPoints: ["src/index.ts", 'src/style.css'],
@@ -15,7 +40,9 @@ export const options: BuildOptions = {
   minify: true,
   write: false,
   plugins: [
-    esbuildPluginInlineImport(),
+    esbuildPluginInlineImport({
+      transform: esbuildPluginTransform
+    }),
   ]
 }
 

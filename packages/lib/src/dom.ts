@@ -168,7 +168,11 @@ function setStyleProp(dom: SomeElement, value: unknown, prev: unknown) {
       const newStyleString = styleObjectToCss(
         value as Partial<CSSStyleDeclaration>
       )
-      if (newStyleString !== prev) {
+      const prevStyleString = prev == null ? null : styleObjectToCss(
+        prev as Partial<CSSStyleDeclaration>
+      )
+
+      if (newStyleString !== prevStyleString) {
         dom.setAttribute("style", newStyleString)
       }
       break
