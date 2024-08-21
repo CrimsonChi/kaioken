@@ -3,22 +3,31 @@ import {
   useEventListener,
   useMouse,
 } from "@kaioken-core/hooks"
-import { ElementProps, signal, useCallback, useRef } from "kaioken"
+import {
+  ElementProps,
+  signal,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+} from "kaioken"
 
 export const FiftyFiftySplitter: Kaioken.FC = (props) => {
   const { mouse } = useMouse()
   const startMouse = signal<{ x: number; y: number } | null>(null)
-  const prevOffsetDistance = signal({ x: 0, y: 0 })
-  const offsetDistance = signal({ x: 0, y: 0 })
+  const prevFirstContainerWidth = signal(0)
   const firstContainerWidth = signal(0)
 
   const firstViewContainer = useRef<HTMLElement | null>(null)
   const firstViewContainerBounding = useElementBounding(firstViewContainer)
   const mainContainer = useRef<HTMLElement | null>(null)
-  const mainContainerBounding = useElementBounding(mainContainer)
 
   const firstView = Array.isArray(props.children) ? props.children[0] : <></>
   const secondView = Array.isArray(props.children) ? props.children[1] : <></>
+
+  useLayoutEffect(() => {
+    if (!mainContainer.current) return
+    firstContainerWidth.value = mainContainer.current.clientWidth / 2
+  }, [mainContainer.current])
 
   const onMouseUp = useCallback(() => {
     startMouse.value = null
@@ -30,20 +39,28 @@ export const FiftyFiftySplitter: Kaioken.FC = (props) => {
   >((e) => {
     if (startMouse.value == null || mainContainer.current == null) return
 
-    const MIN_WIDTH = 250
-    offsetDistance.value.x = Math.max(
-      Math.min(
-        mainContainer.current.clientWidth / 2 - MIN_WIDTH,
-        prevOffsetDistance.value.x + startMouse.value.x - e.x
-      ),
-      (mainContainer.current.clientWidth / 2 - MIN_WIDTH) * -1
+    const max = Math.max(
+      prevFirstContainerWidth.value + e.x - startMouse.value.x,
+      250
     )
-    offsetDistance.value.y =
-      prevOffsetDistance.value.y + startMouse.value.y - e.y
-    offsetDistance.notify()
+    firstContainerWidth.value = Math.min(
+      max,
+      mainContainer.current.clientWidth - 250
+    )
   }, [])
-
   useEventListener("mousemove", onMouseMove)
+
+  const onResize = useCallback(() => {
+    if (mainContainer.current == null) return
+
+    if (mainContainer.current.clientWidth - 250 < firstContainerWidth.value) {
+      firstContainerWidth.value = Math.max(
+        mainContainer.current.clientWidth - 250,
+        250
+      )
+    }
+  }, [])
+  useEventListener("resize", onResize)
 
   return (
     <main
@@ -54,15 +71,19 @@ export const FiftyFiftySplitter: Kaioken.FC = (props) => {
       <div ref={firstViewContainer} className="firstContainer w-full h-full">
         {firstView}
       </div>
-      <div
-        className="dividerLine absolute -translate-x-1/2 w-[10px] top-0 bg-red-300 h-full z-[9999]"
-        style={{ left: `${firstViewContainerBounding.width}px` }}
-        onmousedown={(e) => {
-          e.preventDefault()
-          startMouse.value = mouse
-          prevOffsetDistance.value = { ...offsetDistance.value }
-        }}
-      />
+      {firstViewContainerBounding.width != 0 && (
+        <div
+          className="w-8 flex justify-center h-full absolute top-0 -translate-x-1/2 cursor-col-resize z-[9999]"
+          style={{ left: `${firstViewContainerBounding.width}px` }}
+          onmousedown={(e) => {
+            e.preventDefault()
+            startMouse.value = mouse
+            prevFirstContainerWidth.value = firstContainerWidth.value
+          }}
+        >
+          <div className="dividerLine w-[5px] bg-neutral-800 h-full" />
+        </div>
+      )}
       <div className="secondContainer h-full">{secondView}</div>
     </main>
   )
