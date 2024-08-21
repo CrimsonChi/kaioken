@@ -15,6 +15,7 @@ export const FiftyFiftySplitter: Kaioken.FC = (props) => {
 
   const firstView = Array.isArray(props.children) ? props.children[0] : <></>
   const secondView = Array.isArray(props.children) ? props.children[1] : <></>
+  console.log('boop')
 
   const onMouseUp = useCallback(() => {
     startMouse.value = null
