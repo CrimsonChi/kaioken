@@ -2,6 +2,7 @@ import { useDevtoolsStore } from "./store"
 import { SelectedNodeView } from "./components/SelectedNodeView"
 import { AppView } from "./components/AppView"
 import { Select } from "./components/Select"
+import { FiftyFiftySplitter } from "./components/FitfyFitfySpliter"
 
 export function App() {
   const {
@@ -28,10 +29,10 @@ export function App() {
           }
         />
       </header>
-      <main className="flex-grow flex gap-2 items-start">
+      <FiftyFiftySplitter>
         {selectedApp && <AppView />}
         {selectedNode && <SelectedNodeView />}
-      </main>
+      </FiftyFiftySplitter>
     </>
   )
 }
