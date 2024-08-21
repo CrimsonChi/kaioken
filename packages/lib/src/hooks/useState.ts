@@ -25,6 +25,7 @@ export function useState<T>(
             update()
           }
         }
+        hook.debug = () => ({ value: hook.state })
       }
 
       return [hook.state, hook.dispatch] as [

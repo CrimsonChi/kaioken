@@ -19,6 +19,7 @@ export function useReducer<T, A>(
             update()
           }
         }
+        hook.debug = () => ({ value: hook.state })
       }
       return [hook.state, hook.dispatch] as [T, (action: A) => void]
     }

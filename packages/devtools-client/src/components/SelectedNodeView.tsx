@@ -53,13 +53,22 @@ export function SelectedNodeView() {
                   <div className="p-2">
                     {Object.keys(data).map((key) => {
                       const value = data[key as keyof typeof data]
-                      if (typeof value === "function") return null
+                      let vStr: string
+                      switch (typeof value) {
+                        case "string":
+                          vStr = `"${value}"`
+                          break
+                        case "function":
+                          vStr = `ƒ ${value.name || "anonymous"}()`
+                          break
+                        default:
+                          vStr = JSON.stringify(value, null, 2)
+                      }
+
                       return (
                         <div className="flex gap-2 mb-2">
                           <b className="p-2">{key}:</b>{" "}
-                          <pre className="p-2 bg-neutral-800">
-                            {JSON.stringify(value, null, 2)}
-                          </pre>
+                          <pre className="p-2 bg-neutral-800">{vStr}</pre>
                         </div>
                       )
                     })}

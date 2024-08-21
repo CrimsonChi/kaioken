@@ -28,6 +28,7 @@ export function useModel<
             update()
           }
         }
+        hook.debug = () => ({ value: hook.value })
       }
 
       queueEffect(() => {
