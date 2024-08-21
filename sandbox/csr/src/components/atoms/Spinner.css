@@ -4,7 +4,7 @@
   text-align: center;
 }
 
-.spinner>span {
+.spinner > span {
   width: 18px;
   height: 18px;
   background-color: #555;
@@ -25,9 +25,7 @@
   animation-delay: -0.16s;
 }
 
-
 @keyframes sk-bounce {
-
   0%,
   100% {
     transform: scale(0);

@@ -7,7 +7,6 @@ export const useDevTools = () => {
     setPopupWindow,
   } = useDevtoolsStore()
 
-
   const handleOpen = useCallback(() => {
     if (popupWindow) return popupWindow.focus()
     const features = `popup,width=${Math.floor(window.screen.width / 2)},height=${Math.floor(window.screen.height / 2)};`
@@ -23,7 +22,6 @@ export const useDevTools = () => {
       }
     }
   }, [popupWindow])
-
 
   return handleOpen
 }

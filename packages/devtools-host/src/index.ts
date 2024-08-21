@@ -1,8 +1,7 @@
 import { mount } from "kaioken"
 import App from "./App"
 import { useDevtoolsStore } from "./store"
-import tailwindCssKaiokenDevToolCssInline from 'inline:./style.css'
-
+import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
 ;(() => {
   if ("window" in globalThis) {
     //@ts-ignore
@@ -12,11 +11,11 @@ import tailwindCssKaiokenDevToolCssInline from 'inline:./style.css'
       //@ts-ignore
       if (window.__kaiokenDevtools) return
 
-      const dummy = document.createElement('div')
-      dummy.setAttribute('style', 'display: contents')
+      const dummy = document.createElement("div")
+      dummy.setAttribute("style", "display: contents")
       document.body.appendChild(dummy)
-      
-      const shadow = dummy.attachShadow({ mode: 'open' })
+
+      const shadow = dummy.attachShadow({ mode: "open" })
       const sheet = new CSSStyleSheet()
       sheet.replaceSync(tailwindCssKaiokenDevToolCssInline)
       shadow.adoptedStyleSheets = [sheet]

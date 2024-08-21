@@ -1,11 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./src/**/*.{tsx,css,ts}'],
+  content: ["./src/**/*.{tsx,css,ts}"],
   theme: {
     colors: {
-      crimson: 'crimson'
-    }
+      crimson: "crimson",
+    },
   },
   plugins: [],
 }
-
