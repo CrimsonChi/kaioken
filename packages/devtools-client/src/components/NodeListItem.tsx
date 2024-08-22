@@ -1,8 +1,16 @@
-import { useState, fragment, useMemo, useEffect, useRef } from "kaioken"
+import {
+  useState,
+  fragment,
+  useMemo,
+  useEffect,
+  useRef,
+  useContext,
+} from "kaioken"
 import { useDevtoolsStore } from "../store"
-import { getNodeName } from "../utils"
+import { getNodeName, searchMatchesItem } from "../utils"
 import { Chevron } from "./chevron"
 import { KeyboardMap } from "../signal"
+import { SearchContext } from "../context"
 
 export function NodeListItem({
   node,
@@ -23,6 +31,7 @@ export function NodeListItem({
   const id = useMemo(() => {
     return crypto.randomUUID()
   }, [])
+  const search = useContext(SearchContext)
 
   useEffect(() => {
     if (
@@ -45,7 +54,9 @@ export function NodeListItem({
   if (!node) return null
   if (
     typeof node.type !== "function" ||
-    (node.type as Function).name === "fragment"
+    (node.type as Function).name === "fragment" ||
+    (search.length > 0 &&
+      !searchMatchesItem(search.toLowerCase().split(""), node.type.name))
   )
     return (
       <>
@@ -60,7 +71,7 @@ export function NodeListItem({
         <h2
           ref={ref}
           onclick={() => setSelectedNode(isSelected ? null : (node as any))}
-          className={`flex gap-2 items-center cursor-pointer mb-1 ${isSelected ? "font-medium bg-primary selected-vnode" : ""}`}
+          className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-primary selected-vnode" : ""}`}
           data-id={id}
         >
           {node.child && (

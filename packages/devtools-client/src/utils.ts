@@ -10,3 +10,8 @@ export function getNodeName(node: Kaioken.VNode) {
     ((node.type as Function).name || "Anonymous Function")
   )
 }
+
+export function searchMatchesItem(terms: string[], item: string) {
+  const toLower = item.toLowerCase()
+  return terms.every((term) => toLower.includes(term))
+}

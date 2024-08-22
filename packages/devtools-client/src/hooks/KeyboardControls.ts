@@ -1,9 +1,11 @@
 import { useKeyStroke } from "@kaioken-core/hooks"
 import { KeyboardMap } from "../signal"
 import { useDevtoolsStore } from "../store"
+import { useRef } from "kaioken"
 
 export const useKeyboardControls = () => {
   const { setSelectedNode } = useDevtoolsStore((state) => state.selectedNode)
+  const searchRef = useRef<HTMLElement | null>(null)
 
   const getMetaDataFromNode = (domNode: Element | null) => {
     if (!domNode) return null
@@ -19,7 +21,9 @@ export const useKeyboardControls = () => {
     const metaData = getMetaDataFromNode(domNode)
     if (metaData == null) return
 
-    domNode.scrollIntoView()
+    domNode.scrollIntoView({
+      behavior: "smooth",
+    })
     setSelectedNode(metaData.vNode as any)
   }
 
@@ -115,4 +119,16 @@ export const useKeyboardControls = () => {
       return activeLastDom()
     }
   })
+
+  useKeyStroke("l", (e) => {
+    if (e.ctrlKey) {
+      searchRef.current?.focus({
+        preventScroll: false,
+      })
+    }
+  })
+
+  return {
+    searchRef,
+  }
 }
