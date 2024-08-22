@@ -60,8 +60,8 @@ export function SelectedNodeView() {
 
               const handleChange = (keys: string[], value: unknown) => {
                 if (!selectedApp?.mounted || !debug?.set) return
-                const shallowCloned = { ...hookData }
-                let o = shallowCloned as any
+                const data = debug.get()
+                let o = data
                 for (let i = 0; i < keys.length; i++) {
                   const key = keys[i]
                   if (i === keys.length - 1) {
@@ -70,7 +70,7 @@ export function SelectedNodeView() {
                     o = o[key]
                   }
                 }
-                debug.set(shallowCloned)
+                debug.set(data)
               }
 
               return (
