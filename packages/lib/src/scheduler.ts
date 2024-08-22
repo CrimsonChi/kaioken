@@ -362,6 +362,7 @@ export class Scheduler {
   }
 
   private updateHostComponent(vNode: VNode) {
+    node.current = vNode
     assertValidElementProps(vNode)
     if (!vNode.dom) {
       if (renderMode.current === "hydrate") {
@@ -381,6 +382,7 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children
       ) || undefined
+    node.current = undefined
   }
 
   private checkForTooManyConsecutiveDirtyRenders() {
