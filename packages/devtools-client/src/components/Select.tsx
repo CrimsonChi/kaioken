@@ -19,15 +19,11 @@ export function Select(
   props: SelectProps & Omit<ElementProps<"select">, "onchange">
 ) {
   const { className, value, onChange, options, ...rest } = props
-  function handleChange(e: Event) {
-    const target = e.target as HTMLSelectElement
-    onChange?.(target.value)
-  }
 
   return (
     <select
       className={"p-2 " + className || ""}
-      onchange={handleChange}
+      onchange={(e) => onChange?.(e.target.value)}
       {...rest}
     >
       {props.options.map((item) => {
