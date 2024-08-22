@@ -15,3 +15,22 @@ export function searchMatchesItem(terms: string[], item: string) {
   const toLower = item.toLowerCase()
   return terms.every((term) => toLower.includes(term))
 }
+
+export function isComponent(
+  node: Kaioken.VNode
+): node is Kaioken.VNode & { type: Function } {
+  return typeof node.type === "function" && node.type.name !== "fragment"
+}
+
+export function nodeContainsComponent(node: Kaioken.VNode) {
+  let stack = [node]
+  while (stack.length) {
+    const n = stack.pop()!
+    if (isComponent(n)) {
+      return true
+    }
+    n.child && stack.push(n.child)
+    n.sibling && stack.push(n.sibling)
+  }
+  return false
+}

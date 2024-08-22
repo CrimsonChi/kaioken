@@ -7,7 +7,12 @@ import {
   useContext,
 } from "kaioken"
 import { useDevtoolsStore } from "../store"
-import { getNodeName, searchMatchesItem } from "../utils"
+import {
+  getNodeName,
+  isComponent,
+  nodeContainsComponent,
+  searchMatchesItem,
+} from "../utils"
 import { Chevron } from "./chevron"
 import { KeyboardMap } from "../signal"
 import { SearchContext } from "../context"
@@ -34,12 +39,7 @@ export function NodeListItem({
   const search = useContext(SearchContext)
 
   useEffect(() => {
-    if (
-      !node ||
-      typeof node.type !== "function" ||
-      node.type.name === "fragment"
-    )
-      return
+    if (!node || !isComponent(node)) return
 
     KeyboardMap.value.set(id, {
       vNode: node,
@@ -53,8 +53,7 @@ export function NodeListItem({
 
   if (!node) return null
   if (
-    typeof node.type !== "function" ||
-    (node.type as Function).name === "fragment" ||
+    !isComponent(node) ||
     (search.length > 0 &&
       !searchMatchesItem(search.toLowerCase().split(""), node.type.name))
   )
@@ -65,6 +64,8 @@ export function NodeListItem({
       </>
     )
 
+  const showChildren = node.child && nodeContainsComponent(node.child)
+
   return (
     <>
       <div className="pl-4 mb-1">
@@ -74,7 +75,7 @@ export function NodeListItem({
           className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-primary selected-vnode" : ""}`}
           data-id={id}
         >
-          {node.child && (
+          {showChildren && (
             <Chevron
               className="cursor-pointer transform"
               style={{
@@ -87,7 +88,7 @@ export function NodeListItem({
               }}
             />
           )}
-          <div>
+          <div className={showChildren ? "" : "ml-6"}>
             <span className={isSelected ? "" : "text-neutral-400"}>{"<"}</span>
             <span className={isSelected ? "" : "text-primary"}>
               {getNodeName(node)}
