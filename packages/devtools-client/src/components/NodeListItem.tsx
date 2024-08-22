@@ -1,7 +1,8 @@
-import { useState, fragment } from "kaioken"
+import { useState, fragment, useMemo, useEffect, useRef } from "kaioken"
 import { useDevtoolsStore } from "../store"
 import { getNodeName } from "../utils"
 import { Chevron } from "./chevron"
+import { KeyboardMap } from "../signal"
 
 export function NodeListItem({
   node,
@@ -17,6 +18,29 @@ export function NodeListItem({
     }
   )
   const [collapsed, setCollapsed] = useState(true)
+  const isSelected = selectedNode === node
+  const ref = useRef<HTMLElement | null>(null)
+  const id = useMemo(() => {
+    return crypto.randomUUID()
+  }, [])
+
+  useEffect(() => {
+    if (
+      !node ||
+      typeof node.type !== "function" ||
+      node.type.name === "fragment"
+    )
+      return
+
+    KeyboardMap.value.set(id, {
+      vNode: node,
+      setCollapsed,
+    })
+
+    return () => {
+      KeyboardMap.value.delete(id)
+    }
+  })
 
   if (!node) return null
   if (
@@ -30,14 +54,14 @@ export function NodeListItem({
       </>
     )
 
-  const isSelected = selectedNode === node
-
   return (
     <>
       <div className="pl-4 mb-1">
         <h2
+          ref={ref}
           onclick={() => setSelectedNode(isSelected ? null : (node as any))}
-          className={`flex gap-2 items-center cursor-pointer mb-1 ${isSelected ? "font-medium bg-primary" : ""}`}
+          className={`flex gap-2 items-center cursor-pointer mb-1 ${isSelected ? "font-medium bg-primary selected-vnode" : ""}`}
+          data-id={id}
         >
           {node.child && (
             <Chevron
