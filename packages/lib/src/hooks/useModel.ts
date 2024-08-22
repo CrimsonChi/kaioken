@@ -1,3 +1,4 @@
+import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 
@@ -28,7 +29,11 @@ export function useModel<
             update()
           }
         }
-        hook.debug = () => ({ value: hook.value })
+        if (__DEV__) {
+          hook.debug = {
+            get: () => ({ value: hook.value }),
+          }
+        }
       }
 
       queueEffect(() => {

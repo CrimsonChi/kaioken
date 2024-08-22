@@ -3,6 +3,7 @@ import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { RefreshIcon } from "./RefreshIcon"
+import { ValueEditor } from "./ValueEditor"
 
 export function SelectedNodeView() {
   const {
@@ -29,7 +30,7 @@ export function SelectedNodeView() {
   }, [])
 
   const refresh = () => {
-    if (!selectedNode || !selectedApp) return
+    if (!selectedNode || !selectedApp?.mounted) return
     selectedApp.requestUpdate(selectedNode)
   }
 
@@ -55,12 +56,33 @@ export function SelectedNodeView() {
           <div className="text-sm">
             {selectedNode.hooks.map((hookData) => {
               const { name, debug, ...rest } = hookData
-              const data = debug ? debug() : rest
+              const data = debug?.get ? debug.get() : rest
+
+              const handleChange = (keys: string[], value: unknown) => {
+                if (!selectedApp?.mounted || !debug?.set) return
+                const shallowCloned = { ...hookData }
+                let o = shallowCloned as any
+                for (let i = 0; i < keys.length; i++) {
+                  const key = keys[i]
+                  if (i === keys.length - 1) {
+                    o[key as any] = value
+                  } else {
+                    o = o[key]
+                  }
+                }
+                debug.set(shallowCloned)
+              }
+
               return (
                 <div>
                   <b>{name || "anonymous hook"}</b>
                   <div className="p-2">
-                    {Object.keys(data).map((key) => {
+                    <ValueEditor
+                      data={data}
+                      onChange={handleChange}
+                      mutable={!!debug?.set}
+                    />
+                    {/* {Object.keys(data).map((key) => {
                       const value = data[key as keyof typeof data]
                       let vStr: string
                       switch (typeof value) {
@@ -80,7 +102,7 @@ export function SelectedNodeView() {
                           <pre className="p-2 bg-neutral-800">{vStr}</pre>
                         </div>
                       )
-                    })}
+                    })} */}
                   </div>
                 </div>
               )

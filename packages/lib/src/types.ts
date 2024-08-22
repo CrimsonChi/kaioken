@@ -97,7 +97,10 @@ declare global {
 
     type Hook<T> = T & {
       cleanup?: () => void
-      debug?: () => Record<string, any>
+      debug?: {
+        get: () => Record<string, any>
+        set?: (value: Record<string, any>) => void
+      }
       name?: string
     }
 

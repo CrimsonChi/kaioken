@@ -1,3 +1,4 @@
+import { __DEV__ } from "./env.js"
 import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
 import { shallowCompare } from "./utils.js"
 
@@ -110,8 +111,10 @@ function createStore<T, U extends MethodFactory<T>>(
             nodeToSliceComputeMap.delete(vNode)
             subscribers.delete(vNode)
           }
-          hook.debug = () => {
-            return { value: hook.stateSlice }
+          if (__DEV__) {
+            hook.debug = {
+              get: () => ({ value: hook.stateSlice }),
+            }
           }
         }
 

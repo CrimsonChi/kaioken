@@ -31,12 +31,16 @@ const useContextCallback = <T>({
   vNode,
 }: HookCallbackState<UseContextHook<T>>) => {
   if (isInit) {
-    hook.debug = () => ({
-      contextName: hook.context.Provider.displayName || "",
-      value: hook.ctxNode
-        ? hook.ctxNode.props[contextDataSymbol].value
-        : hook.context.default(),
-    })
+    if (__DEV__) {
+      hook.debug = {
+        get: () => ({
+          contextName: hook.context.Provider.displayName || "",
+          value: hook.ctxNode
+            ? hook.ctxNode.props[contextDataSymbol].value
+            : hook.context.default(),
+        }),
+      }
+    }
 
     let n = vNode.parent
     while (n) {

@@ -1,3 +1,4 @@
+import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 
@@ -19,7 +20,12 @@ export function useReducer<T, A>(
             update()
           }
         }
-        hook.debug = () => ({ value: hook.state })
+        if (__DEV__) {
+          hook.debug = {
+            get: () => ({ value: hook.state }),
+            set: ({ value }) => (hook.state = value),
+          }
+        }
       }
       return [hook.state, hook.dispatch] as [T, (action: A) => void]
     }

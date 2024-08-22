@@ -1,4 +1,5 @@
 import { SignalKey } from "./constants.js"
+import { __DEV__ } from "./env.js"
 import { node, renderMode } from "./globals.js"
 import { useAppContext, useHook } from "./hooks/utils.js"
 
@@ -11,7 +12,14 @@ export const signal = <T>(initial: T) => {
         ({ hook, isInit }) => {
           if (isInit) {
             hook.signal = new Signal(initial)
-            hook.debug = () => ({ value: hook.signal.value })
+            if (__DEV__) {
+              hook.debug = {
+                get: () => ({ value: hook.signal.value }),
+                set: ({ value }) => {
+                  Signal.setValueSilently(hook.signal, value)
+                },
+              }
+            }
           }
           return hook.signal
         }
@@ -43,6 +51,10 @@ export class Signal<T> {
 
   static isSignal(x: any): x is Signal<any> {
     return typeof x === "object" && !!x && SignalKey in x
+  }
+
+  static setValueSilently(signal: Signal<any>, value: any) {
+    signal.#value = value
   }
 
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
