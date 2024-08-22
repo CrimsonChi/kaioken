@@ -118,8 +118,8 @@ function Nav() {
         <Link to="/filtered-list">Filtered list</Link>
         <Link to="/keyed-list">Keyed list</Link>
         <Link to="/context">Context</Link>
-        <Link to="/useAsync">useAsync</Link>
         <GithubIcon />
+        <Link to="/useAsync">useAsync</Link>
       </div>
     </nav>
   )

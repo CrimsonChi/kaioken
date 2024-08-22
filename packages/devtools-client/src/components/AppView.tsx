@@ -1,6 +1,7 @@
 import { AppContext, useEffect, useRequestUpdate } from "kaioken"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { NodeListItem } from "./NodeListItem"
+import { useKeyboardControls } from "../hooks/KeyboardControls"
 
 export function AppView() {
   const { value: app } = useDevtoolsStore((state) => state.selectedApp)
@@ -14,6 +15,8 @@ export function AppView() {
     kaiokenGlobal?.on("update", handleUpdate)
     return () => kaiokenGlobal?.off("update", handleUpdate)
   }, [])
+
+  useKeyboardControls()
 
   return (
     <div className="flex-grow p-2 sticky top-0">
