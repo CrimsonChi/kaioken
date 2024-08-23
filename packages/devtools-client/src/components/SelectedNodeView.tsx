@@ -65,7 +65,7 @@ export function SelectedNodeView() {
                 for (let i = 0; i < keys.length; i++) {
                   const key = keys[i]
                   if (i === keys.length - 1) {
-                    o[key as any] = value
+                    o[key] = value
                   } else {
                     o = o[key]
                   }

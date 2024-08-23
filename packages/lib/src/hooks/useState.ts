@@ -30,7 +30,7 @@ export function useState<T>(
           hook.debug = {
             get: () => ({ value: hook.state }),
             set: ({ value }) => (hook.state = value),
-          }
+          } satisfies Kaioken.HookDebug<{ value: T }>
         }
       }
 

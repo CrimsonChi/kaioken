@@ -95,12 +95,13 @@ declare global {
     }
     type FCProps<T = {}> = T & { children?: JSX.Children }
 
+    interface HookDebug<T extends Record<string, any>> {
+      get: () => T
+      set?: (value: ReturnType<this["get"]>) => void
+    }
     type Hook<T> = T & {
       cleanup?: () => void
-      debug?: {
-        get: () => Record<string, any>
-        set?: (value: Record<string, any>) => void
-      }
+      debug?: HookDebug<any>
       name?: string
     }
 

@@ -8,7 +8,7 @@ export function useRef<T>(current: T): Kaioken.Ref<T> {
       hook.debug = {
         get: () => ({ value: hook.current }),
         set: ({ value }) => (hook.current = value),
-      }
+      } satisfies Kaioken.HookDebug<{ value: T }>
     }
     return hook
   })

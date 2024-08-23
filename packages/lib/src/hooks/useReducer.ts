@@ -24,7 +24,7 @@ export function useReducer<T, A>(
           hook.debug = {
             get: () => ({ value: hook.state }),
             set: ({ value }) => (hook.state = value),
-          }
+          } satisfies Kaioken.HookDebug<{ value: T }>
         }
       }
       return [hook.state, hook.dispatch] as [T, (action: A) => void]
