@@ -1,5 +1,6 @@
 import { EffectTag } from "./constants.js"
 import { createElement } from "./element.js"
+import { __DEV__ } from "./env.js"
 import { contexts, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { Scheduler } from "./scheduler.js"
@@ -47,6 +48,13 @@ export class AppContext<T extends Record<string, unknown> = {}> {
         {},
         createElement(this.appFunc, this.appProps as T)
       )
+      if (__DEV__) {
+        if (this.root) {
+          // @ts-expect-error we set vnode on root dom node
+          this.root.__kaiokenNode = this.rootNode
+        }
+      }
+
       this.rootNode.dom = this.root
       this.scheduler.queueUpdate(this.rootNode)
       this.scheduler.nextIdle(() => {

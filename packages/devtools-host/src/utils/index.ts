@@ -30,3 +30,36 @@ export const reinitializeBtnPos = (
     y: forceY ?? storage.y * rateInHeightChange,
   }
 }
+
+export const getComponentVnodeFromElement = (domNode: Element | null) => {
+  if (domNode == null) return null
+
+  let parentComponent: Kaioken.VNode | null = null
+  let parent = (domNode?.__kaiokenNode as Kaioken.VNode)?.parent
+  while (parent) {
+    if (typeof parent.type === "function" && parent.type.name !== "fragment") {
+      parentComponent = parent
+      break
+    }
+
+    parent = parent.parent
+  }
+
+  return parentComponent
+}
+
+export const getNearestElm = (vNode: Kaioken.VNode) => {
+  const stack = [vNode]
+  while (stack.length) {
+    const node = stack.pop()
+
+    if (node?.dom) {
+      return node.dom as HTMLElement
+    }
+
+    if (node?.sibling) stack.push(node.sibling)
+    if (node?.child) stack.push(node.child)
+  }
+
+  return null
+}

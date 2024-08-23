@@ -11,10 +11,11 @@ import {
   getNodeName,
   isComponent,
   nodeContainsComponent,
+  nodeContainsNode,
   searchMatchesItem,
 } from "../utils"
 import { Chevron } from "./chevron"
-import { KeyboardMap } from "../signal"
+import { inspectComponent, KeyboardMap } from "../signal"
 import { SearchContext } from "../context"
 
 export function NodeListItem({
@@ -37,6 +38,17 @@ export function NodeListItem({
     return crypto.randomUUID()
   }, [])
   const search = useContext(SearchContext)
+
+  const isParentOfInspectNode = useMemo(() => {
+    if (inspectComponent.value == null) return null
+    return nodeContainsNode(node, inspectComponent.value)
+  }, [inspectComponent.value, node])
+
+  useEffect(() => {
+    if (isParentOfInspectNode) {
+      setCollapsed(false)
+    }
+  }, [isParentOfInspectNode])
 
   useEffect(() => {
     if (!node || !isComponent(node)) return
@@ -65,13 +77,15 @@ export function NodeListItem({
     )
 
   const showChildren = node.child && nodeContainsComponent(node.child)
-
   return (
     <>
       <div className="pl-4 mb-1">
         <h2
           ref={ref}
-          onclick={() => setSelectedNode(isSelected ? null : (node as any))}
+          onclick={() => {
+            inspectComponent.value = null
+            setSelectedNode(isSelected ? null : (node as any))
+          }}
           className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-primary selected-vnode" : ""}`}
           data-id={id}
         >
@@ -84,6 +98,7 @@ export function NodeListItem({
               onclick={(e) => {
                 e.preventDefault()
                 e.stopImmediatePropagation()
+                inspectComponent.value = null
                 setCollapsed((prev) => !prev)
               }}
             />
@@ -96,7 +111,12 @@ export function NodeListItem({
             <span className={isSelected ? "" : "text-neutral-400"}>{">"}</span>
           </div>
         </h2>
-        {collapsed || !node.child ? null : <NodeListItem node={node.child} />}
+        {(!collapsed && node.child) ||
+        (isParentOfInspectNode != null &&
+          isParentOfInspectNode &&
+          node.child) ? (
+          <NodeListItem node={node.child} />
+        ) : null}
       </div>
       {traverseSiblings && <NodeListItemSiblings node={node} />}
     </>

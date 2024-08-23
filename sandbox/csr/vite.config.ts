@@ -2,6 +2,12 @@ import { defineConfig } from "vite"
 import kaioken from "vite-plugin-kaioken"
 
 export default defineConfig({
+  ssr: {
+    external: ["kaioken"],
+  },
+  optimizeDeps: {
+    exclude: ["kaioken"],
+  },
   esbuild: {
     sourcemap: false,
     supported: {
