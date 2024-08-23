@@ -1,5 +1,5 @@
 import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
-import { shallowCompare } from "./utils.js"
+import { getVNodeAppContext, shallowCompare } from "./utils.js"
 
 export { createStore }
 export type { Store, MethodFactory }
@@ -74,8 +74,7 @@ function createStore<T, U extends MethodFactory<T>>(
         }
         if (!computeChanged) return
       }
-      const ctx = useAppContext(n)
-      ctx.requestUpdate(n)
+      getVNodeAppContext(n).requestUpdate(n)
     })
     stateIteration++
   }
@@ -88,12 +87,11 @@ function createStore<T, U extends MethodFactory<T>>(
     if (!sideEffectsEnabled()) {
       return { value: sliceFn ? sliceFn(state) : state, ...methods }
     }
-
+    const ctx = useAppContext()
     return useHook(
       "useStore",
       { stateSlice: null as any as T | R, lastChangeSync: -1 },
       ({ hook, isInit, vNode }) => {
-        const ctx = useAppContext(vNode)
         if (isInit) {
           subscribers.add(vNode)
           hook.stateSlice = sliceFn ? sliceFn(state) : state

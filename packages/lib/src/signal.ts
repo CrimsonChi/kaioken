@@ -1,6 +1,7 @@
 import { signalSymbol } from "./constants.js"
 import { node, renderMode } from "./globals.js"
-import { useAppContext, useHook } from "./hooks/utils.js"
+import { useHook } from "./hooks/utils.js"
+import { getVNodeAppContext } from "./utils.js"
 
 export const signal = <T>(initial: T) => {
   return !node.current
@@ -53,9 +54,6 @@ export class Signal<T> {
   }
 
   static unsubscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
-    if (!node.subs) return
-    const index = node.subs.indexOf(signal)
-    if (index !== -1) node.subs.splice(index, 1)
     signal.#subscribers.delete(node)
   }
 
@@ -65,12 +63,11 @@ export class Signal<T> {
   }
 
   notify() {
-    this.#subscribers.forEach((consumer) => {
-      if (consumer instanceof Function) {
-        return consumer(this.#value)
+    this.#subscribers.forEach((sub) => {
+      if (sub instanceof Function) {
+        return sub(this.#value)
       }
-      const ctx = useAppContext(consumer)
-      ctx.requestUpdate(consumer)
+      getVNodeAppContext(sub).requestUpdate(sub)
     })
   }
 }

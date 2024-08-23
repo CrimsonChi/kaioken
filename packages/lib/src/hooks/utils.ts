@@ -1,4 +1,5 @@
 import { node, nodeToCtxMap } from "../globals.js"
+import { getVNodeAppContext } from "../utils.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
@@ -17,18 +18,20 @@ export {
 const useRequestUpdate = () => {
   const n = node.current
   if (!n) error_hookMustBeCalledTopLevel("useRequestUpdate")
-  const ctx = useAppContext(n)
+  const ctx = getVNodeAppContext(n)
   return () => ctx.requestUpdate(n)
 }
 
 /**
  * Used to obtain the 'AppContext' for the current component.
  */
-const useAppContext = (n?: Kaioken.VNode) => {
-  let _n = n || node.current
-  if (!_n) error_hookMustBeCalledTopLevel("useAppContext")
-  const ctx = nodeToCtxMap.get(_n)
-  if (!ctx) throw new Error("[kaioken]: Unable to find node's AppContext")
+const useAppContext = () => {
+  if (!node.current) error_hookMustBeCalledTopLevel("useAppContext")
+  const ctx = nodeToCtxMap.get(node.current)
+  if (!ctx)
+    error_hookMustBeCalledTopLevel(
+      "[kaioken]: unable to find node's AppContext"
+    )
   return ctx
 }
 
@@ -71,7 +74,8 @@ function useHook<T, U extends HookCallback<T>>(
   }
   const vNode = node.current
   if (!vNode) error_hookMustBeCalledTopLevel(hookName)
-  const ctx = useAppContext(vNode)
+  const ctx = getVNodeAppContext(vNode)
+
   const oldHook = (
     vNode.prev
       ? vNode.prev.hooks?.at(ctx.hookIndex)

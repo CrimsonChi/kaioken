@@ -1,10 +1,10 @@
-import { renderMode } from "./globals.js"
+import { nodeToCtxMap, renderMode } from "./globals.js"
 import { REGEX_UNIT } from "./constants.js"
 
 export {
   isVNode,
-  isValidChild,
   vNodeContains,
+  getVNodeAppContext,
   applyRecursive,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
@@ -29,8 +29,10 @@ function isVNode(thing: unknown): thing is Kaioken.VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
-function isValidChild(child: unknown) {
-  return child !== null && child !== undefined && typeof child !== "boolean"
+function getVNodeAppContext(node: Kaioken.VNode) {
+  const n = nodeToCtxMap.get(node)
+  if (!n) throw new Error("[kaioken]: Unable to find node's AppContext")
+  return n
 }
 
 function vNodeContains(
@@ -53,14 +55,14 @@ function vNodeContains(
 function applyRecursive(
   node: Kaioken.VNode,
   func: (node: Kaioken.VNode) => void,
-  includeSiblings = true
+  includeImmediateSiblings = true
 ) {
   const nodes: Kaioken.VNode[] = [node]
   const apply = (node: Kaioken.VNode) => {
     func(node)
     node.child && nodes.push(node.child)
-    includeSiblings && node.sibling && nodes.push(node.sibling)
-    includeSiblings = true
+    includeImmediateSiblings && node.sibling && nodes.push(node.sibling)
+    includeImmediateSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
 }

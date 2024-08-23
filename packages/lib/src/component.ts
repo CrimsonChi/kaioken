@@ -1,6 +1,6 @@
 import { componentSymbol } from "./constants.js"
 import { node } from "./globals.js"
-import { useAppContext } from "./hooks/utils.js"
+import { getVNodeAppContext } from "./utils.js"
 
 export { Component }
 
@@ -23,7 +23,7 @@ abstract class Component<T = Record<string, unknown>> {
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {
-      const ctx = useAppContext(this.vNode)
+      const ctx = getVNodeAppContext(this.vNode)
       queueMicrotask(() => ctx.requestUpdate(this.vNode))
     }
   }
