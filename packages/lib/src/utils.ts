@@ -36,7 +36,7 @@ function isValidChild(child: unknown) {
 function vNodeContains(
   haystack: Kaioken.VNode,
   needle: Kaioken.VNode,
-  checkSiblings = false
+  checkImmediateSiblings = false
 ): boolean {
   if (haystack === needle) return true
   const stack: Kaioken.VNode[] = [haystack]
@@ -44,8 +44,8 @@ function vNodeContains(
     const n = stack.pop()!
     if (n === needle) return true
     n.child && stack.push(n.child)
-    checkSiblings && n.sibling && stack.push(n.sibling)
-    checkSiblings = true
+    checkImmediateSiblings && n.sibling && stack.push(n.sibling)
+    checkImmediateSiblings = true
   }
   return false
 }
