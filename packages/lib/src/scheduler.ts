@@ -62,6 +62,7 @@ export class Scheduler {
   private isImmediateCallbacksMode = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
+  private lastUpdateRequester: VNode | null = null
 
   constructor(
     private appCtx: AppContext<any>,
@@ -88,6 +89,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
+    this.lastUpdateRequester = null
   }
 
   wake() {
@@ -111,6 +113,11 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
+    if (this.lastUpdateRequester === vNode) {
+      return
+    }
+
+    this.lastUpdateRequester = vNode
     if (this.isImmediateCallbacksMode) {
       this.isRenderDirtied = true
     }
@@ -175,7 +182,6 @@ export class Scheduler {
   }
 
   queueDelete(vNode: VNode) {
-    //if (this.isPreFlush) return
     applyRecursive(
       vNode,
       (n) => {
@@ -190,12 +196,10 @@ export class Scheduler {
   }
 
   queueEffect(vNode: VNode, effect: Function) {
-    //if (this.isPreFlush) return
     ;(vNode.effects ??= []).push(effect)
   }
 
   queueImmediateEffect(vNode: VNode, effect: Function) {
-    //if (this.isPreFlush) return
     ;(vNode.immediateEffects ??= []).push(effect)
   }
 
@@ -207,8 +211,9 @@ export class Scheduler {
   }
 
   private workLoop(deadline?: IdleDeadline): void {
-    let shouldYield = false
+    this.lastUpdateRequester = null
     ctx.current = this.appCtx
+    let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
       this.nextUnitOfWork =
         this.performUnitOfWork(this.nextUnitOfWork) ??
