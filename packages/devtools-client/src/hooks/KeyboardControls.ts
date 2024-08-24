@@ -1,5 +1,5 @@
 import { useKeyStroke } from "@kaioken-core/hooks"
-import { KeyboardMap } from "../signal"
+import { inspectComponent, KeyboardMap } from "../signal"
 import { useDevtoolsStore } from "../store"
 import { useRef } from "kaioken"
 
@@ -51,6 +51,15 @@ export const useKeyboardControls = () => {
   }
 
   useKeyStroke(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"], (e) => {
+    if (inspectComponent.value) inspectComponent.value = null
+    if (
+      document.activeElement &&
+      document.activeElement instanceof HTMLInputElement &&
+      document.activeElement != searchRef.current
+    ) {
+      return
+    }
+
     e.preventDefault()
     const selectedDomNode = document.querySelector(".selected-vnode")
     if (selectedDomNode === null) {

@@ -134,4 +134,8 @@ declare global {
       immediateEffects?: Array<Function>
     }
   }
+
+  interface Element {
+    __kaiokenNode?: Kaioken.VNode
+  }
 }

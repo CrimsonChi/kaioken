@@ -4,6 +4,7 @@ import { useBtnPos } from "./hooks/useBtnPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
 import { useLayoutEffect } from "kaioken"
 import { useDevTools } from "./hooks/useDevtools"
+import { InspectComponent } from "./components/InspectComponent"
 
 export default function App() {
   const handleOpen = useDevTools()
@@ -44,6 +45,7 @@ export default function App() {
       >
         <Flame />
       </button>
+      <InspectComponent />
     </>
   )
 }

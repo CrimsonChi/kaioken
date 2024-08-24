@@ -34,3 +34,22 @@ export function nodeContainsComponent(node: Kaioken.VNode) {
   }
   return false
 }
+
+export const nodeContainsNode = (
+  currentNode: Kaioken.VNode,
+  componentNode: Kaioken.VNode
+) => {
+  const stack = [componentNode.parent]
+
+  while (stack.length) {
+    const node = stack.pop()
+
+    if (currentNode === node) {
+      return true
+    }
+
+    if (node?.parent) stack.push(node.parent)
+  }
+
+  return false
+}

@@ -1,11 +1,22 @@
-import { AppContext, signal, useEffect, useRequestUpdate } from "kaioken"
+import {
+  AppContext,
+  signal,
+  useCallback,
+  useEffect,
+  useRequestUpdate,
+} from "kaioken"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
 import { SearchContext } from "../context"
+import { inspectComponent } from "../signal"
 
 export function AppView() {
-  const { value: app } = useDevtoolsStore((state) => state.selectedApp)
+  const {
+    value: app,
+    setSelectedNode,
+    setSelectedApp,
+  } = useDevtoolsStore((state) => state.selectedApp)
   const requestUpdate = useRequestUpdate()
   const search = signal("")
 
@@ -14,10 +25,33 @@ export function AppView() {
     requestUpdate()
   }
 
+  const handleInspecNode = useCallback(
+    (ctx: AppContext, vnode: Kaioken.VNode & { type: Function }) => {
+      setSelectedApp(ctx)
+      setSelectedNode(vnode as any)
+      inspectComponent.value = vnode
+      search.value = ""
+    },
+    [setSelectedApp, setSelectedNode]
+  )
+
   useEffect(() => {
     kaiokenGlobal?.on("update", handleUpdate)
-    return () => kaiokenGlobal?.off("update", handleUpdate)
+    kaiokenGlobal?.on(
+      // @ts-expect-error
+      "__kaiokenDevtoolsInsepctElementNode",
+      handleInspecNode
+    )
+
+    return () => {
+      // clean up all events dick head
+      kaiokenGlobal?.off("update", handleUpdate)
+    }
   }, [])
+
+  useEffect(() => {
+    if (inspectComponent.value) inspectComponent.value = null
+  }, [search.value])
 
   const { searchRef } = useKeyboardControls()
 

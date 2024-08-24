@@ -2,6 +2,7 @@ import type { AppContext } from "./appContext"
 import { Component, ComponentConstructor } from "./component.js"
 import { EffectTag, elementTypes as et } from "./constants.js"
 import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
+import { __DEV__ } from "./env.js"
 import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
@@ -369,6 +370,14 @@ export class Scheduler {
         updateDom(vNode)
       }
     }
+
+    if (__DEV__) {
+      if (vNode.dom) {
+        // @ts-expect-error we apply vNode to the dom node
+        vNode.dom!.__kaiokenNode = vNode
+      }
+    }
+
     if (vNode.props.ref) {
       vNode.props.ref.current = vNode.dom
     }
