@@ -1,10 +1,20 @@
-import { AppContext, createStore } from "kaioken"
+import { AppContext, createStore, signal } from "kaioken"
 import { isDevtoolsApp } from "./utils"
 
 export const kaiokenGlobal =
   "window" in globalThis
     ? (window.opener.__kaioken as typeof window.__kaioken)
     : undefined
+
+export const toggleElementToVnode = signal(false)
+kaiokenGlobal?.on(
+  // @ts-expect-error We have our own custom type here
+  "__kaiokenDevtoolsInsepctElementToggle",
+  ({ name }) => {
+    if (name !== "client")
+      toggleElementToVnode.value = !toggleElementToVnode.value
+  }
+)
 
 const initialApps = (kaiokenGlobal?.apps ?? []).filter(
   (app) => !isDevtoolsApp(app)

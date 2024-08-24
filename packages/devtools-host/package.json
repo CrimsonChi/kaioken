@@ -28,6 +28,7 @@
     "@kaioken-core/hooks": "0.0.4-13",
     "kaioken": "workspace:^",
     "lightningcss": "^1.26.0",
-    "tailwind-merge": "^2.5.2"
+    "tailwind-merge": "^2.5.2",
+    "devtools-shared": "workspace:^"
   }
 }

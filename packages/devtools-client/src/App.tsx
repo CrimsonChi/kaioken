@@ -1,5 +1,5 @@
-import { kaiokenGlobal, useDevtoolsStore } from "./store"
-import { SelectedNodeView } from "./components/SelectedNodeView"
+import { kaiokenGlobal, toggleElementToVnode, useDevtoolsStore } from "./store"
+import { SelectedNodeView } from "devtools-shared"
 import { AppView } from "./components/AppView"
 import { Select } from "./components/Select"
 import { FiftyFiftySplitter } from "./components/FiftyFiftySplitter"
@@ -9,6 +9,7 @@ export function App() {
   const {
     value: { apps, selectedApp, selectedNode },
     setSelectedApp,
+    setSelectedNode,
   } = useDevtoolsStore(({ apps, selectedApp, selectedNode }) => ({
     apps,
     selectedApp,
@@ -16,11 +17,13 @@ export function App() {
   }))
 
   const onInspectComponent = () => {
+    if (!window.opener) return
     kaiokenGlobal?.emit(
       // @ts-expect-error We have our own custom type here
       "__kaiokenDevtoolsInsepctElementToggle",
-      kaiokenGlobal.apps[0]
+      { name: "client" }
     )
+    toggleElementToVnode.value = !toggleElementToVnode.value
   }
 
   return (
@@ -37,13 +40,23 @@ export function App() {
             setSelectedApp(apps.find((a) => a.name === name)!)
           }
         />
-        <button onclick={onInspectComponent}>
+        <button
+          onclick={onInspectComponent}
+          className={`p-1 rounded ${toggleElementToVnode.value ? "bg-neutral-900" : ""}`}
+        >
           <SquareMouse />
         </button>
       </header>
       <FiftyFiftySplitter>
         {selectedApp && <AppView />}
-        {selectedNode && <SelectedNodeView />}
+        {selectedNode && selectedApp && (
+          <SelectedNodeView
+            selectedApp={selectedApp}
+            selectedNode={selectedNode}
+            setSelectedNode={setSelectedNode}
+            kaiokenGlobal={kaiokenGlobal}
+          />
+        )}
       </FiftyFiftySplitter>
     </>
   )

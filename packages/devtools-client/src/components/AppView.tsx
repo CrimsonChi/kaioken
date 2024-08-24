@@ -5,7 +5,7 @@ import {
   useEffect,
   useRequestUpdate,
 } from "kaioken"
-import { useDevtoolsStore, kaiokenGlobal } from "../store"
+import { useDevtoolsStore, kaiokenGlobal, toggleElementToVnode } from "../store"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
 import { SearchContext } from "../context"
@@ -30,6 +30,7 @@ export function AppView() {
       setSelectedApp(ctx)
       setSelectedNode(vnode as any)
       inspectComponent.value = vnode
+      toggleElementToVnode.value = false
       search.value = ""
     },
     [setSelectedApp, setSelectedNode]
@@ -44,8 +45,12 @@ export function AppView() {
     )
 
     return () => {
-      // clean up all events dick head
       kaiokenGlobal?.off("update", handleUpdate)
+      kaiokenGlobal?.off(
+        // @ts-expect-error
+        "__kaiokenDevtoolsInsepctElementNode",
+        handleInspecNode
+      )
     }
   }, [])
 
