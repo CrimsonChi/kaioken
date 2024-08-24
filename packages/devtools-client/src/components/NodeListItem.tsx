@@ -6,6 +6,7 @@ import {
   useRef,
   useContext,
 } from "kaioken"
+import { Chevron } from "devtools-shared"
 import { useDevtoolsStore } from "../store"
 import {
   getNodeName,
@@ -14,7 +15,6 @@ import {
   nodeContainsNode,
   searchMatchesItem,
 } from "../utils"
-import { Chevron } from "./chevron"
 import { inspectComponent, KeyboardMap } from "../signal"
 import { SearchContext } from "../context"
 

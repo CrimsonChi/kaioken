@@ -1,6 +1,7 @@
 import { Signal, signal } from "kaioken"
 
 export { SelectedNodeView } from "./SelectedNodeView"
+export { Chevron } from "./Chevron"
 
 declare global {
   interface Window {
