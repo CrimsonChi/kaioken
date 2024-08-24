@@ -98,8 +98,9 @@ export default function kaioken(
           code = `
 import {applyRecursive} from "kaioken/utils";\n
 ${code}\n
-if (import.meta.hot) {
+if (import.meta.hot && "window" in globalThis) {
   function handleUpdate(newModule, name, funcRef) {
+
     if (newModule[name]) {
       window.__kaioken.apps.forEach((ctx) => {
         applyRecursive(ctx.rootNode, (node) => {
