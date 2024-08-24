@@ -44,7 +44,7 @@ export const InspectComponent: Kaioken.FC = () => {
     return null
   }, [element])
 
-  const boundingRef = useRef<HTMLElement | null>(null)
+  const boundingRef = useRef<Element | null>(null)
   const bounding = useElementBounding(boundingRef)
 
   const handleToggle = useCallback(() => {
@@ -73,7 +73,7 @@ export const InspectComponent: Kaioken.FC = () => {
 
   useEffect(() => {
     if (vnode && element) {
-      boundingRef.current = getNearestElm(vnode, element) as HTMLElement
+      boundingRef.current = getNearestElm(vnode, element) ?? null
     } else {
       boundingRef.current = null
     }

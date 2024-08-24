@@ -48,7 +48,10 @@ export const getComponentVnodeFromElement = (domNode: Element | null) => {
   return parentComponent as Kaioken.VNode & { type: Function }
 }
 
-export const getNearestElm = (vNode: Kaioken.VNode, element: HTMLElement) => {
+export const getNearestElm = (
+  vNode: Kaioken.VNode,
+  element: HTMLElement
+): Element | undefined => {
   const elementvNodeTreeUptillComponetVnode: Kaioken.VNode[] = []
   const stack = [element.__kaiokenNode!]
   while (stack.length) {
@@ -63,8 +66,10 @@ export const getNearestElm = (vNode: Kaioken.VNode, element: HTMLElement) => {
 
     if (node?.parent) stack.push(node.parent)
   }
-
-  return elementvNodeTreeUptillComponetVnode[
-    elementvNodeTreeUptillComponetVnode.length - 1
-  ]!.dom
+  if (elementvNodeTreeUptillComponetVnode.length === 0) return undefined
+  const dom =
+    elementvNodeTreeUptillComponetVnode[
+      elementvNodeTreeUptillComponetVnode.length - 1
+    ]!.dom
+  return dom instanceof Element ? dom : undefined
 }
