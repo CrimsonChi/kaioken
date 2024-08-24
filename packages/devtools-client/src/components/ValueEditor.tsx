@@ -4,11 +4,13 @@ export function ValueEditor({
   data,
   onChange,
   mutable,
+  objectRefAcc = [],
   keys = [],
 }: {
   data: Record<string, unknown>
   onChange: (keys: string[], value: unknown) => void
   mutable: boolean
+  objectRefAcc?: unknown[]
   keys?: string[]
 }) {
   return (
@@ -34,6 +36,7 @@ export function ValueEditor({
               keys={_keys}
               path={path}
               mutable={mutable}
+              objectRefAcc={objectRefAcc}
             />
           </div>
         )
@@ -48,19 +51,30 @@ function ValueFieldEditor({
   keys,
   path,
   mutable,
+  objectRefAcc,
 }: {
   value: unknown
   onChange: (keys: string[], value: unknown) => void
   keys: string[]
   path: string
   mutable: boolean
+  objectRefAcc: unknown[]
 }) {
-  const handleChange = (newValue: unknown) => onChange(keys, newValue)
   if (value === null) {
     return <TextValueDisplay>null</TextValueDisplay>
   } else if (value === undefined) {
     return <TextValueDisplay>undefined</TextValueDisplay>
   }
+  if (value instanceof (window.opener.Node as typeof Node)) {
+    return (
+      <TextValueDisplay>
+        {"<"}
+        <span style={{ color: "#f0a05e" }}>{value.nodeName}</span>
+        {"/>"}
+      </TextValueDisplay>
+    )
+  }
+  const handleChange = (newValue: unknown) => onChange(keys, newValue)
   switch (typeof value) {
     case "string":
       return (
@@ -112,12 +126,17 @@ function ValueFieldEditor({
       if (Array.isArray(value)) {
         return <TextValueDisplay>Array({value.length})</TextValueDisplay>
       }
+      if (objectRefAcc.includes(value)) {
+        return <TextValueDisplay>Object(circular reference)</TextValueDisplay>
+      }
+      objectRefAcc.push(value)
       return (
         <ValueEditor
           data={value as Record<string, unknown>}
           onChange={onChange}
           keys={keys}
           mutable={mutable}
+          objectRefAcc={objectRefAcc}
         />
       )
   }
