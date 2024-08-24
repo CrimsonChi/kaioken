@@ -15,7 +15,7 @@ export const signal = <T>(initial: T) => {
             hook.signal = new Signal(initial)
             if (__DEV__) {
               hook.debug = {
-                get: () => ({ value: hook.signal.value }),
+                get: () => ({ value: Signal.getValue(hook.signal) }),
                 set: ({ value }) => {
                   Signal.setValueSilently(hook.signal, value)
                 },
