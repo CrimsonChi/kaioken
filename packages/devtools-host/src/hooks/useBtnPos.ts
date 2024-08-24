@@ -22,7 +22,7 @@ export const useBtnPos = () => {
     height: window.innerHeight,
   })
   const snapSide = signal<SnapSide>("bottom")
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
     const resultString = localStorage.getItem(LOCAL_KEY)
@@ -51,7 +51,7 @@ export const useBtnPos = () => {
     (e) => {
       e.preventDefault()
 
-      timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = window.setTimeout(() => {
         startMouse.value = { x: e.x, y: e.y }
         lastDroppedCoord.value = btnCoords.value
       }, 100)
@@ -172,5 +172,6 @@ export const useBtnPos = () => {
     viewPortRef,
     startMouse,
     elementBound,
+    snapSide,
   }
 }

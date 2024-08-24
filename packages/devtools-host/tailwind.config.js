@@ -2,8 +2,10 @@
 export default {
   content: ["./src/**/*.{tsx,css,ts}"],
   theme: {
-    colors: {
-      crimson: "crimson",
+    extend: {
+      colors: {
+        crimson: "crimson",
+      },
     },
   },
   plugins: [],
