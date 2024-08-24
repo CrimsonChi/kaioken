@@ -15,7 +15,6 @@ export function createElement<T extends string | Function | typeof Component>(
     props:
       _children !== null ? { ...props, children: _children } : (props ?? {}),
   }
-  ctx.current.elementCounter++
   nodeToCtxMap.set(node, ctx.current)
   return node
 }

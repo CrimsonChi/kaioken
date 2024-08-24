@@ -25,7 +25,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   hookIndex = 0
   root?: HTMLElement
   mounted = false
-  elementCounter = 0
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
