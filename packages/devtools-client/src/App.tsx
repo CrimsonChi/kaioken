@@ -2,7 +2,7 @@ import { kaiokenGlobal, useDevtoolsStore } from "./store"
 import { SelectedNodeView } from "./components/SelectedNodeView"
 import { AppView } from "./components/AppView"
 import { Select } from "./components/Select"
-import { FiftyFiftySplitter } from "./components/FitfyFitfySpliter"
+import { FiftyFiftySplitter } from "./components/FiftyFiftySplitter"
 import { SquareMouse } from "./icons/SquareMouse"
 
 export function App() {
