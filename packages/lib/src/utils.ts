@@ -1,10 +1,10 @@
-import { renderMode } from "./globals.js"
-import { regexUnits } from "./constants.js"
+import { nodeToCtxMap, renderMode } from "./globals.js"
+import { REGEX_UNIT } from "./constants.js"
 
 export {
   isVNode,
-  isValidChild,
   vNodeContains,
+  getVNodeAppContext,
   applyRecursive,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
@@ -29,14 +29,16 @@ function isVNode(thing: unknown): thing is Kaioken.VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
-function isValidChild(child: unknown) {
-  return child !== null && child !== undefined && typeof child !== "boolean"
+function getVNodeAppContext(node: Kaioken.VNode) {
+  const n = nodeToCtxMap.get(node)
+  if (!n) throw new Error("[kaioken]: Unable to find node's AppContext")
+  return n
 }
 
 function vNodeContains(
   haystack: Kaioken.VNode,
   needle: Kaioken.VNode,
-  checkSiblings = false
+  checkImmediateSiblings = false
 ): boolean {
   if (haystack === needle) return true
   const stack: Kaioken.VNode[] = [haystack]
@@ -44,8 +46,8 @@ function vNodeContains(
     const n = stack.pop()!
     if (n === needle) return true
     n.child && stack.push(n.child)
-    checkSiblings && n.sibling && stack.push(n.sibling)
-    checkSiblings = true
+    checkImmediateSiblings && n.sibling && stack.push(n.sibling)
+    checkImmediateSiblings = true
   }
   return false
 }
@@ -53,14 +55,14 @@ function vNodeContains(
 function applyRecursive(
   node: Kaioken.VNode,
   func: (node: Kaioken.VNode) => void,
-  includeSiblings = true
+  includeImmediateSiblings = true
 ) {
   const nodes: Kaioken.VNode[] = [node]
   const apply = (node: Kaioken.VNode) => {
     func(node)
     node.child && nodes.push(node.child)
-    includeSiblings && node.sibling && nodes.push(node.sibling)
-    includeSiblings = true
+    includeImmediateSiblings && node.sibling && nodes.push(node.sibling)
+    includeImmediateSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
 }
@@ -117,12 +119,12 @@ function shallowCompare<T>(objA: T, objB: T) {
 
 function encodeHtmlEntities(text: string): string {
   return text
-    .replace(regexUnits.AMP_G, "&amp;")
-    .replace(regexUnits.LT_G, "&lt;")
-    .replace(regexUnits.GT_G, "&gt;")
-    .replace(regexUnits.DBLQT_G, "&quot;")
-    .replace(regexUnits.SQT_G, "&#039;")
-    .replace(regexUnits.SLASH_G, "&#47;")
+    .replace(REGEX_UNIT.AMP_G, "&amp;")
+    .replace(REGEX_UNIT.LT_G, "&lt;")
+    .replace(REGEX_UNIT.GT_G, "&gt;")
+    .replace(REGEX_UNIT.DBLQT_G, "&quot;")
+    .replace(REGEX_UNIT.SQT_G, "&#039;")
+    .replace(REGEX_UNIT.SLASH_G, "&#47;")
 }
 
 const propFilters = {
@@ -350,7 +352,7 @@ const snakeCaseAttrs = new Map([
 function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
   let cssString = ""
   for (const key in obj) {
-    const cssKey = key.replace(regexUnits.ALPHA_UPPER_G, "-$&").toLowerCase()
+    const cssKey = key.replace(REGEX_UNIT.ALPHA_UPPER_G, "-$&").toLowerCase()
     cssString += `${cssKey}:${obj[key]};`
   }
   return cssString

@@ -18,7 +18,7 @@ export * from "./transition.js"
 export { mount, createElement, fragment }
 
 if ("window" in globalThis) {
-  window.__kaioken = window.__kaioken ?? new KaiokenGlobalContext()
+  globalThis.window.__kaioken ??= new KaiokenGlobalContext()
 }
 
 function mount<T extends Record<string, unknown>>(

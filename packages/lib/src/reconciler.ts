@@ -1,5 +1,5 @@
 import type { AppContext } from "./appContext"
-import { EffectTag, elementTypes } from "./constants.js"
+import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { Signal } from "./signal.js"
@@ -194,14 +194,14 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
 }
 
 function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
-  if (oldNode === null || oldNode.type !== elementTypes.text) {
-    const newNode = createElement(elementTypes.text, { nodeValue: content })
+  if (oldNode === null || oldNode.type !== ELEMENT_TYPE.text) {
+    const newNode = createElement(ELEMENT_TYPE.text, { nodeValue: content })
     newNode.parent = parent
     return newNode
   } else {
     const newNode = oldNode
     newNode.props.nodeValue = content
-    newNode.effectTag = EffectTag.UPDATE
+    newNode.effectTag = EFFECT_TAG.UPDATE
     newNode.sibling = undefined
     return oldNode
   }
@@ -209,7 +209,7 @@ function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
 
 function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   const nodeType = newNode.type
-  if (nodeType === elementTypes.fragment) {
+  if (nodeType === ELEMENT_TYPE.fragment) {
     return updateFragment(
       parent,
       oldNode,
@@ -221,7 +221,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.index = 0
     oldNode.props = newNode.props
     oldNode.sibling = undefined
-    oldNode.effectTag = EffectTag.UPDATE
+    oldNode.effectTag = EFFECT_TAG.UPDATE
     oldNode.frozen = newNode.frozen
     return oldNode
   }
@@ -236,13 +236,13 @@ function updateFragment(
   children: unknown[],
   newProps = {}
 ) {
-  if (oldNode === null || oldNode.type !== elementTypes.fragment) {
-    const el = createElement(elementTypes.fragment, { children, ...newProps })
+  if (oldNode === null || oldNode.type !== ELEMENT_TYPE.fragment) {
+    const el = createElement(ELEMENT_TYPE.fragment, { children, ...newProps })
     el.parent = parent
     return el
   }
   oldNode.props = { ...oldNode.props, ...newProps, children }
-  oldNode.effectTag = EffectTag.UPDATE
+  oldNode.effectTag = EFFECT_TAG.UPDATE
   oldNode.sibling = undefined
   return oldNode
 }
@@ -253,7 +253,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     typeof child === "number" ||
     typeof child === "bigint"
   ) {
-    const el = createElement(elementTypes.text, { nodeValue: "" + child })
+    const el = createElement(ELEMENT_TYPE.text, { nodeValue: "" + child })
     el.parent = parent
     return el
   }
@@ -262,11 +262,11 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     if (isVNode(child)) {
       const newNode = createElement(child.type, child.props)
       newNode.parent = parent
-      newNode.effectTag = EffectTag.PLACEMENT
+      newNode.effectTag = EFFECT_TAG.PLACEMENT
       return newNode
     }
     if (Array.isArray(child)) {
-      const el = createElement(elementTypes.fragment, {
+      const el = createElement(ELEMENT_TYPE.fragment, {
         children: child,
         //array: true,
       })
@@ -290,13 +290,13 @@ function placeChild(
   if (vNode.prev !== undefined) {
     const oldIndex = vNode.prev.index
     if (oldIndex < lastPlacedIndex) {
-      vNode.effectTag = EffectTag.PLACEMENT
+      vNode.effectTag = EFFECT_TAG.PLACEMENT
       return lastPlacedIndex
     } else {
       return oldIndex
     }
   } else {
-    vNode.effectTag = EffectTag.PLACEMENT
+    vNode.effectTag = EFFECT_TAG.PLACEMENT
     return lastPlacedIndex
   }
 }
@@ -314,15 +314,15 @@ function updateFromMap(
   ) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
-      oldChild.effectTag = EffectTag.UPDATE
+      oldChild.effectTag = EFFECT_TAG.UPDATE
       oldChild.props.nodeValue = newChild
       return oldChild
     } else {
-      const n = createElement(elementTypes.text, {
+      const n = createElement(ELEMENT_TYPE.text, {
         nodeValue: newChild,
       })
       n.parent = parent
-      n.effectTag = EffectTag.PLACEMENT
+      n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
     }
@@ -333,7 +333,7 @@ function updateFromMap(
       newChild.props.key === undefined ? index : newChild.props.key
     )
     if (oldChild) {
-      oldChild.effectTag = EffectTag.UPDATE
+      oldChild.effectTag = EFFECT_TAG.UPDATE
       oldChild.props = newChild.props
       oldChild.frozen = newChild.frozen
       oldChild.sibling = undefined
@@ -342,7 +342,7 @@ function updateFromMap(
     } else {
       const n = createElement(newChild.type, newChild.props)
       n.parent = parent
-      n.effectTag = EffectTag.PLACEMENT
+      n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
     }
@@ -351,15 +351,15 @@ function updateFromMap(
   if (Array.isArray(newChild)) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
-      oldChild.effectTag = EffectTag.UPDATE
+      oldChild.effectTag = EFFECT_TAG.UPDATE
       oldChild.props.children = newChild
       return oldChild
     } else {
-      const n = createElement(elementTypes.fragment, {
+      const n = createElement(ELEMENT_TYPE.fragment, {
         children: newChild,
       })
       n.parent = parent
-      n.effectTag = EffectTag.PLACEMENT
+      n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
     }
@@ -390,7 +390,7 @@ const missingKeyWarnings = new Set()
 function warnForMissingKey(parent: VNode, child: VNode) {
   if (!__DEV__) return
   if (missingKeyWarnings.has(parent)) return
-  if (parent.type === elementTypes.fragment && parent.props.array) {
+  if (parent.type === ELEMENT_TYPE.fragment && parent.props.array) {
     if (child.props.key === null || child.props.key === undefined) {
       const fn = getNearestParentFcTag(parent)
       keyWarn(

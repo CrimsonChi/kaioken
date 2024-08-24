@@ -33,7 +33,9 @@ export function ProductPage() {
       {error && <div>{error.message}</div>}
       {data && <Product product={data} />}
       <div className="flex items-center justify-center">
-        {id > 1 && <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>}
+        {parseInt(id) > 1 && (
+          <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>
+        )}
         <Link to={`/query?id=${Number(id) + 1}`}>Next</Link>
         <button onclick={() => invalidate(true)}>Invalidate</button>
       </div>

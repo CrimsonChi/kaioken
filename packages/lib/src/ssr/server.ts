@@ -13,7 +13,7 @@ import {
 } from "../utils.js"
 
 import { Signal } from "../signal.js"
-import { elementTypes as et } from "../constants.js"
+import { ELEMENT_TYPE as et } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
@@ -33,7 +33,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
-  state.ctx.rootNode = el instanceof Function ? createElement(el, elProps) : el
+  state.ctx.rootNode = createElement(el, elProps)
   renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
 
   state.stream.push(null)

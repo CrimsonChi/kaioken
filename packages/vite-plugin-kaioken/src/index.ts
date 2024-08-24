@@ -96,13 +96,12 @@ export default function kaioken(
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
           code = `
-import {contexts} from "kaioken/dist/globals.js";\n
-import {applyRecursive} from "kaioken/dist/utils.js";\n
+import {applyRecursive} from "kaioken/utils";\n
 ${code}\n
 if (import.meta.hot) {
   function handleUpdate(newModule, name, funcRef) {
     if (newModule[name]) {
-      contexts.forEach((ctx) => {
+      window.__kaioken.apps.forEach((ctx) => {
         applyRecursive(ctx.rootNode, (node) => {
           if (node.type === funcRef) {
             node.type = newModule[name];

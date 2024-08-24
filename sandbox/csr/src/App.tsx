@@ -12,6 +12,7 @@ import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
+import { UseSyncExternalStoreExample } from "./components/UseSyncExternalStoreExample"
 
 // const { data, loading, error, invalidate } = useAsync(async () => {
 //   return (await fetch(`https://dummyjson.com/products/${productId}`)).json()
@@ -120,6 +121,7 @@ function Nav() {
         <Link to="/context">Context</Link>
         <GithubIcon />
         <Link to="/useAsync">useAsync</Link>
+        <Link to="/useSyncExternalStoreExample">useSyncExternalStore</Link>
       </div>
     </nav>
   )
@@ -166,6 +168,10 @@ export function App() {
           <Route path="/keyed-list" element={<KeyedList />} />
           <Route path="/context" element={<ContextExample />} />
           <Route path="/useAsync" element={<UseAsyncExample />} />
+          <Route
+            path="/useSyncExternalStoreExample"
+            element={<UseSyncExternalStoreExample />}
+          />
           <Route path="*" element={<h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>

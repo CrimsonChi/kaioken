@@ -10,7 +10,7 @@ import {
   selfClosingTags,
 } from "./utils.js"
 import { Signal } from "./signal.js"
-import { elementTypes } from "./constants.js"
+import { ELEMENT_TYPE } from "./constants.js"
 import { Component } from "./component.js"
 import { assertValidElementProps } from "./props.js"
 
@@ -22,7 +22,7 @@ export function renderToString<T extends Record<string, unknown>>(
   renderMode.current = "string"
   const prevCtx = ctx.current
   const c = (ctx.current = new AppContext(el, elProps))
-  c.rootNode = el instanceof Function ? createElement(el, elProps) : el
+  c.rootNode = createElement(el, elProps)
   const res = renderToString_internal(c.rootNode, undefined, elProps)
   renderMode.current = prev
   ctx.current = prevCtx
@@ -51,9 +51,9 @@ function renderToString_internal<T extends Record<string, unknown>>(
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
-  if (type === elementTypes.text)
+  if (type === ELEMENT_TYPE.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
-  if (type === elementTypes.fragment) {
+  if (type === ELEMENT_TYPE.fragment) {
     if (!Array.isArray(children)) return renderToString_internal(children, el)
     return children.map((c) => renderToString_internal(c, el, props)).join("")
   }

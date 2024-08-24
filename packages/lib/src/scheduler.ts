@@ -1,6 +1,10 @@
 import type { AppContext } from "./appContext"
 import { Component, ComponentConstructor } from "./component.js"
-import { EffectTag, elementTypes as et } from "./constants.js"
+import {
+  CONSECUTIVE_DIRTY_LIMIT,
+  EFFECT_TAG,
+  ELEMENT_TYPE as et,
+} from "./constants.js"
 import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { ctx, node, renderMode } from "./globals.js"
@@ -8,8 +12,6 @@ import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { applyRecursive, vNodeContains } from "./utils.js"
-
-const CONSECUTIVE_DIRTY_LIMIT = 50
 
 type VNode = Kaioken.VNode
 
@@ -61,6 +63,7 @@ export class Scheduler {
   private isImmediateCallbacksMode = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
+  private lastUpdateRequester: VNode | null = null
 
   constructor(
     private appCtx: AppContext<any>,
@@ -87,6 +90,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
+    this.lastUpdateRequester = null
   }
 
   wake() {
@@ -110,6 +114,11 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
+    if (this.lastUpdateRequester === vNode) {
+      return
+    }
+
+    this.lastUpdateRequester = vNode
     if (this.isImmediateCallbacksMode) {
       this.isRenderDirtied = true
     }
@@ -174,11 +183,10 @@ export class Scheduler {
   }
 
   queueDelete(vNode: VNode) {
-    //if (this.isPreFlush) return
     applyRecursive(
       vNode,
       (n) => {
-        n.effectTag = EffectTag.DELETION
+        n.effectTag = EFFECT_TAG.DELETION
       },
       false
     )
@@ -189,12 +197,10 @@ export class Scheduler {
   }
 
   queueEffect(vNode: VNode, effect: Function) {
-    //if (this.isPreFlush) return
     ;(vNode.effects ??= []).push(effect)
   }
 
   queueImmediateEffect(vNode: VNode, effect: Function) {
-    //if (this.isPreFlush) return
     ;(vNode.immediateEffects ??= []).push(effect)
   }
 
@@ -206,8 +212,9 @@ export class Scheduler {
   }
 
   private workLoop(deadline?: IdleDeadline): void {
-    let shouldYield = false
+    this.lastUpdateRequester = null
     ctx.current = this.appCtx
+    let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
       this.nextUnitOfWork =
         this.performUnitOfWork(this.nextUnitOfWork) ??
@@ -236,7 +243,7 @@ export class Scheduler {
       this.isImmediateCallbacksMode = false
 
       if (this.isRenderDirtied) {
-        this.checkForTooManyConsecutiveDirty()
+        this.checkForTooManyConsecutiveDirtyRenders()
         while (tip.length) {
           fireEffects(tip.shift()!)
         }
@@ -273,7 +280,7 @@ export class Scheduler {
 
   private performUnitOfWork(vNode: VNode): VNode | void {
     const frozen = "frozen" in vNode && vNode.frozen === true
-    const skip = frozen && vNode.effectTag !== EffectTag.PLACEMENT
+    const skip = frozen && vNode.effectTag !== EFFECT_TAG.PLACEMENT
     if (!skip) {
       try {
         if (Component.isCtor(vNode.type)) {
@@ -361,6 +368,7 @@ export class Scheduler {
   }
 
   private updateHostComponent(vNode: VNode) {
+    node.current = vNode
     assertValidElementProps(vNode)
     if (!vNode.dom) {
       if (renderMode.current === "hydrate") {
@@ -388,9 +396,10 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children
       ) || undefined
+    node.current = undefined
   }
 
-  private checkForTooManyConsecutiveDirty() {
+  private checkForTooManyConsecutiveDirtyRenders() {
     if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
       throw new Error(
         "[kiakoken]: Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."

@@ -3,7 +3,7 @@ import assert from "node:assert"
 import { reconcileChildren } from "../../reconciler.js"
 import { ctx } from "../../globals.js"
 import * as kaioken from "../../index.js"
-import { EffectTag } from "../../constants.js"
+import { EFFECT_TAG } from "../../constants.js"
 import { shuffle } from "./utils.js"
 
 describe("reconciler", () => {
@@ -95,7 +95,7 @@ describe("reconciler", () => {
         if (prev === undefined || prev.index < i) {
           assert.strictEqual(
             c!.effectTag,
-            EffectTag.PLACEMENT,
+            EFFECT_TAG.PLACEMENT,
             `[${opName}]: effectTag for ${i}th child should be "placement"`
           )
         }

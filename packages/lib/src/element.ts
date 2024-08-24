@@ -1,5 +1,5 @@
 import type { Component } from "./component"
-import { elementTypes } from "./constants.js"
+import { ELEMENT_TYPE } from "./constants.js"
 import { ctx, nodeToCtxMap } from "./globals.js"
 
 export function createElement<T extends string | Function | typeof Component>(
@@ -15,6 +15,7 @@ export function createElement<T extends string | Function | typeof Component>(
     props:
       _children !== null ? { ...props, children: _children } : (props ?? {}),
   }
+  ctx.current.elementCounter++
   nodeToCtxMap.set(node, ctx.current)
   return node
 }
@@ -24,5 +25,5 @@ export function fragment({
   ...rest
 }: { children: unknown } & Record<string, unknown>) {
   const c = Array.isArray(children) ? children : [children]
-  return createElement(elementTypes.fragment, rest, ...c)
+  return createElement(ELEMENT_TYPE.fragment, rest, ...c)
 }

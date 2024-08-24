@@ -1,6 +1,6 @@
 import type { Signal as SignalClass } from "./signal"
 import type { Component, ComponentConstructor } from "./component"
-import type { EffectTag } from "./constants"
+import type { EFFECT_TAG } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
@@ -128,7 +128,7 @@ declare global {
       child?: VNode
       sibling?: VNode
       prev?: VNode
-      effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
+      effectTag?: (typeof EFFECT_TAG)[keyof typeof EFFECT_TAG]
       frozen?: boolean
       effects?: Array<Function>
       immediateEffects?: Array<Function>
