@@ -31,6 +31,7 @@ export class Signal<T> {
   [signalSymbol] = true
   #value: T
   #subscribers = new Set<Kaioken.VNode | Function>()
+  displayName?: string
   constructor(initial: T) {
     this.#value = initial
   }
@@ -56,6 +57,10 @@ export class Signal<T> {
 
   static setValueSilently(signal: Signal<any>, value: any) {
     signal.#value = value
+  }
+
+  static getValue(signal: Signal<any>) {
+    return signal.#value
   }
 
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {

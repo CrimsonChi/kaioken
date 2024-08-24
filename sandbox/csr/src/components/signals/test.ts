@@ -1,4 +1,8 @@
 import { signal } from "kaioken"
 
-export const count = signal(0)
-export const todo = signal<string[]>([])
+export { count, todo }
+
+const count = signal(0)
+count.displayName = "count"
+const todo = signal<string[]>([])
+todo.displayName = "todo"
