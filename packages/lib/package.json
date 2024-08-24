@@ -105,6 +105,6 @@
     "typescript": "^5.5.3"
   },
   "dependencies": {
-    "@kaioken-core/hooks": "0.0.4-12"
+    "@kaioken-core/hooks": "0.0.4-13"
   }
 }

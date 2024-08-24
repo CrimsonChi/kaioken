@@ -6,7 +6,7 @@ import {
 } from "@kaioken-core/hooks"
 import { signal, useCallback, useEffect, useMemo, useRef } from "kaioken"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
-import { vNodeContains } from "kaioken/dist/utils"
+import { vNodeContains } from "kaioken/utils"
 import { useDevtoolsStore } from "../store"
 
 export const InspectComponent: Kaioken.FC = () => {
