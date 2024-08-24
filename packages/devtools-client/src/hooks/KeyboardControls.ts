@@ -131,6 +131,7 @@ export const useKeyboardControls = () => {
 
   useKeyStroke("l", (e) => {
     if (e.ctrlKey) {
+      e.preventDefault()
       searchRef.current?.focus({
         preventScroll: false,
       })
