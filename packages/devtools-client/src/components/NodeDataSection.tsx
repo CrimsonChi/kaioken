@@ -19,12 +19,7 @@ export function NodeDataSection({
         }}
       >
         <h3 className="cursor-pointer flex items-center gap-2">
-          <Chevron
-            className="transform"
-            style={{
-              transform: "rotate(" + (collapsed ? 0 : 90) + "deg)",
-            }}
-          />
+          <Chevron className={`transition ${collapsed ? "" : "rotate-90"}`} />
           {title}
         </h3>
       </button>

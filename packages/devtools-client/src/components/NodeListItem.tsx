@@ -91,10 +91,9 @@ export function NodeListItem({
         >
           {showChildren && (
             <Chevron
-              className="cursor-pointer transform"
-              style={{
-                transform: "rotate(" + (collapsed ? 0 : 90) + "deg)",
-              }}
+              className={`cursor-pointer transition ${
+                collapsed ? "" : "rotate-90"
+              }`}
               onclick={(e) => {
                 e.preventDefault()
                 e.stopImmediatePropagation()
