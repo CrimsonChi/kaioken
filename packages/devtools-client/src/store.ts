@@ -11,7 +11,6 @@ kaiokenGlobal?.on(
   // @ts-expect-error We have our own custom type here
   "__kaiokenDevtoolsInsepctElementToggle",
   ({ name }) => {
-    console.debug("__kaiokenDevtoolsInsepctElementToggle", name)
     if (name !== "client")
       toggleElementToVnode.value = !toggleElementToVnode.value
   }

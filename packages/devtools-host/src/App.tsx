@@ -90,7 +90,6 @@ export default function App() {
             startMouse.value && "pointer-events-none"
           )}
           onclick={() => {
-            console.log("[kaioken]: devtools toggled")
             toggled.value = !toggled.value
           }}
           tabIndex={-1}

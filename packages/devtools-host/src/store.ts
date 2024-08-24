@@ -5,7 +5,6 @@ window.__kaioken?.on(
   // @ts-expect-error We have our own custom type here
   "__kaiokenDevtoolsInsepctElementToggle",
   ({ name }) => {
-    console.debug("__kaiokenDevtoolsInsepctElementToggle", name)
     if (name !== "host")
       toggleElementToVnode.value = !toggleElementToVnode.value
   }
