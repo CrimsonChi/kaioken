@@ -2,7 +2,7 @@
 export default {
   content: [
     "./src/**/*.{tsx,css,ts}",
-    "./node_modules/devtools-shared/**/*.{tsx,css,ts}",
+    "./node_modules/devtools-shared/src/**/*.{tsx,css,ts}",
   ],
   theme: {
     extend: {

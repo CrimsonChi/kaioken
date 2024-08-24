@@ -1,11 +1,9 @@
-import { kaiokenGlobal, useDevtoolsStore } from "./store"
-import { getInspectorEnabledSignal, SelectedNodeView } from "devtools-shared"
+import { kaiokenGlobal, toggleElementToVnode, useDevtoolsStore } from "./store"
+import { SelectedNodeView } from "devtools-shared"
 import { AppView } from "./components/AppView"
 import { Select } from "./components/Select"
 import { FiftyFiftySplitter } from "./components/FitfyFitfySpliter"
 import { SquareMouse } from "./icons/SquareMouse"
-
-const inspectSignal = getInspectorEnabledSignal()
 
 export function App() {
   const {
@@ -20,7 +18,12 @@ export function App() {
 
   const onInspectComponent = () => {
     if (!window.opener) return
-    inspectSignal.value = !inspectSignal.value
+    kaiokenGlobal?.emit(
+      // @ts-expect-error We have our own custom type here
+      "__kaiokenDevtoolsInsepctElementToggle",
+      { name: "client" }
+    )
+    toggleElementToVnode.value = !toggleElementToVnode.value
   }
 
   return (
@@ -39,7 +42,7 @@ export function App() {
         />
         <button
           onclick={onInspectComponent}
-          className={`p-1 rounded ${inspectSignal.value ? "bg-neutral-900" : ""}`}
+          className={`p-1 rounded ${toggleElementToVnode.value ? "bg-neutral-900" : ""}`}
         >
           <SquareMouse />
         </button>

@@ -7,9 +7,7 @@ import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
-import { getInspectorEnabledSignal } from "devtools-shared"
-
-const inspectSignal = getInspectorEnabledSignal()
+import { toggleElementToVnode } from "./store"
 
 export default function App() {
   const toggled = signal(false)
@@ -33,6 +31,15 @@ export default function App() {
   useEffectDeep(() => {
     setSpringBtnCoords(btnCoords.value)
   }, [btnCoords.value])
+
+  const handleToggleInspect = () => {
+    window.__kaioken?.emit(
+      // @ts-expect-error We have our own custom type here
+      "__kaiokenDevtoolsInsepctElementToggle",
+      { name: "host" }
+    )
+    toggleElementToVnode.value = !toggleElementToVnode.value
+  }
 
   return (
     <>
@@ -60,16 +67,16 @@ export default function App() {
             return (
               <>
                 <button
-                  onclick={handleOpen}
+                  onclick={() => handleOpen()}
                   style={{ transform: `scale(${scale})`, opacity }}
                   className="transition text-white rounded-full p-1 hover:bg-[#0003]"
                 >
                   <PageInfo width={16} height={16} />
                 </button>
                 <button
-                  onclick={() => (inspectSignal.value = !inspectSignal.value)}
+                  onclick={handleToggleInspect}
                   style={{ transform: `scale(${scale})`, opacity }}
-                  className="transition text-white rounded-full p-1 hover:bg-[#0003]"
+                  className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${toggleElementToVnode.value ? "bg-[#0003]" : ""}`}
                 >
                   <SquareMouse width={16} height={16} />
                 </button>

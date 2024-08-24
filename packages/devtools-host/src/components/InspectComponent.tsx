@@ -7,22 +7,22 @@ import {
 import { useEffect, useMemo, useRef } from "kaioken"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "kaioken/utils"
-import { useDevtoolsStore } from "../store"
-import { getInspectorEnabledSignal } from "devtools-shared"
-
-const inspectSignal = getInspectorEnabledSignal()
+import { toggleElementToVnode, useDevtoolsStore } from "../store"
+import { useDevTools } from "../hooks/useDevtools"
 
 export const InspectComponent: Kaioken.FC = () => {
   const {
     value: { popupWindow },
   } = useDevtoolsStore()
+  const openDevTools = useDevTools()
   const { mouse } = useMouse()
+
   const controls = useElementByPoint({
     x: mouse.x,
     y: mouse.y,
     immediate: false,
   })
-  const element = inspectSignal.value ? controls.element : null
+  const element = toggleElementToVnode.value ? controls.element : null
 
   const elApp = useMemo(() => {
     if (element && window.__kaioken) {
@@ -50,12 +50,12 @@ export const InspectComponent: Kaioken.FC = () => {
   const bounding = useElementBounding(boundingRef)
 
   useEffect(() => {
-    if (inspectSignal.value) {
+    if (toggleElementToVnode.value) {
       controls.start()
     } else {
       controls.stop()
     }
-  }, [inspectSignal.value])
+  }, [toggleElementToVnode.value])
 
   useEffect(() => {
     if (vnode && element) {
@@ -66,16 +66,29 @@ export const InspectComponent: Kaioken.FC = () => {
   }, [vnode, element])
 
   useEventListener("click", (e) => {
-    if (inspectSignal.value === true && vnode && elApp) {
+    if (toggleElementToVnode.value === true && vnode && elApp) {
       e.preventDefault()
-      window.__kaioken?.emit(
-        // @ts-expect-error we have our own custom event
-        "__kaiokenDevtoolsInsepctElementNode",
-        elApp,
-        vnode
-      )
-      inspectSignal.value = false
-      popupWindow?.focus?.()
+      if (!popupWindow) {
+        openDevTools((w) => {
+          window.__kaioken?.emit(
+            // @ts-expect-error we have our own custom event
+            "__kaiokenDevtoolsInsepctElementNode",
+            elApp,
+            vnode
+          )
+          toggleElementToVnode.value = false
+          w.focus()
+        })
+      } else {
+        window.__kaioken?.emit(
+          // @ts-expect-error we have our own custom event
+          "__kaiokenDevtoolsInsepctElementNode",
+          elApp,
+          vnode
+        )
+        toggleElementToVnode.value = false
+        popupWindow?.focus?.()
+      }
     }
   })
 
