@@ -4,23 +4,25 @@ import {
   useEventListener,
   useMouse,
 } from "@kaioken-core/hooks"
-import { signal, useCallback, useEffect, useMemo, useRef } from "kaioken"
+import { useEffect, useMemo, useRef } from "kaioken"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "kaioken/utils"
 import { useDevtoolsStore } from "../store"
+import { getInspectorEnabledSignal } from "devtools-shared"
+
+const inspectSignal = getInspectorEnabledSignal()
 
 export const InspectComponent: Kaioken.FC = () => {
   const {
     value: { popupWindow },
   } = useDevtoolsStore()
-  const toggleElementToVnode = signal(false)
   const { mouse } = useMouse()
   const controls = useElementByPoint({
     x: mouse.x,
     y: mouse.y,
     immediate: false,
   })
-  const element = toggleElementToVnode.value ? controls.element : null
+  const element = inspectSignal.value ? controls.element : null
 
   const elApp = useMemo(() => {
     if (element && window.__kaioken) {
@@ -47,29 +49,13 @@ export const InspectComponent: Kaioken.FC = () => {
   const boundingRef = useRef<Element | null>(null)
   const bounding = useElementBounding(boundingRef)
 
-  const handleToggle = useCallback(() => {
-    toggleElementToVnode.value = !toggleElementToVnode.value
-  }, [])
-
   useEffect(() => {
-    // @ts-expect-error We have our own custom events
-    window.__kaioken?.on("__kaiokenDevtoolsInsepctElementToggle", handleToggle)
-    return () => {
-      window.__kaioken?.off(
-        // @ts-expect-error We have our own custom events
-        "__kaiokenDevtoolsInsepctElementToggle",
-        handleToggle
-      )
-    }
-  }, [])
-
-  useEffect(() => {
-    if (toggleElementToVnode.value) {
+    if (inspectSignal.value) {
       controls.start()
     } else {
       controls.stop()
     }
-  }, [toggleElementToVnode.value])
+  }, [inspectSignal.value])
 
   useEffect(() => {
     if (vnode && element) {
@@ -80,7 +66,7 @@ export const InspectComponent: Kaioken.FC = () => {
   }, [vnode, element])
 
   useEventListener("click", (e) => {
-    if (toggleElementToVnode.value === true && vnode && elApp) {
+    if (inspectSignal.value === true && vnode && elApp) {
       e.preventDefault()
       window.__kaioken?.emit(
         // @ts-expect-error we have our own custom event
@@ -88,7 +74,7 @@ export const InspectComponent: Kaioken.FC = () => {
         elApp,
         vnode
       )
-      toggleElementToVnode.value = false
+      inspectSignal.value = false
       popupWindow?.focus?.()
     }
   })

@@ -7,6 +7,9 @@ import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
+import { getInspectorEnabledSignal } from "devtools-shared"
+
+const inspectSignal = getInspectorEnabledSignal()
 
 export default function App() {
   const toggled = signal(false)
@@ -64,6 +67,7 @@ export default function App() {
                   <PageInfo width={16} height={16} />
                 </button>
                 <button
+                  onclick={() => (inspectSignal.value = !inspectSignal.value)}
                   style={{ transform: `scale(${scale})`, opacity }}
                   className="transition text-white rounded-full p-1 hover:bg-[#0003]"
                 >
@@ -87,6 +91,12 @@ export default function App() {
         >
           <Flame />
         </button>
+      </div>
+      <div hidden>
+        {/* <SelectedNodeView
+          kaiokenGlobal={window.__kaioken}
+          selectedApp={useDevTools().selectedApp}
+        /> */}
       </div>
       <InspectComponent />
     </>

@@ -11,7 +11,9 @@ import {
   useRef,
 } from "kaioken"
 
-export const FiftyFiftySplitter: Kaioken.FC = (props) => {
+export const FiftyFiftySplitter = (props: {
+  children: [JSX.Element, JSX.Element]
+}) => {
   const { mouse } = useMouse()
   const startMouse = signal<{ x: number; y: number } | null>(null)
   const prevFirstContainerWidth = signal(0)

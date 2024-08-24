@@ -1,18 +1,22 @@
 import { AppContext, Signal, useEffect, useRequestUpdate } from "kaioken"
-import { useDevtoolsStore, kaiokenGlobal } from "../store"
-import { applyObjectChangeFromKeys, getNodeName } from "../utils"
+import { applyObjectChangeFromKeys, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { RefreshIcon } from "./RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
 
-export function SelectedNodeView() {
-  const {
-    value: { selectedApp, selectedNode },
-    setSelectedNode,
-  } = useDevtoolsStore(({ selectedApp, selectedNode }) => ({
-    selectedApp,
-    selectedNode,
-  }))
+type SelectedNodeViewProps = {
+  selectedApp: AppContext
+  selectedNode: Kaioken.VNode & { type: Function }
+  setSelectedNode: (node: (Kaioken.VNode & { type: Function }) | null) => void
+  kaiokenGlobal: typeof window.__kaioken
+}
+
+export function SelectedNodeView({
+  selectedApp,
+  selectedNode,
+  setSelectedNode,
+  kaiokenGlobal,
+}: SelectedNodeViewProps) {
   const requestUpdate = useRequestUpdate()
 
   useEffect(() => {
@@ -35,8 +39,8 @@ export function SelectedNodeView() {
   }
 
   if (selectedNode === null) return null
-  const props = { ...selectedNode.props } as Record<string, any>
-  delete props.children
+  const nodeProps = { ...selectedNode.props } as Record<string, any>
+  delete nodeProps.children
 
   return (
     <div className="flex-grow p-2 sticky top-0">
@@ -48,7 +52,7 @@ export function SelectedNodeView() {
       </h2>
       <NodeDataSection title="props">
         <pre className="p-2 bg-neutral-800">
-          {JSON.stringify(props, null, 2)}
+          {JSON.stringify(nodeProps, null, 2)}
         </pre>
       </NodeDataSection>
       <NodeDataSection title="hooks">

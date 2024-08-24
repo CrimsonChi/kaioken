@@ -1,5 +1,5 @@
 import { useState } from "kaioken"
-import { Chevron } from "./chevron"
+import { Chevron } from "./Chevron"
 
 export function NodeDataSection({
   title,
