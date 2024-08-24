@@ -16,16 +16,6 @@
         "default": "./index.js"
       }
     },
-    "./exotic-hooks": {
-      "require": {
-        "types": "./exotic-hooks.d.ts",
-        "default": "./exotic-hooks.js"
-      },
-      "import": {
-        "types": "./exotic-hooks.d.ts",
-        "default": "./exotic-hooks.js"
-      }
-    },
     "./utils": {
       "require": {
         "types": "./utils.d.ts",
@@ -103,8 +93,5 @@
     "mocha": "^10.7.0",
     "ts-mocha": "^10.0.0",
     "typescript": "^5.5.3"
-  },
-  "dependencies": {
-    "@kaioken-core/hooks": "0.0.4-13"
   }
 }
