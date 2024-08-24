@@ -16,8 +16,8 @@ export function App() {
   }))
 
   const onInspectComponent = () => {
-    // @ts-expect-error We have our own custom type here
     kaiokenGlobal?.emit(
+      // @ts-expect-error We have our own custom type here
       "__kaiokenDevtoolsInsepctElementToggle",
       kaiokenGlobal.apps[0]
     )
