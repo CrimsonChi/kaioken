@@ -1,4 +1,10 @@
-import { AppContext, signal, useEffect, useRequestUpdate } from "kaioken"
+import {
+  AppContext,
+  signal,
+  useCallback,
+  useEffect,
+  useRequestUpdate,
+} from "kaioken"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
@@ -19,18 +25,22 @@ export function AppView() {
     requestUpdate()
   }
 
+  const handleInspecNode = useCallback(
+    (ctx: AppContext, vnode: Kaioken.VNode & { type: Function }) => {
+      setSelectedApp(ctx)
+      setSelectedNode(vnode as any)
+      inspectComponent.value = vnode
+      search.value = ""
+    },
+    [setSelectedApp, setSelectedNode]
+  )
+
   useEffect(() => {
     kaiokenGlobal?.on("update", handleUpdate)
-    // @ts-expect-error
     kaiokenGlobal?.on(
+      // @ts-expect-error
       "__kaiokenDevtoolsInsepctElementNode",
-      (ctx, vnode: Kaioken.VNode) => {
-        console.log(vnode, ctx)
-        setSelectedApp(ctx)
-        setSelectedNode(vnode as any)
-        inspectComponent.value = vnode
-        search.value = ""
-      }
+      handleInspecNode
     )
 
     return () => {

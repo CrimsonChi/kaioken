@@ -43,7 +43,6 @@ export const nodeContainsNode = (
 
   while (stack.length) {
     const node = stack.pop()
-    //  console.log('currentNode',node)
 
     if (currentNode === node) {
       return true

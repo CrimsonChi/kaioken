@@ -50,7 +50,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       )
       if (__DEV__) {
         if (this.root) {
-          // @ts-expect-error we set vnode on root dom node
           this.root.__kaiokenNode = this.rootNode
         }
       }

@@ -150,6 +150,7 @@ export function App() {
   return (
     <>
       <Nav />
+      <p>Boop</p>
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
           <Route path="/" element={<Test />} />

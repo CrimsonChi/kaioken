@@ -51,8 +51,16 @@ export const useKeyboardControls = () => {
   }
 
   useKeyStroke(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"], (e) => {
-    e.preventDefault()
     if (inspectComponent.value) inspectComponent.value = null
+    if (
+      document.activeElement &&
+      document.activeElement instanceof HTMLInputElement &&
+      document.activeElement != searchRef.current
+    ) {
+      return
+    }
+
+    e.preventDefault()
     const selectedDomNode = document.querySelector(".selected-vnode")
     if (selectedDomNode === null) {
       if (e.key === "ArrowDown") {
