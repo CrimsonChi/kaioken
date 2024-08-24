@@ -1,6 +1,6 @@
-import { AppContext, useEffect, useRequestUpdate } from "kaioken"
+import { AppContext, Signal, useEffect, useRequestUpdate } from "kaioken"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
-import { getNodeName } from "../utils"
+import { applyObjectChangeFromKeys, getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { RefreshIcon } from "./RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
@@ -51,7 +51,7 @@ export function SelectedNodeView() {
           {JSON.stringify(props, null, 2)}
         </pre>
       </NodeDataSection>
-      <NodeDataSection title="state">
+      <NodeDataSection title="hooks">
         {selectedNode.hooks && (
           <div className="text-sm">
             {selectedNode.hooks.map((hookData) => {
@@ -61,15 +61,7 @@ export function SelectedNodeView() {
               const handleChange = (keys: string[], value: unknown) => {
                 if (!selectedApp?.mounted || !debug?.set) return
                 const data = debug.get()
-                let o = data
-                for (let i = 0; i < keys.length; i++) {
-                  const key = keys[i]
-                  if (i === keys.length - 1) {
-                    o[key] = value
-                  } else {
-                    o = o[key]
-                  }
-                }
+                applyObjectChangeFromKeys(data, keys, value)
                 debug.set(data)
               }
 
@@ -82,27 +74,6 @@ export function SelectedNodeView() {
                       onChange={handleChange}
                       mutable={!!debug?.set}
                     />
-                    {/* {Object.keys(data).map((key) => {
-                      const value = data[key as keyof typeof data]
-                      let vStr: string
-                      switch (typeof value) {
-                        case "string":
-                          vStr = `"${value}"`
-                          break
-                        case "function":
-                          vStr = `ƒ ${value.name || "anonymous"}()`
-                          break
-                        default:
-                          vStr = JSON.stringify(value, null, 2)
-                      }
-
-                      return (
-                        <div className="flex gap-2 mb-2">
-                          <b className="p-2">{key}:</b>{" "}
-                          <pre className="p-2 bg-neutral-800">{vStr}</pre>
-                        </div>
-                      )
-                    })} */}
                   </div>
                 </div>
               )
@@ -110,6 +81,37 @@ export function SelectedNodeView() {
           </div>
         )}
       </NodeDataSection>
+      {selectedNode.subs && selectedNode.subs.length > 0 && (
+        <NodeDataSection title="signal subscriptions">
+          <div className="text-sm">
+            {selectedNode.subs.map((signal) => (
+              <div>
+                <b>{signal.displayName || "anonymous signal"}</b>
+                <div className="p-2">
+                  <ValueEditor
+                    data={{
+                      value: (signal.constructor as typeof Signal).getValue(
+                        signal
+                      ),
+                    }}
+                    onChange={(keys, newVal) => {
+                      const _v = {
+                        value: signal.value,
+                      }
+                      applyObjectChangeFromKeys(_v, keys, newVal)
+                      ;(signal.constructor as typeof Signal).setValueSilently(
+                        signal,
+                        _v.value
+                      )
+                    }}
+                    mutable={true}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </NodeDataSection>
+      )}
     </div>
   )
 }
