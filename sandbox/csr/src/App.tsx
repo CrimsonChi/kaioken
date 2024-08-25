@@ -1,4 +1,4 @@
-import { Router, Route, useState, useRouter } from "kaioken"
+import { Router, Route, useState, useRouter, ElementProps } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -13,94 +13,6 @@ import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 import { UseSyncExternalStoreExample } from "./components/UseSyncExternalStoreExample"
-
-// const { data, loading, error, invalidate } = useAsync(async () => {
-//   return (await fetch(`https://dummyjson.com/products/${productId}`)).json()
-// }, [productId])
-
-// type Resolved<T> = T extends Promise<infer U> ? U : T
-// type CacheKeys = [string, ...any[]]
-
-// type UseCacheResult<T> =
-//   | {
-//       data: T
-//       loading: false
-//       error: null
-//     }
-//   | { data: null; loading: true; error: null }
-//   | { data: null; loading: false; error: Error }
-
-// function useCache<T>(
-//   key: CacheKeys,
-//   resource: (() => T) | (() => Promise<T>)
-// ): UseCacheResult<Resolved<T>> {
-//   return {} as any as UseCacheResult<Resolved<T>>
-// }
-
-// type CacheInvalidationConfig = {
-//   keys?: CacheKeys
-//   predicate?: (data: any) => boolean
-// }
-// class CacheContext {
-//   invalidate = (cfg?: CacheInvalidationConfig) => 123
-// }
-
-// const CacheCtx = createContext<CacheContext | null>(null)
-// function CacheProvider(props: {
-//   context: CacheContext
-//   children?: JSX.Children
-// }) {
-//   return (
-//     <CacheCtx.Provider value={props.context}>
-//       {props.children}
-//     </CacheCtx.Provider>
-//   )
-// }
-
-// const loadProduct = async ({ id }: { id: number }): Promise<Product> =>
-//   (await fetch(`https://dummyjson.com/products/${id}`)).json()
-
-// const myCacheCtx = new CacheContext()
-// const _App = () => {
-//   return (
-//     <CacheProvider context={myCacheCtx}>
-//       <ProductView id={1} />
-//     </CacheProvider>
-//   )
-// }
-// function ProductView({ id }: { id: number }) {
-//   const { data, loading, error } = useCache(["product", { id }], loadProduct)
-//   myCacheCtx.invalidate({ keys: ["product", { id }] })
-
-//   const [formData, setFormData] = useState<Product | null>(data)
-
-//   const handleSubmit = async () => {}
-
-//   return data ? (
-//     <form className="flex flex-col gap-2" onsubmit={handleSubmit}>
-//       <div className="form-control">
-//         <label className="label">Product</label>
-//         <input
-//           type="text"
-//           className="input"
-//           value={formData?.title}
-//           onchange={(e) =>
-//             setFormData({ ...(formData as Product), title: e.target.value })
-//           }
-//         />
-//       </div>
-//     </form>
-//   ) : loading ? (
-//     <p>Loading...</p>
-//   ) : (
-//     <p>{error.message}</p>
-//   )
-// }
-
-// type Product = {
-//   id: number
-//   title: string
-// }
 
 function Nav() {
   return (
@@ -127,25 +39,21 @@ function Nav() {
   )
 }
 
-function Test() {
+function Home() {
   const [show, setShow] = useState(false)
   return (
     <div>
-      <Cntr />
-      {show && <div>test</div>}
-      <Cntr />
       <button onclick={() => setShow(!show)}>toggle</button>
+      <SomeChild show={show}>asdasd</SomeChild>
     </div>
   )
 }
-function Cntr() {
-  const [count, setCount] = useState(0)
-  return (
-    <div>
-      <div>{count}</div>
-      <button onclick={() => setCount(count + 1)}>Increment</button>
-    </div>
-  )
+
+function SomeChild({
+  show,
+  ...props
+}: ElementProps<"button"> & { show: boolean }) {
+  return <div>{show && <button {...props} />}</div>
 }
 
 export function App() {
@@ -155,7 +63,7 @@ export function App() {
       <p>Boop</p>
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route path="/" element={<Test />} />
+          <Route path="/" element={<Home />} />
           <Route path="/big-list" element={<BigListComponent />} />
           <Route path="/router-test/:id" element={<RouterTest />} fallthrough />
           <Route path="/memo" element={<MemoDemo />} />
