@@ -1,4 +1,4 @@
-import { createStore, signal } from "kaioken"
+import { signal } from "kaioken"
 
 export const toggleElementToVnode = signal(false)
 if ("window" in globalThis) {
@@ -12,13 +12,4 @@ if ("window" in globalThis) {
   )
 }
 
-export const useDevtoolsStore = createStore(
-  {
-    popupWindow: null as Window | null,
-  },
-  (set) => ({
-    setPopupWindow: (popupWindow: WindowProxy | null) => {
-      set((prev) => ({ ...prev, popupWindow }))
-    },
-  })
-)
+export const popup = signal(null as Window | null)

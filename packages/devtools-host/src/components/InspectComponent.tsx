@@ -7,13 +7,10 @@ import {
 import { useEffect, useMemo, useRef } from "kaioken"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "kaioken/utils"
-import { toggleElementToVnode, useDevtoolsStore } from "../store"
+import { toggleElementToVnode, popup } from "../store"
 import { useDevTools } from "../hooks/useDevtools"
 
 export const InspectComponent: Kaioken.FC = () => {
-  const {
-    value: { popupWindow },
-  } = useDevtoolsStore()
   const openDevTools = useDevTools()
   const { mouse } = useMouse()
 
@@ -83,10 +80,10 @@ export const InspectComponent: Kaioken.FC = () => {
         w.focus()
       }
 
-      if (!popupWindow) {
+      if (!popup.value) {
         openDevTools((w) => emitSelectNode(w))
       } else {
-        emitSelectNode(popupWindow)
+        emitSelectNode(popup.value)
       }
     }
   })

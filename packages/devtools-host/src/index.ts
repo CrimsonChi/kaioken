@@ -1,7 +1,7 @@
 import { mount } from "kaioken"
 import App from "./App"
-import { useDevtoolsStore } from "./store"
 import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
+import { popup } from "./store"
 ;(() => {
   if ("window" in globalThis) {
     //@ts-ignore
@@ -32,8 +32,7 @@ import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
         name: "kaioken.devtools",
       })
       window.addEventListener("beforeunload", () => {
-        const { popupWindow } = useDevtoolsStore.getState()
-        popupWindow?.close()
+        popup.value?.close()
       })
     })
   }
