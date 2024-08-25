@@ -68,26 +68,25 @@ export const InspectComponent: Kaioken.FC = () => {
   useEventListener("click", (e) => {
     if (toggleElementToVnode.value === true && vnode && elApp) {
       e.preventDefault()
-      if (!popupWindow) {
-        openDevTools((w) => {
-          window.__kaioken?.emit(
-            // @ts-expect-error we have our own custom event
-            "__kaiokenDevtoolsInsepctElementNode",
-            elApp,
-            vnode
-          )
-          toggleElementToVnode.value = false
-          w.focus()
-        })
-      } else {
+      const emitSelectNode = (w: Window) => {
         window.__kaioken?.emit(
           // @ts-expect-error we have our own custom event
-          "__kaiokenDevtoolsInsepctElementNode",
+          "__kaiokenDevtoolsInspectElementNode",
           elApp,
           vnode
         )
-        toggleElementToVnode.value = false
-        popupWindow?.focus?.()
+        window.__kaioken?.emit(
+          // @ts-expect-error we have our own custom event
+          "__kaiokenDevtoolsInspectElementValue",
+          { value: false }
+        )
+        w.focus()
+      }
+
+      if (!popupWindow) {
+        openDevTools((w) => emitSelectNode(w))
+      } else {
+        emitSelectNode(popupWindow)
       }
     }
   })

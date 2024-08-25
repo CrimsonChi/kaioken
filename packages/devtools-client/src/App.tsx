@@ -20,10 +20,9 @@ export function App() {
     if (!window.opener) return
     kaiokenGlobal?.emit(
       // @ts-expect-error We have our own custom type here
-      "__kaiokenDevtoolsInsepctElementToggle",
-      { name: "client" }
+      "__kaiokenDevtoolsInspectElementValue",
+      { value: true }
     )
-    toggleElementToVnode.value = !toggleElementToVnode.value
   }
 
   return (

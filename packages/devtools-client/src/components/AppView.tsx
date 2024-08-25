@@ -40,7 +40,7 @@ export function AppView() {
     kaiokenGlobal?.on("update", handleUpdate)
     kaiokenGlobal?.on(
       // @ts-expect-error
-      "__kaiokenDevtoolsInsepctElementNode",
+      "__kaiokenDevtoolsInspectElementNode",
       handleInspecNode
     )
 
@@ -48,7 +48,7 @@ export function AppView() {
       kaiokenGlobal?.off("update", handleUpdate)
       kaiokenGlobal?.off(
         // @ts-expect-error
-        "__kaiokenDevtoolsInsepctElementNode",
+        "__kaiokenDevtoolsInspectElementNode",
         handleInspecNode
       )
     }
