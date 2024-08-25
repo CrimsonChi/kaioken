@@ -78,6 +78,46 @@ export const useBtnPos = () => {
     }
   })
 
+  const updateBtnPos = useCallback(() => {
+    if (viewPortRef.current == null) return
+
+    const viewportWidth = viewPortRef.current.offsetWidth
+
+    if (snapSide.value === "right") {
+      const min = Math.min(-PADDING, btnCoords.value.y)
+      btnCoords.value = {
+        x: -PADDING,
+        y: Math.max(
+          min,
+          (window.innerHeight - elementBound.height) * -1 + PADDING
+        ),
+      }
+    } else if (snapSide.value === "left") {
+      const min = Math.min(0, btnCoords.value.y)
+      btnCoords.value = {
+        x: (viewportWidth - elementBound.width) * -1 + PADDING,
+        y: Math.max(
+          min,
+          (window.innerHeight - elementBound.height) * -1 + PADDING
+        ),
+      }
+    } else if (snapSide.value === "top") {
+      const min = Math.min(-PADDING, btnCoords.value.x)
+      btnCoords.value = {
+        x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
+        y: (window.innerHeight - elementBound.height) * -1 + PADDING,
+      }
+
+      return
+    } else {
+      const min = Math.min(-PADDING, btnCoords.value.x)
+      btnCoords.value = {
+        x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
+        y: -PADDING,
+      }
+    }
+  }, [elementBound.width, elementBound.height])
+
   useEffectDeep(() => {
     if (distanceCovered === null || !viewPortRef.current) return
 
@@ -173,5 +213,6 @@ export const useBtnPos = () => {
     startMouse,
     elementBound,
     snapSide,
+    updateBtnPos,
   }
 }
