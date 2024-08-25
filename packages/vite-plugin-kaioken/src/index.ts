@@ -100,19 +100,19 @@ import {applyRecursive} from "kaioken/utils";\n
 ${code}\n
 if (import.meta.hot && "window" in globalThis) {
   function handleUpdate(newModule, name, funcRef) {
-
-    if (newModule[name]) {
+    if (newModule[name] || newModule.default?.name === name) {
+      const fn = newModule.default?.name === name ? newModule.default : newModule[name];
       window.__kaioken.apps.forEach((ctx) => {
         applyRecursive(ctx.rootNode, (node) => {
           if (node.type === funcRef) {
-            node.type = newModule[name];
+            node.type = fn;
             if (node.prev) {
-              node.prev.type = newModule[name];
+              node.prev.type = fn;
             }
             ctx.requestUpdate(node);
           }
         })
-      })
+      });
     }
   }
 

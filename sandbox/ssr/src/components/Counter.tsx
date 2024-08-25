@@ -1,6 +1,6 @@
 import { useState } from "kaioken"
 
-export function Counter() {
+export default function Counter() {
   const [count, setCount] = useState(0)
 
   return (
