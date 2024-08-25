@@ -8,7 +8,7 @@ type ServerProps = Awaited<ReturnType<typeof data>>
 const data = async (pageContext: PageContextServer) => {
   const search = pageContext.urlParsed.search
 
-  const pageSize = 20
+  const pageSize = 5
   let page = 1
   if ("page" in search) {
     page = parseInt(search.page)
@@ -19,17 +19,16 @@ const data = async (pageContext: PageContextServer) => {
   }
 
   const response = await fetch(
-    `https://dummyjson.com/users?limit=${pageSize}&skip=${(page - 1) * pageSize}&select=id,firstName,lastName,image`
+    `https://dummyjson.com/products?skip=${(page - 1) * pageSize}&limit=${pageSize}&select=title,thumbnail`
   )
-  const { users } = (await response.json()) as {
-    users: UserData[]
+  const { products } = (await response.json()) as {
+    products: Product[]
   }
-  return { users, page }
+  return { products }
 }
 
-type UserData = {
+type Product = {
   id: number
-  firstName: string
-  lastName: string
-  image: string
+  title: string
+  thumbnail: string
 }

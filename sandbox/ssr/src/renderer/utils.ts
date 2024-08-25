@@ -1,7 +1,7 @@
 // /pages/utils.js
 // Environment: server & client
 
-import { PageContext } from "vike/types"
+import type { PageContext } from "vike/types"
 
 export { getTitle }
 
