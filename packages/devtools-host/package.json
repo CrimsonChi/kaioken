@@ -26,9 +26,8 @@
   },
   "dependencies": {
     "@kaioken-core/hooks": "0.0.4-13",
+    "devtools-shared": "workspace:^",
     "kaioken": "workspace:^",
-    "lightningcss": "^1.26.0",
-    "tailwind-merge": "^2.5.2",
-    "devtools-shared": "workspace:^"
+    "tailwind-merge": "^2.5.2"
   }
 }

@@ -5,7 +5,6 @@ import esbuildPluginInlineImport from "esbuild-plugin-inline-import"
 import postCss from "postcss"
 import tailwindcss from "tailwindcss"
 import autoprefixer from "autoprefixer"
-import { transform as minifyCssTransform } from "lightningcss"
 
 const postCssInstance = postCss([tailwindcss, autoprefixer])
 
@@ -20,13 +19,7 @@ export const esbuildPluginTransform: EsbuildInlineTransform = async (
     const newContent = await postCssInstance.process(content, {
       from: file.path,
     })
-    const minify = minifyCssTransform({
-      code: Buffer.from(newContent.css),
-      minify: true,
-      filename: file.path,
-    })
-
-    return minify.code.toString()
+    return newContent.css
   }
 
   return content
