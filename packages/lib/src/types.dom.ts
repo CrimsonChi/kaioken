@@ -395,6 +395,7 @@ interface HtmlElementAttributes {
     checked?: boolean
     dirName?: Direction
     disabled?: boolean
+    files?: FileList | null
     form?: ElementReference<HTMLFormElement>
     formAction?: FormAction
     formEnctype?: EncType
