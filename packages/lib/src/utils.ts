@@ -256,6 +256,8 @@ function propToHtmlAttr(key: string) {
     case "formNoValidate":
     case "noModule":
     case "noValidate":
+    case "popoverTarget":
+    case "popoverTargetAction":
     case "playsInline":
     case "readOnly":
     case "itemscope":
@@ -314,8 +316,6 @@ const snakeCaseAttrs = new Map([
   ["paintOrder", "paint-order"],
   ["panose-1", "panose-1"],
   ["pointerEvents", "pointer-events"],
-  ["popoverTarget", "popovertarget"],
-  ["popoverTargetAction", "popovertargetaction"],
   ["renderingIntent", "rendering-intent"],
   ["shapeRendering", "shape-rendering"],
   ["stopColor", "stop-color"],
