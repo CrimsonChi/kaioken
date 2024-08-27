@@ -188,6 +188,7 @@ type GlobalAttributes = {
   tabIndex?: number
   title?: string
   translate?: "yes" | "no"
+  popover?: "auto" | "manual"
 } & Omit<
   Partial<GlobalEventHandlers>,
   | keyof InputEventAttributes<any>
@@ -297,6 +298,8 @@ interface HtmlElementAttributes {
     formEnctype?: EncType
     formMethod?: FormMethod
     type?: "button" | "reset" | "submit"
+    popovertarget?: string
+    popovertargetaction?: "show" | "hide" | "toggle"
   }
   canvas: {
     width?: string | number
@@ -420,6 +423,8 @@ interface HtmlElementAttributes {
     type?: InputType
     value?: string | number
     width?: string | number
+    popovertarget?: string
+    popovertargetaction?: "show" | "hide" | "toggle"
   }
   ins: {
     cite?: string
