@@ -124,7 +124,10 @@ export function setDomAttribute(dom: Element, key: string, value: unknown) {
 
   if (handleAttributeRemoval(dom, key, value, isBoolAttr)) return
 
-  dom.setAttribute(key, isBoolAttr ? "" : String(value))
+  dom.setAttribute(
+    key,
+    isBoolAttr && typeof value === "boolean" ? "" : String(value)
+  )
 }
 
 const explicitValueElementTags = ["INPUT", "TEXTAREA", "SELECT"]
