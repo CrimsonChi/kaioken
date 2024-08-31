@@ -1,4 +1,5 @@
 import { createElement } from "./element.js"
+import { useRef } from "./hooks/useRef.js"
 
 function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,
@@ -16,23 +17,29 @@ export function memo<Props extends Record<string, unknown>>(
     nextProps: Props
   ) => boolean = _arePropsEqual
 ): (props: Props) => JSX.Element {
-  let node: Kaioken.VNode
-  let oldProps = {} as Props
-  return Object.assign(
-    (props: Props) => {
-      if (node && arePropsEqual(oldProps, props)) {
-        node.frozen = true
-        return node
-      }
-      oldProps = props
-      if (!node) {
-        node = createElement(fn, props)
-      } else {
-        Object.assign(node.props, props)
-      }
-      node.frozen = false
-      return node
-    },
-    { displayName: "Kaioken.memo" }
-  )
+  const _fn = function (props: Props) {
+    const prevProps = useRef<Props | null>(null)
+    const node = useRef<Kaioken.VNode | null>(null)
+
+    if (
+      node.current &&
+      prevProps.current &&
+      arePropsEqual(prevProps.current, props)
+    ) {
+      node.current.frozen = true
+      return node.current
+    }
+
+    prevProps.current = props
+
+    if (!node.current) {
+      node.current = createElement(fn, props)
+    } else {
+      Object.assign(node.current.props, props)
+    }
+    node.current.frozen = false
+    return node.current
+  }
+  _fn.displayName = "Kaioken.memo"
+  return _fn
 }
