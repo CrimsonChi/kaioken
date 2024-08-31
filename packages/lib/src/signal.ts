@@ -55,11 +55,11 @@ export class Signal<T> {
     return typeof x === "object" && !!x && signalSymbol in x
   }
 
-  static setValueSilently(signal: Signal<any>, value: any) {
+  static setValueSilently<T>(signal: Signal<T>, value: T) {
     signal.#value = value
   }
 
-  static getValue(signal: Signal<any>) {
+  static getValue<T>(signal: Signal<T>): T {
     return signal.#value
   }
 
