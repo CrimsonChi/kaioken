@@ -114,11 +114,9 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
-    // if (this.lastUpdateRequester === vNode) {
-    //   return
-    // }
-
-    // this.lastUpdateRequester = vNode
+    if ("frozen" in vNode) {
+      vNode.frozen = false
+    }
     if (this.isImmediateCallbacksMode) {
       this.isRenderDirtied = true
     }

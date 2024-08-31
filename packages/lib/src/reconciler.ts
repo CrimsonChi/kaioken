@@ -263,6 +263,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
       const newNode = createElement(child.type, child.props)
       newNode.parent = parent
       newNode.effectTag = EFFECT_TAG.PLACEMENT
+      if ("frozen" in child) newNode.frozen = child.frozen
       return newNode
     }
     if (Array.isArray(child)) {
@@ -335,7 +336,7 @@ function updateFromMap(
     if (oldChild) {
       oldChild.effectTag = EFFECT_TAG.UPDATE
       oldChild.props = newChild.props
-      oldChild.frozen = newChild.frozen
+      if ("frozen" in newChild) oldChild.frozen = newChild.frozen
       oldChild.sibling = undefined
       oldChild.index = index
       return oldChild

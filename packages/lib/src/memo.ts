@@ -5,9 +5,13 @@ function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,
   nextProps: T
 ) {
-  return Object.keys(prevProps).every(
-    ([key]) => prevProps[key] === nextProps[key]
-  )
+  const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
+  for (const key of keys) {
+    if (prevProps[key] !== nextProps[key]) {
+      return false
+    }
+  }
+  return true
 }
 
 export function memo<Props extends Record<string, unknown>>(
