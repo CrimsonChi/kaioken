@@ -1,7 +1,8 @@
 import { computed, signal } from "kaioken"
-import { count, double, isTracking } from "../signals"
+import { count, double, isTracking, quadruple } from "../signals"
 
 export const GlobalComputedExample = () => {
+  console.log("render")
   const onInc = () => {
     count.value += 1
   }
@@ -12,9 +13,10 @@ export const GlobalComputedExample = () => {
 
   return (
     <div className="flex flex-col">
-      <h1>Count: {count.value}</h1>
-      <h1>Double: {double.value}</h1>
-      <h1>is tracking: {`${isTracking.value}`}</h1>
+      <h1>Count: {count}</h1>
+      <h1>Double: {double}</h1>
+      <h1>Quadruple: {quadruple}</h1>
+      <h1>is tracking: {isTracking}</h1>
 
       <button className="mt-4 text-left" onclick={onInc}>
         Increment
@@ -27,19 +29,18 @@ export const GlobalComputedExample = () => {
 }
 
 export const LocalComputedExample = () => {
-  const localCount = signal(0)
-  localCount.displayName = "local count"
-  const localIsTracking = signal(false)
-  localIsTracking.displayName = "local is tracking"
+  const localCount = signal(0, "local count")
+  const localIsTracking = signal(false, "local is tracking")
   const localDouble = computed(() => {
-    console.log("local double getter ran")
     if (localIsTracking.value) {
       return localCount.value * 2
     }
 
     return 0
-  })
-  localDouble.displayName = "local double"
+  }, "local double")
+  const localQuad = computed(() => {
+    return localDouble.value * 2
+  }, "local quadruble")
 
   const onInc = () => {
     localCount.value += 1
@@ -51,9 +52,10 @@ export const LocalComputedExample = () => {
 
   return (
     <div className="flex flex-col">
-      <h1>Count: {localCount.value}</h1>
-      <h1>Double: {localDouble.value}</h1>
-      <h1>is tracking: {`${localIsTracking.value}`}</h1>
+      <h1>Count: {localCount}</h1>
+      <h1>Double: {localDouble}</h1>
+      <h1>Quadruple: {localQuad}</h1>
+      <h1>is tracking: {`${localIsTracking}`}</h1>
 
       <button className="mt-4 text-left" onclick={onInc}>
         Increment

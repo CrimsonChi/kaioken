@@ -1,10 +1,8 @@
 import { computed, signal } from "kaioken"
 
-export const count = signal(0)
-count.displayName = "count"
+export const count = signal(0, "count")
 
-export const isTracking = signal(false)
-isTracking.displayName = "isTracking"
+export const isTracking = signal(false, "isTracking")
 
 export const double = computed(() => {
   if (isTracking.value) {
@@ -12,6 +10,12 @@ export const double = computed(() => {
   }
 
   return 0
-})
+}, "double")
 
-double.displayName = "double"
+export const quadruple = computed(() => {
+  return double.value * 2
+}, "quadruple")
+
+export const octoruple = computed(() => {
+  return quadruple.value * 2
+}, "octoruple")

@@ -4,15 +4,15 @@ import { node, renderMode } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
 import { getVNodeAppContext } from "./utils.js"
 
-export const signal = <T>(initial: T) => {
+export const signal = <T>(initial: T, displayName?: string) => {
   return !node.current
-    ? new Signal(initial)
+    ? new Signal(initial, displayName)
     : useHook(
         "useSignal",
         { signal: undefined as any as Signal<T> },
         ({ hook, isInit }) => {
           if (isInit) {
-            hook.signal = new Signal(initial)
+            hook.signal = new Signal(initial, displayName)
             if (__DEV__) {
               hook.debug = {
                 get: () => ({ value: Signal.getValue(hook.signal) }),
@@ -30,13 +30,14 @@ export const signal = <T>(initial: T) => {
 let isTracking = false
 let trackedSignals: Signal<any>[] = []
 
-const appliedTrackedSubs = <T>(
+const appliedTrackedSignals = <T>(
   getter: () => T,
   _signal: Signal<any>,
   subbed: Signal<any>[]
 ) => {
+  // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   isTracking = true
-  _signal.value = getter()
+  Signal.setValueSilently(_signal, getter())
   isTracking = false
 
   // TODO: Should we unsub to all signals everytime we call this?
@@ -47,19 +48,20 @@ const appliedTrackedSubs = <T>(
     if (subbed.includes(signal)) return
 
     signal.subscribe(() => {
-      appliedTrackedSubs(getter, _signal, subbed)
+      appliedTrackedSignals(getter, _signal, subbed)
     })
     subbed.push(signal)
   })
 
   trackedSignals = []
+  _signal.notify()
 }
 
-export const computed = <T>(getter: () => T) => {
+export const computed = <T>(getter: () => T, displayName?: string) => {
   if (!node.current) {
-    const _signal = signal(null as T)
+    const _signal = signal(null as T, displayName)
     const subbed: Signal<any>[] = []
-    appliedTrackedSubs(getter, _signal, subbed)
+    appliedTrackedSignals(getter, _signal, subbed)
 
     return _signal
   } else {
@@ -68,8 +70,8 @@ export const computed = <T>(getter: () => T) => {
       { signal: undefined as any as Signal<T>, subbed: [] as Signal<any>[] },
       ({ hook, isInit }) => {
         if (isInit) {
-          hook.signal = new Signal(null as T)
-          appliedTrackedSubs(getter, hook.signal, hook.subbed)
+          hook.signal = new Signal(null as T, displayName)
+          appliedTrackedSignals(getter, hook.signal, hook.subbed)
         }
 
         return hook.signal
@@ -83,8 +85,9 @@ export class Signal<T> {
   #value: T
   #subscribers = new Set<Kaioken.VNode | Function>()
   displayName?: string
-  constructor(initial: T) {
+  constructor(initial: T, displayName?: string) {
     this.#value = initial
+    if (displayName) this.displayName = displayName
   }
 
   get value() {
