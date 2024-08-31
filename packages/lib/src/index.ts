@@ -12,7 +12,7 @@ export * from "./memo.js"
 export * from "./portal.js"
 export * from "./renderToString.js"
 export * from "./router/index.js"
-export { signal, Signal } from "./signal.js"
+export { signal, Signal, computed } from "./signal.js"
 export * from "./store.js"
 export * from "./transition.js"
 export { mount, createElement, fragment }

@@ -13,6 +13,10 @@ import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 import { UseSyncExternalStoreExample } from "./components/UseSyncExternalStoreExample"
+import {
+  GlobalComputedExample,
+  LocalComputedExample,
+} from "./components/ComputedExample"
 
 function Nav() {
   return (
@@ -60,7 +64,6 @@ export function App() {
   return (
     <>
       <Nav />
-      <p>Boop</p>
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
           <Route path="/" element={<Home />} />
@@ -76,6 +79,8 @@ export function App() {
           <Route path="/keyed-list" element={<KeyedList />} />
           <Route path="/context" element={<ContextExample />} />
           <Route path="/useAsync" element={<UseAsyncExample />} />
+          <Route path="/computed" element={<GlobalComputedExample />} />
+          <Route path="/computed-local" element={<LocalComputedExample />} />
           <Route
             path="/useSyncExternalStoreExample"
             element={<UseSyncExternalStoreExample />}

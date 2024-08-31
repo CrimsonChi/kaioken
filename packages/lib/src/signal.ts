@@ -27,6 +27,57 @@ export const signal = <T>(initial: T) => {
       )
 }
 
+let isTracking = false
+let trackedSignals: Signal<any>[] = []
+
+const appliedTrackedSubs = <T>(
+  getter: () => T,
+  _signal: Signal<any>,
+  subbed: Signal<any>[]
+) => {
+  isTracking = true
+  _signal.value = getter()
+  isTracking = false
+
+  // TODO: Should we unsub to all signals everytime we call this?
+  //       This would match vues ref impl
+
+  console.log(`tracked signals for ${_signal.displayName}`, trackedSignals)
+  trackedSignals.forEach((signal) => {
+    if (subbed.includes(signal)) return
+
+    signal.subscribe(() => {
+      appliedTrackedSubs(getter, _signal, subbed)
+    })
+    subbed.push(signal)
+  })
+
+  trackedSignals = []
+}
+
+export const computed = <T>(getter: () => T) => {
+  if (!node.current) {
+    const _signal = signal(null as T)
+    const subbed: Signal<any>[] = []
+    appliedTrackedSubs(getter, _signal, subbed)
+
+    return _signal
+  } else {
+    return useHook(
+      "useComputedSignal",
+      { signal: undefined as any as Signal<T>, subbed: [] as Signal<any>[] },
+      ({ hook, isInit }) => {
+        if (isInit) {
+          hook.signal = new Signal(null as T)
+          appliedTrackedSubs(getter, hook.signal, hook.subbed)
+        }
+
+        return hook.signal
+      }
+    )
+  }
+}
+
 export class Signal<T> {
   [signalSymbol] = true
   #value: T
@@ -38,6 +89,7 @@ export class Signal<T> {
 
   get value() {
     if (node.current) Signal.subscribeNode(node.current, this)
+    if (isTracking) trackedSignals.push(this)
     return this.#value
   }
 
