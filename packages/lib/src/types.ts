@@ -122,6 +122,7 @@ declare global {
         ref?: Kaioken.Ref<unknown>
       }
       index: number
+      depth?: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]
       parent?: VNode

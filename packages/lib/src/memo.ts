@@ -1,5 +1,6 @@
 import { createElement } from "./element.js"
 import { useRef } from "./hooks/useRef.js"
+import { useVNode } from "./hooks/utils.js"
 
 function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,
@@ -24,12 +25,17 @@ export function memo<Props extends Record<string, unknown>>(
   const _fn = function (props: Props) {
     const prevProps = useRef<Props | null>(null)
     const node = useRef<Kaioken.VNode | null>(null)
+    const thisNode = useVNode()
+    thisNode.props = props
+    thisNode.depth = (thisNode.parent?.depth || 0) + 1
 
     if (
       node.current &&
       prevProps.current &&
       arePropsEqual(prevProps.current, props)
     ) {
+      node.current.props = props
+      prevProps.current = props
       node.current.frozen = true
       return node.current
     }
@@ -44,6 +50,6 @@ export function memo<Props extends Record<string, unknown>>(
     node.current.frozen = false
     return node.current
   }
-  _fn.displayName = "Kaioken.memo"
+  _fn.displayName = _fn.name = "Kaioken.memo"
   return _fn
 }

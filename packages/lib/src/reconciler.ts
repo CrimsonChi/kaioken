@@ -197,6 +197,7 @@ function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
   if (oldNode === null || oldNode.type !== ELEMENT_TYPE.text) {
     const newNode = createElement(ELEMENT_TYPE.text, { nodeValue: content })
     newNode.parent = parent
+    newNode.depth = parent.depth! + 1
     return newNode
   } else {
     const newNode = oldNode
@@ -227,6 +228,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   }
   const created = createElement(nodeType, newNode.props)
   created.parent = parent
+  newNode.depth = parent.depth! + 1
   return created
 }
 
@@ -239,6 +241,7 @@ function updateFragment(
   if (oldNode === null || oldNode.type !== ELEMENT_TYPE.fragment) {
     const el = createElement(ELEMENT_TYPE.fragment, { children, ...newProps })
     el.parent = parent
+    el.depth = parent.depth! + 1
     return el
   }
   oldNode.props = { ...oldNode.props, ...newProps, children }
@@ -255,6 +258,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
   ) {
     const el = createElement(ELEMENT_TYPE.text, { nodeValue: "" + child })
     el.parent = parent
+    el.depth = parent.depth! + 1
     return el
   }
 
@@ -262,6 +266,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     if (isVNode(child)) {
       const newNode = createElement(child.type, child.props)
       newNode.parent = parent
+      newNode.depth = parent.depth! + 1
       newNode.effectTag = EFFECT_TAG.PLACEMENT
       if ("frozen" in child) newNode.frozen = child.frozen
       return newNode
@@ -272,6 +277,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
         //array: true,
       })
       el.parent = parent
+      el.depth = parent.depth! + 1
       return el
     }
     if (Signal.isSignal(child)) {
@@ -323,6 +329,7 @@ function updateFromMap(
         nodeValue: newChild,
       })
       n.parent = parent
+      n.depth = parent.depth! + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
@@ -343,6 +350,7 @@ function updateFromMap(
     } else {
       const n = createElement(newChild.type, newChild.props)
       n.parent = parent
+      n.depth = parent.depth! + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
@@ -360,6 +368,7 @@ function updateFromMap(
         children: newChild,
       })
       n.parent = parent
+      n.depth = parent.depth! + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
