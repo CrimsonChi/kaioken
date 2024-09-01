@@ -42,8 +42,6 @@ export const LocalComputedExample = () => {
     return localDouble.value * 2
   }, "local quadruble")
 
-  console.log("~~~~~~~~~~~")
-
   const onInc = () => {
     localCount.value += 1
   }
