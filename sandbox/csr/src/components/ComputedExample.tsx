@@ -14,7 +14,7 @@ export const GlobalComputedExample = () => {
   return (
     <div className="flex flex-col">
       <h1>Count: {count}</h1>
-      {/*  <h1>Double: {double.value}</h1>  */}
+      <h1>Double: {double}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
 
       <button className="mt-4 text-left" onclick={onInc}>
@@ -36,11 +36,13 @@ export const LocalComputedExample = () => {
     }
 
     return 0
-  })
+  }, "local double")
 
   const localQuad = computed(() => {
     return localDouble.value * 2
   }, "local quadruble")
+
+  console.log("~~~~~~~~~~~")
 
   const onInc = () => {
     localCount.value += 1

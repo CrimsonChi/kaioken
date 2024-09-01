@@ -33,34 +33,25 @@ let trackedSignals: Signal<any>[] = []
 const appliedTrackedSignals = <T>(
   getter: () => T,
   computedSignal: Signal<any>,
-  subbed: Signal<any>[],
-  unsubbed: Function[]
+  subs: Map<Signal<any>, Function>
 ) => {
   // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   isTracking = true
   Signal.setValueSilently(computedSignal, getter())
   isTracking = false
 
-  console.log("calling the sub cb")
-  //  debugger
-  unsubbed.forEach((fn) => {
-    console.log("calling unsub")
-    fn()
-  })
-  unsubbed.length = 0
+  for (const [sig, unsub] of subs) {
+    if (trackedSignals.includes(sig)) continue
+    unsub()
+    subs.delete(sig)
+  }
 
-  console.log(
-    `tracked signals for ${computedSignal.displayName}`,
-    trackedSignals
-  )
   trackedSignals.forEach((dependencySignal) => {
-    console.log("making the sub")
-    //  if (subbed.includes(dependencySignal)) return;
+    if (subs.get(dependencySignal)) return
     const unsub = dependencySignal.subscribe(() => {
-      appliedTrackedSignals(getter, computedSignal, subbed, unsubbed)
+      appliedTrackedSignals(getter, computedSignal, subs)
     })
-    //  unsubbed.push(unsub)
-    //  subbed.push(dependencySignal)
+    subs.set(dependencySignal, unsub)
   })
 
   trackedSignals = []
@@ -69,24 +60,23 @@ const appliedTrackedSignals = <T>(
 
 export const computed = <T>(getter: () => T, displayName?: string) => {
   if (!node.current) {
-    const _signal = signal(null as T, displayName)
-    const subbed: Signal<any>[] = []
-    const unsubbed: Function[] = []
-    appliedTrackedSignals(getter, _signal, subbed, unsubbed)
+    const computed = signal(null as T, displayName)
+    const subs = new Map<Signal<any>, Function>()
+    appliedTrackedSignals(getter, computed, subs)
 
-    return _signal
+    return computed
   } else {
     return useHook(
       "useComputedSignal",
       {
         signal: undefined as any as Signal<T>,
-        subbed: [] as Signal<any>[],
-        unsubbed: [] as Function[],
+        subs: null as any as Map<Signal<any>, Function>,
       },
       ({ hook, isInit }) => {
         if (isInit) {
+          hook.subs = new Map()
           hook.signal = new Signal(null as T, displayName)
-          appliedTrackedSignals(getter, hook.signal, hook.subbed, hook.unsubbed)
+          appliedTrackedSignals(getter, hook.signal, hook.subs)
         }
 
         return hook.signal
@@ -150,8 +140,6 @@ export class Signal<T> {
   }
 
   notify() {
-    //  debugger
-    console.log("notify for", this.displayName)
     this.#subscribers.forEach((sub) => {
       if (sub instanceof Function) {
         return sub(this.#value)
