@@ -1,7 +1,7 @@
 import { useModel, useState } from "kaioken"
 
 export function TodoList() {
-  const [inputRef, inputValue, setInputValue] = useModel("")
+  const [inputRef, inputValue, setInputValue] = useModel<HTMLInputElement>("")
   const [items, setItems] = useState<{ text: string }[]>([
     { text: "buy coffee" },
     { text: "walk the dog" },

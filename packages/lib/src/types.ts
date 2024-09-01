@@ -13,7 +13,15 @@ import type {
 
 export type { ElementProps }
 
-type BaseElement = Element
+type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
+  T extends keyof HTMLElementTagNameMap
+    ? HTMLElementTagNameMap[T]
+    : T extends keyof HTMLElementDeprecatedTagNameMap
+      ? HTMLElementDeprecatedTagNameMap[T]
+      : never
+
+type SVGTagToElement<T extends keyof SvgElementAttributes> =
+  T extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[T] : never
 
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
   JSX.IntrinsicElements[T]
@@ -25,14 +33,18 @@ type ElementMap = {
     GlobalAttributes &
     EventAttributes<K> &
     Partial<ARIAMixin> &
-    JSX.ElementAttributes
+    JSX.ElementAttributes & {
+      ref?: Kaioken.Ref<HTMLTagToElement<K> | null>
+    }
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
     SvgGlobalAttributes &
     GlobalAttributes &
     EventAttributes<K> &
     Partial<ARIAMixin> &
-    JSX.ElementAttributes
+    JSX.ElementAttributes & {
+      ref?: Kaioken.Ref<SVGTagToElement<K> | null>
+    }
 } & {
   [K in WebComponentTag]: Record<string, any>
 }
@@ -69,7 +81,6 @@ declare global {
       | Kaioken.Signal<any>
 
     type ElementAttributes = {
-      ref?: Kaioken.Ref<BaseElement | null>
       key?: JSX.ElementKey
       children?: JSX.Children
       innerHTML?: string | number | Kaioken.Signal<string | number>
