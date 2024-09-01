@@ -40,7 +40,3 @@ function ThemeButton() {
   const dispatch = useContext(ThemeContextDispatcher)
   return <button onclick={() => dispatch()}>{theme}</button>
 }
-
-function ThemeButtonWithProps({ theme, dispatch }: any) {
-  return <button onclick={() => dispatch()}>{theme} (with props)</button>
-}
