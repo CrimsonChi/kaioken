@@ -11,13 +11,15 @@ export function ContextExample() {
   return (
     <div className="flex flex-col gap-2">
       <ThemeContext.Provider value={themeA}>
-        <ThemeContextDispatcher.Provider
-          value={() =>
-            setThemeA((prev) => (prev === "light" ? "dark" : "light"))
-          }
-        >
-          <ThemeButton />
-        </ThemeContextDispatcher.Provider>
+        {(t) => (
+          <ThemeContextDispatcher.Provider
+            value={() =>
+              setThemeA((prev) => (prev === "light" ? "dark" : "light"))
+            }
+          >
+            {(d) => <button onclick={d}>{t} (with props)</button>}
+          </ThemeContextDispatcher.Provider>
+        )}
       </ThemeContext.Provider>
       <br />
       <ThemeContext.Provider value={themeB}>
@@ -37,4 +39,8 @@ function ThemeButton() {
   const theme = useContext(ThemeContext)
   const dispatch = useContext(ThemeContextDispatcher)
   return <button onclick={() => dispatch()}>{theme}</button>
+}
+
+function ThemeButtonWithProps({ theme, dispatch }: any) {
+  return <button onclick={() => dispatch()}>{theme} (with props)</button>
 }

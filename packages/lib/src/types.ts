@@ -78,7 +78,7 @@ declare global {
   export namespace Kaioken {
     type ProviderProps<T> = {
       value: T
-      children?: JSX.Children
+      children?: JSX.Children | ((value: T) => JSX.Element)
     }
     type Context<T> = {
       Provider: (({ value, children }: ProviderProps<T>) => JSX.Element) & {
