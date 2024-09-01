@@ -22,7 +22,7 @@ export function memo<Props extends Record<string, unknown>>(
     nextProps: Props
   ) => boolean = _arePropsEqual
 ): (props: Props) => JSX.Element {
-  const _fn = function (props: Props) {
+  const memo = function (props: Props) {
     const prevProps = useRef<Props | null>(null)
     const node = useRef<Kaioken.VNode | null>(null)
     const thisNode = useVNode()
@@ -50,6 +50,6 @@ export function memo<Props extends Record<string, unknown>>(
     node.current.frozen = false
     return node.current
   }
-  _fn.displayName = _fn.name = "Kaioken.memo"
-  return _fn
+  memo.displayName = "Kaioken.memo"
+  return memo
 }
