@@ -1,22 +1,21 @@
 import { computed, signal } from "kaioken"
-import { count, double, isTracking, quadruple } from "../signals"
+import { count, double, isTracking } from "../signals"
 
 export const GlobalComputedExample = () => {
-  console.log("render")
   const onInc = () => {
     count.value += 1
   }
 
   const onSwitch = () => {
     isTracking.value = !isTracking.value
+    console.log("calling on switch metohd")
   }
 
   return (
     <div className="flex flex-col">
       <h1>Count: {count}</h1>
-      <h1>Double: {double}</h1>
-      <h1>Quadruple: {quadruple}</h1>
-      <h1>is tracking: {isTracking}</h1>
+      {/*  <h1>Double: {double.value}</h1>  */}
+      <h1>is tracking: {`${isTracking}`}</h1>
 
       <button className="mt-4 text-left" onclick={onInc}>
         Increment
@@ -37,7 +36,8 @@ export const LocalComputedExample = () => {
     }
 
     return 0
-  }, "local double")
+  })
+
   const localQuad = computed(() => {
     return localDouble.value * 2
   }, "local quadruble")

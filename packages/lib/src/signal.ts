@@ -32,46 +32,61 @@ let trackedSignals: Signal<any>[] = []
 
 const appliedTrackedSignals = <T>(
   getter: () => T,
-  _signal: Signal<any>,
-  subbed: Signal<any>[]
+  computedSignal: Signal<any>,
+  subbed: Signal<any>[],
+  unsubbed: Function[]
 ) => {
   // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   isTracking = true
-  Signal.setValueSilently(_signal, getter())
+  Signal.setValueSilently(computedSignal, getter())
   isTracking = false
 
-  // TODO: Should we unsub to all signals everytime we call this?
-  //       This would match vues ref impl
+  console.log("calling the sub cb")
+  //  debugger
+  unsubbed.forEach((fn) => {
+    console.log("calling unsub")
+    fn()
+  })
+  unsubbed.length = 0
 
-  console.log(`tracked signals for ${_signal.displayName}`, trackedSignals)
-  trackedSignals.forEach((signal) => {
-    if (subbed.includes(signal)) return
-
-    signal.subscribe(() => {
-      appliedTrackedSignals(getter, _signal, subbed)
+  console.log(
+    `tracked signals for ${computedSignal.displayName}`,
+    trackedSignals
+  )
+  trackedSignals.forEach((dependencySignal) => {
+    console.log("making the sub")
+    //  if (subbed.includes(dependencySignal)) return;
+    const unsub = dependencySignal.subscribe(() => {
+      appliedTrackedSignals(getter, computedSignal, subbed, unsubbed)
     })
-    subbed.push(signal)
+    //  unsubbed.push(unsub)
+    //  subbed.push(dependencySignal)
   })
 
   trackedSignals = []
-  _signal.notify()
+  computedSignal.notify()
 }
 
 export const computed = <T>(getter: () => T, displayName?: string) => {
   if (!node.current) {
     const _signal = signal(null as T, displayName)
     const subbed: Signal<any>[] = []
-    appliedTrackedSignals(getter, _signal, subbed)
+    const unsubbed: Function[] = []
+    appliedTrackedSignals(getter, _signal, subbed, unsubbed)
 
     return _signal
   } else {
     return useHook(
       "useComputedSignal",
-      { signal: undefined as any as Signal<T>, subbed: [] as Signal<any>[] },
+      {
+        signal: undefined as any as Signal<T>,
+        subbed: [] as Signal<any>[],
+        unsubbed: [] as Function[],
+      },
       ({ hook, isInit }) => {
         if (isInit) {
           hook.signal = new Signal(null as T, displayName)
-          appliedTrackedSignals(getter, hook.signal, hook.subbed)
+          appliedTrackedSignals(getter, hook.signal, hook.subbed, hook.unsubbed)
         }
 
         return hook.signal
@@ -135,6 +150,8 @@ export class Signal<T> {
   }
 
   notify() {
+    //  debugger
+    console.log("notify for", this.displayName)
     this.#subscribers.forEach((sub) => {
       if (sub instanceof Function) {
         return sub(this.#value)

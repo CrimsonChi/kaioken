@@ -12,10 +12,10 @@ export const double = computed(() => {
   return 0
 }, "double")
 
-export const quadruple = computed(() => {
+/* export const quadruple = computed(() => {
   return double.value * 2
-}, "quadruple")
+}, "quadruple") */
 
-export const octoruple = computed(() => {
+/* export const octoruple = computed(() => {
   return quadruple.value * 2
-}, "octoruple")
+}, "octoruple") */
