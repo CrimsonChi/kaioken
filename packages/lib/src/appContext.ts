@@ -43,11 +43,14 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       if (renderMode.current === "hydrate") {
         hydrationStack.captureEvents(this.root!, this.scheduler)
       }
+      const appNode = createElement(this.appFunc, this.appProps as T)
       this.rootNode = createElement(
         this.root!.nodeName.toLowerCase(),
         {},
-        createElement(this.appFunc, this.appProps as T)
+        appNode
       )
+      this.rootNode.depth = 0
+      appNode.depth = 1
       if (__DEV__) {
         if (this.root) {
           this.root.__kaiokenNode = this.rootNode

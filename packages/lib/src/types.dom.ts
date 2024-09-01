@@ -188,6 +188,7 @@ type GlobalAttributes = {
   tabIndex?: number
   title?: string
   translate?: "yes" | "no"
+  popover?: "auto" | "manual" | boolean
 } & Omit<
   Partial<GlobalEventHandlers>,
   | keyof InputEventAttributes<any>
@@ -248,6 +249,11 @@ type EventAttributes<T extends string> = KeyboardEventAttributes &
 
 type ElementReference<T extends HTMLElement> = T | null | string
 
+type PopoverControlAttributes = {
+  popoverTarget?: string
+  popoverTargetAction?: "show" | "hide" | "toggle"
+}
+
 interface HtmlElementAttributes {
   a: {
     download?: FileName
@@ -297,7 +303,7 @@ interface HtmlElementAttributes {
     formEnctype?: EncType
     formMethod?: FormMethod
     type?: "button" | "reset" | "submit"
-  }
+  } & PopoverControlAttributes
   canvas: {
     width?: string | number
     height?: string | number
@@ -420,7 +426,7 @@ interface HtmlElementAttributes {
     type?: InputType
     value?: string | number
     width?: string | number
-  }
+  } & PopoverControlAttributes
   ins: {
     cite?: string
     dateTime?: string

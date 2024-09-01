@@ -63,7 +63,7 @@ export class Scheduler {
   private isImmediateCallbacksMode = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
-  private lastUpdateRequester: VNode | null = null
+  //private lastUpdateRequester: VNode | null = null
 
   constructor(
     private appCtx: AppContext<any>,
@@ -90,7 +90,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
-    this.lastUpdateRequester = null
+    //this.lastUpdateRequester = null
   }
 
   wake() {
@@ -114,11 +114,9 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
-    if (this.lastUpdateRequester === vNode) {
-      return
+    if ("frozen" in vNode) {
+      vNode.frozen = false
     }
-
-    this.lastUpdateRequester = vNode
     if (this.isImmediateCallbacksMode) {
       this.isRenderDirtied = true
     }
@@ -147,8 +145,11 @@ export class Scheduler {
       return
     }
 
-    // handle node as child or parent of queued trees
+    const nodeDepth = vNode.depth!
+    // handle node as child of queued trees
     for (let i = 0; i < this.treesInProgress.length; i++) {
+      const treeDepth = this.treesInProgress[i].depth!
+      if (treeDepth > nodeDepth) continue
       if (vNodeContains(this.treesInProgress[i], vNode)) {
         if (i === this.currentTreeIndex) {
           // if req node is child of work node we can skip
@@ -159,25 +160,46 @@ export class Scheduler {
           // already processed tree, create new tree with the node
           this.treesInProgress.push(vNode)
         }
-
         return
-      } else if (vNodeContains(vNode, this.treesInProgress[i])) {
+      }
+    }
+
+    let didNodeUsurp = false
+    for (let i = 0; i < this.treesInProgress.length; i++) {
+      // does node contain tree?
+      const treeDepth = this.treesInProgress[i].depth!
+      if (treeDepth < nodeDepth) continue
+
+      if (vNodeContains(vNode, this.treesInProgress[i])) {
+        // TODO: continue consuming trees in progress of the req node contains them!
         if (i === this.currentTreeIndex) {
           // node contains current tree, replace it
-          this.treesInProgress.splice(i, 1, vNode)
-          this.nextUnitOfWork = vNode
+          if (!didNodeUsurp) {
+            this.treesInProgress.splice(i, 1, vNode)
+            this.nextUnitOfWork = vNode
+            didNodeUsurp = true
+          } else {
+            this.treesInProgress.splice(i, 1)
+          }
         } else if (i < this.currentTreeIndex) {
           // node contains a tree that has already been processed
           this.currentTreeIndex--
           this.treesInProgress.splice(i, 1)
-          this.treesInProgress.push(vNode)
+          if (!didNodeUsurp) {
+            this.treesInProgress.push(vNode)
+          }
         } else {
           // node contains a tree that has not yet been processed, 'usurp' the tree
-          this.treesInProgress.splice(i, 1, vNode)
+          if (!didNodeUsurp) {
+            this.treesInProgress.splice(i, 1, vNode)
+            didNodeUsurp = true
+          } else {
+            this.treesInProgress.splice(i, 1)
+          }
         }
-        return
       }
     }
+    if (didNodeUsurp) return
     // node is not a child or parent of any queued trees, queue new tree
     this.treesInProgress.push(vNode)
   }
@@ -212,7 +234,7 @@ export class Scheduler {
   }
 
   private workLoop(deadline?: IdleDeadline): void {
-    this.lastUpdateRequester = null
+    //this.lastUpdateRequester = null
     ctx.current = this.appCtx
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
@@ -396,6 +418,7 @@ export class Scheduler {
         vNode.child || null,
         vNode.props.children
       ) || undefined
+
     node.current = undefined
   }
 

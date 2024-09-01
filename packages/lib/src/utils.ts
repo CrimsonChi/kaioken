@@ -225,6 +225,7 @@ const booleanAttributes = [
   "noshade",
   "novalidate",
   "nowrap",
+  "popover",
   "readonly",
   "required",
   "sandbox",
@@ -255,6 +256,8 @@ function propToHtmlAttr(key: string) {
     case "formNoValidate":
     case "noModule":
     case "noValidate":
+    case "popoverTarget":
+    case "popoverTargetAction":
     case "playsInline":
     case "readOnly":
     case "itemscope":

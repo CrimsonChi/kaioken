@@ -14,6 +14,8 @@ import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 import { UseSyncExternalStoreExample } from "./components/UseSyncExternalStoreExample"
 import { UseModelExample } from "./components/useModelExample"
+import { GlobalComputedExample } from "./components/ComputedExample"
+import { LocalComputedExample } from "./components/ComputedExample"
 
 function Home() {
   return <div className="flex flex-col gap-2">Home</div>
@@ -59,6 +61,8 @@ export function App() {
           <Route path="/keyed-list" element={<KeyedList />} />
           <Route path="/context" element={<ContextExample />} />
           <Route path="/useAsync" element={<UseAsyncExample />} />
+          <Route path="/computed" element={<GlobalComputedExample />} />
+          <Route path="/computed-local" element={<LocalComputedExample />} />
           <Route
             path="/useSyncExternalStoreExample"
             element={<UseSyncExternalStoreExample />}

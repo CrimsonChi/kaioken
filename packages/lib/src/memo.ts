@@ -1,12 +1,18 @@
 import { createElement } from "./element.js"
+import { useRef } from "./hooks/useRef.js"
+import { useVNode } from "./hooks/utils.js"
 
 function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,
   nextProps: T
 ) {
-  return Object.keys(prevProps).every(
-    ([key]) => prevProps[key] === nextProps[key]
-  )
+  const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
+  for (const key of keys) {
+    if (prevProps[key] !== nextProps[key]) {
+      return false
+    }
+  }
+  return true
 }
 
 export function memo<Props extends Record<string, unknown>>(
@@ -16,23 +22,34 @@ export function memo<Props extends Record<string, unknown>>(
     nextProps: Props
   ) => boolean = _arePropsEqual
 ): (props: Props) => JSX.Element {
-  let node: Kaioken.VNode
-  let oldProps = {} as Props
-  return Object.assign(
-    (props: Props) => {
-      if (node && arePropsEqual(oldProps, props)) {
-        node.frozen = true
-        return node
-      }
-      oldProps = props
-      if (!node) {
-        node = createElement(fn, props)
-      } else {
-        Object.assign(node.props, props)
-      }
-      node.frozen = false
-      return node
-    },
-    { displayName: "Kaioken.memo" }
-  )
+  const memo = function (props: Props) {
+    const prevProps = useRef<Props | null>(null)
+    const node = useRef<Kaioken.VNode | null>(null)
+    const thisNode = useVNode()
+    thisNode.props = props
+    thisNode.depth = (thisNode.parent?.depth || 0) + 1
+
+    if (
+      node.current &&
+      prevProps.current &&
+      arePropsEqual(prevProps.current, props)
+    ) {
+      node.current.props = props
+      prevProps.current = props
+      node.current.frozen = true
+      return node.current
+    }
+
+    prevProps.current = props
+
+    if (!node.current) {
+      node.current = createElement(fn, props)
+    } else {
+      Object.assign(node.current.props, props)
+    }
+    node.current.frozen = false
+    return node.current
+  }
+  memo.displayName = "Kaioken.memo"
+  return memo
 }

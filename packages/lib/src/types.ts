@@ -89,7 +89,7 @@ declare global {
   export namespace Kaioken {
     type ProviderProps<T> = {
       value: T
-      children?: JSX.Children
+      children?: JSX.Children | ((value: T) => JSX.Element)
     }
     type Context<T> = {
       Provider: (({ value, children }: ProviderProps<T>) => JSX.Element) & {
@@ -133,6 +133,7 @@ declare global {
         ref?: Kaioken.Ref<unknown>
       }
       index: number
+      depth?: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]
       parent?: VNode

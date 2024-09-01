@@ -5,7 +5,7 @@ export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
   const ctx: Kaioken.Context<T> = {
     Provider: ({ value, children }: Kaioken.ProviderProps<T>) => {
       return fragment({
-        children,
+        children: typeof children === "function" ? children(value) : children,
         [contextDataSymbol]: {
           value,
           ctx,
