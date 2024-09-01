@@ -18,7 +18,10 @@ export const signal = <T>(initial: T, displayName?: string) => {
             }
             if (__DEV__) {
               hook.debug = {
-                get: () => ({ value: Signal.getValue(hook.signal) }),
+                get: () => ({
+                  displayName: hook.signal.displayName,
+                  value: Signal.getValue(hook.signal),
+                }),
                 set: ({ value }) => {
                   Signal.setValueSilently(hook.signal, value)
                 },
@@ -53,7 +56,10 @@ export const computed = <T>(getter: () => T, displayName?: string) => {
           }
           if (__DEV__) {
             hook.debug = {
-              get: () => ({ value: Signal.getValue(hook.signal) }),
+              get: () => ({
+                displayName: hook.signal.displayName,
+                value: Signal.getValue(hook.signal),
+              }),
             }
           }
           hook.subs = new Map()
@@ -115,9 +121,11 @@ export class Signal<T> {
     signal.#subscribers.clear()
   }
 
-  map<U>(fn: (value: T) => Signal<U>, displayName?: string) {
+  map<U>(fn: (value: T) => U, displayName?: string): Signal<U> {
     const initialVal = fn(this.#value)
     const sig = signal(initialVal, displayName)
+    this.subscribe((value) => (sig.value = fn(value)))
+    return sig
   }
 
   toString() {

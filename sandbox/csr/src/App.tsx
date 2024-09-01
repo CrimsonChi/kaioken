@@ -1,12 +1,4 @@
-import {
-  Router,
-  Route,
-  useState,
-  useRouter,
-  ElementProps,
-  signal,
-  computed,
-} from "kaioken"
+import { Router, Route, useRouter, signal } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -52,20 +44,26 @@ function Nav() {
 }
 
 function Home() {
-  const [show, setShow] = useState(false)
+  const count = signal(0)
+  const doubled = count.map((c) => c * 2, "doubled")
+  const quadrupledP1 = count
+    .map((c) => c * 4, "quadrupled")
+    .map((c) => c + 1, "quadrupled+1")
   return (
     <div>
-      <button onclick={() => setShow(!show)}>toggle</button>
-      <SomeChild show={show}>asdasd</SomeChild>
+      <h1>Home</h1>
+      <p>Count: {count}</p>
+      <p>Doubled: {doubled}</p>
+      <p>Quadrupled+1: {quadrupledP1}</p>
+      <button
+        onclick={() => {
+          count.value += 1
+        }}
+      >
+        Increment
+      </button>
     </div>
   )
-}
-
-function SomeChild({
-  show,
-  ...props
-}: ElementProps<"button"> & { show: boolean }) {
-  return <div>{show && <button {...props} />}</div>
 }
 
 export function App() {
