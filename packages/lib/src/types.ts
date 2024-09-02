@@ -1,4 +1,4 @@
-import type { Signal as SignalClass } from "./signal"
+import type { Signal, Signal as SignalClass } from "./signal"
 import type { Component, ComponentConstructor } from "./component"
 import type { EFFECT_TAG } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
@@ -34,7 +34,10 @@ type ElementMap = {
     EventAttributes<K> &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
-      ref?: Kaioken.Ref<HTMLTagToElement<K> | null>
+      ref?:
+        | Kaioken.Ref<HTMLTagToElement<K>>
+        //| Kaioken.Ref<HTMLTagToElement<K> | null>
+        | Signal<HTMLTagToElement<K> | null>
     }
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
@@ -43,7 +46,10 @@ type ElementMap = {
     EventAttributes<K> &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
-      ref?: Kaioken.Ref<SVGTagToElement<K> | null>
+      ref?:
+        | Kaioken.Ref<SVGTagToElement<K>>
+        //| Kaioken.Ref<SVGTagToElement<K> | null>
+        | Signal<SVGTagToElement<K> | null>
     }
 } & {
   [K in WebComponentTag]: Record<string, any>
@@ -69,7 +75,7 @@ declare global {
 
     type Children = JSX.Element | JSX.Element[]
 
-    type ElementKey = string | number
+    type ElementKey = string | number | null | undefined
     type Element =
       | Element[]
       | Kaioken.VNode
@@ -115,8 +121,17 @@ declare global {
       debug?: HookDebug<any>
       name?: string
     }
+    type RefObject<T> = {
+      readonly current: T | null
+    }
+    type MutableRefObject<T> = {
+      current: T
+    }
+    type RefCallback<T> = {
+      bivarianceHack(instance: T | null): void
+    }["bivarianceHack"]
 
-    type Ref<T> = { current: T }
+    type Ref<T> = RefCallback<T> | RefObject<T> | null | undefined
 
     type StateSetter<T> = T | ((prev: T) => T)
 

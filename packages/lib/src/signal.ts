@@ -121,6 +121,10 @@ export class Signal<T> {
     signal.#subscribers.clear()
   }
 
+  peek() {
+    return this.#value
+  }
+
   map<U>(fn: (value: T) => U, displayName?: string): Signal<U> {
     const initialVal = fn(this.#value)
     const sig = signal(initialVal, displayName)
@@ -138,8 +142,9 @@ export class Signal<T> {
     return () => this.#subscribers.delete(cb)
   }
 
-  notify() {
+  notify(filterPredicate?: (sub: Function | Kaioken.VNode) => boolean) {
     this.#subscribers.forEach((sub) => {
+      if (filterPredicate && !filterPredicate(sub)) return
       if (sub instanceof Function) {
         return sub(this.#value)
       }

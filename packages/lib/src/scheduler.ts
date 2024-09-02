@@ -212,9 +212,6 @@ export class Scheduler {
       },
       false
     )
-    if (vNode.props.ref) {
-      vNode.props.ref.current = null
-    }
     this.deletions.push(vNode)
   }
 
@@ -382,7 +379,7 @@ export class Scheduler {
   private updateFunctionComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
-    const children = (vNode.type as Function)(vNode.props)
+    const children = (vNode.type as Function)(Object.freeze(vNode.props))
     vNode.child =
       reconcileChildren(this.appCtx, vNode, vNode.child || null, children) ||
       undefined
@@ -408,9 +405,6 @@ export class Scheduler {
       }
     }
 
-    if (vNode.props.ref) {
-      vNode.props.ref.current = vNode.dom
-    }
     vNode.child =
       reconcileChildren(
         this.appCtx,

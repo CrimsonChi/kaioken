@@ -1,5 +1,6 @@
 import {
   booleanAttributes,
+  isVNode,
   propFilters,
   propToHtmlAttr,
   styleObjectToCss,
@@ -15,20 +16,57 @@ import { MaybeDom, SomeDom, SomeElement } from "./types.dom.js"
 import { Portal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 
-export { commitWork, createDom, updateDom, hydrateDom }
+export { commitWork, createDom, updateDom, hydrateDom, setRef, clearRef }
 
 type VNode = Kaioken.VNode
 type DomParentSearchResult = {
   node: VNode
   element: SomeDom
 }
+
+function setRefSignal(
+  signal: Signal<SomeDom | null>,
+  domOrNull: SomeDom | null
+) {
+  Signal.setValueSilently(signal, domOrNull)
+  signal.notify((sub) => !isVNode(sub))
+}
+
+function setRef(vNode: VNode, dom: SomeDom) {
+  if (!vNode.props.ref) return
+  if (typeof vNode.props.ref === "function") {
+    vNode.props.ref(dom)
+    return
+  }
+  if (Signal.isSignal(vNode.props.ref)) {
+    setRefSignal(vNode.props.ref, dom)
+    return
+  }
+  ;(vNode.props.ref as Kaioken.MutableRefObject<SomeDom | null>).current = dom
+}
+
+function clearRef(vNode: VNode) {
+  if (!vNode.props.ref) return
+  if (typeof vNode.props.ref === "function") {
+    vNode.props.ref(null)
+  }
+  if (Signal.isSignal(vNode.props.ref)) {
+    setRefSignal(vNode.props.ref, null)
+    return
+  }
+  ;(vNode.props.ref as Kaioken.MutableRefObject<SomeDom | null>).current = null
+}
+
 function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
-  return t == ELEMENT_TYPE.text
-    ? document.createTextNode(vNode.props.nodeValue ?? "")
-    : svgTags.includes(t)
-      ? document.createElementNS("http://www.w3.org/2000/svg", t)
-      : document.createElement(t)
+  const dom =
+    t == ELEMENT_TYPE.text
+      ? document.createTextNode(vNode.props.nodeValue ?? "")
+      : svgTags.includes(t)
+        ? document.createElementNS("http://www.w3.org/2000/svg", t)
+        : document.createElement(t)
+  setRef(vNode, dom)
+  return dom
 }
 
 function updateDom(node: VNode) {
@@ -77,6 +115,7 @@ function hydrateDom(vNode: VNode) {
     )
   }
   vNode.dom = dom
+  setRef(vNode, dom)
   if (vNode.type !== ELEMENT_TYPE.text) {
     updateDom(vNode)
     return
@@ -308,9 +347,6 @@ function commitWork(vNode: VNode) {
 function commitDom(n: VNode) {
   const dom = n.dom as SomeDom
   if (renderMode.current === "hydrate") {
-    if (n.props.ref) {
-      n.props.ref.current = dom
-    }
     return
   }
   if (n.instance?.doNotModifyDom) return
@@ -334,8 +370,11 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
     }
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
-    if (n.dom?.isConnected && !skipDomRemoval) n.dom.remove()
-    delete n.dom
+    if (n.dom) {
+      if (n.dom.isConnected && !skipDomRemoval) n.dom.remove()
+      delete n.dom
+      clearRef(n)
+    }
     if (deleteSibling && n.sibling) stack.push(n.sibling)
     if (n.child) stack.push(n.child)
     deleteSibling = true

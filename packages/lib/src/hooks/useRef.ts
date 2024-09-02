@@ -1,14 +1,17 @@
 import { __DEV__ } from "../env.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 
-export function useRef<T>(current: T): Kaioken.Ref<T> {
-  if (!sideEffectsEnabled()) return { current }
-  return useHook("useRef", { current }, ({ hook }) => {
+export function useRef<T>(initialValue: T): Kaioken.MutableRefObject<T>
+export function useRef<T>(initialValue: T | null): Kaioken.RefObject<T>
+export function useRef<T = undefined>(): Kaioken.MutableRefObject<T | undefined>
+export function useRef<T>(initialValue?: T | null) {
+  if (!sideEffectsEnabled()) return { current: initialValue }
+  return useHook("useRef", { current: initialValue }, ({ hook }) => {
     if (__DEV__) {
       hook.debug = {
         get: () => ({ value: hook.current }),
         set: ({ value }) => (hook.current = value),
-      } satisfies Kaioken.HookDebug<{ value: T }>
+      } as Kaioken.HookDebug<{ value: T }>
     }
     return hook
   })
