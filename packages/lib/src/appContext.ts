@@ -95,8 +95,12 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     return new Promise<AppContext<T>>((resolve) => {
       scheduler.clear()
       const { children, ref, key, ...rest } = rootChild.props
-      const args = rest as T
-      Object.assign(rootChild.props, fn(args))
+      rootChild.props = {
+        ...Object.assign(rest, fn(rest as T)),
+        children,
+        ref,
+        key,
+      }
       scheduler.queueUpdate(rootChild)
       scheduler.nextIdle(() => resolve(this))
     })

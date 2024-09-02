@@ -379,7 +379,7 @@ export class Scheduler {
   private updateFunctionComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
-    const children = (vNode.type as Function)(Object.freeze(vNode.props))
+    const children = (vNode.type as Function)(vNode.props)
     vNode.child =
       reconcileChildren(this.appCtx, vNode, vNode.child || null, children) ||
       undefined
