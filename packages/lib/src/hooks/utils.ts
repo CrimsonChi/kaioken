@@ -1,4 +1,4 @@
-import { __DEV__ } from "src/env.js"
+import { __DEV__ } from "../env.js"
 import { node, nodeToCtxMap } from "../globals.js"
 import { getVNodeAppContext, noop } from "../utils.js"
 export { sideEffectsEnabled } from "../utils.js"
