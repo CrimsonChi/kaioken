@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "kaioken": ">=0.27.1-2"
+    "kaioken": ">=0.27.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.11",
