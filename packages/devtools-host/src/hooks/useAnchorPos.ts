@@ -7,16 +7,16 @@ import {
 import { signal, useCallback, useLayoutEffect, useMemo, useRef } from "kaioken"
 import { LOCAL_KEY, PADDING } from "../utils/constants"
 import { SnapSide, Storage } from "../utils/types"
-import { reinitializeBtnPos } from "../utils"
+import { reinitializeAnchorPos } from "../utils"
 
-export const useBtnPos = () => {
+export const useAnchorPos = () => {
   const { mouse } = useMouse()
   const startMouse = signal<null | { x: number; y: number }>(null)
-  const btnRef = useRef<HTMLElement>(null)
-  const viewPortRef = useRef<HTMLElement>(null)
-  const elementBound = useElementBounding(btnRef)
+  const anchorRef = useRef<HTMLDivElement>(null)
+  const viewPortRef = useRef<HTMLDivElement>(null)
+  const elementBound = useElementBounding(anchorRef)
   const lastDroppedCoord = signal({ x: -PADDING, y: -PADDING })
-  const btnCoords = signal({ x: -PADDING, y: -PADDING })
+  const anchorCoords = signal({ x: -PADDING, y: -PADDING })
   const viewportSize = signal({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -34,7 +34,11 @@ export const useBtnPos = () => {
     viewportSize.value.height = window.innerHeight
     snapSide.value = result.snapSide
 
-    btnCoords.value = reinitializeBtnPos(result, viewPortRef, elementBound)
+    anchorCoords.value = reinitializeAnchorPos(
+      result,
+      viewPortRef,
+      elementBound
+    )
   }, [Math.round(elementBound.width), Math.round(elementBound.height)])
 
   const distanceCovered = useMemo(() => {
@@ -53,11 +57,11 @@ export const useBtnPos = () => {
 
       timeoutRef.current = window.setTimeout(() => {
         startMouse.value = { x: e.x, y: e.y }
-        lastDroppedCoord.value = btnCoords.value
+        lastDroppedCoord.value = anchorCoords.value
       }, 100)
     },
     {
-      ref: () => btnRef.current,
+      ref: () => anchorRef.current,
     }
   )
 
@@ -71,7 +75,7 @@ export const useBtnPos = () => {
       localStorage.setItem(
         LOCAL_KEY,
         JSON.stringify({
-          ...btnCoords.value,
+          ...anchorCoords.value,
           ...viewportSize.value,
           snapSide: snapSide.value,
         })
@@ -79,14 +83,14 @@ export const useBtnPos = () => {
     }
   })
 
-  const updateBtnPos = useCallback(() => {
+  const updateAnchorPos = useCallback(() => {
     if (viewPortRef.current == null) return
 
     const viewportWidth = viewPortRef.current.offsetWidth
 
     if (snapSide.value === "right") {
-      const min = Math.min(-PADDING, btnCoords.value.y)
-      btnCoords.value = {
+      const min = Math.min(-PADDING, anchorCoords.value.y)
+      anchorCoords.value = {
         x: -PADDING,
         y: Math.max(
           min,
@@ -94,8 +98,8 @@ export const useBtnPos = () => {
         ),
       }
     } else if (snapSide.value === "left") {
-      const min = Math.min(0, btnCoords.value.y)
-      btnCoords.value = {
+      const min = Math.min(0, anchorCoords.value.y)
+      anchorCoords.value = {
         x: (viewportWidth - elementBound.width) * -1 + PADDING,
         y: Math.max(
           min,
@@ -103,16 +107,16 @@ export const useBtnPos = () => {
         ),
       }
     } else if (snapSide.value === "top") {
-      const min = Math.min(-PADDING, btnCoords.value.x)
-      btnCoords.value = {
+      const min = Math.min(-PADDING, anchorCoords.value.x)
+      anchorCoords.value = {
         x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
         y: (window.innerHeight - elementBound.height) * -1 + PADDING,
       }
 
       return
     } else {
-      const min = Math.min(-PADDING, btnCoords.value.x)
-      btnCoords.value = {
+      const min = Math.min(-PADDING, anchorCoords.value.x)
+      anchorCoords.value = {
         x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
         y: -PADDING,
       }
@@ -139,7 +143,7 @@ export const useBtnPos = () => {
         -PADDING,
         lastDroppedCoord.value.y + distanceCovered.y
       )
-      btnCoords.value = {
+      anchorCoords.value = {
         x: -PADDING,
         y: Math.max(
           min,
@@ -149,7 +153,7 @@ export const useBtnPos = () => {
       return
     } else if (snapSide.value === "left") {
       const min = Math.min(0, lastDroppedCoord.value.y + distanceCovered.y)
-      btnCoords.value = {
+      anchorCoords.value = {
         x: (viewportWidth - elementBound.width) * -1 + PADDING,
         y: Math.max(
           min,
@@ -163,7 +167,7 @@ export const useBtnPos = () => {
         -PADDING,
         lastDroppedCoord.value.x + distanceCovered.x
       )
-      btnCoords.value = {
+      anchorCoords.value = {
         x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
         y: (window.innerHeight - elementBound.height) * -1 + PADDING,
       }
@@ -172,7 +176,7 @@ export const useBtnPos = () => {
     }
 
     const min = Math.min(-PADDING, lastDroppedCoord.value.x + distanceCovered.x)
-    btnCoords.value = {
+    anchorCoords.value = {
       y: -PADDING,
       x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
     }
@@ -181,12 +185,12 @@ export const useBtnPos = () => {
   const onResize = useCallback(() => {
     if (viewPortRef.current === null) return
 
-    btnCoords.value = reinitializeBtnPos(
+    anchorCoords.value = reinitializeAnchorPos(
       {
         width: viewportSize.value.width,
         height: viewportSize.value.height,
-        x: btnCoords.value.x,
-        y: btnCoords.value.y,
+        x: anchorCoords.value.x,
+        y: anchorCoords.value.y,
         snapSide: snapSide.value,
       },
       viewPortRef,
@@ -199,7 +203,7 @@ export const useBtnPos = () => {
     localStorage.setItem(
       LOCAL_KEY,
       JSON.stringify({
-        ...btnCoords.value,
+        ...anchorCoords.value,
         ...viewportSize.value,
         snapSide: snapSide.value,
       })
@@ -208,12 +212,12 @@ export const useBtnPos = () => {
   useEventListener("resize", onResize)
 
   return {
-    btnRef,
-    btnCoords,
+    anchorRef,
+    anchorCoords,
     viewPortRef,
     startMouse,
     elementBound,
     snapSide,
-    updateBtnPos,
+    updateAnchorPos,
   }
 }

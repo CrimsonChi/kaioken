@@ -1,4 +1,5 @@
 import type { AppContext } from "kaioken"
+import { isFragment } from "kaioken/utils"
 
 export function isDevtoolsApp(app: AppContext) {
   return app.name === "kaioken.devtools"
@@ -19,7 +20,7 @@ export function searchMatchesItem(terms: string[], item: string) {
 export function isComponent(
   node: Kaioken.VNode
 ): node is Kaioken.VNode & { type: Function } {
-  return typeof node.type === "function" && node.type.name !== "fragment"
+  return typeof node.type === "function" && !isFragment(node)
 }
 
 export function nodeContainsComponent(node: Kaioken.VNode) {

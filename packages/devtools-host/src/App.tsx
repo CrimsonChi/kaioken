@@ -1,6 +1,6 @@
 import { twMerge } from "tailwind-merge"
 import { Flame } from "./icon/Flame"
-import { useBtnPos } from "./hooks/useBtnPos"
+import { useAnchorPos } from "./hooks/useAnchorPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
 import { signal, Transition, useEffect, useLayoutEffect, useRef } from "kaioken"
 import { useDevTools } from "./hooks/useDevtools"
@@ -13,25 +13,25 @@ export default function App() {
   const toggled = signal(false)
   const handleOpen = useDevTools()
   const {
-    btnCoords,
-    btnRef,
+    anchorCoords,
+    anchorRef,
     viewPortRef,
     startMouse,
     elementBound,
     snapSide,
-    updateBtnPos,
-  } = useBtnPos()
+    updateAnchorPos,
+  } = useAnchorPos()
   const isHorizontalSnap =
     snapSide.value === "left" || snapSide.value === "right"
   const isMounted = useRef(false)
 
-  const [springBtnCoords, setSpringBtnCoords] = useSpring(btnCoords.value, {
+  const [springBtnCoords, setSpringBtnCoords] = useSpring(anchorCoords.value, {
     damping: 0.4,
   })
 
   useLayoutEffect(() => {
     if (isMounted.current === false) {
-      setSpringBtnCoords(btnCoords.value, {
+      setSpringBtnCoords(anchorCoords.value, {
         hard: true,
       })
     }
@@ -40,14 +40,14 @@ export default function App() {
   }, [Math.round(elementBound.width), Math.round(elementBound.height)])
 
   useEffectDeep(() => {
-    setSpringBtnCoords(btnCoords.value)
-  }, [btnCoords.value])
+    setSpringBtnCoords(anchorCoords.value)
+  }, [anchorCoords.value])
 
   useEffect(() => {
     if (toggled.value) {
-      updateBtnPos()
+      updateAnchorPos()
     }
-  }, [toggled.value, updateBtnPos])
+  }, [toggled.value, updateAnchorPos])
 
   const handleToggleInspect = () => {
     window.__kaioken?.emit(
@@ -64,7 +64,7 @@ export default function App() {
         className="w-full h-0 fixed top-0 left-0 z-[-9999] overflow-scroll pointer-events-none"
       />
       <div
-        ref={btnRef}
+        ref={anchorRef}
         className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${toggled.value ? "rounded-3xl" : "rounded-full"} p-1 gap-1 items-center will-change-transform bg-crimson`}
         style={{
           transform: `translate3d(${Math.round(springBtnCoords.x)}px, ${Math.round(springBtnCoords.y)}px, 0)`,

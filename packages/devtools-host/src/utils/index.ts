@@ -1,13 +1,14 @@
 import { useElementBounding } from "@kaioken-core/hooks"
-import { DEFAULT_BTN_POS, PADDING } from "./constants"
+import { isFragment } from "kaioken/utils"
+import { DEFAULT_ANCHOR_POS, PADDING } from "./constants"
 import { Storage } from "./types"
 
-export const reinitializeBtnPos = (
+export const reinitializeAnchorPos = (
   storage: Storage,
-  viewPortRef: Kaioken.Ref<HTMLElement | null>,
+  viewPortRef: Kaioken.RefObject<HTMLElement>,
   elementBound: ReturnType<typeof useElementBounding>
 ) => {
-  if (!viewPortRef.current) return { ...DEFAULT_BTN_POS }
+  if (!viewPortRef.current) return { ...DEFAULT_ANCHOR_POS }
 
   const rateInWidthChange = window.innerWidth / storage.width
   const rateInHeightChange = window.innerHeight / storage.height
@@ -37,7 +38,7 @@ export const getComponentVnodeFromElement = (domNode: Element | null) => {
   let parentComponent: Kaioken.VNode | null = null
   let parent = (domNode?.__kaiokenNode as Kaioken.VNode)?.parent
   while (parent) {
-    if (typeof parent.type === "function" && parent.type.name !== "fragment") {
+    if (typeof parent.type === "function" && !isFragment(parent)) {
       parentComponent = parent
       break
     }
