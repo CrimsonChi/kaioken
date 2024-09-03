@@ -1,14 +1,11 @@
 import esbuild from "esbuild"
-import { esbuildPluginTransform, options, writeFile } from "./options"
-import esbuildPluginInlineImport from "esbuild-plugin-inline-import"
+import { options, writeFile } from "./options"
 
 await esbuild
   .context({
     ...options,
     plugins: [
-      esbuildPluginInlineImport({
-        transform: esbuildPluginTransform,
-      }),
+      ...options.plugins,
       {
         name: "build-evts",
         setup({ onEnd }) {

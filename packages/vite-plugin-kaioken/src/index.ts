@@ -1,9 +1,6 @@
 import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
 import devtoolsLinkScript from "kaioken-devtools-host"
 import devtoolsUiScript from "kaioken-devtools-client"
-import { createRequire } from "node:module"
-
-const require = createRequire(import.meta.url)
 
 const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -26,18 +23,6 @@ export default function kaioken(
   let isProduction = false
   let isBuild = false
 
-  let kaiokenModuleId = require
-    .resolve("kaioken", {
-      paths: [process.cwd()],
-    })
-    .replace(/\\/g, "/")
-  if (kaiokenModuleId.endsWith("/lib/index.js")) {
-    kaiokenModuleId = kaiokenModuleId.replace(
-      "/lib/index.js",
-      "/lib/dist/index.js"
-    )
-  }
-
   return {
     name: "vite-plugin-kaioken",
     config(config) {
@@ -49,12 +34,31 @@ export default function kaioken(
         },
       } as UserConfig
     },
+    transformIndexHtml(html) {
+      if (isProduction || isBuild || !opts.devtools) return
+      return {
+        html,
+        tags: [
+          {
+            tag: "script",
+            attrs: {
+              type: "module",
+              src: "/__devtools__.js",
+            },
+          },
+        ],
+      }
+    },
     configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
     },
     configureServer(server) {
       if (isProduction || isBuild || !opts.devtools) return
+      server.middlewares.use("/__devtools__.js", (_, res) => {
+        res.setHeader("Content-Type", "application/javascript")
+        res.end(devtoolsLinkScript, "utf-8")
+      })
       server.middlewares.use("/__devtools__", (_, res) => {
         res.end(devtoolsUiScript)
       })
@@ -82,14 +86,6 @@ export default function kaioken(
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (
-        opts.devtools &&
-        (id === kaiokenModuleId || id.includes("/kaioken.js?"))
-      ) {
-        code += devtoolsLinkScript
-        return { code }
-      }
-
       if (!/\.(tsx|jsx)$/.test(id)) return { code }
       const ast = this.parse(code)
       try {

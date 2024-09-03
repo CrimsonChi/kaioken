@@ -1,3 +1,4 @@
+import * as kaioken from "kaioken"
 import type { ElementProps } from "kaioken"
 
 export function SquareMouse(props: ElementProps<"svg">) {

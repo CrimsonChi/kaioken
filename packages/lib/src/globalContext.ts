@@ -1,5 +1,4 @@
 import type { AppContext } from "./appContext"
-import { contexts } from "./globals.js"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
@@ -24,12 +23,19 @@ type Evt =
 type GlobalKaiokenEvent = Evt["name"]
 
 class KaiokenGlobalContext {
+  #contexts: Set<AppContext> = new Set()
   private listeners: Map<
     GlobalKaiokenEvent,
     Set<(ctx: AppContext, data?: Evt["data"]) => void>
   > = new Map()
+
+  constructor() {
+    this.on("mount", (ctx) => this.#contexts.add(ctx))
+    this.on("unmount", (ctx) => this.#contexts.delete(ctx))
+  }
+
   get apps() {
-    return contexts
+    return Array.from(this.#contexts)
   }
   emit<T extends Evt>(event: T["name"], ctx: AppContext, data?: T["data"]) {
     this.listeners.get(event)?.forEach((cb) => cb(ctx, data))

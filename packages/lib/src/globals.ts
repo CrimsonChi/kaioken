@@ -1,8 +1,6 @@
 import type { AppContext } from "./appContext"
 
-export { ctx, node, contexts, renderMode, nodeToCtxMap }
-
-const contexts: Array<AppContext<any>> = []
+export { ctx, node, renderMode, nodeToCtxMap }
 
 const node = {
   current: undefined as Kaioken.VNode | undefined,

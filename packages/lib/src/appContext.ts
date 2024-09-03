@@ -1,7 +1,7 @@
 import { EFFECT_TAG } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
-import { contexts, renderMode } from "./globals.js"
+import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { Scheduler } from "./scheduler.js"
 
@@ -61,7 +61,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       this.scheduler.queueUpdate(this.rootNode)
       this.scheduler.nextIdle(() => {
         this.mounted = true
-        contexts.push(this)
         window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)
       })
@@ -78,7 +77,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
         this.scheduler = undefined
         this.rootNode && (this.rootNode.child = undefined)
         this.mounted = false
-        contexts.splice(contexts.indexOf(this), 1)
         window.__kaioken?.emit("unmount", this as AppContext<any>)
         resolve(this)
       })

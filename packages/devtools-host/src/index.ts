@@ -2,8 +2,7 @@ import { mount } from "kaioken"
 import App from "./App"
 import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
 import { popup } from "./store"
-;(() => {
-  if (!("window" in globalThis)) return
+if ("window" in globalThis) {
   let hasMounted = false
   window.__kaioken?.on("mount", async () => {
     if (hasMounted) return
@@ -32,4 +31,4 @@ import { popup } from "./store"
     window.addEventListener("close", handleMainWindowClose)
     window.addEventListener("beforeunload", handleMainWindowClose)
   })
-})()
+}

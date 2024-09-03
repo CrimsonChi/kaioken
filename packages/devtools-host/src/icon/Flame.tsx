@@ -1,3 +1,5 @@
+import * as kaioken from "kaioken"
+
 export const Flame = () => {
   return (
     <svg

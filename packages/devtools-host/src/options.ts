@@ -25,24 +25,26 @@ export const esbuildPluginTransform: EsbuildInlineTransform = async (
   return content
 }
 
-export const options: BuildOptions = {
+export const options = {
+  //inject: ["kaioken"],
   entryPoints: ["src/index.ts", "src/style.css"],
   jsx: "transform",
   outdir: "dist",
-  jsxFactory: "createElement",
-  jsxFragment: "fragment",
+  jsxFactory: "kaioken.createElement",
+  jsxFragment: "kaioken.fragment",
   bundle: true,
   platform: "browser",
   target: "es2020",
   format: "esm",
-  minify: true,
+  minify: false,
   write: false,
+  keepNames: true,
   plugins: [
     esbuildPluginInlineImport({
       transform: esbuildPluginTransform,
     }),
   ],
-}
+} as const satisfies BuildOptions
 
 export function writeFile(content: string) {
   fs.rmSync("dist", { recursive: true, force: true })
