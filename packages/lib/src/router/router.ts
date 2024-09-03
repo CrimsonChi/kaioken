@@ -73,8 +73,11 @@ export function Router(props: RouterProps) {
   }
   let fallbackRoute: RouteComponent | undefined
   let route: RouteComponent | undefined
+  const _children = Array.isArray(props.children)
+    ? props.children
+    : [props.children]
 
-  for (const child of (props.children as Array<JSX.Element>) ?? []) {
+  for (const child of _children) {
     if (!isRoute(child)) continue
 
     if (child.props.path === "*") {
