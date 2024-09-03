@@ -42,7 +42,7 @@ const albums: Album[] = [
 
 export function FilteredList() {
   const [sort, setSort] = useState<"asc" | "desc">("asc")
-  const [inputRef, inputValue] = useModel("")
+  const [inputRef, inputValue] = useModel<HTMLInputElement>("")
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
@@ -110,14 +110,14 @@ function AlbumList({ albums }: { albums: Album[] }) {
 function AlbumItem({ album }: { album: Album }) {
   return (
     <div className="flex items-center gap-4">
-      <button role="none" className="p-2 border-2 border-light rounded">
+      <button key="1" role="none" className="p-2 border-2 border-light rounded">
         PlayIcon
       </button>
-      <div className="flex-grow">
+      <div key="2" className="flex-grow">
         <h4 className="font-bold">{album.title}</h4>
         <span className="text-muted">{album.artist}</span>
       </div>
-      LikeButton
+      <p key="3">LikeButton</p>
     </div>
   )
 }

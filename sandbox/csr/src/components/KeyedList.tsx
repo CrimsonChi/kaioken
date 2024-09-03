@@ -40,6 +40,7 @@ interface KeyedCounterProps {
 
 function KeyedCounterItem({ id, move, remove }: KeyedCounterProps) {
   const [count, setCount] = useState(0)
+
   return (
     <>
       id : {id}

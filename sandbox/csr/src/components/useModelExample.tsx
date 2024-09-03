@@ -72,7 +72,9 @@ function ModelSelect() {
     <div>
       <select ref={ref}>
         {["A", "B", "C", "D", "E", "F"].map((v) => (
-          <option value={v}>{v}</option>
+          <option key={v} value={v}>
+            {v}
+          </option>
         ))}
       </select>
     </div>

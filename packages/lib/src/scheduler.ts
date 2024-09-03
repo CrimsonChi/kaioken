@@ -2,8 +2,9 @@ import type { AppContext } from "./appContext"
 import { Component, ComponentConstructor } from "./component.js"
 import {
   CONSECUTIVE_DIRTY_LIMIT,
+  contextProviderSymbol,
   EFFECT_TAG,
-  ELEMENT_TYPE as et,
+  fragmentSymbol,
 } from "./constants.js"
 import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
@@ -306,7 +307,10 @@ export class Scheduler {
           this.updateClassComponent(vNode)
         } else if (vNode.type instanceof Function) {
           this.updateFunctionComponent(vNode)
-        } else if (vNode.type === et.fragment) {
+        } else if (
+          vNode.type === fragmentSymbol ||
+          vNode.type === contextProviderSymbol
+        ) {
           vNode.child =
             reconcileChildren(
               this.appCtx,
@@ -379,9 +383,19 @@ export class Scheduler {
   private updateFunctionComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
-    const children = (vNode.type as Function)(vNode.props)
+    const { children, ...rest } = vNode.props
+
+    let _children: any
+    if (Array.isArray(children)) {
+      _children = children.length === 1 ? children[0] : children
+    }
+
+    const newChildren = (vNode.type as Function)({
+      ...rest,
+      children: _children,
+    })
     vNode.child =
-      reconcileChildren(this.appCtx, vNode, vNode.child || null, children) ||
+      reconcileChildren(this.appCtx, vNode, vNode.child || null, newChildren) ||
       undefined
     node.current = undefined
   }

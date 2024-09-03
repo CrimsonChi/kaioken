@@ -65,7 +65,6 @@ describe("reconciler", () => {
     node.child = reconcileChildren(ctx.current, node, null, [
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
     ])!
-    // node.child.child = {type: "fragment", props: {children: [...items.map(i => kaioken.createElement("div", {key: i}, i))]}}
 
     const commitFragmentChildren = () => {
       let n: Kaioken.VNode | undefined = node.child!.child

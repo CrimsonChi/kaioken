@@ -13,7 +13,11 @@ import {
 } from "../utils.js"
 
 import { Signal } from "../signal.js"
-import { ELEMENT_TYPE as et } from "../constants.js"
+import {
+  contextProviderSymbol,
+  ELEMENT_TYPE as et,
+  fragmentSymbol,
+} from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
@@ -85,7 +89,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
-  if (type === et.fragment) {
+  if (type === fragmentSymbol || type === contextProviderSymbol) {
     if (!Array.isArray(children))
       return renderToStream_internal(state, children, el)
     return children.forEach((c) => renderToStream_internal(state, c, el))

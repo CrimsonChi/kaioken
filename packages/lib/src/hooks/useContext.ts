@@ -1,15 +1,14 @@
 import { Hook, HookCallbackState, useHook } from "./utils.js"
-import { contextDataSymbol } from "../constants.js"
 import { __DEV__ } from "../env.js"
+import { contextProviderSymbol } from "../constants.js"
 
-type ContextNode<T> = Kaioken.VNode & {
-  props: {
-    [contextDataSymbol]: { value: T; ctx: Kaioken.Context<T> }
-  }
+type ContextProviderNode<T> = Kaioken.VNode & {
+  type: typeof contextProviderSymbol
+  props: { value: T; ctx: Kaioken.Context<T> }
 }
 
 type UseContextHook<T> = Hook<{
-  ctxNode: ContextNode<T> | undefined
+  ctxNode: ContextProviderNode<T> | undefined
   context: Kaioken.Context<T>
   warnIfNotFound: boolean
 }>
@@ -36,7 +35,7 @@ const useContextCallback = <T>({
         get: () => ({
           contextName: hook.context.Provider.displayName || "",
           value: hook.ctxNode
-            ? hook.ctxNode.props[contextDataSymbol].value
+            ? hook.ctxNode.props.value
             : hook.context.default(),
         }),
       }
@@ -44,11 +43,11 @@ const useContextCallback = <T>({
 
     let n = vNode.parent
     while (n) {
-      if (contextDataSymbol in n.props) {
-        const ctxNode = n as ContextNode<T>
-        if (ctxNode.props[contextDataSymbol].ctx === hook.context) {
+      if (n.type === contextProviderSymbol) {
+        const ctxNode = n as ContextProviderNode<T>
+        if (ctxNode.props.ctx === hook.context) {
           hook.ctxNode = ctxNode
-          return hook.ctxNode.props[contextDataSymbol].value
+          return hook.ctxNode.props.value
         }
       }
       n = n.parent
@@ -60,7 +59,7 @@ const useContextCallback = <T>({
     }
     return hook.context.default()
   }
-  return hook.ctxNode.props[contextDataSymbol].value
+  return hook.ctxNode.props.value
 }
 
 const contextsNotFound = new Set<Kaioken.Context<any>>()

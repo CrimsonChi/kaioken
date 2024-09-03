@@ -8,9 +8,5 @@ function jsx(
   { children, ...props } = {} as { children?: Kaioken.VNode[] }
 ) {
   if (!children) return createElement(type, props)
-  return createElement(
-    type,
-    props,
-    ...(Array.isArray(children) ? children : [children])
-  )
+  return createElement(type, props, children)
 }

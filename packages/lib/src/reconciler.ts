@@ -1,10 +1,10 @@
 import type { AppContext } from "./appContext"
-import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
+import { EFFECT_TAG, ELEMENT_TYPE, fragmentSymbol } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { Signal } from "./signal.js"
 import { __DEV__ } from "./env.js"
-import { createElement } from "./element.js"
+import { createElement, fragment } from "./element.js"
 
 type VNode = Kaioken.VNode
 
@@ -65,7 +65,7 @@ function reconcileChildrenArray(
   currentFirstChild: VNode | null,
   children: unknown[]
 ) {
-  let knownKeys: Set<string> | null = null
+  //let knownKeys: Set<string> | null = null
   let resultingChild: VNode | null = null
   let prevNewNode: VNode | null = null
 
@@ -88,9 +88,9 @@ function reconcileChildrenArray(
       }
       break
     }
-    if (__DEV__) {
-      knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
-    }
+    // if (__DEV__) {
+    //   knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
+    // }
     if (oldNode && !newNode.prev) {
       ctx.current.requestDelete(oldNode)
     }
@@ -118,9 +118,9 @@ function reconcileChildrenArray(
     for (; newIdx < children.length; newIdx++) {
       const newNode = createChild(vNode, children[newIdx])
       if (newNode === null) continue
-      if (__DEV__) {
-        knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
-      }
+      // if (__DEV__) {
+      //   knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
+      // }
       lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
       if (prevNewNode === null) {
         resultingChild = newNode
@@ -143,9 +143,9 @@ function reconcileChildrenArray(
       children[newIdx]
     )
     if (newNode !== null) {
-      if (__DEV__) {
-        knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
-      }
+      // if (__DEV__) {
+      //   knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
+      // }
       if (newNode.prev !== undefined) {
         // node persisted, remove it from the list so it doesn't get deleted
         existingChildren.delete(
@@ -210,7 +210,7 @@ function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
 
 function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   const nodeType = newNode.type
-  if (nodeType === ELEMENT_TYPE.fragment) {
+  if (nodeType === fragmentSymbol) {
     return updateFragment(
       parent,
       oldNode,
@@ -238,8 +238,8 @@ function updateFragment(
   children: unknown[],
   newProps = {}
 ) {
-  if (oldNode === null || oldNode.type !== ELEMENT_TYPE.fragment) {
-    const el = createElement(ELEMENT_TYPE.fragment, { children, ...newProps })
+  if (oldNode === null || oldNode.type !== fragmentSymbol) {
+    const el = createElement(fragmentSymbol, { children, ...newProps })
     el.parent = parent
     el.depth = parent.depth! + 1
     return el
@@ -272,10 +272,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
       return newNode
     }
     if (Array.isArray(child)) {
-      const el = createElement(ELEMENT_TYPE.fragment, {
-        children: child,
-        //array: true,
-      })
+      const el = fragment({ children: child })
       el.parent = parent
       el.depth = parent.depth! + 1
       return el
@@ -364,9 +361,7 @@ function updateFromMap(
       oldChild.props.children = newChild
       return oldChild
     } else {
-      const n = createElement(ELEMENT_TYPE.fragment, {
-        children: newChild,
-      })
+      const n = fragment({ children: newChild })
       n.parent = parent
       n.depth = parent.depth! + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
@@ -396,74 +391,73 @@ function deleteRemainingChildren(appCtx: AppContext, vNode: VNode) {
   }
 }
 
-const missingKeyWarnings = new Set()
-function warnForMissingKey(parent: VNode, child: VNode) {
-  if (!__DEV__) return
-  if (missingKeyWarnings.has(parent)) return
-  if (parent.type === ELEMENT_TYPE.fragment && parent.props.array) {
-    if (child.props.key === null || child.props.key === undefined) {
-      const fn = getNearestParentFcTag(parent)
-      keyWarn(
-        `${fn} component produced a child in a list without a valid key prop`
-      )
-      missingKeyWarnings.add(parent)
-    }
-  }
-}
+// const duplicateKeyWarnings = new Set()
+// function warnOnInvalidKey(
+//   parent: VNode,
+//   child: unknown,
+//   knownKeys: Set<string> | null
+// ): Set<string> | null {
+//   if (!__DEV__) return null
+//   if (!isVNode(child)) {
+//     return knownKeys
+//   }
+//   warnForMissingKey(parent, child)
+//   const key = child.props.key
+//   if (typeof key !== "string") {
+//     return knownKeys
+//   }
+//   if (knownKeys === null) {
+//     knownKeys = new Set()
+//     knownKeys.add(key)
+//     return knownKeys
+//   }
+//   if (!knownKeys.has(key)) {
+//     knownKeys.add(key)
+//     return knownKeys
+//   }
 
-const duplicateKeyWarnings = new Set()
-function warnOnInvalidKey(
-  parent: VNode,
-  child: unknown,
-  knownKeys: Set<string> | null
-): Set<string> | null {
-  if (!__DEV__) return null
-  if (!isVNode(child)) {
-    return knownKeys
-  }
-  warnForMissingKey(parent, child)
-  const key = child.props.key
-  if (typeof key !== "string") {
-    return knownKeys
-  }
-  if (knownKeys === null) {
-    knownKeys = new Set()
-    knownKeys.add(key)
-    return knownKeys
-  }
-  if (!knownKeys.has(key)) {
-    knownKeys.add(key)
-    return knownKeys
-  }
+//   if (duplicateKeyWarnings.has(parent)) {
+//     return knownKeys
+//   }
+//   const fn = getNearestParentFcTag(parent)
+//   keyWarn(
+//     `${fn} component produced a child in a list with a duplicate key prop: "${key}"`
+//   )
+//   return knownKeys
+// }
 
-  if (duplicateKeyWarnings.has(parent)) {
-    return knownKeys
-  }
-  const fn = getNearestParentFcTag(parent)
-  keyWarn(
-    `${fn} component produced a child in a list with a duplicate key prop: "${key}"`
-  )
-  return knownKeys
-}
+// const missingKeyWarnings = new Set()
+// function warnForMissingKey(parent: VNode, child: VNode) {
+//   if (!__DEV__) return
+//   if (missingKeyWarnings.has(parent)) return
+//   if (parent.type !== fragmentSymbol) return
+//   if (child.props.key === null || child.props.key === undefined) {
+//     const fn = getNearestParentFcTag(parent)
+//     keyWarn(
+//       `${fn} component produced a child in a list without a valid key prop`
+//     )
+//     missingKeyWarnings.add(parent)
+//   }
+// }
 
-function keyWarn(str: string) {
-  console.error(
-    `[kaioken]: ${str}. See https://kaioken.dev/keys-warning for more information.`
-  )
-}
-const parentFcTagLookups = new WeakMap<VNode, string>()
-function getNearestParentFcTag(vNode: VNode) {
-  if (!parentFcTagLookups.has(vNode)) {
-    let p: VNode | undefined = vNode.parent
-    let fn: (Function & { displayName?: string }) | undefined
-    while (!fn && p) {
-      if (typeof p.type === "function") fn = p.type
-      p = p.parent
-    }
-    parentFcTagLookups.set(
-      vNode,
-      `<${fn?.displayName || fn?.name || "Anonymous Function"} />`
-    )
-  }
-  return parentFcTagLookups.get(vNode)
-}
+// function keyWarn(str: string) {
+//   console.error(
+//     `[kaioken]: ${str}. See https://kaioken.dev/keys-warning for more information.`
+//   )
+// }
+// const parentFcTagLookups = new WeakMap<VNode, string>()
+// function getNearestParentFcTag(vNode: VNode) {
+//   if (!parentFcTagLookups.has(vNode)) {
+//     let p: VNode | undefined = vNode.parent
+//     let fn: (Function & { displayName?: string }) | undefined
+//     while (!fn && p) {
+//       if (typeof p.type === "function") fn = p.type
+//       p = p.parent
+//     }
+//     parentFcTagLookups.set(
+//       vNode,
+//       `<${fn?.displayName || fn?.name || "Anonymous Function"} />`
+//     )
+//   }
+//   return parentFcTagLookups.get(vNode)
+// }

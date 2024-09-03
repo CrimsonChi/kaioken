@@ -1,16 +1,14 @@
-import { contextDataSymbol } from "./constants.js"
-import { fragment } from "./element.js"
+import { contextProviderSymbol } from "./constants.js"
+import { createElement } from "./element.js"
 
 export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
   const ctx: Kaioken.Context<T> = {
     Provider: ({ value, children }: Kaioken.ProviderProps<T>) => {
-      return fragment({
-        children: typeof children === "function" ? children(value) : children,
-        [contextDataSymbol]: {
-          value,
-          ctx,
-        },
-      })
+      return createElement(
+        contextProviderSymbol,
+        { value, ctx },
+        typeof children === "function" ? children(value) : children
+      )
     },
     default: () => defaultValue,
     set displayName(name: string) {

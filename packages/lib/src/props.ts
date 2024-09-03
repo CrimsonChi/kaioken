@@ -8,7 +8,9 @@ export function assertValidElementProps(vNode: Kaioken.VNode) {
   }
 }
 
-export function isValidElementKeyProp(value: unknown): value is JSX.ElementKey {
+export function isValidElementKeyProp(
+  value: unknown
+): value is string | number {
   return typeof value === "string" || typeof value === "number"
 }
 

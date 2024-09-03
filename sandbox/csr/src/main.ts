@@ -11,11 +11,13 @@ declare global {
   }
 }
 
-await mount(App, {
+const appCtx = await mount(App, {
   root,
   maxFrameMs: 16,
   name: "CSR app",
 })
+
+console.log("kaiokenInstance", appCtx)
 
 /* await mount(App, {
   root: root2,

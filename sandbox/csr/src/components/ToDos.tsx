@@ -18,7 +18,7 @@ function loadTodos(): ToDoItem[] {
 }
 
 export function Todos() {
-  const [ref, text, setText] = useModel("")
+  const [ref, text, setText] = useModel<HTMLInputElement>("")
   const [todos, setTodos] = useState(loadTodos)
   const completed = useMemo(() => todos.filter((t) => t.done), [todos])
   const pending = useMemo(() => todos.filter((t) => !t.done), [todos])

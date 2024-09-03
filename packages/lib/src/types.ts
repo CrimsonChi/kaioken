@@ -1,6 +1,10 @@
 import type { Signal, Signal as SignalClass } from "./signal"
 import type { Component, ComponentConstructor } from "./component"
-import type { EFFECT_TAG } from "./constants"
+import type {
+  contextProviderSymbol,
+  fragmentSymbol,
+  EFFECT_TAG,
+} from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
@@ -38,8 +42,7 @@ type ElementMap = {
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<HTMLTagToElement<K> | BaseElement>
-        //| Kaioken.Ref<HTMLTagToElement<K> | null>
-        | Signal<HTMLTagToElement<K> | null>
+        | Signal<HTMLTagToElement<K> | BaseElement | null>
     }
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
@@ -49,8 +52,7 @@ type ElementMap = {
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
-        | Kaioken.Ref<SVGTagToElement<K>>
-        //| Kaioken.Ref<SVGTagToElement<K> | null>
+        | Kaioken.Ref<SVGTagToElement<K> | BaseElement>
         | Signal<SVGTagToElement<K> | null>
     }
 } & {
@@ -139,8 +141,10 @@ declare global {
 
     type Signal<T> = SignalClass<T>
 
+    type ExoticSymbol = typeof fragmentSymbol | typeof contextProviderSymbol
+
     type VNode = {
-      type: string | Function | ComponentConstructor
+      type: string | Function | ComponentConstructor | ExoticSymbol
       dom?: SomeDom
       instance?: Component
       props: {

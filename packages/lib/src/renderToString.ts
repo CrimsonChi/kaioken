@@ -10,7 +10,11 @@ import {
   selfClosingTags,
 } from "./utils.js"
 import { Signal } from "./signal.js"
-import { ELEMENT_TYPE } from "./constants.js"
+import {
+  contextProviderSymbol,
+  ELEMENT_TYPE,
+  fragmentSymbol,
+} from "./constants.js"
 import { Component } from "./component.js"
 import { assertValidElementProps } from "./props.js"
 
@@ -53,7 +57,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   const type = el.type
   if (type === ELEMENT_TYPE.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
-  if (type === ELEMENT_TYPE.fragment) {
+  if (type === fragmentSymbol || type === contextProviderSymbol) {
     if (!Array.isArray(children)) return renderToString_internal(children, el)
     return children.map((c) => renderToString_internal(c, el, props)).join("")
   }

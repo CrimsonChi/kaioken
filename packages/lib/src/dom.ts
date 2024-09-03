@@ -111,7 +111,7 @@ function hydrateDom(vNode: VNode) {
   const nodeName = dom.nodeName.toLowerCase()
   if ((vNode.type as string) !== nodeName) {
     throw new Error(
-      `[kaioken]: Hydration mismatch - expected node of type ${vNode.type} but received ${nodeName}`
+      `[kaioken]: Hydration mismatch - expected node of type ${vNode.type.toString()} but received ${nodeName}`
     )
   }
   vNode.dom = dom

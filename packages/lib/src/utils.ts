@@ -1,8 +1,14 @@
 import { nodeToCtxMap, renderMode } from "./globals.js"
-import { REGEX_UNIT } from "./constants.js"
+import {
+  contextProviderSymbol,
+  fragmentSymbol,
+  REGEX_UNIT,
+} from "./constants.js"
 
 export {
   isVNode,
+  isFragment,
+  isContextProvider,
   vNodeContains,
   getVNodeAppContext,
   applyRecursive,
@@ -27,6 +33,16 @@ function sideEffectsEnabled() {
 
 function isVNode(thing: unknown): thing is Kaioken.VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
+}
+
+function isFragment(
+  thing: unknown
+): thing is Kaioken.VNode & { type: typeof fragmentSymbol } {
+  return isVNode(thing) && thing.type === fragmentSymbol
+}
+
+function isContextProvider(thing: unknown) {
+  return isVNode(thing) && thing.type === contextProviderSymbol
 }
 
 function getVNodeAppContext(node: Kaioken.VNode) {
