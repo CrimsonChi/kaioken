@@ -6,3 +6,4 @@ pnpm-lock.yaml
 sandbox/*
 !sandbox/csr
 !sandbox/ssr
+!sandbox/tauri

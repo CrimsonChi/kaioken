@@ -1,0 +1,26 @@
+{
+  "name": "kaioken-csr-template",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "preview": "start ./src-tauri/target/release/kaioken-tauri-template.exe",
+    "dev:vite": "vite",
+    "build:vite": "tsc && vite build",
+    "preview:vite": "vite preview"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.6.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "vite-plugin-kaioken": "0.9.2"
+  },
+  "dependencies": {
+    "kaioken": "0.27.2"
+  }
+}
