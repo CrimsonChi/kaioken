@@ -1,13 +1,17 @@
-import { useState } from "kaioken"
+import { type ElementProps, useState } from "kaioken"
 import { Chevron } from "./Chevron"
+
+type NodeDataSectionProps = {
+  title: string
+  children: JSX.Children
+} & ElementProps<"div">
 
 export function NodeDataSection({
   title,
   children,
-}: {
-  title: string
-  children: JSX.Children
-}) {
+  className,
+  ...rest
+}: NodeDataSectionProps) {
   const [collapsed, setCollapsed] = useState(true)
   return (
     <div className="flex flex-col">
@@ -23,7 +27,11 @@ export function NodeDataSection({
           {title}
         </h3>
       </button>
-      {collapsed ? null : <div className="p-2">{children}</div>}
+      {collapsed ? null : (
+        <div className={`p-2 ${className || ""}`} {...rest}>
+          {children}
+        </div>
+      )}
     </div>
   )
 }

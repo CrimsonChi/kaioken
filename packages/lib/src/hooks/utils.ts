@@ -1,5 +1,6 @@
+import { __DEV__ } from "src/env.js"
 import { node, nodeToCtxMap } from "../globals.js"
-import { getVNodeAppContext } from "../utils.js"
+import { getVNodeAppContext, noop } from "../utils.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
@@ -7,11 +8,29 @@ export {
   useHook,
   useVNode,
   useAppContext,
+  useHookDebugGroup,
   useRequestUpdate,
+  HookDebugGroupAction,
   type Hook,
   type HookCallback,
   type HookCallbackState,
 }
+
+enum HookDebugGroupAction {
+  Start = "start",
+  End = "end",
+}
+
+const useHookDebugGroup = (name: string, action: HookDebugGroupAction) => {
+  if (__DEV__) {
+    return useHook(
+      "devtools:useHookDebugGroup",
+      { displayName: name, action },
+      noop
+    )
+  }
+}
+
 /**
  * Used obtain an 'requestUpdate' function for the current component.
  */

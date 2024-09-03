@@ -1,4 +1,13 @@
-import { Router, Route, useRouter, useRef } from "kaioken"
+import {
+  Router,
+  Route,
+  useRouter,
+  useRef,
+  useState,
+  useEffect,
+  useHookDebugGroup,
+  HookDebugGroupAction,
+} from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -17,11 +26,41 @@ import { UseModelExample } from "./components/useModelExample"
 import { GlobalComputedExample } from "./components/ComputedExample"
 import { LocalComputedExample } from "./components/ComputedExample"
 
+function useTimer() {
+  useHookDebugGroup("useTimer", HookDebugGroupAction.Start)
+  const [time, setTime] = useState(0)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime((t) => t + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+  useHookDebugGroup("useTimer", HookDebugGroupAction.End)
+  return time
+}
+
+function useSecondsList() {
+  useHookDebugGroup("useSecondsList", HookDebugGroupAction.Start)
+  const tick = useTimer()
+  const [items, setItems] = useState<number[]>([])
+  useEffect(() => {
+    setItems((items) => [...items, tick])
+  }, [tick])
+  useHookDebugGroup("useSecondsList", HookDebugGroupAction.End)
+  return items
+}
+
 function Home() {
+  const seconds = useSecondsList()
   const ref = useRef<Element>(null)
   return (
     <div ref={ref} className="flex flex-col gap-2">
       Home
+      <ul>
+        {seconds.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ul>
     </div>
   )
 }
