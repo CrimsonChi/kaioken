@@ -115,6 +115,7 @@ declare global {
       displayName?: string
     }
     type FCProps<T = {}> = T & { children?: JSX.Children }
+    type InferProps<T> = T extends Kaioken.FC<infer P> ? P : never
 
     interface HookDebug<T extends Record<string, any>> {
       get: () => T

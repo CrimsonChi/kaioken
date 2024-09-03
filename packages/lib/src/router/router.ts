@@ -1,8 +1,13 @@
 import { createElement } from "../element.js"
 import { useState, useEffect, useMemo, useContext } from "../hooks/index.js"
 import { __DEV__ } from "../env.js"
-import { isRoute } from "./route.js"
+import {
+  parsePathParams,
+  parseSearchParams,
+  routeMatchesPath,
+} from "./routerUtils.js"
 import { createContext } from "../context.js"
+import { isRoute, Route } from "./route.js"
 
 type RouterCtx = {
   params: Record<string, string>
@@ -36,21 +41,21 @@ interface RouterProps {
   basePath?: string
   children?: JSX.Children
 }
-
+const initLoc = () => ({
+  pathname: window.location.pathname,
+  search: window.location.search,
+})
 export function Router(props: RouterProps) {
   const parentRouterContext = useContext(RouterContext, false)
   const dynamicParentPath = parentRouterContext.isDefault
     ? undefined
     : parentRouterContext.routePath
   const dynamicParentPathSegments = useMemo(
-    () => dynamicParentPath?.split("/").filter(Boolean),
+    () => dynamicParentPath?.split("/").filter(Boolean) || [],
     [dynamicParentPath]
   )
 
-  const [loc, setLoc] = useState({
-    pathname: window.location.pathname,
-    search: window.location.search,
-  })
+  const [loc, setLoc] = useState(initLoc)
   const query = useMemo(() => parseSearchParams(loc.search), [loc.search])
   const realPathSegments = useMemo(
     () => loc.pathname.split("/").filter(Boolean),
@@ -69,7 +74,7 @@ export function Router(props: RouterProps) {
   }, [])
 
   type RouteComponent = Kaioken.VNode & {
-    props: { path: string; fallthrough?: boolean; element: JSX.Element }
+    props: Kaioken.InferProps<typeof Route>
   }
   let fallbackRoute: RouteComponent | undefined
   let route: RouteComponent | undefined
@@ -96,7 +101,7 @@ export function Router(props: RouterProps) {
       .filter(Boolean)
     if (
       routeMatchesPath(
-        (dynamicParentPathSegments || []).concat(dynamicChildPathSegments),
+        dynamicParentPathSegments.concat(dynamicChildPathSegments),
         realPathSegments,
         child.props.fallthrough
       )
@@ -112,7 +117,7 @@ export function Router(props: RouterProps) {
       .split("/")
       .filter(Boolean)
     parsedParams = parsePathParams(
-      (dynamicParentPathSegments || []).concat(dynamicChildPathSegments),
+      dynamicParentPathSegments.concat(dynamicChildPathSegments),
       realPathSegments
     )
   }
@@ -134,52 +139,4 @@ export function Router(props: RouterProps) {
     },
     route ?? fallbackRoute ?? null
   )
-}
-
-function routeMatchesPath(
-  dynamicPathSegments: string[],
-  realPathSegments: string[],
-  fallthrough?: boolean
-) {
-  if (!fallthrough && dynamicPathSegments.length < realPathSegments.length) {
-    return false
-  }
-
-  for (let i = 0; i < dynamicPathSegments.length; i++) {
-    const segment = dynamicPathSegments[i]
-    if (segment.startsWith(":")) {
-      continue
-    } else if (segment !== realPathSegments[i]) {
-      return false
-    }
-  }
-
-  return true
-}
-
-function parsePathParams(
-  dynamicPathSegments: string[],
-  realPathSegments: string[]
-) {
-  const params: Record<string, string> = {}
-  for (let i = 0; i < dynamicPathSegments.length; i++) {
-    const segment = dynamicPathSegments[i]
-    if (segment.startsWith(":")) {
-      params[segment.slice(1)] = realPathSegments[i]
-    }
-  }
-  return params
-}
-
-function parseSearchParams(search: string) {
-  const parsed: Record<string, string> = {}
-  const str = search.split("?")[1]
-  if (!str || str === "") return parsed
-
-  const parts = str.split("&")
-  for (let i = 0; i < parts.length; i++) {
-    const [key, val] = parts[i].split("=")
-    parsed[key] = val
-  }
-  return parsed
 }
