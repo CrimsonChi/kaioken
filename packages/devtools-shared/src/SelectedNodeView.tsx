@@ -183,7 +183,7 @@ function HookTreeDisplay({
     return (
       <NodeDataSection
         title={node.name}
-        className={`flex flex-col gap-2 ${depth > 0 ? "pl-12" : "pl-6"}`}
+        className={`bg-[#ffffff06] border border-[#fff1] flex flex-col gap-2 ${depth > 0 ? "pl-12" : "pl-6"}`}
       >
         {node.children.map((child) => (
           <HookTreeDisplay
