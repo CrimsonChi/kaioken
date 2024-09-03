@@ -19,9 +19,9 @@ export const FiftyFiftySplitter = (props: {
   const prevFirstContainerWidth = signal(0)
   const firstContainerWidth = signal(0)
 
-  const firstViewContainer = useRef<HTMLElement | null>(null)
+  const firstViewContainer = useRef<Element>(null)
   const firstViewContainerBounding = useElementBounding(firstViewContainer)
-  const mainContainer = useRef<HTMLElement | null>(null)
+  const mainContainer = useRef<Element>(null)
 
   const firstView = Array.isArray(props.children) ? props.children[0] : <></>
   const secondView = Array.isArray(props.children) ? props.children[1] : <></>

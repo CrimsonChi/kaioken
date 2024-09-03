@@ -12,8 +12,8 @@ import { reinitializeBtnPos } from "../utils"
 export const useBtnPos = () => {
   const { mouse } = useMouse()
   const startMouse = signal<null | { x: number; y: number }>(null)
-  const btnRef = useRef<null | HTMLElement>(null)
-  const viewPortRef = useRef<null | HTMLElement>(null)
+  const btnRef = useRef<HTMLElement>(null)
+  const viewPortRef = useRef<HTMLElement>(null)
   const elementBound = useElementBounding(btnRef)
   const lastDroppedCoord = signal({ x: -PADDING, y: -PADDING })
   const btnCoords = signal({ x: -PADDING, y: -PADDING })
@@ -64,6 +64,7 @@ export const useBtnPos = () => {
   useEventListener("mouseup", () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
     }
     if (startMouse.value) {
       startMouse.value = null

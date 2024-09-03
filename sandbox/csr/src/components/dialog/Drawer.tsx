@@ -27,7 +27,7 @@ type DrawerProps = {
 }
 
 function Drawer({ state, close }: DrawerProps) {
-  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const wrapperRef = useRef<Element>(null)
   if (state == "exited") return null
   const opacity = state === "entered" ? "1" : "0"
   const offsetY = state === "entered" ? 0 : 15

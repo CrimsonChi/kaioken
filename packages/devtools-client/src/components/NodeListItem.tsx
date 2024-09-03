@@ -33,7 +33,7 @@ export function NodeListItem({
   )
   const [collapsed, setCollapsed] = useState(true)
   const isSelected = selectedNode === node
-  const ref = useRef<HTMLElement | null>(null)
+  const ref = useRef<Element>(null)
   const id = useMemo(() => {
     return crypto.randomUUID()
   }, [])

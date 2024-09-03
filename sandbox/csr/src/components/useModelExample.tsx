@@ -14,7 +14,7 @@ export function UseModelExample() {
 }
 
 function ModelTextArea() {
-  const [ref, val] = useModel<HTMLTextAreaElement>("test")
+  const [ref, val] = useModel("test")
   console.log("ModelTextArea", val)
   return (
     <div>
@@ -24,7 +24,7 @@ function ModelTextArea() {
 }
 
 function ModelInputRange() {
-  const [ref, val] = useModel<HTMLInputElement>("12")
+  const [ref, val] = useModel("12")
   console.log("ModelInputRange", val)
   return (
     <div>
@@ -34,7 +34,7 @@ function ModelInputRange() {
 }
 
 function ModelInputFile() {
-  const [ref, val, setVal] = useModel<HTMLInputElement, FileList | null>(null)
+  const [ref, val, setVal] = useModel(null as FileList | null)
   console.log("ModelInputFile", val)
   return (
     <div>
@@ -45,7 +45,7 @@ function ModelInputFile() {
 }
 
 function ModelInputCheck() {
-  const [ref, val] = useModel<HTMLInputElement, boolean>(true)
+  const [ref, val] = useModel(true)
   console.log("ModelInputCheck", val)
   return (
     <div>
@@ -55,7 +55,7 @@ function ModelInputCheck() {
 }
 
 function ModelInputText() {
-  const [ref, val, setVal] = useModel<HTMLInputElement>("test")
+  const [ref, val, setVal] = useModel("test")
   //setVal("")
   console.log("ModelInputText", val)
   return (
@@ -66,7 +66,7 @@ function ModelInputText() {
   )
 }
 function ModelSelect() {
-  const [ref, val] = useModel<HTMLSelectElement>("B")
+  const [ref, val] = useModel("B")
   console.log("ModelSelect", val)
   return (
     <div>

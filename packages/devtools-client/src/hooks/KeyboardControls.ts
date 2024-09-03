@@ -5,7 +5,7 @@ import { useRef } from "kaioken"
 
 export const useKeyboardControls = () => {
   const { setSelectedNode } = useDevtoolsStore((state) => state.selectedNode)
-  const searchRef = useRef<HTMLElement | null>(null)
+  const searchRef = useRef<HTMLElement>(null)
 
   const getMetaDataFromNode = (domNode: Element | null) => {
     if (!domNode) return null

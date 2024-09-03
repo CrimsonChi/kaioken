@@ -13,6 +13,8 @@ import type {
 
 export type { ElementProps }
 
+type BaseElement = Element
+
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
     ? HTMLElementTagNameMap[T]
@@ -35,7 +37,7 @@ type ElementMap = {
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
-        | Kaioken.Ref<HTMLTagToElement<K>>
+        | Kaioken.Ref<HTMLTagToElement<K> | BaseElement>
         //| Kaioken.Ref<HTMLTagToElement<K> | null>
         | Signal<HTMLTagToElement<K> | null>
     }

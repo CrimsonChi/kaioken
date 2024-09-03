@@ -1,4 +1,4 @@
-import { Router, Route, useRouter } from "kaioken"
+import { Router, Route, useRouter, useRef } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -18,7 +18,12 @@ import { GlobalComputedExample } from "./components/ComputedExample"
 import { LocalComputedExample } from "./components/ComputedExample"
 
 function Home() {
-  return <div className="flex flex-col gap-2">Home</div>
+  const ref = useRef<Element>(null)
+  return (
+    <div ref={ref} className="flex flex-col gap-2">
+      Home
+    </div>
+  )
 }
 
 export function App() {
