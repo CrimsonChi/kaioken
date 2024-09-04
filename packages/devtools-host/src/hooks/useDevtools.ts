@@ -13,7 +13,13 @@ export const useDevTools = () => {
 
   const handleOpen = useCallback(
     (onOpened?: (window: Window) => void) => {
-      if (_popup) return _popup.focus()
+      if (_popup) {
+        if (_popup.closed) {
+          popup.value = null
+        } else {
+          return _popup.focus()
+        }
+      }
       const savedSize_raw = sessionStorage.getItem(SIZE_STORAGE_KEY)
       const size = savedSize_raw
         ? (JSON.parse(savedSize_raw) as SavedSize)

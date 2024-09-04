@@ -31,4 +31,8 @@ if ("window" in globalThis) {
     window.addEventListener("close", handleMainWindowClose)
     window.addEventListener("beforeunload", handleMainWindowClose)
   })
+  // @ts-expect-error We have our own custom type here
+  window.__kaioken?.on("devtools:openVSCode", (vsCodeLink: string) => {
+    window.open(vsCodeLink)
+  })
 }

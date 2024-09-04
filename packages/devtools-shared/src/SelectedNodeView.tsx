@@ -68,6 +68,12 @@ export function SelectedNodeView({
           <a
             className="text-[10px] flex gap-1 opacity-50 hover:opacity-100 transition-opacity"
             href={vsCodeLink}
+            onclick={(e) => {
+              e.preventDefault()
+              // @ts-expect-error we have our own event
+              kaiokenGlobal?.emit("devtools:openVSCode", vsCodeLink)
+            }}
+            //target="_top"
             title="Open in VS Code"
           >
             Open in VS Code
