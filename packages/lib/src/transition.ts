@@ -22,24 +22,6 @@ type TransitionProps = {
   onTransitionEnd?: (state: "entered" | "exited") => void
 }
 
-const defaultDuration = 150
-function getTiming(
-  transitionState: "entered" | "exited",
-  duration: TransitionProps["duration"]
-): number {
-  if (typeof duration === "number") return duration
-  switch (transitionState) {
-    case "entered":
-      return duration?.in ?? defaultDuration
-    case "exited":
-      return duration?.out ?? defaultDuration
-  }
-}
-
-function clearTimeout(id: number | null) {
-  if (id != null) window.clearTimeout(id)
-}
-
 export function Transition(props: TransitionProps) {
   const [tState, setTState] = useState<TransitionState>(
     props.initialState || "exited"
@@ -61,6 +43,9 @@ export function Transition(props: TransitionProps) {
   const setTransitionState = useCallback((transitionState: TransitionState) => {
     clearTimeout(timeoutRef.current)
     setTState(transitionState)
+    if (transitionState === "entered" || transitionState === "exited") {
+      if (props.onTransitionEnd) props.onTransitionEnd(transitionState)
+    }
   }, [])
 
   const queueStateChange = useCallback(
@@ -74,4 +59,22 @@ export function Transition(props: TransitionProps) {
   )
 
   return props.element(tState)
+}
+
+const defaultDuration = 150
+function getTiming(
+  transitionState: "entered" | "exited",
+  duration: TransitionProps["duration"]
+): number {
+  if (typeof duration === "number") return duration
+  switch (transitionState) {
+    case "entered":
+      return duration?.in ?? defaultDuration
+    case "exited":
+      return duration?.out ?? defaultDuration
+  }
+}
+
+function clearTimeout(id: number | null) {
+  if (id != null) window.clearTimeout(id)
 }
