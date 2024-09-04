@@ -1,5 +1,5 @@
 import { Readable } from "node:stream"
-import { Component, createElement } from "../index.js"
+import { createElement } from "../index.js"
 import { AppContext } from "../appContext.js"
 import { renderMode, ctx, node } from "../globals.js"
 
@@ -97,11 +97,9 @@ function renderToStream_internal<T extends Record<string, unknown>>(
 
   if (typeof type !== "string") {
     node.current = el
-    if (Component.isCtor(type)) {
-      el.instance = new type(props)
-      return renderToStream_internal(state, el.instance.render(), parent, props)
-    }
-    return renderToStream_internal(state, type(props), parent, props)
+    const res = type(props)
+    node.current = undefined
+    return renderToStream_internal(state, res, parent, props)
   }
 
   assertValidElementProps(el)

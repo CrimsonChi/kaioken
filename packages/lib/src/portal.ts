@@ -1,37 +1,28 @@
-import { Component } from "./component.js"
 import { renderMode } from "./globals.js"
-import { getVNodeAppContext } from "./utils.js"
+import { useVNode } from "./hooks/utils.js"
+import { getVNodeAppContext, isVNode } from "./utils.js"
 
-export { Portal }
+export { Portal, isPortal }
 
 type PortalProps = {
   children?: JSX.Children
   container: HTMLElement
 }
 
-const portalIdentifier = Symbol.for("kaioken.portal")
-
-class Portal extends Component<PortalProps> {
-  doNotModifyDom = true
-  static [portalIdentifier] = true
-
-  constructor(props: PortalProps) {
-    super(props)
-    this.vNode.dom = this.props.container
+function Portal({ children, container }: PortalProps) {
+  const node = useVNode()
+  const ctx = getVNodeAppContext(node)
+  node.dom = container
+  if (!(node.dom instanceof HTMLElement)) return null
+  if (renderMode.current === "hydrate") {
+    ctx.scheduler?.nextIdle(() => ctx.requestUpdate(node))
+    return null
   }
+  return children
+}
 
-  static isPortal(type: unknown): type is typeof Portal {
-    return typeof type === "function" && portalIdentifier in type
-  }
-
-  render(): JSX.Element {
-    if (renderMode.current === "hydrate") {
-      const ctx = getVNodeAppContext(this.vNode)
-      ctx.scheduler?.nextIdle(() => {
-        ctx.requestUpdate(this.vNode)
-      })
-      return null
-    }
-    return this.props.children ?? null
-  }
+function isPortal(
+  thing: unknown
+): thing is Kaioken.VNode & { type: typeof Portal } {
+  return isVNode(thing) && thing.type === Portal
 }

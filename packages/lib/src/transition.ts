@@ -1,9 +1,17 @@
-import { Component } from "./component.js"
-import { getVNodeAppContext } from "./utils.js"
+import { useCallback } from "./hooks/useCallback.js"
+import { useEffect } from "./hooks/useEffect.js"
+import { useLayoutEffect } from "./hooks/useLayoutEffect.js"
+import { useRef } from "./hooks/useRef.js"
+import { useState } from "./hooks/useState.js"
 
 export type TransitionState = "entering" | "entered" | "exiting" | "exited"
 type TransitionProps = {
   in: boolean
+  /**
+   * Initial state of the transition
+   * @default "exited"
+   */
+  initialState?: "entered" | "exited"
   duration?:
     | number
     | {
@@ -14,87 +22,56 @@ type TransitionProps = {
   onTransitionEnd?: (state: "entered" | "exited") => void
 }
 
-export class Transition extends Component<TransitionProps> {
-  defaultDuration = 150
-  state = {
-    transitionState: "exited" as TransitionState,
-    timeoutRef: null as number | null,
+const defaultDuration = 150
+function getTiming(
+  transitionState: "entered" | "exited",
+  duration: TransitionProps["duration"]
+): number {
+  if (typeof duration === "number") return duration
+  switch (transitionState) {
+    case "entered":
+      return duration?.in ?? defaultDuration
+    case "exited":
+      return duration?.out ?? defaultDuration
   }
+}
 
-  constructor(props: TransitionProps) {
-    super(props)
-  }
+function clearTimeout(id: number | null) {
+  if (id != null) window.clearTimeout(id)
+}
 
-  render(): JSX.Element {
-    return this.props.element(this.state.transitionState)
-  }
+export function Transition(props: TransitionProps) {
+  const [tState, setTState] = useState<TransitionState>(
+    props.initialState || "exited"
+  )
+  const timeoutRef = useRef<number | null>(null)
 
-  clearTimeout(): void {
-    if (this.state.timeoutRef) clearTimeout(this.state.timeoutRef)
-    this.state.timeoutRef = null
-  }
-
-  componentWillUnmount(): void {
-    this.clearTimeout()
-  }
-
-  componentDidMount(): void {
-    if (this.props.in) {
-      getVNodeAppContext(this.vNode).scheduler?.nextIdle(() => {
-        this.setTransitionState("entering")
-        this.queueStateChange("entered")
-      })
+  useLayoutEffect(() => {
+    if (props.in && tState !== "entered" && tState !== "entering") {
+      setTransitionState("entering")
+      queueStateChange("entered")
+    } else if (!props.in && tState !== "exited" && tState !== "exiting") {
+      setTransitionState("exiting")
+      queueStateChange("exited")
     }
-  }
-  componentDidUpdate(): void {
-    if (
-      this.props.in &&
-      this.state.transitionState !== "entered" &&
-      this.state.transitionState !== "entering"
-    ) {
-      this.setTransitionState("entering")
-      this.queueStateChange("entered")
-    } else if (
-      !this.props.in &&
-      this.state.transitionState !== "exited" &&
-      this.state.transitionState !== "exiting"
-    ) {
-      this.setTransitionState("exiting")
-      this.queueStateChange("exited")
-    }
-  }
+  }, [props.in, tState])
 
-  setTransitionState(transitionState: TransitionState): void {
-    this.clearTimeout()
-    this.setState((prev) => ({
-      ...prev,
-      transitionState,
-    }))
+  useEffect(() => () => clearTimeout(timeoutRef.current), [])
 
-    if (
-      (transitionState === "exited" || transitionState === "entered") &&
-      this.props.onTransitionEnd
-    ) {
-      getVNodeAppContext(this.vNode).scheduler?.nextIdle(() =>
-        this.props.onTransitionEnd!(transitionState)
+  const setTransitionState = useCallback((transitionState: TransitionState) => {
+    clearTimeout(timeoutRef.current)
+    setTState(transitionState)
+  }, [])
+
+  const queueStateChange = useCallback(
+    (transitionState: "entered" | "exited") => {
+      timeoutRef.current = window.setTimeout(
+        () => setTransitionState(transitionState),
+        getTiming(transitionState, props.duration)
       )
-    }
-  }
+    },
+    [props.duration]
+  )
 
-  queueStateChange(transitionState: "entered" | "exited"): void {
-    this.state.timeoutRef = window.setTimeout(
-      () => this.setTransitionState(transitionState),
-      this.getTiming(transitionState)
-    )
-  }
-
-  getTiming(transitionState: "entered" | "exited"): number {
-    if (typeof this.props.duration === "number") return this.props.duration
-    switch (transitionState) {
-      case "entered":
-        return this.props.duration?.in ?? this.defaultDuration
-      case "exited":
-        return this.props.duration?.out ?? this.defaultDuration
-    }
-  }
+  return props.element(tState)
 }

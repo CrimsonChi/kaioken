@@ -5,7 +5,6 @@ import { createElement, fragment } from "./element.js"
 
 export type * from "./types"
 export * from "./appContext.js"
-export * from "./component.js"
 export * from "./context.js"
 export * from "./hooks/index.js"
 export * from "./memo.js"

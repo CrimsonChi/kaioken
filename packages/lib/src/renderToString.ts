@@ -15,7 +15,6 @@ import {
   ELEMENT_TYPE,
   fragmentSymbol,
 } from "./constants.js"
-import { Component } from "./component.js"
 import { assertValidElementProps } from "./props.js"
 
 export function renderToString<T extends Record<string, unknown>>(
@@ -64,11 +63,9 @@ function renderToString_internal<T extends Record<string, unknown>>(
 
   if (typeof type !== "string") {
     node.current = el
-    if (Component.isCtor(type)) {
-      el.instance = new type(props)
-      return renderToString_internal(el.instance.render(), parent, props)
-    }
-    return renderToString_internal(type(props), el, props)
+    const res = type(props)
+    node.current = undefined
+    return renderToString_internal(res, el, props)
   }
 
   assertValidElementProps(el)

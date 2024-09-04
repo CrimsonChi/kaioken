@@ -8,12 +8,11 @@ import {
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
-import { Component } from "./component.js"
 import { Signal } from "./signal.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { MaybeDom, SomeDom, SomeElement } from "./types.dom.js"
-import { Portal } from "./portal.js"
+import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 
 export { commitWork, createDom, updateDom, hydrateDom, setRef, clearRef }
@@ -70,7 +69,7 @@ function createDom(vNode: VNode): SomeDom {
 }
 
 function updateDom(node: VNode) {
-  if (node.instance?.doNotModifyDom) return
+  if (isPortal(node)) return
   const dom = node.dom as SomeDom
   const prevProps: Record<string, any> = node.prev?.props ?? {}
   const nextProps: Record<string, any> = node.props ?? {}
@@ -252,7 +251,7 @@ function placeDom(vNode: VNode) {
     return
   }
   const { element, node: mountParentNode } = mntParent
-  if (Portal.isPortal(mountParentNode.type) && !dom.isConnected) {
+  if (isPortal(mountParentNode) && !dom.isConnected) {
     element.appendChild(dom)
     return
   }
@@ -268,11 +267,11 @@ function placeDom(vNode: VNode) {
 
     while (stack.length) {
       const n = stack.pop()!
-      const isPortal = Portal.isPortal(n.type)
+      const _isPortal = isPortal(n)
       if (n.dom === dom) break // once we meet the dom we're placing, stop
-      if (!isPortal && n.dom) prevDom = n.dom
+      if (!_isPortal && n.dom) prevDom = n.dom
       if (n.sibling) stack.push(n.sibling)
-      if (!isPortal && !n.dom && n.child) stack.push(n.child)
+      if (!_isPortal && !n.dom && n.child) stack.push(n.child)
     }
     if (!prevDom) {
       element.insertBefore(dom, element.firstChild)
@@ -349,7 +348,7 @@ function commitDom(n: VNode) {
   if (renderMode.current === "hydrate") {
     return
   }
-  if (n.instance?.doNotModifyDom) return
+  if (isPortal(n)) return
   if (!dom.isConnected || n.effectTag === EFFECT_TAG.PLACEMENT) {
     placeDom(n)
   }
@@ -363,11 +362,7 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
-    let skipDomRemoval = false
-    if (Component.isCtor(n.type) && n.instance) {
-      n.instance.componentWillUnmount?.()
-      if (n.instance.doNotModifyDom) skipDomRemoval = true
-    }
+    let skipDomRemoval = isPortal(n)
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
     if (n.dom) {

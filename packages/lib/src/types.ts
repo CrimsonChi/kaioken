@@ -1,5 +1,4 @@
 import type { Signal, Signal as SignalClass } from "./signal"
-import type { Component, ComponentConstructor } from "./component"
 import type {
   contextProviderSymbol,
   fragmentSymbol,
@@ -145,9 +144,8 @@ declare global {
     type ExoticSymbol = typeof fragmentSymbol | typeof contextProviderSymbol
 
     type VNode = {
-      type: string | Function | ComponentConstructor | ExoticSymbol
+      type: string | Function | ExoticSymbol
       dom?: SomeDom
-      instance?: Component
       props: {
         [key: string]: any
         children?: unknown

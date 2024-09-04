@@ -1,5 +1,4 @@
 import type { AppContext } from "./appContext"
-import { Component, ComponentConstructor } from "./component.js"
 import {
   CONSECUTIVE_DIRTY_LIMIT,
   contextProviderSymbol,
@@ -303,9 +302,7 @@ export class Scheduler {
     const skip = frozen && vNode.effectTag !== EFFECT_TAG.PLACEMENT
     if (!skip) {
       try {
-        if (Component.isCtor(vNode.type)) {
-          this.updateClassComponent(vNode)
-        } else if (vNode.type instanceof Function) {
+        if (typeof vNode.type === "function") {
           this.updateFunctionComponent(vNode)
         } else if (
           vNode.type === fragmentSymbol ||
@@ -349,35 +346,6 @@ export class Scheduler {
         hydrationStack.pop()
       }
     }
-  }
-
-  private updateClassComponent(vNode: VNode) {
-    node.current = vNode
-    const type = vNode.type as ComponentConstructor
-    if (!vNode.instance) {
-      const instance = vNode.prev?.instance ?? new type(vNode.props)
-      vNode.instance = instance
-    } else {
-      vNode.instance.props = vNode.props
-    }
-
-    vNode.child =
-      reconcileChildren(
-        this.appCtx,
-        vNode,
-        vNode.child || null,
-        vNode.instance.render()
-      ) || undefined
-
-    if (!vNode.prev) {
-      const onMounted = vNode.instance.componentDidMount?.bind(vNode.instance)
-      if (onMounted) this.appCtx.queueEffect(vNode, onMounted)
-    } else {
-      const onUpdated = vNode.instance.componentDidUpdate?.bind(vNode.instance)
-      if (onUpdated) this.appCtx.queueEffect(vNode, onUpdated)
-    }
-
-    node.current = undefined
   }
 
   private updateFunctionComponent(vNode: VNode) {
