@@ -52,7 +52,7 @@ function useSecondsList() {
 
 function Home() {
   const seconds = useSecondsList()
-  const ref = useRef<Element>(null)
+  const ref = useRef<HTMLDivElement>(null)
   return (
     <div ref={ref} className="flex flex-col gap-2">
       Home

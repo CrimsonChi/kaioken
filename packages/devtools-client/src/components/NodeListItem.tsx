@@ -1,11 +1,4 @@
-import {
-  useState,
-  fragment,
-  useMemo,
-  useEffect,
-  useRef,
-  useContext,
-} from "kaioken"
+import { useState, fragment, useMemo, useEffect, useContext } from "kaioken"
 import { Chevron } from "devtools-shared"
 import { useDevtoolsStore } from "../store"
 import {
@@ -33,7 +26,6 @@ export function NodeListItem({
   )
   const [collapsed, setCollapsed] = useState(true)
   const isSelected = selectedNode === node
-  const ref = useRef<Element>(null)
   const id = useMemo(() => {
     return crypto.randomUUID()
   }, [])
@@ -81,7 +73,6 @@ export function NodeListItem({
     <>
       <div className="pl-4 mb-1">
         <h2
-          ref={ref}
           onclick={() => {
             inspectComponent.value = null
             setSelectedNode(isSelected ? null : (node as any))
