@@ -1,4 +1,10 @@
-import { AppContext, Signal, useEffect, useRequestUpdate } from "kaioken"
+import {
+  AppContext,
+  Signal,
+  useEffect,
+  useMemo,
+  useRequestUpdate,
+} from "kaioken"
 import {
   applyObjectChangeFromKeys,
   getNodeFilePath,
@@ -49,18 +55,25 @@ export function SelectedNodeView({
 
   const nodeHookTree = makeHookTree(selectedNode)
 
+  const vsCodeLink = useMemo<string | null>(() => {
+    const filePath = getNodeFilePath(selectedNode)
+    return filePath ? `vscode://file/${filePath}` : null
+  }, [selectedNode])
+
   return (
     <div className="flex-grow p-2 sticky top-0">
       <h2 className="flex justify-between items-center font-bold mb-2 pb-2 border-b-2 border-neutral-800">
         {"<" + getNodeName(selectedNode) + ">"}
-        <a
-          className="text-[10px] flex gap-1 opacity-50 hover:opacity-100 transition-opacity"
-          href={`vscode://file/${getNodeFilePath(selectedNode)}`}
-          title="Open in VS Code"
-        >
-          Open in VS Code
-          <VSCodeIcon className="text-blue-500 w-4 h-4 opacity-75 hover:opacity-100 transition-opacity" />
-        </a>
+        {vsCodeLink && (
+          <a
+            className="text-[10px] flex gap-1 opacity-50 hover:opacity-100 transition-opacity"
+            href={vsCodeLink}
+            title="Open in VS Code"
+          >
+            Open in VS Code
+            <VSCodeIcon className="text-blue-500 w-4 h-4 opacity-75 hover:opacity-100 transition-opacity" />
+          </a>
+        )}
         <button onclick={refresh}>
           <RefreshIcon className="w-5 h-5" />
         </button>
