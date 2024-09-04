@@ -20,3 +20,6 @@ export function getNodeName(node: Kaioken.VNode) {
     ((node.type as Function).name || "Anonymous Function")
   )
 }
+
+export const getNodeFilePath = (node: Kaioken.VNode & { type: Function }) =>
+  node.type.toString().match(/\/\/ \[kaioken_devtools\]:(.*)/)?.[1]

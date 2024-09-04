@@ -91,6 +91,7 @@ export default function kaioken(
       try {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
+          code = transformIncludeFilePath(ast.body as AstNode[], code, id)
           code = `
 import {applyRecursive} from "kaioken/utils";\n
 ${code}\n
@@ -137,7 +138,7 @@ interface AstNodeId {
 interface AstNode {
   start: number
   end: number
-  type: string
+  type: "FunctionDeclaration" | "BlockStatement" | (string & {})
   body?: AstNode | AstNode[]
   declaration?: AstNode
   declarations?: AstNode[]
@@ -153,6 +154,47 @@ interface AstNode {
   consequent?: AstNode
   alternate?: AstNode
   local?: AstNode & { name: string }
+}
+
+const createFilePathComment = (filePath: string) =>
+  `// [kaioken_devtools]:${filePath}`
+
+function transformIncludeFilePath(nodes: AstNode[], code: string, id: string) {
+  const commentText = createFilePathComment(id)
+  let offset = 0
+
+  const insertToFunctionDeclarationBody = (
+    body: AstNode & { body: AstNode[] }
+  ) => {
+    const insertPosition = body.start + 1
+    code =
+      code.slice(0, insertPosition + offset) +
+      commentText +
+      code.slice(insertPosition + offset)
+
+    offset += commentText.length
+  }
+  // for each function that contains `kaioken.createElement`, inject the file path as a comment node inside of the function body
+  for (const node of nodes) {
+    if (!nodeContainsCreateElement(node)) continue
+    if (
+      node.type === "FunctionDeclaration" &&
+      node.body &&
+      !Array.isArray(node.body)
+    ) {
+      const body = node.body as AstNode & { body: AstNode[] }
+      insertToFunctionDeclarationBody(body)
+    } else if (
+      node.type === "ExportNamedDeclaration" ||
+      node.type === "ExportDefaultDeclaration"
+    ) {
+      const dec = node.declaration as AstNode
+      if (!dec || dec.type !== "FunctionDeclaration") continue
+      const body = dec.body as AstNode & { body: AstNode[] }
+      insertToFunctionDeclarationBody(body)
+    }
+  }
+  return code
 }
 
 function findExportedComponentNames(nodes: AstNode[]): string[] {
@@ -231,6 +273,7 @@ function nodeContainsCreateElement(node: AstNode): boolean {
     (node.callee && nodeContainsCreateElement(node.callee)) ||
     (node.arguments &&
       node.arguments.some((arg) => nodeContainsCreateElement(arg))) ||
+    (node.declaration && nodeContainsCreateElement(node.declaration)) ||
     (node.declarations &&
       node.declarations.some((decl) => nodeContainsCreateElement(decl)))
   ) {
