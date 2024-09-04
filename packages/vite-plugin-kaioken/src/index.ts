@@ -149,9 +149,10 @@ interface AstNode {
   argument?: AstNode
   arguments?: AstNode[]
   specifiers?: AstNode[]
+  cases?: AstNode[]
   callee?: AstNode
   exported?: AstNode & { name: string }
-  consequent?: AstNode
+  consequent?: AstNode | AstNode[]
   alternate?: AstNode
   local?: AstNode & { name: string }
 }
@@ -160,12 +161,12 @@ const createFilePathComment = (filePath: string) =>
   `// [kaioken_devtools]:${filePath}`
 
 function transformIncludeFilePath(nodes: AstNode[], code: string, id: string) {
-  const commentText = createFilePathComment(id)
   let offset = 0
 
   const insertToFunctionDeclarationBody = (
     body: AstNode & { body: AstNode[] }
   ) => {
+    const commentText = createFilePathComment(id)
     const insertPosition = body.start + 1
     code =
       code.slice(0, insertPosition + offset) +
@@ -266,16 +267,19 @@ function nodeContainsCreateElement(node: AstNode): boolean {
       if (nodeContainsCreateElement(child)) return true
     }
   } else if (
+    (node.consequent
+      ? Array.isArray(node.consequent)
+        ? node.consequent.some(nodeContainsCreateElement)
+        : nodeContainsCreateElement(node.consequent)
+      : false) ||
     (node.body && nodeContainsCreateElement(node.body)) ||
     (node.argument && nodeContainsCreateElement(node.argument)) ||
-    (node.consequent && nodeContainsCreateElement(node.consequent)) ||
     (node.alternate && nodeContainsCreateElement(node.alternate)) ||
     (node.callee && nodeContainsCreateElement(node.callee)) ||
-    (node.arguments &&
-      node.arguments.some((arg) => nodeContainsCreateElement(arg))) ||
     (node.declaration && nodeContainsCreateElement(node.declaration)) ||
-    (node.declarations &&
-      node.declarations.some((decl) => nodeContainsCreateElement(decl)))
+    (node.cases && node.cases.some(nodeContainsCreateElement)) ||
+    (node.arguments && node.arguments.some(nodeContainsCreateElement)) ||
+    (node.declarations && node.declarations.some(nodeContainsCreateElement))
   ) {
     return true
   }
