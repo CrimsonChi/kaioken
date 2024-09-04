@@ -177,8 +177,8 @@ function transformIncludeFilePath(nodes: AstNode[], code: string, id: string) {
   }
   // for each function that contains `kaioken.createElement`, inject the file path as a comment node inside of the function body
   for (const node of nodes) {
-    if (!nodeContainsCreateElement(node)) continue
     if (
+      nodeContainsCreateElement(node) &&
       node.type === "FunctionDeclaration" &&
       node.body &&
       !Array.isArray(node.body)
@@ -189,10 +189,29 @@ function transformIncludeFilePath(nodes: AstNode[], code: string, id: string) {
       node.type === "ExportNamedDeclaration" ||
       node.type === "ExportDefaultDeclaration"
     ) {
-      const dec = node.declaration as AstNode
-      if (!dec || dec.type !== "FunctionDeclaration") continue
-      const body = dec.body as AstNode & { body: AstNode[] }
-      insertToFunctionDeclarationBody(body)
+      const dec = node.declaration
+      if (dec?.type === "FunctionDeclaration") {
+        const body = dec.body as AstNode & { body: AstNode[] }
+        if (nodeContainsCreateElement(body)) {
+          insertToFunctionDeclarationBody(body)
+        }
+      } else if (dec?.type === "VariableDeclaration") {
+        const declarations = dec.declarations
+        if (!declarations) continue
+        for (const dec of declarations) {
+          if (dec.init && nodeContainsCreateElement(dec.init)) {
+            const body = dec.init as AstNode & { body: AstNode[] }
+            if (
+              body.type === "ArrowFunctionExpression" ||
+              body.type === "FunctionExpression"
+            ) {
+              insertToFunctionDeclarationBody(
+                body.body! as AstNode & { body: AstNode[] }
+              )
+            }
+          }
+        }
+      }
     }
   }
   return code
