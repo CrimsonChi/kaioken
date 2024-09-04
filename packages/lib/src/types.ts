@@ -16,8 +16,6 @@ import type {
 
 export type { ElementProps }
 
-type BaseElement = Element
-
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
     ? HTMLElementTagNameMap[T]
@@ -40,8 +38,8 @@ type ElementMap = {
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
-        | Kaioken.Ref<HTMLTagToElement<K> | BaseElement>
-        | Signal<HTMLTagToElement<K> | BaseElement | null>
+        | Kaioken.Ref<HTMLTagToElement<K>>
+        | Signal<HTMLTagToElement<K> | null>
     }
 } & {
   [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
@@ -50,9 +48,7 @@ type ElementMap = {
     EventAttributes<K> &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
-      ref?:
-        | Kaioken.Ref<SVGTagToElement<K> | BaseElement>
-        | Signal<SVGTagToElement<K> | null>
+      ref?: Kaioken.Ref<SVGTagToElement<K>> | Signal<SVGTagToElement<K> | null>
     }
 } & {
   [K in WebComponentTag]: Record<string, any>
