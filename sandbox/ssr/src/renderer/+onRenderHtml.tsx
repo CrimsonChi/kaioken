@@ -20,6 +20,7 @@ export const onRenderHtml: OnRenderHtmlAsync = async (
       </head>
       <body>
         <div id="page-root">${dangerouslySkipEscape(pageHtml)}</div>
+        <div id="portal-root"></div>
       </body>
     </html>`
 }
