@@ -7,13 +7,13 @@ import {
 } from "kaioken"
 import {
   applyObjectChangeFromKeys,
-  getNodeFilePath,
+  getComponentFileLink,
   getNodeName,
 } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { RefreshIcon } from "./RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
-import { VSCodeIcon } from "./VSCodeIcon"
+import { ExternalLinkIcon } from "./ExternalLinkIcon"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
@@ -55,75 +55,76 @@ export function SelectedNodeView({
 
   const nodeHookTree = makeHookTree(selectedNode)
 
-  const vsCodeLink = useMemo<string | null>(
-    () => getNodeFilePath(selectedNode),
+  const fileLink = useMemo<string | null>(
+    () => getComponentFileLink(selectedNode),
     [selectedNode]
   )
 
   return (
     <div className="flex-grow p-2 sticky top-0">
       <h2 className="flex justify-between items-center font-bold mb-2 pb-2 border-b-2 border-neutral-800">
-        {"<" + getNodeName(selectedNode) + ">"}
-        {vsCodeLink && (
-          <a
-            className="text-[10px] flex gap-1 opacity-50 hover:opacity-100 transition-opacity"
-            href={vsCodeLink}
-            onclick={(e) => {
-              e.preventDefault()
-              // @ts-expect-error we have our own event
-              kaiokenGlobal?.emit("devtools:openVSCode", vsCodeLink)
-            }}
-            //target="_top"
-            title="Open in VS Code"
-          >
-            Open in VS Code
-            <VSCodeIcon className="text-blue-500 w-4 h-4 opacity-75 hover:opacity-100 transition-opacity" />
-          </a>
-        )}
+        <div className="flex gap-2 items-center">
+          {"<" + getNodeName(selectedNode) + ">"}
+          {fileLink && (
+            <a
+              className="flex items-center gap-1 text-[10px] opacity-50 hover:opacity-100 transition-opacity"
+              href={fileLink}
+              onclick={(e) => {
+                e.preventDefault()
+                // @ts-expect-error we have our own event
+                kaiokenGlobal?.emit("devtools:openEditor", fileLink)
+              }}
+              //target="_top"
+              title="Open in editor"
+            >
+              Open in editor
+              <ExternalLinkIcon width="0.65rem" height="0.65rem" />
+            </a>
+          )}
+        </div>
         <button onclick={refresh}>
           <RefreshIcon className="w-5 h-5" />
         </button>
       </h2>
-      <NodeDataSection title="props">
-        <pre className="p-2 bg-neutral-800">
-          {JSON.stringify(nodeProps, null, 2)}
-        </pre>
+      <NodeDataSection
+        title="props"
+        disabled={Object.keys(nodeProps).length === 0}
+      >
+        <ValueEditor data={nodeProps} onChange={() => {}} mutable={false} />
       </NodeDataSection>
-      {nodeHookTree.children.length > 0 && (
-        <HookTreeDisplay node={nodeHookTree} selectedApp={selectedApp} />
-      )}
-
-      {selectedNode.subs && selectedNode.subs.length > 0 && (
-        <NodeDataSection title="signal subscriptions">
-          <div className="text-sm">
-            {selectedNode.subs.map((signal) => (
-              <div>
-                <b>{signal.displayName || "anonymous signal"}</b>
-                <div className="p-2">
-                  <ValueEditor
-                    data={{
-                      value: (signal.constructor as typeof Signal).getValue(
-                        signal
-                      ),
-                    }}
-                    onChange={(keys, newVal) => {
-                      const _v = {
-                        value: signal.value,
-                      }
-                      applyObjectChangeFromKeys(_v, keys, newVal)
-                      ;(signal.constructor as typeof Signal).setValueSilently(
-                        signal,
-                        _v.value
-                      )
-                    }}
-                    mutable={true}
-                  />
-                </div>
+      <HookTreeDisplay node={nodeHookTree} selectedApp={selectedApp} />
+      <NodeDataSection
+        title="signal subscriptions"
+        disabled={!selectedNode.subs || selectedNode.subs.length === 0}
+      >
+        <div className="text-sm">
+          {selectedNode.subs?.map((signal) => (
+            <div>
+              <b>{signal.displayName || "anonymous signal"}</b>
+              <div className="p-2">
+                <ValueEditor
+                  data={{
+                    value: (signal.constructor as typeof Signal).getValue(
+                      signal
+                    ),
+                  }}
+                  onChange={(keys, newVal) => {
+                    const _v = {
+                      value: signal.value,
+                    }
+                    applyObjectChangeFromKeys(_v, keys, newVal)
+                    ;(signal.constructor as typeof Signal).setValueSilently(
+                      signal,
+                      _v.value
+                    )
+                  }}
+                  mutable={true}
+                />
               </div>
-            ))}
-          </div>
-        </NodeDataSection>
-      )}
+            </div>
+          ))}
+        </div>
+      </NodeDataSection>
     </div>
   )
 }
@@ -216,6 +217,7 @@ function HookTreeDisplay({
       <NodeDataSection
         title={node.name}
         className={`bg-[#ffffff06] border border-[#fff1] flex flex-col gap-2 ${depth > 0 ? "pl-12" : "pl-6"}`}
+        disabled={node.children.length === 0}
       >
         {node.children.map((child) => (
           <HookTreeDisplay

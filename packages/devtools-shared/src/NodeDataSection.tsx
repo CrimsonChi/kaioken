@@ -4,12 +4,14 @@ import { Chevron } from "./Chevron"
 type NodeDataSectionProps = {
   title: string
   children: JSX.Children
+  disabled?: boolean
 } & ElementProps<"div">
 
 export function NodeDataSection({
   title,
   children,
   className,
+  disabled,
   ...rest
 }: NodeDataSectionProps) {
   const [collapsed, setCollapsed] = useState(true)
@@ -21,6 +23,8 @@ export function NodeDataSection({
           e.stopImmediatePropagation()
           setCollapsed((prev) => !prev)
         }}
+        disabled={disabled}
+        className={`${disabled ? "opacity-50" : ""}`}
       >
         <h3 className="cursor-pointer flex items-center gap-2">
           <Chevron className={`transition ${collapsed ? "" : "rotate-90"}`} />
