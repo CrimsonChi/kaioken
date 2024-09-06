@@ -10,20 +10,47 @@ import {
 import { ValueEditor } from "./ValueEditor"
 import { applyObjectChangeFromKeys } from "./utils"
 
-const storageData = localStorage.getItem("kaioken.devtools.userSettings")
-const userSettings: UserSettings = storageData
-  ? JSON.parse(storageData)
-  : {
-      maxArrayChunkSize: 10,
-      hotkeys: {
-        focusSearch: ["ctrl", "l"],
-      },
-    }
-
 type UserSettings = {
-  maxArrayChunkSize: number
-  hotkeys: {
-    focusSearch: string[]
+  arrayChunkSize: number
+  objectKeysChunkSize: number
+}
+
+const defaultSettings: UserSettings = {
+  arrayChunkSize: 10,
+  objectKeysChunkSize: 100,
+}
+
+function recursiveObjectValidate(
+  obj: Record<string, any>,
+  subject: Record<string, any>
+) {
+  if (Object.keys(obj).length !== Object.keys(subject).length) {
+    return false
+  }
+  const keys = new Set([...Object.keys(obj), ...Object.keys(subject)])
+  for (const key in keys) {
+    if (typeof subject[key] !== typeof obj[key]) {
+      return false
+    }
+    if (typeof obj[key] === "object") {
+      if (!recursiveObjectValidate(obj[key], subject[key])) {
+        return false
+      }
+    }
+  }
+  return true
+}
+
+let userSettings: UserSettings = defaultSettings
+const storageData = localStorage.getItem("kaioken.devtools.userSettings")
+if (storageData) {
+  try {
+    const parsed = JSON.parse(storageData)
+    if (recursiveObjectValidate(defaultSettings, parsed)) {
+      userSettings = parsed
+    }
+  } catch (error) {
+    console.error("kaioken.devtools.userSettings error", error)
   }
 }
 
@@ -52,6 +79,7 @@ export function SettingsProvider({
   const [_userSettings, setUserSettings] = useState<UserSettings>(userSettings)
 
   const saveUserSettings = (newSettings: UserSettings) => {
+    debugger
     localStorage.setItem(
       "kaioken.devtools.userSettings",
       JSON.stringify(newSettings)

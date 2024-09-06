@@ -42,9 +42,9 @@ function useTimer() {
 function useSecondsList() {
   useHookDebugGroup("useSecondsList", HookDebugGroupAction.Start)
   const tick = useTimer()
-  const [items, setItems] = useState<{ test: number }[]>([])
+  const [items, setItems] = useState<number[]>([])
   useEffect(() => {
-    setItems((items) => [...items, { test: tick }])
+    setItems((items) => [...items, tick])
   }, [tick])
   useHookDebugGroup("useSecondsList", HookDebugGroupAction.End)
   return items
@@ -58,7 +58,7 @@ function Home() {
       Home
       <ul>
         {seconds.map((t) => (
-          <li key={t.test}>{t.test}</li>
+          <li key={t}>{t}</li>
         ))}
       </ul>
     </div>

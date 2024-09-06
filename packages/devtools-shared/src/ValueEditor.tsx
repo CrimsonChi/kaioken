@@ -1,4 +1,4 @@
-import { ElementProps, useState } from "kaioken"
+import { ElementProps, useMemo, useState } from "kaioken"
 import { Chevron } from "./Chevron"
 import { useSettings } from "./Settings"
 
@@ -17,29 +17,73 @@ export function ValueEditor({
   objectRefAcc: unknown[]
   keys?: string[]
 }) {
+  const {
+    userSettings: { objectKeysChunkSize },
+  } = useSettings()
+  const [page, setPage] = useState(0)
+  const objectKeys = useMemo(() => {
+    return Object.keys(data).slice(0, (page + 1) * objectKeysChunkSize)
+  }, [page, objectKeysChunkSize])
+
+  const handleShowMore = () => {
+    objectKeys.forEach((key) => {
+      typeof data[key] === "object" &&
+        objectRefAcc.splice(objectRefAcc.indexOf(data[key]), 1)
+    })
+    setPage(page + 1)
+  }
+
+  const showShowMoreButton = objectKeys.length < Object.keys(data).length
+
   return (
-    <div className="flex flex-col items-start w-full border border-neutral-700">
-      {Object.keys(data).map((key) => {
-        const _keys = keys.concat(key)
-        const path = _keys.join(".")
-        return (
-          <div
-            key={path}
-            className="flex flex-col items-start w-full gap-2 pl-2 py-1 pr-1 border-b border-neutral-700"
+    <>
+      <div className="flex flex-col items-start w-full border border-neutral-700">
+        {objectKeys.map((key) => {
+          const _keys = keys.concat(key)
+          const path = _keys.join(".")
+          return (
+            <div
+              key={path}
+              data-key={path}
+              className="flex flex-col items-start w-full gap-2 pl-2 py-1 pr-1 border-b border-neutral-700"
+            >
+              <ValueFieldEditor
+                value={data[key]}
+                onChange={onChange}
+                keys={_keys}
+                path={path}
+                label={key}
+                mutable={mutable}
+                objectRefAcc={objectRefAcc}
+              />
+            </div>
+          )
+        })}
+      </div>
+      {showShowMoreButton && (
+        <button
+          onclick={handleShowMore}
+          title="Show more"
+          className="p-1 border font-bold border-neutral-700 hover:bg-neutral-700"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="1rem"
+            height="1rem"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <ValueFieldEditor
-              value={data[key]}
-              onChange={onChange}
-              keys={_keys}
-              path={path}
-              label={key}
-              mutable={mutable}
-              objectRefAcc={objectRefAcc}
-            />
-          </div>
-        )
-      })}
-    </div>
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="19" cy="12" r="1" />
+            <circle cx="5" cy="12" r="1" />
+          </svg>
+        </button>
+      )}
+    </>
   )
 }
 
@@ -60,9 +104,8 @@ function ValueFieldEditor({
   objectRefAcc: unknown[]
   label?: string
 }) {
-  console.log("ValueFieldEditor", label)
   const {
-    userSettings: { maxArrayChunkSize },
+    userSettings: { arrayChunkSize: maxArrayChunkSize },
   } = useSettings()
   const [collapsed, setCollapsed] = useState(true)
   const Label = label !== undefined && (
@@ -276,7 +319,7 @@ function ArrayValueDisplay({
   objectRefAcc: unknown[]
 }) {
   const {
-    userSettings: { maxArrayChunkSize },
+    userSettings: { arrayChunkSize: maxArrayChunkSize },
   } = useSettings()
   const len = array.length
   const numChunks = Math.ceil(len / maxArrayChunkSize)
