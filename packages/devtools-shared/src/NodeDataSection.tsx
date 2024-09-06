@@ -29,7 +29,7 @@ export function NodeDataSection({
         disabled={disabled}
         className={`${disabled ? "opacity-50" : ""}`}
       >
-        <h3 className="cursor-pointer flex items-center gap-2">
+        <h3 className="cursor-pointer flex items-center gap-2 font-medium">
           <Chevron className={`transition ${collapsed ? "" : "rotate-90"}`} />
           {title}
         </h3>

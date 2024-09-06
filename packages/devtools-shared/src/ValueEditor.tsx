@@ -14,20 +14,16 @@ export function ValueEditor({
   keys?: string[]
 }) {
   return (
-    <div className="flex flex-col items-start border border-neutral-700">
+    <div className="flex flex-col items-start w-full border border-neutral-700">
       {Object.keys(data).map((key) => {
         const _keys = keys.concat(key)
         const path = _keys.join(".")
         return (
           <div
             key={path}
-            className="pl-2 py-1 pr-1 flex items-center gap-2 w-full border-b border-neutral-700"
+            className="flex flex-col items-start w-full gap-2 pl-2 py-1 pr-1 border-b border-neutral-700"
           >
-            <label
-              htmlFor={path}
-              className="text-xs w-20 truncate"
-              title={path}
-            >
+            <label htmlFor={path} className="text-xs truncate" title={path}>
               {key}
             </label>
             <ValueFieldEditor
@@ -145,7 +141,7 @@ function ValueFieldEditor({
 function ValueInput(props: ElementProps<"input">) {
   return (
     <input
-      className="flex-grow text-xs px-2 py-1 text-neutral-300"
+      className="flex-grow text-xs px-2 py-1 text-neutral-300 w-full"
       {...props}
     />
   )

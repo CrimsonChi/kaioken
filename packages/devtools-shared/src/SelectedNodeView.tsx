@@ -241,7 +241,7 @@ function HookTreeDisplay({
 
   return (
     <div>
-      <b>{name || "anonymous hook"}</b>
+      <i className="text-neutral-300 text-sm">{name || "anonymous hook"}</i>
       <div className="p-2">
         <ValueEditor
           data={data}
