@@ -89,7 +89,12 @@ export function SelectedNodeView({
         title="props"
         disabled={Object.keys(nodeProps).length === 0}
       >
-        <ValueEditor data={nodeProps} onChange={() => {}} mutable={false} />
+        <ValueEditor
+          data={nodeProps}
+          onChange={() => {}}
+          mutable={false}
+          objectRefAcc={[]}
+        />
       </NodeDataSection>
       <HookTreeDisplay node={nodeHookTree} selectedApp={selectedApp} />
       <NodeDataSection
@@ -118,6 +123,7 @@ export function SelectedNodeView({
                     )
                   }}
                   mutable={true}
+                  objectRefAcc={[]}
                 />
               </div>
             </div>
@@ -247,6 +253,7 @@ function HookTreeDisplay({
           data={data}
           onChange={handleChange}
           mutable={!!debug?.set}
+          objectRefAcc={[]}
         />
       </div>
     </div>
