@@ -6,6 +6,16 @@ import { program } from "commander"
 import inquirer from "inquirer"
 import { execa } from "execa"
 
+const executingPackageManager = process.argv[1]
+  .split("/")
+  .find(
+    (x) =>
+      x.includes("pnpm") ||
+      x.includes("yarn") ||
+      x.includes("bun") ||
+      x.includes("npx")
+  ) || "npx"
+
 const templates = [
   {
     name: "CSR (Client-side rendering)",
@@ -136,7 +146,7 @@ program
         name: "packageManager",
         message: "Which package manager do you want to use?",
         choices: availablePackageManagers,
-        default: 'npm'
+        default: executingPackageManager === "npx" ? "npm" : executingPackageManager,
       },
     ])
 
@@ -190,13 +200,3 @@ function hasGlobalInstallation(pm) {
     })
     .catch(() => false)
 }
-
-const executingPackageManager = process.argv[1]
-  .split("/")
-  .find(
-    (x) =>
-      x.includes("pnpm") ||
-      x.includes("yarn") ||
-      x.includes("bun") ||
-      x.includes("npx")
-  )
