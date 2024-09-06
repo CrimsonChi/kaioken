@@ -6,17 +6,16 @@ import { program } from "commander"
 import inquirer from "inquirer"
 import { execa } from "execa"
 
-const executingPackageManager = process.argv[1]
-  .split("/")
-  .find(
-    (x) =>
-      x.includes("pnpm") ||
-      x.includes("yarn") ||
-      x.includes("bun") ||
-      x.includes("npx")
-  ) || "npx"
-
-console.log("EXECPATH", process.argv)
+const executingPackageManager =
+  process.argv[1]
+    .split("/")
+    .find(
+      (x) =>
+        x.includes("pnpm") ||
+        x.includes("yarn") ||
+        x.includes("bun") ||
+        x.includes("npx")
+    ) || "npx"
 
 const templates = [
   {
@@ -141,18 +140,19 @@ program
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
 
-    const availablePackageManagers = await detectPackageManager();
+    const availablePackageManagers = await detectPackageManager()
     const { packageManager } = await inquirer.prompt([
       {
         type: "list",
         name: "packageManager",
         message: "Which package manager do you want to use?",
         choices: availablePackageManagers,
-        default: executingPackageManager === "npx" ? "npm" : executingPackageManager,
+        default:
+          executingPackageManager === "npx" ? "npm" : executingPackageManager,
       },
     ])
 
-    let devCmd;
+    let devCmd
     if (packageManager === "pnpm") {
       devCmd = "pnpm dev"
     } else if (packageManager === "yarn") {
@@ -165,7 +165,6 @@ program
     console.log(`Project template downloaded. Get started by running the following:
     
     
-
   cd ${dest}
   ${packageManager} install
   ${devCmd}
@@ -174,7 +173,6 @@ program
 
 program.parse(process.argv)
 
-
 const detectPackageManager = async () => {
   const [hasYarn, hasPnpm, hasBun] = await Promise.all([
     hasGlobalInstallation("yarn"),
@@ -182,15 +180,14 @@ const detectPackageManager = async () => {
     hasGlobalInstallation("bun"),
   ])
 
-  const packageManagers = [];
-  if (hasPnpm) packageManagers.push({ name: "pnpm", value: "pnpm" });
-  if (hasYarn) packageManagers.push({ name: "yarn", value: "yarn" });
-  if (hasBun) packageManagers.push({ name: "bun", value: "bun" });
-  packageManagers.push({ name: "npm", value: "npm" }); // npm as fallback
+  const packageManagers = []
+  if (hasPnpm) packageManagers.push({ name: "pnpm", value: "pnpm" })
+  if (hasYarn) packageManagers.push({ name: "yarn", value: "yarn" })
+  if (hasBun) packageManagers.push({ name: "bun", value: "bun" })
+  packageManagers.push({ name: "npm", value: "npm" }) // npm as fallback
 
-  return packageManagers;
+  return packageManagers
 }
-
 
 /**
  * Check if a global pm is available
