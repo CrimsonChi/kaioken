@@ -6,17 +6,6 @@ import { program } from "commander"
 import inquirer from "inquirer"
 import { execa } from "execa"
 
-const testExecPm = process.argv[1]
-  .split("/")
-  .find(
-    (x) =>
-      x.includes("pnpm") ||
-      x.includes("yarn") ||
-      x.includes("bun") ||
-      x.includes("npx")
-  )
-console.log("testExecPm", testExecPm)
-
 const executingPackageManager =
   process.argv[1]
     .split("/")
@@ -152,14 +141,16 @@ program
     }
 
     const availablePackageManagers = await detectPackageManager()
+    const _pm =
+      executingPackageManager === "npx" ? "npm" : executingPackageManager
+
     const { packageManager } = await inquirer.prompt([
       {
         type: "list",
         name: "packageManager",
         message: "Which package manager do you want to use?",
         choices: availablePackageManagers,
-        default:
-          executingPackageManager === "npx" ? "npm" : executingPackageManager,
+        default: availablePackageManagers.find((pm) => pm.value === _pm),
       },
     ])
 
