@@ -14,6 +14,9 @@ const detectPackageManager = () => {
   if(execPath.includes('yarn')) {
     return 'yarn';
   }
+  if(execPath.includes('bun')) {
+    return 'bun';
+  }
   return 'npm';
 }
 
@@ -148,6 +151,9 @@ program
     } else if(packageManager === 'yarn') {
       installCwd = dest;
       devCmd = 'yarn dev';
+    } else if(packageManager === 'bun') {
+      installCwd = dest;
+      devCmd = 'bun dev';
     } else {
       installCwd = dest;
       devCmd = 'npm run dev';
