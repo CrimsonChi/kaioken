@@ -5,6 +5,18 @@ import { simpleGit } from "simple-git"
 import { program } from "commander"
 import inquirer from "inquirer"
 
+// detect the package manager used by the user
+const detectPackageManager = () => {
+  const execPath = process.env.npm_execpath || '';
+  if(execPath.includes('pnpm')) {
+    return 'pnpm';
+  }
+  if(execPath.includes('yarn')) {
+    return 'yarn';
+  }
+  return 'npm';
+}
+
 const templates = [
   {
     name: "CSR (Client-side rendering)",
@@ -127,11 +139,26 @@ program
     if (fs.existsSync(gitFolder)) {
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
+
+    const packageManager = detectPackageManager();
+    let installCwd, devCmd;
+    if(packageManager === 'pnpm') {
+      installCwd = dest;
+      devCmd = 'pnpm dev';
+    } else if(packageManager === 'yarn') {
+      installCwd = dest;
+      devCmd = 'yarn dev';
+    } else {
+      installCwd = dest;
+      devCmd = 'npm run dev';
+    }
+
+
     console.log(`Project template downloaded. Get started by running the following:
 
   cd ${dest}
-  pnpm install
-  pnpm dev
+  ${packageManager} install
+  ${devCmd}
 `)
   })
 
