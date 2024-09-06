@@ -5,6 +5,8 @@ import { simpleGit } from "simple-git"
 import { program } from "commander"
 import inquirer from "inquirer"
 
+console.log("EXECPATH", process.argv)
+
 const templates = [
   {
     name: "CSR (Client-side rendering)",
