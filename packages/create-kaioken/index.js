@@ -4,6 +4,17 @@ import path from "node:path"
 import { simpleGit } from "simple-git"
 import { program } from "commander"
 import inquirer from "inquirer"
+import { execa } from "execa"
+
+const executingPackageManager = process.argv[1]
+  .split("/")
+  .find(
+    (x) =>
+      x.includes("pnpm") ||
+      x.includes("yarn") ||
+      x.includes("bun") ||
+      x.includes("npx")
+  ) || "npx"
 
 console.log("EXECPATH", process.argv)
 
@@ -129,12 +140,65 @@ program
     if (fs.existsSync(gitFolder)) {
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
+
+    const availablePackageManagers = await detectPackageManager();
+    const { packageManager } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "packageManager",
+        message: "Which package manager do you want to use?",
+        choices: availablePackageManagers,
+        default: executingPackageManager === "npx" ? "npm" : executingPackageManager,
+      },
+    ])
+
+    let devCmd;
+    if (packageManager === "pnpm") {
+      devCmd = "pnpm dev"
+    } else if (packageManager === "yarn") {
+      devCmd = "yarn dev"
+    } else if (packageManager === "bun") {
+      devCmd = "bun dev"
+    } else {
+      devCmd = "npm run dev"
+    }
     console.log(`Project template downloaded. Get started by running the following:
+    
+    
 
   cd ${dest}
-  pnpm install
-  pnpm dev
+  ${packageManager} install
+  ${devCmd}
 `)
   })
 
 program.parse(process.argv)
+
+
+const detectPackageManager = async () => {
+  const [hasYarn, hasPnpm, hasBun] = await Promise.all([
+    hasGlobalInstallation("yarn"),
+    hasGlobalInstallation("pnpm"),
+    hasGlobalInstallation("bun"),
+  ])
+
+  const packageManagers = [];
+  if (hasPnpm) packageManagers.push({ name: "pnpm", value: "pnpm" });
+  if (hasYarn) packageManagers.push({ name: "yarn", value: "yarn" });
+  if (hasBun) packageManagers.push({ name: "bun", value: "bun" });
+  packageManagers.push({ name: "npm", value: "npm" }); // npm as fallback
+
+  return packageManagers;
+}
+
+
+/**
+ * Check if a global pm is available
+ */
+function hasGlobalInstallation(pm) {
+  return execa(pm, ["--version"])
+    .then((res) => {
+      return /^\d+.\d+.\d+$/.test(res.stdout)
+    })
+    .catch(() => false)
+}
