@@ -319,7 +319,8 @@ function ArrayChunkDisplay({
         className="text-xs flex items-center gap-1 cursor-pointer w-full"
         onclick={() => setCollapsed((c) => !c)}
       >
-        [{range.start}..{range.end < array.length ? range.end : array.length}]
+        [{range.start}..
+        {(range.end < array.length ? range.end : array.length) - 1}]
         <Chevron
           width={10}
           height={10}
