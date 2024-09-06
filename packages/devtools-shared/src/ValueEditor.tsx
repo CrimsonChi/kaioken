@@ -1,5 +1,6 @@
 import { ElementProps, useState } from "kaioken"
 import { Chevron } from "./Chevron"
+import { useSettings } from "./Settings"
 
 const noop = Object.freeze(() => {})
 
@@ -59,8 +60,12 @@ function ValueFieldEditor({
   objectRefAcc: unknown[]
   label?: string
 }) {
+  console.log("ValueFieldEditor", label)
+  const {
+    userSettings: { maxArrayChunkSize },
+  } = useSettings()
   const [collapsed, setCollapsed] = useState(true)
-  const Label = label && (
+  const Label = label !== undefined && (
     <label
       htmlFor={path}
       className="text-xs truncate"
@@ -180,7 +185,7 @@ function ValueFieldEditor({
             </button>
             {collapsed ? (
               <TextValueDisplay>Array({value.length})</TextValueDisplay>
-            ) : value.length > MAX_ARRAY_SECTION_LENGTH ? (
+            ) : value.length > maxArrayChunkSize ? (
               <ArrayValueDisplay array={value} objectRefAcc={objectRefAcc} />
             ) : (
               <div className="flex flex-col items-start gap-1 w-full">
@@ -190,6 +195,7 @@ function ValueFieldEditor({
                     onChange={noop}
                     keys={[idx.toString()]}
                     path={idx.toString()}
+                    label={idx.toString()}
                     mutable={false}
                     objectRefAcc={objectRefAcc}
                   />
@@ -262,8 +268,6 @@ function TextValueDisplay({ children }: { children: JSX.Element }) {
   )
 }
 
-const MAX_ARRAY_SECTION_LENGTH = 5
-
 function ArrayValueDisplay({
   array,
   objectRefAcc,
@@ -271,16 +275,19 @@ function ArrayValueDisplay({
   array: unknown[]
   objectRefAcc: unknown[]
 }) {
+  const {
+    userSettings: { maxArrayChunkSize },
+  } = useSettings()
   const len = array.length
-  const numChunks = Math.ceil(len / MAX_ARRAY_SECTION_LENGTH)
+  const numChunks = Math.ceil(len / maxArrayChunkSize)
   return (
     <div className="flex flex-col items-start gap-1 w-full">
       {Array.from({ length: numChunks }).map((_, idx) => (
         <ArrayChunkDisplay
           array={array}
           range={{
-            start: idx * MAX_ARRAY_SECTION_LENGTH,
-            end: (idx + 1) * MAX_ARRAY_SECTION_LENGTH,
+            start: idx * maxArrayChunkSize,
+            end: (idx + 1) * maxArrayChunkSize,
           }}
           objectRefAcc={objectRefAcc}
         />
@@ -312,7 +319,7 @@ function ArrayChunkDisplay({
         className="text-xs flex items-center gap-1 cursor-pointer w-full"
         onclick={() => setCollapsed((c) => !c)}
       >
-        {range.start} - {range.end < array.length ? range.end : array.length}
+        [{range.start}..{range.end < array.length ? range.end : array.length}]
         <Chevron
           width={10}
           height={10}
@@ -325,6 +332,7 @@ function ArrayChunkDisplay({
             <ValueFieldEditor
               value={item}
               onChange={noop}
+              label={(range.start + idx).toString()}
               keys={[idx.toString()]}
               path={idx.toString()}
               mutable={false}
