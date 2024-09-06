@@ -1,5 +1,12 @@
 import { createElement } from "../element.js"
-import { useState, useEffect, useMemo, useContext } from "../hooks/index.js"
+import {
+  useState,
+  useMemo,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useAppContext,
+} from "../hooks/index.js"
 import { __DEV__ } from "../env.js"
 import {
   parsePathParams,
@@ -8,8 +15,10 @@ import {
 } from "./routerUtils.js"
 import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
+import { type AppContext } from "../appContext.js"
 
 type RouterCtx = {
+  doSyncNav: (callback: () => void) => void
   params: Record<string, string>
   query: Record<string, string>
   routePath: string
@@ -17,6 +26,7 @@ type RouterCtx = {
   isDefault: boolean
 }
 const RouterContext = createContext<RouterCtx>({
+  doSyncNav: () => {},
   params: {},
   query: {},
   routePath: "/",
@@ -25,16 +35,44 @@ const RouterContext = createContext<RouterCtx>({
 })
 RouterContext.displayName = "RouterContextProvider"
 
-const setQuery = (query: Record<string, string>) => {
+function setQuery(query: Record<string, string>) {
   const url = new URL(window.location.href)
   Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v))
   window.history.pushState({}, "", url.toString())
   window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
 }
 
-export const useRouter = () => {
+export function useRouter() {
   const { params, query } = useContext(RouterContext)
   return { params, query, setQuery }
+}
+
+export function navigate(to: string, options?: { replace?: boolean }) {
+  let ctx: AppContext | undefined
+  try {
+    ctx = useAppContext()
+  } catch (error) {}
+  const routerCtx = useContext(RouterContext, false)
+
+  const doNav = () => {
+    window.history[options?.replace ? "replaceState" : "pushState"]({}, "", to)
+    window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
+  }
+  if (routerCtx.isDefault) {
+    /**
+     * postpone until next tick to allow for cases where
+     * navigate is called programatically upon new route render
+     */
+    if (ctx) {
+      ctx.scheduler?.nextIdle(doNav)
+    } else {
+      setTimeout(doNav, 0)
+    }
+    return null
+  }
+
+  routerCtx.doSyncNav(doNav)
+  return null
 }
 
 interface RouterProps {
@@ -46,6 +84,7 @@ const initLoc = () => ({
   search: window.location.search,
 })
 export function Router(props: RouterProps) {
+  const syncNav = useRef<(() => void) | null>(null)
   const parentRouterContext = useContext(RouterContext, false)
   const dynamicParentPath = parentRouterContext.isDefault
     ? undefined
@@ -62,7 +101,7 @@ export function Router(props: RouterProps) {
     [loc.pathname]
   )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const handler = () => {
       setLoc({
         pathname: window.location.pathname,
@@ -72,6 +111,13 @@ export function Router(props: RouterProps) {
     window.addEventListener("popstate", handler)
     return () => window.removeEventListener("popstate", handler)
   }, [])
+
+  useLayoutEffect(() => {
+    if (syncNav.current) {
+      syncNav.current()
+      syncNav.current = null
+    }
+  })
 
   type RouteComponent = Kaioken.VNode & {
     props: Kaioken.InferProps<typeof Route>
@@ -135,7 +181,10 @@ export function Router(props: RouterProps) {
           (props.basePath || "") +
           (route?.props.path || ""),
         isDefault: false,
-      },
+        doSyncNav: (callback: () => void) => {
+          syncNav.current = callback
+        },
+      } satisfies RouterCtx,
     },
     route ?? fallbackRoute ?? null
   )
