@@ -150,7 +150,7 @@ program
         name: "packageManager",
         message: "Which package manager do you want to use?",
         choices: availablePackageManagers,
-        default: availablePackageManagers.find((pm) => pm.value === _pm),
+        default: _pm,
       },
     ])
 
@@ -183,10 +183,10 @@ const detectPackageManager = async () => {
   ])
 
   const packageManagers = []
-  if (hasPnpm) packageManagers.push({ name: "pnpm", value: "pnpm" })
-  if (hasYarn) packageManagers.push({ name: "yarn", value: "yarn" })
-  if (hasBun) packageManagers.push({ name: "bun", value: "bun" })
-  packageManagers.push({ name: "npm", value: "npm" }) // npm as fallback
+  if (hasPnpm) packageManagers.push("pnpm")
+  if (hasYarn) packageManagers.push("yarn")
+  if (hasBun) packageManagers.push("bun")
+  packageManagers.push("npm") // npm as fallback
 
   return packageManagers
 }
