@@ -188,6 +188,9 @@ const detectPackageManager = async () => {
   if (hasBun) packageManagers.push("bun")
   packageManagers.push("npm") // npm as fallback
 
+  const currentPmIdx = packageManagers.indexOf(executingPackageManager)
+  // shift it to the start
+  packageManagers.unshift(...packageManagers.splice(currentPmIdx, 1))
   return packageManagers
 }
 
