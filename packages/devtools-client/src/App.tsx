@@ -16,12 +16,12 @@ export function App() {
     selectedNode,
   }))
 
-  const onInspectComponent = () => {
+  const handleToggleInspect = () => {
     if (!window.opener) return
     kaiokenGlobal?.emit(
       // @ts-expect-error We have our own custom type here
       "__kaiokenDevtoolsInspectElementValue",
-      { value: true }
+      { value: !toggleElementToVnode.value }
     )
   }
 
@@ -40,7 +40,8 @@ export function App() {
           }
         />
         <button
-          onclick={onInspectComponent}
+          title="Toggle Component Inspection"
+          onclick={handleToggleInspect}
           className={`p-1 rounded ${toggleElementToVnode.value ? "bg-neutral-900" : ""}`}
         >
           <SquareMouse />

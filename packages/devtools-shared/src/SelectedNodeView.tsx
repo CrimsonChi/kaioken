@@ -163,7 +163,7 @@ const hookGroupSymbol = Symbol.for("devtools.hookGroup")
 function makeHookTree(node: Kaioken.VNode) {
   const root: HookGroupNode = {
     parent: null,
-    name: "Hooks",
+    name: "hooks",
     children: [],
     [hookGroupSymbol]: true,
   }

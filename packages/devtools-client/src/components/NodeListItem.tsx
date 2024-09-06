@@ -1,4 +1,4 @@
-import { useState, fragment, useMemo, useEffect, useContext } from "kaioken"
+import { useState, useMemo, useEffect, useContext } from "kaioken"
 import { Chevron } from "devtools-shared"
 import { useDevtoolsStore } from "../store"
 import {
@@ -120,9 +120,11 @@ function NodeListItemSiblings({ node }: { node?: Kaioken.VNode }) {
     nodes.push(n)
     n = n.sibling
   }
-  return fragment({
-    children: nodes.map((n) => (
-      <NodeListItem node={n} traverseSiblings={false} />
-    )),
-  })
+  return (
+    <>
+      {nodes.map((n) => (
+        <NodeListItem node={n} traverseSiblings={false} />
+      ))}
+    </>
+  )
 }

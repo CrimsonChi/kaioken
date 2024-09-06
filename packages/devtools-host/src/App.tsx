@@ -54,7 +54,7 @@ export default function App() {
     window.__kaioken?.emit(
       // @ts-expect-error We have our own custom type here
       "__kaiokenDevtoolsInspectElementValue",
-      { value: true }
+      { value: !toggleElementToVnode.value }
     )
   }
 
@@ -84,6 +84,7 @@ export default function App() {
             return (
               <>
                 <button
+                  title="Open Devtools"
                   onclick={() => handleOpen()}
                   style={{ transform: `scale(${scale})`, opacity }}
                   className="transition text-white rounded-full p-1 hover:bg-[#0003]"
@@ -91,6 +92,7 @@ export default function App() {
                   <PageInfo width={16} height={16} />
                 </button>
                 <button
+                  title="Toggle Component Inspection"
                   onclick={handleToggleInspect}
                   style={{ transform: `scale(${scale})`, opacity }}
                   className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${toggleElementToVnode.value ? "bg-[#0003]" : ""}`}
