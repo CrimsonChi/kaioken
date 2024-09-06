@@ -1,6 +1,8 @@
 import { ElementProps, useState } from "kaioken"
 import { Chevron } from "./Chevron"
 
+const noop = Object.freeze(() => {})
+
 export function ValueEditor({
   data,
   onChange,
@@ -55,10 +57,10 @@ function ValueFieldEditor({
   path: string
   mutable: boolean
   objectRefAcc: unknown[]
-  label: string
+  label?: string
 }) {
   const [collapsed, setCollapsed] = useState(true)
-  const Label = (
+  const Label = label && (
     <label
       htmlFor={path}
       className="text-xs truncate"
@@ -161,8 +163,39 @@ function ValueFieldEditor({
       if (Array.isArray(value)) {
         return (
           <ObjectPropertyWrapper>
-            {Label}
-            <TextValueDisplay>Array({value.length})</TextValueDisplay>
+            <button
+              className="text-xs flex items-center gap-1 cursor-pointer w-full"
+              title={path}
+              onclick={() => {
+                objectRefAcc.splice(objectRefAcc.indexOf(value), 1)
+                setCollapsed((c) => !c)
+              }}
+            >
+              {label}
+              <Chevron
+                width={10}
+                height={10}
+                className={`transition ${collapsed ? "" : "rotate-90"}`}
+              />
+            </button>
+            {collapsed ? (
+              <TextValueDisplay>Array({value.length})</TextValueDisplay>
+            ) : value.length > MAX_ARRAY_SECTION_LENGTH ? (
+              <ArrayValueDisplay array={value} objectRefAcc={objectRefAcc} />
+            ) : (
+              <div className="flex flex-col items-start gap-1 w-full">
+                {value.map((item, idx) => (
+                  <ValueFieldEditor
+                    value={item}
+                    onChange={noop}
+                    keys={[idx.toString()]}
+                    path={idx.toString()}
+                    mutable={false}
+                    objectRefAcc={objectRefAcc}
+                  />
+                ))}
+              </div>
+            )}
           </ObjectPropertyWrapper>
         )
       }
@@ -226,5 +259,80 @@ function TextValueDisplay({ children }: { children: JSX.Element }) {
     <small className="text-neutral-300">
       <i>{children}</i>
     </small>
+  )
+}
+
+const MAX_ARRAY_SECTION_LENGTH = 5
+
+function ArrayValueDisplay({
+  array,
+  objectRefAcc,
+}: {
+  array: unknown[]
+  objectRefAcc: unknown[]
+}) {
+  const len = array.length
+  const numChunks = Math.ceil(len / MAX_ARRAY_SECTION_LENGTH)
+  return (
+    <div className="flex flex-col items-start gap-1 w-full">
+      {Array.from({ length: numChunks }).map((_, idx) => (
+        <ArrayChunkDisplay
+          array={array}
+          range={{
+            start: idx * MAX_ARRAY_SECTION_LENGTH,
+            end: (idx + 1) * MAX_ARRAY_SECTION_LENGTH,
+          }}
+          objectRefAcc={objectRefAcc}
+        />
+      ))}
+    </div>
+  )
+}
+
+function ArrayChunkDisplay({
+  array,
+  range,
+  objectRefAcc,
+}: {
+  array: unknown[]
+  range: { start: number; end: number }
+  objectRefAcc: unknown[]
+}) {
+  const [collapsed, setCollapsed] = useState(true)
+  let items: unknown[] | undefined
+
+  if (!collapsed) {
+    items = array.slice(range.start, range.end)
+  } else {
+    items = undefined
+  }
+  return (
+    <div className="flex flex-col items-start gap-1 w-full">
+      <button
+        className="text-xs flex items-center gap-1 cursor-pointer w-full"
+        onclick={() => setCollapsed((c) => !c)}
+      >
+        {range.start} - {range.end < array.length ? range.end : array.length}
+        <Chevron
+          width={10}
+          height={10}
+          className={`transition ${collapsed ? "" : "rotate-90"}`}
+        />
+      </button>
+      {items && (
+        <div className="flex flex-col items-start gap-1 w-full">
+          {items.map((item, idx) => (
+            <ValueFieldEditor
+              value={item}
+              onChange={noop}
+              keys={[idx.toString()]}
+              path={idx.toString()}
+              mutable={false}
+              objectRefAcc={objectRefAcc}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
