@@ -177,9 +177,8 @@ function ValueFieldEditor({
       objectRefAcc.push(value)
       return (
         <ObjectPropertyWrapper>
-          <label
-            htmlFor={path}
-            className="text-xs flex items-center gap-1"
+          <button
+            className="text-xs flex items-center gap-1 cursor-pointer w-full"
             title={path}
             onclick={() => {
               objectRefAcc.splice(objectRefAcc.indexOf(value), 1)
@@ -192,7 +191,7 @@ function ValueFieldEditor({
               height={10}
               className={`transition ${collapsed ? "" : "rotate-90"}`}
             />
-          </label>
+          </button>
           {collapsed ? null : (
             <ValueEditor
               data={value as Record<string, unknown>}

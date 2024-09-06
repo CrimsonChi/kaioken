@@ -27,12 +27,12 @@ export function NodeDataSection({
           setCollapsed((prev) => !prev)
         }}
         disabled={disabled}
-        className={`${disabled ? "opacity-50" : ""}`}
+        className={`${disabled ? "opacity-50 cursor-default" : "cursor-pointer"}`}
       >
-        <h3 className="cursor-pointer flex items-center gap-2 font-medium">
+        <span className="flex items-center gap-2 font-medium">
           <Chevron className={`transition ${collapsed ? "" : "rotate-90"}`} />
           {title}
-        </h3>
+        </span>
       </button>
       {collapsed ? null : (
         <div className={`p-2 ${className || ""}`} {...rest}>
