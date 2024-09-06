@@ -6,21 +6,6 @@ import { program } from "commander"
 import inquirer from "inquirer"
 import { execa } from "execa"
 
-// detect the package manager used by the user
-const detectPackageManager = () => {
-  const execPath = process.env.npm_execpath || ""
-  if (execPath.includes("pnpm")) {
-    return "pnpm"
-  }
-  if (execPath.includes("yarn")) {
-    return "yarn"
-  }
-  if (execPath.includes("bun")) {
-    return "bun"
-  }
-  return "npm"
-}
-
 const templates = [
   {
     name: "CSR (Client-side rendering)",
@@ -144,9 +129,8 @@ program
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
 
-    const { pnpm, yarn, bun } = await detect()
-    console.log("detected", pnpm, yarn, bun)
-    let installCwd, devCmd
+    const { pnpm, yarn, bun } = await detectPackageManager()
+    let devCmd;
     if (pnpm) {
       devCmd = "pnpm dev"
     } else if (yarn) {
@@ -157,17 +141,14 @@ program
       devCmd = "npm run dev"
     }
 
+    const availablePackageManagers = await detectPackageManager();
     const { packageManager } = await inquirer.prompt([
       {
         type: "list",
         name: "packageManager",
         message: "Which package manager do you want to use?",
-        choices: [
-          { name: "npm", value: "npm" },
-          { name: "pnpm", value: "pnpm" },
-          { name: "yarn", value: "yarn" },
-        ],
-        default: detectedPackageManager,
+        choices: availablePackageManagers,
+        default: 'npm'
       },
     ])
 
@@ -184,23 +165,29 @@ program
 program.parse(process.argv)
 
 /**
- * @param {cwd} current working directory
  * @returns an object of booleans indicating which package managers are available
  */
-const detect = async () => {
+const detectPackageManager = async () => {
   const [hasYarn, hasPnpm, hasBun] = await Promise.all([
     hasGlobalInstallation("yarn"),
     hasGlobalInstallation("pnpm"),
     hasGlobalInstallation("bun"),
   ])
-  return {
-    yarn: hasYarn,
-    pnpm: hasPnpm,
-    bun: hasBun,
-  }
+
+  const packageManagers = [];
+  if (hasPnpm) packageManagers.push({ name: "pnpm", value: "pnpm" });
+  if (hasYarn) packageManagers.push({ name: "yarn", value: "yarn" });
+  if (hasBun) packageManagers.push({ name: "bun", value: "bun" });
+  packageManagers.push({ name: "npm", value: "npm" }); // npm as fallback
+
+  return packageManagers;
+  // return {
+  //   yarn: hasYarn,
+  //   pnpm: hasPnpm,
+  //   bun: hasBun,
+  // }
 }
 
-export { detect }
 
 /**
  * Check if a global pm is available
@@ -212,3 +199,13 @@ function hasGlobalInstallation(pm) {
     })
     .catch(() => false)
 }
+
+const executingPackageManager = process.argv[1]
+  .split("/")
+  .find(
+    (x) =>
+      x.includes("pnpm") ||
+      x.includes("yarn") ||
+      x.includes("bun") ||
+      x.includes("npx")
+  )
