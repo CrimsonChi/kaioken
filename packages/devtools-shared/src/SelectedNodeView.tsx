@@ -221,7 +221,7 @@ function HookTreeDisplay({
     return (
       <NodeDataSection
         title={node.name}
-        className={`bg-[#ffffff06] border border-[#fff1] flex flex-col gap-2 ${depth > 0 ? "pl-12" : "pl-6"}`}
+        className={`bg-[#ffffff04] border border-[#fff1] flex flex-col gap-2 pl-6`}
         disabled={node.children.length === 0}
       >
         {node.children.map((child) => (
