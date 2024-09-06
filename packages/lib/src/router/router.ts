@@ -49,16 +49,19 @@ export function useRouter() {
 
 export function navigate(to: string, options?: { replace?: boolean }) {
   let ctx: AppContext | undefined
+  let routerCtx: RouterCtx | undefined
   try {
     ctx = useAppContext()
   } catch (error) {}
-  const routerCtx = useContext(RouterContext, false)
+  try {
+    routerCtx = useContext(RouterContext, false)
+  } catch (error) {}
 
   const doNav = () => {
     window.history[options?.replace ? "replaceState" : "pushState"]({}, "", to)
     window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
   }
-  if (routerCtx.isDefault) {
+  if (!routerCtx || routerCtx.isDefault) {
     /**
      * postpone until next tick to allow for cases where
      * navigate is called programatically upon new route render

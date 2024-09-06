@@ -1,6 +1,6 @@
 import type { ElementProps } from "../types"
 import { createElement } from "../element.js"
-import { navigate } from "./navigate.js"
+import { navigate } from "./router.js"
 
 export interface LinkProps extends ElementProps<"a"> {
   to: string
