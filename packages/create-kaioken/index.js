@@ -4,22 +4,21 @@ import path from "node:path"
 import { simpleGit } from "simple-git"
 import { program } from "commander"
 import inquirer from "inquirer"
-import { execa }  from "execa"
-
+import { execa } from "execa"
 
 // detect the package manager used by the user
 const detectPackageManager = () => {
-  const execPath = process.env.npm_execpath || '';
-  if(execPath.includes('pnpm')) {
-    return 'pnpm';
+  const execPath = process.env.npm_execpath || ""
+  if (execPath.includes("pnpm")) {
+    return "pnpm"
   }
-  if(execPath.includes('yarn')) {
-    return 'yarn';
+  if (execPath.includes("yarn")) {
+    return "yarn"
   }
-  if(execPath.includes('bun')) {
-    return 'bun';
+  if (execPath.includes("bun")) {
+    return "bun"
   }
-  return 'npm';
+  return "npm"
 }
 
 const templates = [
@@ -145,25 +144,36 @@ program
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
 
-    const packageManager = await detect();
-    console.log('detected',  packageManager.yarn, packageManager.pnpm, packageManager.bun);
-    let installCwd, devCmd;
-    if(packageManager.pnpm === 'pnpm') {
-      installCwd = dest;
-      devCmd = 'pnpm dev';
-    } else if(packageManager.yarn === 'yarn') {
-      installCwd = dest;
-      devCmd = 'yarn dev';
-    } else if(packageManager.bun === 'bun') {
-      installCwd = dest;
-      devCmd = 'bun dev';
+    const { pnpm, yarn, bun } = await detect()
+    console.log("detected", pnpm, yarn, bun)
+    let installCwd, devCmd
+    if (pnpm) {
+      devCmd = "pnpm dev"
+    } else if (yarn) {
+      devCmd = "yarn dev"
+    } else if (bun) {
+      devCmd = "bun dev"
     } else {
-      installCwd = dest;
-      devCmd = 'npm run dev';
+      devCmd = "npm run dev"
     }
 
+    const { packageManager } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "packageManager",
+        message: "Which package manager do you want to use?",
+        choices: [
+          { name: "npm", value: "npm" },
+          { name: "pnpm", value: "pnpm" },
+          { name: "yarn", value: "yarn" },
+        ],
+        default: detectedPackageManager,
+      },
+    ])
 
     console.log(`Project template downloaded. Get started by running the following:
+    
+    
 
   cd ${dest}
   ${packageManager} install
@@ -186,7 +196,7 @@ const detect = async () => {
   return {
     yarn: hasYarn,
     pnpm: hasPnpm,
-    bun: hasBun
+    bun: hasBun,
   }
 }
 
@@ -198,7 +208,7 @@ export { detect }
 function hasGlobalInstallation(pm) {
   return execa(pm, ["--version"])
     .then((res) => {
-      return /^\d+.\d+.\d+$/.test(res.stdout);
+      return /^\d+.\d+.\d+$/.test(res.stdout)
     })
-    .catch(() => false);
+    .catch(() => false)
 }
