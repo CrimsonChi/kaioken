@@ -1,4 +1,4 @@
-import { type ElementProps, useState } from "kaioken"
+import { type ElementProps, useEffect, useState } from "kaioken"
 import { Chevron } from "./Chevron"
 
 type NodeDataSectionProps = {
@@ -15,6 +15,9 @@ export function NodeDataSection({
   ...rest
 }: NodeDataSectionProps) {
   const [collapsed, setCollapsed] = useState(true)
+  useEffect(() => {
+    if (!collapsed && disabled) setCollapsed(true)
+  }, [disabled])
   return (
     <div className="flex flex-col">
       <button

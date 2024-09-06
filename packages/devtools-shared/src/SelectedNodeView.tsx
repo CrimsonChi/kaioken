@@ -44,21 +44,20 @@ export function SelectedNodeView({
     return () => kaiokenGlobal?.off("update", handleUpdate)
   }, [])
 
+  const fileLink = useMemo<string | null>(
+    () => getComponentFileLink(selectedNode),
+    [selectedNode]
+  )
+
   const refresh = () => {
     if (!selectedNode || !selectedApp?.mounted) return
     selectedApp.requestUpdate(selectedNode)
   }
 
-  if (selectedNode === null) return null
   const nodeProps = { ...selectedNode.props } as Record<string, any>
   delete nodeProps.children
 
   const nodeHookTree = makeHookTree(selectedNode)
-
-  const fileLink = useMemo<string | null>(
-    () => getComponentFileLink(selectedNode),
-    [selectedNode]
-  )
 
   return (
     <div className="flex-grow p-2 sticky top-0">

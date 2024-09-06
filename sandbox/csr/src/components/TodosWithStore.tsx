@@ -18,7 +18,7 @@ export function TodosWithStore() {
 
 function TodoItem({ todo }: { todo: TodoItemType }) {
   const { toggleTodo } = useTodosStore((store) =>
-    store.filter((item) => item.id === todo.id)
+    store.find((item) => item.id === todo.id)
   )
 
   console.log("child component", todo.id)
