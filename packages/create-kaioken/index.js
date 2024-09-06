@@ -4,6 +4,8 @@ import path from "node:path"
 import { simpleGit } from "simple-git"
 import { program } from "commander"
 import inquirer from "inquirer"
+import { execa }  from "execa"
+
 
 // detect the package manager used by the user
 const detectPackageManager = () => {
@@ -143,15 +145,16 @@ program
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
 
-    const packageManager = detectPackageManager();
+    const packageManager = await detect();
+    console.log('detected',  packageManager.yarn, packageManager.pnpm, packageManager.bun);
     let installCwd, devCmd;
-    if(packageManager === 'pnpm') {
+    if(packageManager.pnpm === 'pnpm') {
       installCwd = dest;
       devCmd = 'pnpm dev';
-    } else if(packageManager === 'yarn') {
+    } else if(packageManager.yarn === 'yarn') {
       installCwd = dest;
       devCmd = 'yarn dev';
-    } else if(packageManager === 'bun') {
+    } else if(packageManager.bun === 'bun') {
       installCwd = dest;
       devCmd = 'bun dev';
     } else {
@@ -169,3 +172,33 @@ program
   })
 
 program.parse(process.argv)
+
+/**
+ * @param {cwd} current working directory
+ * @returns an object of booleans indicating which package managers are available
+ */
+const detect = async () => {
+  const [hasYarn, hasPnpm, hasBun] = await Promise.all([
+    hasGlobalInstallation("yarn"),
+    hasGlobalInstallation("pnpm"),
+    hasGlobalInstallation("bun"),
+  ])
+  return {
+    yarn: hasYarn,
+    pnpm: hasPnpm,
+    bun: hasBun
+  }
+}
+
+export { detect }
+
+/**
+ * Check if a global pm is available
+ */
+function hasGlobalInstallation(pm) {
+  return execa(pm, ["--version"])
+    .then((res) => {
+      return /^\d+.\d+.\d+$/.test(res.stdout);
+    })
+    .catch(() => false);
+}
