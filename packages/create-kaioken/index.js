@@ -162,9 +162,7 @@ program
 
 program.parse(process.argv)
 
-/**
- * @returns an object of booleans indicating which package managers are available
- */
+
 const detectPackageManager = async () => {
   const [hasYarn, hasPnpm, hasBun] = await Promise.all([
     hasGlobalInstallation("yarn"),
@@ -179,11 +177,6 @@ const detectPackageManager = async () => {
   packageManagers.push({ name: "npm", value: "npm" }); // npm as fallback
 
   return packageManagers;
-  // return {
-  //   yarn: hasYarn,
-  //   pnpm: hasPnpm,
-  //   bun: hasBun,
-  // }
 }
 
 
