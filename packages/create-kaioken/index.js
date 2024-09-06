@@ -129,18 +129,6 @@ program
       fs.rmSync(gitFolder, { recursive: true, force: true })
     }
 
-    const { pnpm, yarn, bun } = await detectPackageManager()
-    let devCmd;
-    if (pnpm) {
-      devCmd = "pnpm dev"
-    } else if (yarn) {
-      devCmd = "yarn dev"
-    } else if (bun) {
-      devCmd = "bun dev"
-    } else {
-      devCmd = "npm run dev"
-    }
-
     const availablePackageManagers = await detectPackageManager();
     const { packageManager } = await inquirer.prompt([
       {
@@ -152,6 +140,16 @@ program
       },
     ])
 
+    let devCmd;
+    if (packageManager === "pnpm") {
+      devCmd = "pnpm dev"
+    } else if (packageManager === "yarn") {
+      devCmd = "yarn dev"
+    } else if (packageManager === "bun") {
+      devCmd = "bun dev"
+    } else {
+      devCmd = "npm run dev"
+    }
     console.log(`Project template downloaded. Get started by running the following:
     
     
