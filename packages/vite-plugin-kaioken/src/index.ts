@@ -11,13 +11,27 @@ const defaultEsBuildOptions: ESBuildOptions = {
   include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
 }
 
+type FilePathFormatter = (path: string, line: number) => string
+
 export interface KaiokenPluginOptions {
   devtools?: boolean
+  /**
+   * Formats the link displayed in devtools to the component's source code
+   * @param path the path to the file that contains the component on disk
+   * @param line the component's line number
+   * @returns {string} the formatted link
+   * @default (path, line) => `vscode://file/${path}:${line}`
+   */
+  formatFileLink?: FilePathFormatter
 }
+
+const vscodeFilePathFormatter = (path: string, line: number) =>
+  `vscode://file/${path}:${line}`
 
 export default function kaioken(
   opts: KaiokenPluginOptions = {
     devtools: true,
+    formatFileLink: vscodeFilePathFormatter,
   }
 ): Plugin {
   let isProduction = false
@@ -91,7 +105,12 @@ export default function kaioken(
       try {
         const componentNames = findExportedComponentNames(ast.body as AstNode[])
         if (componentNames.length > 0) {
-          code = transformIncludeFilePath(ast.body as AstNode[], code, id)
+          code = transformIncludeFilePath(
+            opts.formatFileLink || vscodeFilePathFormatter,
+            ast.body as AstNode[],
+            code,
+            id
+          )
           code = `
 import {applyRecursive} from "kaioken/utils";\n
 ${code}\n
@@ -157,16 +176,24 @@ interface AstNode {
   local?: AstNode & { name: string }
 }
 
-const createFilePathComment = (filePath: string) =>
-  `// [kaioken_devtools]:${filePath}`
+const createFilePathComment = (
+  formatter: FilePathFormatter,
+  filePath: string,
+  line = 0
+) => `// [kaioken_devtools]:${formatter(filePath, line)}`
 
-function transformIncludeFilePath(nodes: AstNode[], code: string, id: string) {
+function transformIncludeFilePath(
+  linkFormatter: FilePathFormatter,
+  nodes: AstNode[],
+  code: string,
+  id: string
+) {
   let offset = 0
 
   const insertToFunctionDeclarationBody = (
     body: AstNode & { body: AstNode[] }
   ) => {
-    const commentText = createFilePathComment(id)
+    const commentText = createFilePathComment(linkFormatter, id)
     const insertPosition = body.start + 1
     code =
       code.slice(0, insertPosition + offset) +

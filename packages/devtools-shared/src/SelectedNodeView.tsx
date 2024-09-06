@@ -55,10 +55,10 @@ export function SelectedNodeView({
 
   const nodeHookTree = makeHookTree(selectedNode)
 
-  const vsCodeLink = useMemo<string | null>(() => {
-    const filePath = getNodeFilePath(selectedNode)
-    return filePath ? `vscode://file/${filePath}` : null
-  }, [selectedNode])
+  const vsCodeLink = useMemo<string | null>(
+    () => getNodeFilePath(selectedNode),
+    [selectedNode]
+  )
 
   return (
     <div className="flex-grow p-2 sticky top-0">
