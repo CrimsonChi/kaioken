@@ -154,18 +154,7 @@ function isHookGroupNode(
   return hookGroupSymbol in node
 }
 
-function buildName(groupNode: HookGroupNode) {
-  let name = groupNode.name
-  let parent = groupNode.parent
-  while (parent) {
-    name = parent.name + "." + name
-    parent = parent.parent
-  }
-  return name
-}
-
 const hookGroupSymbol = Symbol.for("devtools.hookGroup")
-
 function makeHookTree(node: Kaioken.VNode) {
   const root: HookGroupNode = {
     parent: null,
@@ -226,7 +215,6 @@ function HookTreeDisplay({
       >
         {node.children.map((child) => (
           <HookTreeDisplay
-            key={buildName(node) + child.name}
             node={child}
             selectedApp={selectedApp}
             depth={depth + 1}
