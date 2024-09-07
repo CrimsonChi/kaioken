@@ -14,6 +14,7 @@ import { reconcileChildren } from "./reconciler.js"
 import { applyRecursive, vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
+type FunctionNode = VNode & { type: (...args: any) => any }
 
 function fireEffects(tree: VNode, immediate?: boolean) {
   const root = tree
@@ -60,9 +61,11 @@ export class Scheduler {
   private pendingCallback: IdleRequestCallback | undefined
   private channel: MessageChannel
   private frameHandle: number | null = null
-  private isImmediateCallbacksMode = false
+  private isImmediateEffectsMode = false
+  private immediateEffectDirtiedRender = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
+  private fatalError = ""
   //private lastUpdateRequester: VNode | null = null
 
   constructor(
@@ -117,8 +120,13 @@ export class Scheduler {
     if ("frozen" in vNode) {
       vNode.frozen = false
     }
-    if (this.isImmediateCallbacksMode) {
+    if (this.isImmediateEffectsMode) {
+      this.immediateEffectDirtiedRender = true
+    }
+
+    if (node.current === vNode) {
       this.isRenderDirtied = true
+      return
     }
 
     if (this.nextUnitOfWork === vNode) {
@@ -255,18 +263,18 @@ export class Scheduler {
         commitWork(t)
       }
 
-      this.isImmediateCallbacksMode = true
+      this.isImmediateEffectsMode = true
       for (const t of tip) {
         fireEffects(t, true)
       }
-      this.isImmediateCallbacksMode = false
+      this.isImmediateEffectsMode = false
 
-      if (this.isRenderDirtied) {
+      if (this.immediateEffectDirtiedRender) {
         this.checkForTooManyConsecutiveDirtyRenders()
         while (tip.length) {
           fireEffects(tip.shift()!)
         }
-        this.isRenderDirtied = false
+        this.immediateEffectDirtiedRender = false
         this.consecutiveDirtyCount++
         return this.workLoop()
       }
@@ -303,7 +311,7 @@ export class Scheduler {
     if (!skip) {
       try {
         if (typeof vNode.type === "function") {
-          this.updateFunctionComponent(vNode)
+          this.updateFunctionComponent(vNode as FunctionNode)
         } else if (
           vNode.type === fragmentSymbol ||
           vNode.type === contextProviderSymbol
@@ -319,6 +327,12 @@ export class Scheduler {
           this.updateHostComponent(vNode)
         }
       } catch (error) {
+        if (this.fatalError) {
+          setTimeout(() => {
+            throw new Error(this.fatalError)
+          })
+          throw error
+        }
         console.error(error)
         window.__kaioken?.emit(
           "error",
@@ -348,10 +362,22 @@ export class Scheduler {
     }
   }
 
-  private updateFunctionComponent(vNode: VNode) {
-    this.appCtx.hookIndex = 0
+  private updateFunctionComponent(vNode: FunctionNode) {
     node.current = vNode
-    const newChildren = (vNode.type as Function)(vNode.props)
+    let newChildren
+    let renderTryCount = 0
+    do {
+      this.isRenderDirtied = false
+      this.appCtx.hookIndex = 0
+      newChildren = vNode.type(vNode.props)
+      if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
+        const stackMsg = this.captureErrorStack(vNode)
+        this.fatalError = stackMsg
+        throw new Error(
+          "[kaioken]: Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop."
+        )
+      }
+    } while (this.isRenderDirtied)
     vNode.child =
       reconcileChildren(this.appCtx, vNode, vNode.child || null, newChildren) ||
       undefined
@@ -388,6 +414,24 @@ export class Scheduler {
     node.current = undefined
   }
 
+  private captureErrorStack(vNode: FunctionNode) {
+    let n: VNode | undefined = vNode.parent
+    const srcText = getComponentErrorDisplayText(vNode.type)
+    let componentFns: string[] = [srcText]
+    while (n) {
+      if (n === this.appCtx.rootNode) break
+      if (typeof n.type === "function") {
+        componentFns.push(getComponentErrorDisplayText(n.type))
+      } else if (typeof n.type === "string") {
+        componentFns.push(n.type)
+      }
+      n = n.parent
+    }
+    return `The above error occurred in the <${getFunctionName(vNode.type as any)}> component:
+
+${componentFns.map((x) => `   at ${x}`).join("\n")}\n`
+  }
+
   private checkForTooManyConsecutiveDirtyRenders() {
     if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
       throw new Error(
@@ -395,4 +439,23 @@ export class Scheduler {
       )
     }
   }
+}
+
+function getComponentErrorDisplayText(fn: Function) {
+  let str = getFunctionName(fn)
+  if (__DEV__) {
+    const fileLink = getComponentFileLink(fn)
+    if (fileLink) {
+      str = `${str} (${fileLink})`
+    }
+  }
+  return str
+}
+
+function getFunctionName(fn: Function) {
+  return (fn as any).displayName ?? (fn.name || "Anonymous Function")
+}
+
+function getComponentFileLink(fn: Function) {
+  return fn.toString().match(/\/\/ \[kaioken_devtools\]:(.*)/)?.[1] ?? null
 }
