@@ -16,9 +16,10 @@ import {
 import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
 import { type AppContext } from "../appContext.js"
+import { noop } from "../utils.js"
 
 type RouterCtx = {
-  doSyncNav: (callback: () => void) => void
+  queueSyncNav: (callback: () => void) => void
   params: Record<string, string>
   query: Record<string, string>
   routePath: string
@@ -26,7 +27,7 @@ type RouterCtx = {
   isDefault: boolean
 }
 const RouterContext = createContext<RouterCtx>({
-  doSyncNav: () => {},
+  queueSyncNav: noop,
   params: {},
   query: {},
   routePath: "/",
@@ -73,7 +74,7 @@ export function navigate(to: string, options?: { replace?: boolean }) {
    * causing it to be executed synchronously
    * during the router's useLayoutEffect
    */
-  return routerCtx.doSyncNav(doNav), null
+  return routerCtx.queueSyncNav(doNav), null
 }
 
 interface RouterProps {
@@ -85,7 +86,7 @@ const initLoc = () => ({
   search: window.location.search,
 })
 export function Router(props: RouterProps) {
-  const syncNav = useRef<Array<() => void>>([])
+  const syncNavQueue = useRef<Array<() => void>>([])
   const parentRouterContext = useContext(RouterContext, false)
   const dynamicParentPath = parentRouterContext.isDefault
     ? undefined
@@ -114,8 +115,8 @@ export function Router(props: RouterProps) {
   }, [])
 
   useLayoutEffect(() => {
-    while (syncNav.current.length) {
-      syncNav.current.shift()!()
+    while (syncNavQueue.current.length) {
+      syncNavQueue.current.shift()!()
     }
   })
 
@@ -181,8 +182,8 @@ export function Router(props: RouterProps) {
           (props.basePath || "") +
           (route?.props.path || ""),
         isDefault: false,
-        doSyncNav: (callback: () => void) => {
-          syncNav.current.push(callback)
+        queueSyncNav: (callback: () => void) => {
+          syncNavQueue.current.push(callback)
         },
       } satisfies RouterCtx,
     },
