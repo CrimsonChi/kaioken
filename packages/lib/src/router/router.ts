@@ -70,9 +70,11 @@ export function navigate(to: string, options?: { replace?: boolean }) {
     return ctx.scheduler?.nextIdle(doNav), null
   }
   /**
-   * push our callback in the sync nav queue,
+   * set the value of our router's syncNavCallback,
    * causing it to be executed synchronously
-   * during the router's useLayoutEffect
+   * during the router's useLayoutEffect.
+   * consecutive calls to navigate will overwrite
+   * the previous value.
    */
   return routerCtx.queueSyncNav(doNav), null
 }
@@ -86,7 +88,7 @@ const initLoc = () => ({
   search: window.location.search,
 })
 export function Router(props: RouterProps) {
-  const syncNavQueue = useRef<Array<() => void>>([])
+  const syncNavCallback = useRef<(() => void) | null>(null)
   const parentRouterContext = useContext(RouterContext, false)
   const dynamicParentPath = parentRouterContext.isDefault
     ? undefined
@@ -115,8 +117,9 @@ export function Router(props: RouterProps) {
   }, [])
 
   useLayoutEffect(() => {
-    while (syncNavQueue.current.length) {
-      syncNavQueue.current.shift()!()
+    if (syncNavCallback.current) {
+      syncNavCallback.current()
+      syncNavCallback.current = null
     }
   })
 
@@ -183,7 +186,7 @@ export function Router(props: RouterProps) {
           (route?.props.path || ""),
         isDefault: false,
         queueSyncNav: (callback: () => void) => {
-          syncNavQueue.current.push(callback)
+          syncNavCallback.current = callback
         },
       } satisfies RouterCtx,
     },
