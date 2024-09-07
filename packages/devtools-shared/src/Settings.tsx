@@ -41,7 +41,26 @@ function recursiveObjectValidate(
   return true
 }
 
-let userSettings: UserSettings = defaultSettings
+function recursiveObjectAssign(
+  obj: Record<string, any>,
+  defaultObj: Record<string, any>,
+  assign: (obj: Record<string, any>, key: string, value: any) => void
+) {
+  for (const key in defaultObj) {
+    if (typeof obj[key] === "undefined") {
+      obj[key] = structuredClone(defaultObj[key])
+    }
+  }
+  for (const key in obj) {
+    if (typeof obj[key] === "object") {
+      recursiveObjectAssign(obj[key], defaultObj[key], assign)
+    } else {
+      assign(obj, key, obj[key])
+    }
+  }
+}
+
+let userSettings: UserSettings = { ...defaultSettings }
 const storageData = localStorage.getItem("kaioken.devtools.userSettings")
 if (storageData) {
   try {
@@ -79,7 +98,6 @@ export function SettingsProvider({
   const [_userSettings, setUserSettings] = useState<UserSettings>(userSettings)
 
   const saveUserSettings = (newSettings: UserSettings) => {
-    debugger
     localStorage.setItem(
       "kaioken.devtools.userSettings",
       JSON.stringify(newSettings)
@@ -150,6 +168,13 @@ function Drawer({ state, close, userSettings, saveUserSettings }: DrawerProps) {
               ...userSettings,
             }
             applyObjectChangeFromKeys(newSettings, keys, value)
+            recursiveObjectAssign(
+              newSettings,
+              defaultSettings,
+              (obj, key, value) => {
+                obj[key] = value < 1 ? 1 : value
+              }
+            )
             saveUserSettings(newSettings)
           }}
           mutable={true}
