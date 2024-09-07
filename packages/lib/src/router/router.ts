@@ -5,7 +5,6 @@ import {
   useContext,
   useLayoutEffect,
   useRef,
-  useAppContext,
 } from "../hooks/index.js"
 import { __DEV__ } from "../env.js"
 import {
@@ -15,8 +14,8 @@ import {
 } from "./routerUtils.js"
 import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
-import { type AppContext } from "../appContext.js"
-import { noop } from "../utils.js"
+import { getVNodeAppContext, noop } from "../utils.js"
+import { node } from "src/globals.js"
 
 type RouterCtx = {
   queueSyncNav: (callback: () => void) => void
@@ -49,17 +48,13 @@ export function useRouter() {
 }
 
 export function navigate(to: string, options?: { replace?: boolean }) {
-  let ctx: AppContext | undefined
-  try {
-    ctx = useAppContext()
-  } catch (e) {}
-
+  let _node = node.current
   const doNav = () => {
     window.history[options?.replace ? "replaceState" : "pushState"]({}, "", to)
     window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
   }
   // not called during render, just do the navigation
-  if (!ctx) return doNav(), null
+  if (!_node) return doNav(), null
 
   const routerCtx = useContext(RouterContext, false)
   if (routerCtx.isDefault) {
@@ -67,6 +62,7 @@ export function navigate(to: string, options?: { replace?: boolean }) {
      * called from a non-router-decendant - postpone
      * until next tick to avoid race conditions
      */
+    const ctx = getVNodeAppContext(_node)
     return ctx.scheduler?.nextIdle(doNav), null
   }
   /**
