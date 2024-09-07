@@ -48,28 +48,30 @@ export function useRouter() {
 }
 
 export function navigate(to: string, options?: { replace?: boolean }) {
-  let ctx: AppContext | undefined, routerCtx: RouterCtx | undefined
+  let ctx: AppContext | undefined
   try {
     ctx = useAppContext()
-    routerCtx = useContext(RouterContext, false)
   } catch (e) {}
 
   const doNav = () => {
     window.history[options?.replace ? "replaceState" : "pushState"]({}, "", to)
     window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
   }
-  // just do the navigation if not called during render
-  if (!ctx) return doNav()
-  if (!routerCtx || routerCtx.isDefault) {
+  // not called during render, just do the navigation
+  if (!ctx) return doNav(), null
+
+  const routerCtx = useContext(RouterContext, false)
+  if (routerCtx.isDefault) {
     /**
-     * postpone until next tick to allow for cases
-     * where navigate is called during render
+     * called from a non-router-decendant - postpone
+     * until next tick to avoid race conditions
      */
     return ctx.scheduler?.nextIdle(doNav), null
   }
   /**
-   * synchronous, blocking navigation performed during render
-   * - triggers a setState during the router's useLayoutEffect
+   * push our callback in the sync nav queue,
+   * causing it to be executed synchronously
+   * during the router's useLayoutEffect
    */
   return routerCtx.doSyncNav(doNav), null
 }
@@ -83,7 +85,7 @@ const initLoc = () => ({
   search: window.location.search,
 })
 export function Router(props: RouterProps) {
-  const syncNav = useRef<(() => void) | null>(null)
+  const syncNav = useRef<Array<() => void>>([])
   const parentRouterContext = useContext(RouterContext, false)
   const dynamicParentPath = parentRouterContext.isDefault
     ? undefined
@@ -112,9 +114,8 @@ export function Router(props: RouterProps) {
   }, [])
 
   useLayoutEffect(() => {
-    if (syncNav.current) {
-      syncNav.current()
-      syncNav.current = null
+    while (syncNav.current.length) {
+      syncNav.current.shift()!()
     }
   })
 
@@ -181,7 +182,7 @@ export function Router(props: RouterProps) {
           (route?.props.path || ""),
         isDefault: false,
         doSyncNav: (callback: () => void) => {
-          syncNav.current = callback
+          syncNav.current.push(callback)
         },
       } satisfies RouterCtx,
     },
