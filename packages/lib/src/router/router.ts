@@ -15,7 +15,7 @@ import {
 import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
 import { getVNodeAppContext, noop } from "../utils.js"
-import { node } from "src/globals.js"
+import { node } from "../globals.js"
 
 type RouterCtx = {
   queueSyncNav: (callback: () => void) => void
