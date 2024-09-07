@@ -48,34 +48,30 @@ export function useRouter() {
 }
 
 export function navigate(to: string, options?: { replace?: boolean }) {
-  let ctx: AppContext | undefined
-  let routerCtx: RouterCtx | undefined
+  let ctx: AppContext | undefined, routerCtx: RouterCtx | undefined
   try {
     ctx = useAppContext()
-  } catch (error) {}
-  try {
     routerCtx = useContext(RouterContext, false)
-  } catch (error) {}
+  } catch (e) {}
 
   const doNav = () => {
     window.history[options?.replace ? "replaceState" : "pushState"]({}, "", to)
     window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
   }
+  // just do the navigation if not called during render
+  if (!ctx) return doNav()
   if (!routerCtx || routerCtx.isDefault) {
     /**
-     * postpone until next tick to allow for cases where
-     * navigate is called programatically upon new route render
+     * postpone until next tick to allow for cases
+     * where navigate is called during render
      */
-    if (ctx) {
-      ctx.scheduler?.nextIdle(doNav)
-    } else {
-      setTimeout(doNav, 0)
-    }
-    return null
+    return ctx.scheduler?.nextIdle(doNav), null
   }
-
-  routerCtx.doSyncNav(doNav)
-  return null
+  /**
+   * synchronous, blocking navigation performed during render
+   * - triggers a setState during the router's useLayoutEffect
+   */
+  return routerCtx.doSyncNav(doNav), null
 }
 
 interface RouterProps {
