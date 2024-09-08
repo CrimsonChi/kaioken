@@ -394,11 +394,9 @@ export class Scheduler {
       }
     }
 
-    if (__DEV__) {
-      if (vNode.dom) {
-        // @ts-expect-error we apply vNode to the dom node
-        vNode.dom!.__kaiokenNode = vNode
-      }
+    if (vNode.dom) {
+      // @ts-expect-error we apply vNode to the dom node
+      vNode.dom!.__kaiokenNode = vNode
     }
 
     vNode.child =
