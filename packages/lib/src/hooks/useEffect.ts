@@ -16,7 +16,7 @@ export function useEffect(
       cleanupHook(hook)
       queueEffect(() => {
         const cleanup = callback()
-        if (cleanup && typeof cleanup === "function") {
+        if (typeof cleanup === "function") {
           hook.cleanup = cleanup
         }
       })

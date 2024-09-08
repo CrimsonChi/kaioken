@@ -15,10 +15,9 @@ export function useReducer<T, A>(
       if (isInit) {
         hook.dispatch = (action: A) => {
           const newState = reducer(hook.state, action)
-          if (newState !== hook.state) {
-            hook.state = newState
-            update()
-          }
+          if (Object.is(hook.state, newState)) return
+          hook.state = newState
+          update()
         }
         if (__DEV__) {
           hook.debug = {

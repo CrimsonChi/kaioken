@@ -21,10 +21,9 @@ export function useState<T>(
         hook.dispatch = (setter: Kaioken.StateSetter<T>) => {
           const newState =
             setter instanceof Function ? setter(hook.state) : setter
-          if (newState !== hook.state) {
-            hook.state = newState
-            update()
-          }
+          if (Object.is(hook.state, newState)) return
+          hook.state = newState
+          update()
         }
         if (__DEV__) {
           hook.debug = {

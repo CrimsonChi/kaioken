@@ -20,7 +20,7 @@ export function useLayoutEffect(
         queueEffect(
           () => {
             const cleanup = callback()
-            if (cleanup && typeof cleanup === "function") {
+            if (typeof cleanup === "function") {
               hook.cleanup = cleanup
             }
           },
