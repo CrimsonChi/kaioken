@@ -25,7 +25,7 @@
     "tsx": "^4.16.2"
   },
   "dependencies": {
-    "@kaioken-core/hooks": "0.0.4-13",
+    "@kaioken-core/hooks": "0.0.8",
     "devtools-shared": "workspace:^",
     "kaioken": "workspace:^",
     "tailwind-merge": "^2.5.2"

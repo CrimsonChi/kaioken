@@ -19,7 +19,7 @@
     "vite-plugin-singlefile": "^2.0.2"
   },
   "dependencies": {
-    "@kaioken-core/hooks": "0.0.4-13",
+    "@kaioken-core/hooks": "0.0.8",
     "kaioken": "workspace:^",
     "devtools-shared": "workspace:^"
   }
