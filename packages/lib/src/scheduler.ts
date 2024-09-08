@@ -66,7 +66,6 @@ export class Scheduler {
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
   private fatalError = ""
-  //private lastUpdateRequester: VNode | null = null
 
   constructor(
     private appCtx: AppContext<any>,
@@ -93,7 +92,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
-    //this.lastUpdateRequester = null
+    this.sleep(true)
   }
 
   wake() {
@@ -102,8 +101,8 @@ export class Scheduler {
     this.requestIdleCallback(this.workLoop.bind(this))
   }
 
-  sleep() {
-    if (!this.isRunning) return
+  sleep(force = false) {
+    if (!this.isRunning && !force) return
     this.isRunning = false
     if (this.frameHandle !== null) {
       globalThis.cancelAnimationFrame(this.frameHandle)
@@ -239,7 +238,6 @@ export class Scheduler {
   }
 
   private workLoop(deadline?: IdleDeadline): void {
-    //this.lastUpdateRequester = null
     ctx.current = this.appCtx
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
