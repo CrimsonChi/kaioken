@@ -1,10 +1,4 @@
-import {
-  AppContext,
-  Signal,
-  useEffect,
-  useMemo,
-  useRequestUpdate,
-} from "kaioken"
+import { AppContext, useEffect, useMemo, useRequestUpdate } from "kaioken"
 import {
   applyObjectChangeFromKeys,
   getComponentFileLink,
@@ -108,19 +102,14 @@ export function SelectedNodeView({
               <div className="p-2">
                 <ValueEditor
                   data={{
-                    value: (signal.constructor as typeof Signal).getValue(
-                      signal
-                    ),
+                    value: signal.peek(),
                   }}
                   onChange={(keys, newVal) => {
                     const _v = {
                       value: signal.value,
                     }
                     applyObjectChangeFromKeys(_v, keys, newVal)
-                    ;(signal.constructor as typeof Signal).setValueSilently(
-                      signal,
-                      _v.value
-                    )
+                    signal.sneak(_v.value)
                   }}
                   mutable={true}
                   objectRefAcc={[]}

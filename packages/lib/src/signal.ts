@@ -20,10 +20,10 @@ export const signal = <T>(initial: T, displayName?: string) => {
               hook.debug = {
                 get: () => ({
                   displayName: hook.signal.displayName,
-                  value: Signal.getValue(hook.signal),
+                  value: hook.signal.peek(),
                 }),
                 set: ({ value }) => {
-                  Signal.setValueSilently(hook.signal, value)
+                  hook.signal.sneak(value)
                 },
               }
             }
@@ -58,7 +58,7 @@ export const computed = <T>(getter: () => T, displayName?: string) => {
             hook.debug = {
               get: () => ({
                 displayName: hook.signal.displayName,
-                value: Signal.getValue(hook.signal),
+                value: hook.signal.peek(),
               }),
             }
           }
@@ -98,14 +98,6 @@ export class Signal<T> {
     return typeof x === "object" && !!x && signalSymbol in x
   }
 
-  static setValueSilently<T>(signal: Signal<T>, value: T) {
-    signal.#value = value
-  }
-
-  static getValue<T>(signal: Signal<T>): T {
-    return signal.#value
-  }
-
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
     if (renderMode.current !== "dom" && renderMode.current !== "hydrate") return
     if (!node.subs) node.subs = [signal]
@@ -123,6 +115,10 @@ export class Signal<T> {
 
   peek() {
     return this.#value
+  }
+
+  sneak(newValue: T) {
+    this.#value = newValue
   }
 
   map<U>(fn: (value: T) => U, displayName?: string): Signal<U> {
@@ -163,7 +159,7 @@ const appliedTrackedSignals = <T>(
 ) => {
   // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   isTracking = true
-  Signal.setValueSilently(computedSignal, getter())
+  computedSignal.sneak(getter())
   isTracking = false
 
   for (const [sig, unsub] of subs) {

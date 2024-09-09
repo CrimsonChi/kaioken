@@ -1,6 +1,5 @@
 import {
   booleanAttributes,
-  isVNode,
   propFilters,
   propToHtmlAttr,
   styleObjectToCss,
@@ -27,8 +26,8 @@ function setRefSignal(
   signal: Signal<SomeDom | null>,
   domOrNull: SomeDom | null
 ) {
-  Signal.setValueSilently(signal, domOrNull)
-  signal.notify((sub) => !isVNode(sub))
+  signal.sneak(domOrNull)
+  signal.notify((sub) => typeof sub === "function")
 }
 
 function setRef(vNode: VNode, dom: SomeDom) {
