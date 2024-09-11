@@ -1,38 +1,37 @@
-import { AppContext, AppContextOptions } from "./appContext.js"
+import { AppContext, type AppContextOptions } from "./appContext.js"
 import { ctx } from "./globals.js"
 import { KaiokenGlobalContext } from "./globalContext.js"
-import { createElement, fragment } from "./element.js"
 
 export type * from "./types"
 export * from "./appContext.js"
 export * from "./context.js"
+export * from "./element.js"
 export * from "./hooks/index.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./renderToString.js"
 export * from "./router/index.js"
-export { signal, Signal, computed } from "./signal.js"
+export * from "./signal.js"
 export * from "./store.js"
 export * from "./transition.js"
-export { mount, createElement, fragment }
 
 if ("window" in globalThis) {
   globalThis.window.__kaioken ??= new KaiokenGlobalContext()
 }
 
-function mount<T extends Record<string, unknown>>(
+export function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   options: AppContextOptions,
   appProps?: T
 ): Promise<AppContext<T>>
 
-function mount<T extends Record<string, unknown>>(
+export function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   root: HTMLElement,
   appProps?: T
 ): Promise<AppContext<T>>
 
-function mount<T extends Record<string, unknown>>(
+export function mount<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
   optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
