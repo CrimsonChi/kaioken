@@ -8,6 +8,7 @@ import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
   GlobalAttributes,
+  GlobalEventAttributes,
   HtmlElementAttributes,
   SomeDom,
   SvgElementAttributes,
@@ -41,6 +42,7 @@ type ElementMap = {
       | GlobalAttributes[K]
       | Signal<GlobalAttributes[K]>
   } & EventAttributes<Tag> &
+    GlobalEventAttributes &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
@@ -61,6 +63,7 @@ type ElementMap = {
       | GlobalAttributes[K]
       | Signal<GlobalAttributes[K]>
   } & EventAttributes<Tag> &
+    GlobalEventAttributes &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:

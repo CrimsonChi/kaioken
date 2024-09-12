@@ -3,6 +3,7 @@ export type {
   SvgElementAttributes,
   SvgGlobalAttributes,
   GlobalAttributes,
+  GlobalEventAttributes,
   EventAttributes,
   SomeDom,
   SomeElement,
@@ -189,7 +190,9 @@ type GlobalAttributes = {
   title?: string
   translate?: "yes" | "no"
   popover?: "auto" | "manual" | boolean
-} & Omit<
+}
+
+type GlobalEventAttributes = Omit<
   Partial<GlobalEventHandlers>,
   | keyof InputEventAttributes<any>
   | keyof FocusEventAttributes
