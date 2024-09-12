@@ -5,7 +5,7 @@ import {
   EFFECT_TAG,
   fragmentSymbol,
 } from "./constants.js"
-import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
+import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
@@ -390,7 +390,6 @@ export class Scheduler {
         hydrateDom(vNode)
       } else {
         vNode.dom = createDom(vNode)
-        updateDom(vNode)
       }
     }
 

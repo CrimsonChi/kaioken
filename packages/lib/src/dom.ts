@@ -59,12 +59,22 @@ function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
   const dom =
     t == ELEMENT_TYPE.text
-      ? document.createTextNode(vNode.props.nodeValue ?? "")
+      ? createTextNode(vNode)
       : svgTags.includes(t)
         ? document.createElementNS("http://www.w3.org/2000/svg", t)
         : document.createElement(t)
   setRef(vNode, dom)
   return dom
+}
+function createTextNode(vNode: VNode): Text {
+  const prop = vNode.props.nodeValue
+  const isSig = Signal.isSignal(prop)
+  const value = isSig ? prop.peek() : vNode.props.nodeValue
+  const el = document.createTextNode(value)
+  if (isSig) {
+    subTextNode(vNode, el, prop)
+  }
+  return el
 }
 
 function updateDom(node: VNode) {
@@ -82,25 +92,51 @@ function updateDom(node: VNode) {
 
     if (propFilters.internalProps.includes(key)) return
 
-    if (
-      propFilters.isEvent(key) &&
-      (prevProps[key] !== nextProps[key] || renderMode.current === "hydrate")
-    ) {
-      const eventType = key.toLowerCase().substring(2)
-      if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
-      if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
+    if (propFilters.isEvent(key)) {
+      if (
+        prevProps[key] !== nextProps[key] ||
+        renderMode.current === "hydrate"
+      ) {
+        const eventType = key.toLowerCase().substring(2)
+        if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
+        if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
+      }
       return
     }
 
-    if (!(dom instanceof Text) && prevProps[key] !== nextProps[key]) {
+    if (!(dom instanceof Text)) {
+      if (prevProps[key] === nextProps[key]) return
+      if (Signal.isSignal(prevProps[key]) && node.cleanups) {
+        const cleanup = node.cleanups.get(key)
+        if (cleanup) {
+          cleanup()
+          node.cleanups.delete(key)
+        }
+      }
+      if (Signal.isSignal(nextProps[key])) {
+        const unsub = nextProps[key].subscribe((v) => {
+          setProp(dom, key, v, unwrap(node.prev?.props[key]))
+        })
+        ;(node.cleanups ??= new Map()).set(key, unsub)
+        return setProp(dom, key, nextProps[key].peek(), unwrap(prevProps[key]))
+      }
       setProp(dom, key, nextProps[key], prevProps[key])
       return
     }
-
-    if (dom.nodeValue !== nextProps.nodeValue) {
-      dom.nodeValue = nextProps.nodeValue
+    const nodeVal = unwrap(nextProps[key])
+    if (dom.nodeValue !== nodeVal) {
+      dom.nodeValue = nodeVal
     }
   })
+}
+
+function unwrap(value: unknown) {
+  return Signal.isSignal(value) ? value.peek() : value
+}
+
+function subTextNode(node: Kaioken.VNode, dom: Text, sig: Signal<string>) {
+  const unsub = sig.subscribe((v) => (dom.nodeValue = v))
+  ;(node.cleanups ??= new Map()).set("nodeValue", unsub)
 }
 
 function hydrateDom(vNode: VNode) {
@@ -118,11 +154,20 @@ function hydrateDom(vNode: VNode) {
     updateDom(vNode)
     return
   }
+  if (Signal.isSignal(vNode.props.nodeValue)) {
+    subTextNode(vNode, dom as Text, vNode.props.nodeValue)
+  }
+
   let prev = vNode
   let sibling = vNode.sibling
   while (sibling && sibling.type === ELEMENT_TYPE.text) {
+    const sib = sibling
     hydrationStack.bumpChildIndex()
-    sibling.dom = (prev.dom as Text).splitText(prev.props.nodeValue.length)
+    const dom = (prev.dom as Text).splitText(prev.props.nodeValue.length)
+    sib.dom = dom
+    if (Signal.isSignal(sib.props.nodeValue)) {
+      subTextNode(sib, dom, sib.props.nodeValue)
+    }
     prev = sibling
     sibling = sibling.sibling
   }
@@ -361,11 +406,12 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
-    let skipDomRemoval = isPortal(n)
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
+    n.cleanups?.forEach((c) => c()), delete n.cleanups
+
     if (n.dom) {
-      if (n.dom.isConnected && !skipDomRemoval) n.dom.remove()
+      if (n.dom.isConnected && !isPortal(n)) n.dom.remove()
       delete n.dom
       clearRef(n)
     }

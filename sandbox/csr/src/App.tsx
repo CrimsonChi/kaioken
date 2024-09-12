@@ -7,6 +7,7 @@ import {
   useEffect,
   useHookDebugGroup,
   HookDebugGroupAction,
+  signal,
 } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
@@ -91,6 +92,11 @@ function Nav() {
   )
 }
 
+const id = signal(0)
+id.subscribe((v) => console.log("id", v))
+setInterval(() => {
+  id.value++
+}, 1000)
 export function App() {
   return (
     <>
@@ -125,11 +131,15 @@ export function App() {
 }
 
 function RouterTest() {
+  const [count, setCount] = useState(0)
   const { params, query } = useRouter()
+  console.log("RouterTest", params, query)
   return (
-    <div>
+    <div id={id.map((v) => v.toString())}>
       <p>query: {query.sort}</p>
       <p>params: {JSON.stringify(params, null, 2)}</p>
+      <p>count: {count}</p>
+      <button onclick={() => setCount((c) => c + 1)}>+</button>
       <Link to="/router-test/123?sort=desc">Home</Link>
       <Link to="/router-test/123/child-route/420?sort=desc">Child Route</Link>
       <Router>
@@ -141,6 +151,7 @@ function RouterTest() {
 }
 
 function ChildRoute() {
+  console.log("ChildRoute")
   const { params, query, setQuery } = useRouter()
   return (
     <div>

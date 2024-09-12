@@ -188,7 +188,7 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
     return updateFragment(parent, oldNode, child /*, { array: true }*/)
   }
   if (Signal.isSignal(child)) {
-    return updateSlot(parent, oldNode, child.value)
+    return updateSlot(parent, oldNode, child.peek())
   }
   return null
 }
@@ -228,7 +228,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   }
   const created = createElement(nodeType, newNode.props)
   created.parent = parent
-  newNode.depth = parent.depth! + 1
+  created.depth = parent.depth + 1
   return created
 }
 
@@ -241,7 +241,7 @@ function updateFragment(
   if (oldNode === null || oldNode.type !== fragmentSymbol) {
     const el = createElement(fragmentSymbol, { children, ...newProps })
     el.parent = parent
-    el.depth = parent.depth! + 1
+    el.depth = parent.depth + 1
     return el
   }
   oldNode.props = { ...oldNode.props, ...newProps, children }
@@ -250,15 +250,21 @@ function updateFragment(
   return oldNode
 }
 
-function createChild(parent: VNode, child: unknown): VNode | null {
+function createChild(
+  parent: VNode,
+  child: unknown,
+  sig: Signal<any> | null = null
+): VNode | null {
   if (
     (typeof child === "string" && child !== "") ||
     typeof child === "number" ||
     typeof child === "bigint"
   ) {
-    const el = createElement(ELEMENT_TYPE.text, { nodeValue: "" + child })
+    const el = createElement(ELEMENT_TYPE.text, {
+      nodeValue: sig ?? "" + child,
+    })
     el.parent = parent
-    el.depth = parent.depth! + 1
+    el.depth = parent.depth + 1
     return el
   }
 
@@ -274,11 +280,11 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     if (Array.isArray(child)) {
       const el = fragment({ children: child })
       el.parent = parent
-      el.depth = parent.depth! + 1
+      el.depth = parent.depth + 1
       return el
     }
     if (Signal.isSignal(child)) {
-      return createChild(parent, child.value)
+      return createChild(parent, child.peek(), child)
     }
   }
   return null
@@ -326,7 +332,7 @@ function updateFromMap(
         nodeValue: newChild,
       })
       n.parent = parent
-      n.depth = parent.depth! + 1
+      n.depth = parent.depth + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
@@ -347,7 +353,7 @@ function updateFromMap(
     } else {
       const n = createElement(newChild.type, newChild.props)
       n.parent = parent
-      n.depth = parent.depth! + 1
+      n.depth = parent.depth + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n
@@ -363,7 +369,7 @@ function updateFromMap(
     } else {
       const n = fragment({ children: newChild })
       n.parent = parent
-      n.depth = parent.depth! + 1
+      n.depth = parent.depth + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
       n.index = index
       return n

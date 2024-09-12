@@ -73,7 +73,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     return
   }
   if (Signal.isSignal(el)) {
-    renderToStream_internal(state, el.value, parent)
+    renderToStream_internal(state, el.peek(), parent)
     return
   }
   if (!isVNode(el)) {
@@ -120,7 +120,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
       state.stream.push(
         String(
           Signal.isSignal(props.innerHTML)
-            ? props.innerHTML.value
+            ? props.innerHTML.peek()
             : props.innerHTML
         )
       )

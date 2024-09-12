@@ -47,7 +47,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (el instanceof Array) {
     return el.map((c) => renderToString_internal(c, parent)).join("")
   }
-  if (Signal.isSignal(el)) return renderToString_internal(el.value, parent)
+  if (Signal.isSignal(el)) return renderToString_internal(el.peek(), parent)
   if (!isVNode(el)) return String(el)
 
   el.parent = parent
@@ -80,7 +80,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   const inner =
     "innerHTML" in props
       ? Signal.isSignal(props.innerHTML)
-        ? props.innerHTML.value
+        ? props.innerHTML.peek()
         : props.innerHTML
       : Array.isArray(children)
         ? children.map((c) => renderToString_internal(c, el)).join("")

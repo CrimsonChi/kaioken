@@ -32,23 +32,40 @@ type ElementProps<T extends keyof JSX.IntrinsicElements> =
 type WebComponentTag = `${string}-${string}`
 
 type ElementMap = {
-  [K in keyof HtmlElementAttributes]: HtmlElementAttributes[K] &
-    GlobalAttributes &
-    EventAttributes<K> &
+  [Tag in keyof HtmlElementAttributes]: {
+    [K in keyof HtmlElementAttributes[Tag]]:
+      | HtmlElementAttributes[Tag][K]
+      | Signal<HtmlElementAttributes[Tag][K]>
+  } & {
+    [K in keyof GlobalAttributes]:
+      | GlobalAttributes[K]
+      | Signal<GlobalAttributes[K]>
+  } & EventAttributes<Tag> &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
-        | Kaioken.Ref<HTMLTagToElement<K>>
-        | Signal<HTMLTagToElement<K> | null>
+        | Kaioken.Ref<HTMLTagToElement<Tag>>
+        | Signal<HTMLTagToElement<Tag> | null>
     }
 } & {
-  [K in keyof SvgElementAttributes]: SvgElementAttributes[K] &
-    SvgGlobalAttributes &
-    GlobalAttributes &
-    EventAttributes<K> &
+  [Tag in keyof SvgElementAttributes]: {
+    [K in keyof SvgElementAttributes[Tag]]:
+      | SvgElementAttributes[Tag][K]
+      | Signal<SvgElementAttributes[Tag][K]>
+  } & {
+    [K in keyof SvgGlobalAttributes]:
+      | SvgGlobalAttributes[K]
+      | Signal<SvgGlobalAttributes[K]>
+  } & {
+    [K in keyof GlobalAttributes]:
+      | GlobalAttributes[K]
+      | Signal<GlobalAttributes[K]>
+  } & EventAttributes<Tag> &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
-      ref?: Kaioken.Ref<SVGTagToElement<K>> | Signal<SVGTagToElement<K> | null>
+      ref?:
+        | Kaioken.Ref<SVGTagToElement<Tag>>
+        | Signal<SVGTagToElement<Tag> | null>
     }
 } & {
   [K in WebComponentTag]: Record<string, any>
@@ -149,9 +166,10 @@ declare global {
         ref?: Kaioken.Ref<unknown>
       }
       index: number
-      depth?: number
+      depth: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]
+      cleanups?: Map<string, Function>
       parent?: VNode
       child?: VNode
       sibling?: VNode
