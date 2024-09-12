@@ -27,43 +27,56 @@ import { UseModelExample } from "./components/useModelExample"
 import { GlobalComputedExample } from "./components/ComputedExample"
 import { LocalComputedExample } from "./components/ComputedExample"
 
-function useTimer() {
-  useHookDebugGroup("useTimer", HookDebugGroupAction.Start)
-  const [time, setTime] = useState(0)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime((t) => t + 1)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [])
-  useHookDebugGroup("useTimer", HookDebugGroupAction.End)
-  return time
-}
+// function useTimer() {
+//   useHookDebugGroup("useTimer", HookDebugGroupAction.Start)
+//   const [time, setTime] = useState(0)
+//   useEffect(() => {
+//     const interval = setInterval(() => {
+//       setTime((t) => t + 1)
+//     }, 1000)
+//     return () => clearInterval(interval)
+//   }, [])
+//   useHookDebugGroup("useTimer", HookDebugGroupAction.End)
+//   return time
+// }
 
-function useSecondsList() {
-  useHookDebugGroup("useSecondsList", HookDebugGroupAction.Start)
-  const tick = useTimer()
-  const [items, setItems] = useState<number[]>([])
-  useEffect(() => {
-    setItems((items) => [...items, tick])
-  }, [tick])
-  useHookDebugGroup("useSecondsList", HookDebugGroupAction.End)
-  return items
-}
+// function useSecondsList() {
+//   useHookDebugGroup("useSecondsList", HookDebugGroupAction.Start)
+//   const tick = useTimer()
+//   const [items, setItems] = useState<number[]>([])
+//   useEffect(() => {
+//     setItems((items) => [...items, tick])
+//   }, [tick])
+//   useHookDebugGroup("useSecondsList", HookDebugGroupAction.End)
+//   return items
+// }
 
 function Home() {
-  const seconds = useSecondsList()
-  const ref = useRef<HTMLDivElement>(null)
+  console.log("Home")
+  const count = signal(0, "count")
   return (
-    <div ref={ref} className="flex flex-col gap-2">
-      Home
-      <ul>
-        {seconds.map((t) => (
-          <li key={t}>{t}</li>
-        ))}
-      </ul>
+    <div
+      id={count.map((c) => `home-${c}`, "div id")}
+      className="flex flex-col gap-2"
+    >
+      <p
+        className={count.map(
+          (c) => `font-bold ${c > 0 && c % 2 === 0 ? "text-red-500" : ""}`,
+          "p class"
+        )}
+      >
+        Home {count} <SomeThing />
+      </p>
+
+      <button onclick={() => count.value++}>+1</button>
     </div>
   )
+}
+
+let renderCount = 123
+
+function SomeThing() {
+  return renderCount++
 }
 
 function Nav() {
@@ -92,11 +105,6 @@ function Nav() {
   )
 }
 
-const id = signal(0)
-id.subscribe((v) => console.log("id", v))
-setInterval(() => {
-  id.value++
-}, 1000)
 export function App() {
   return (
     <>
@@ -135,7 +143,7 @@ function RouterTest() {
   const { params, query } = useRouter()
   console.log("RouterTest", params, query)
   return (
-    <div id={id.map((v) => v.toString())}>
+    <div>
       <p>query: {query.sort}</p>
       <p>params: {JSON.stringify(params, null, 2)}</p>
       <p>count: {count}</p>

@@ -113,6 +113,10 @@ export class Signal<T> {
     signal.#subscribers.clear()
   }
 
+  static subscribers(signal: Signal<any>) {
+    return signal.#subscribers
+  }
+
   peek() {
     return this.#value
   }
