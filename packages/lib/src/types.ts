@@ -100,7 +100,7 @@ declare global {
       | null
       | boolean
       | undefined
-      | Kaioken.Signal<any>
+      | Kaioken.Signal<string | number>
 
     type ElementAttributes = {
       key?: JSX.ElementKey
