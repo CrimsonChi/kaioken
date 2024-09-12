@@ -107,17 +107,13 @@ function updateDom(node: VNode) {
     if (!(dom instanceof Text)) {
       if (prevProps[key] === nextProps[key]) return
       if (Signal.isSignal(prevProps[key]) && node.cleanups) {
-        const cleanup = node.cleanups.get(key)
-        if (cleanup) {
-          cleanup()
-          node.cleanups.delete(key)
-        }
+        node.cleanups[key] && (node.cleanups[key](), delete node.cleanups[key])
       }
       if (Signal.isSignal(nextProps[key])) {
         const unsub = nextProps[key].subscribe((v) => {
           setProp(dom, key, v, unwrap(node.prev?.props[key]))
         })
-        ;(node.cleanups ??= new Map()).set(key, unsub)
+        ;(node.cleanups ??= {})[key] = unsub
         return setProp(dom, key, nextProps[key].peek(), unwrap(prevProps[key]))
       }
       setProp(dom, key, nextProps[key], prevProps[key])
@@ -136,7 +132,7 @@ function unwrap(value: unknown) {
 
 function subTextNode(node: Kaioken.VNode, dom: Text, sig: Signal<string>) {
   const unsub = sig.subscribe((v) => (dom.nodeValue = v))
-  ;(node.cleanups ??= new Map()).set("nodeValue", unsub)
+  ;(node.cleanups ??= {})["nodeValue"] = unsub
 }
 
 function hydrateDom(vNode: VNode) {
@@ -408,7 +404,8 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
     const n = stack.pop()!
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
-    n.cleanups?.forEach((c) => c()), delete n.cleanups
+    n.cleanups && Object.values(n.cleanups).forEach((c) => c())
+    delete n.cleanups
 
     if (n.dom) {
       if (n.dom.isConnected && !isPortal(n)) n.dom.remove()

@@ -100,12 +100,15 @@ declare global {
       | null
       | boolean
       | undefined
-      | Kaioken.Signal<string | number>
+      | Kaioken.Signal<string | number | null | undefined>
 
     type ElementAttributes = {
       key?: JSX.ElementKey
       children?: JSX.Children
-      innerHTML?: string | number | Kaioken.Signal<string | number>
+      innerHTML?:
+        | string
+        | number
+        | Kaioken.Signal<string | number | null | undefined>
     }
   }
   export namespace Kaioken {
@@ -169,7 +172,7 @@ declare global {
       depth: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]
-      cleanups?: Map<string, Function>
+      cleanups?: Record<string, Function>
       parent?: VNode
       child?: VNode
       sibling?: VNode
