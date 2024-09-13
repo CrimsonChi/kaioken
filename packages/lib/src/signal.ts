@@ -33,9 +33,12 @@ export const signal = <T>(initial: T, displayName?: string) => {
       )
 }
 
-export const computed = <T>(getter: () => T, displayName?: string) => {
+export const computed = <T>(
+  getter: () => T,
+  displayName?: string
+): ReadonlySignal<T> => {
   if (!node.current) {
-    const computed = signal(null as T, displayName)
+    const computed = makeReadonly(new Signal(null as T, displayName))
     const subs = new Map<Signal<any>, Function>()
     appliedTrackedSignals(getter, computed, subs)
 
@@ -63,7 +66,7 @@ export const computed = <T>(getter: () => T, displayName?: string) => {
             }
           }
           hook.subs = new Map()
-          hook.signal = new Signal(null as T, displayName)
+          hook.signal = makeReadonly(new Signal(null as T, displayName))
           appliedTrackedSignals(getter, hook.signal, hook.subs)
         }
 
@@ -71,6 +74,10 @@ export const computed = <T>(getter: () => T, displayName?: string) => {
       }
     )
   }
+}
+
+export type ReadonlySignal<T> = Signal<T> & {
+  readonly value: T
 }
 
 export class Signal<T> {
@@ -84,37 +91,13 @@ export class Signal<T> {
   }
 
   get value() {
-    if (node.current) Signal.subscribeNode(node.current, this)
-    if (isTracking) trackedSignals.push(this)
+    handleSignalGet(this)
     return this.#value
   }
 
   set value(next: T) {
     this.#value = next
     this.notify()
-  }
-
-  static isSignal(x: any): x is Signal<any> {
-    return typeof x === "object" && !!x && signalSymbol in x
-  }
-
-  static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
-    if (renderMode.current !== "dom" && renderMode.current !== "hydrate") return
-    if (!node.subs) node.subs = [signal]
-    else if (node.subs.indexOf(signal) === -1) node.subs.push(signal)
-    signal.#subscribers.add(node)
-  }
-
-  static unsubscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
-    signal.#subscribers.delete(node)
-  }
-
-  static clearSubscribers(signal: Signal<any>) {
-    signal.#subscribers.clear()
-  }
-
-  static subscribers(signal: Signal<any>) {
-    return signal.#subscribers
   }
 
   peek() {
@@ -125,15 +108,15 @@ export class Signal<T> {
     this.#value = newValue
   }
 
-  map<U>(fn: (value: T) => U, displayName?: string): Signal<U> {
+  map<U>(fn: (value: T) => U, displayName?: string): ReadonlySignal<U> {
     const initialVal = fn(this.#value)
-    const sig = signal(initialVal, displayName)
-    this.subscribe((value) => (sig.value = fn(value)))
+    const sig = makeReadonly(signal(initialVal, displayName))
+    this.subscribe((value) => (sig.sneak(fn(value)), sig.notify()))
     return sig
   }
 
   toString() {
-    if (node.current) Signal.subscribeNode(node.current, this)
+    handleSignalGet(this)
     return `${this.#value}`
   }
 
@@ -150,6 +133,36 @@ export class Signal<T> {
       }
       getVNodeAppContext(sub).requestUpdate(sub)
     })
+  }
+
+  static isSignal(x: any): x is Signal<any> {
+    return typeof x === "object" && !!x && signalSymbol in x
+  }
+
+  static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
+    if (renderMode.current !== "dom" && renderMode.current !== "hydrate") return
+    if (!node.subs) node.subs = [signal]
+    else if (node.subs.indexOf(signal) === -1) node.subs.push(signal)
+    signal.#subscribers.add(node)
+  }
+
+  static unsubscribeNode(
+    node: Kaioken.VNode,
+    signal: Signal<any> | ReadonlySignal<any>
+  ) {
+    signal.#subscribers.delete(node)
+  }
+
+  static clearSubscribers(signal: Signal<any>) {
+    signal.#subscribers.clear()
+  }
+
+  static subscribers(signal: Signal<any>) {
+    return signal.#subscribers
+  }
+
+  static setValueQuietly<T>(signal: Signal<T>, value: T) {
+    signal.sneak(value)
   }
 }
 
@@ -183,3 +196,16 @@ const appliedTrackedSignals = <T>(
   trackedSignals = []
   computedSignal.notify()
 }
+
+const handleSignalGet = (signal: Signal<any>) => {
+  if (node.current) Signal.subscribeNode(node.current, signal)
+  if (isTracking) trackedSignals.push(signal)
+}
+
+const makeReadonly = <T>(signal: Signal<T>): ReadonlySignal<T> =>
+  Object.defineProperty(signal, "value", {
+    get: function () {
+      handleSignalGet(signal)
+      return signal.peek()
+    },
+  })

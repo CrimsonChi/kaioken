@@ -1,4 +1,4 @@
-import type { Signal, Signal as SignalClass } from "./signal"
+import type { ReadonlySignal, Signal as SignalClass } from "./signal"
 import type {
   contextProviderSymbol,
   fragmentSymbol,
@@ -36,39 +36,39 @@ type ElementMap = {
   [Tag in keyof HtmlElementAttributes]: {
     [K in keyof HtmlElementAttributes[Tag]]:
       | HtmlElementAttributes[Tag][K]
-      | Signal<HtmlElementAttributes[Tag][K]>
+      | Kaioken.Signal<HtmlElementAttributes[Tag][K]>
   } & {
     [K in keyof GlobalAttributes]:
       | GlobalAttributes[K]
-      | Signal<GlobalAttributes[K]>
+      | Kaioken.Signal<GlobalAttributes[K]>
   } & EventAttributes<Tag> &
     GlobalEventAttributes &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<HTMLTagToElement<Tag>>
-        | Signal<HTMLTagToElement<Tag> | null>
+        | SignalClass<HTMLTagToElement<Tag> | null>
     }
 } & {
   [Tag in keyof SvgElementAttributes]: {
     [K in keyof SvgElementAttributes[Tag]]:
       | SvgElementAttributes[Tag][K]
-      | Signal<SvgElementAttributes[Tag][K]>
+      | Kaioken.Signal<SvgElementAttributes[Tag][K]>
   } & {
     [K in keyof SvgGlobalAttributes]:
       | SvgGlobalAttributes[K]
-      | Signal<SvgGlobalAttributes[K]>
+      | Kaioken.Signal<SvgGlobalAttributes[K]>
   } & {
     [K in keyof GlobalAttributes]:
       | GlobalAttributes[K]
-      | Signal<GlobalAttributes[K]>
+      | Kaioken.Signal<GlobalAttributes[K]>
   } & EventAttributes<Tag> &
     GlobalEventAttributes &
     Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<SVGTagToElement<Tag>>
-        | Signal<SVGTagToElement<Tag> | null>
+        | SignalClass<SVGTagToElement<Tag> | null>
     }
 } & {
   [K in WebComponentTag]: Record<string, any>
@@ -158,7 +158,7 @@ declare global {
 
     type StateSetter<T> = T | ((prev: T) => T)
 
-    type Signal<T> = SignalClass<T>
+    type Signal<T> = SignalClass<T> | ReadonlySignal<T>
 
     type ExoticSymbol = typeof fragmentSymbol | typeof contextProviderSymbol
 
