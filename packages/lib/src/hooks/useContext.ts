@@ -1,4 +1,4 @@
-import { Hook, HookCallbackState, useHook } from "./utils.js"
+import { type HookCallbackState, useHook } from "./utils.js"
 import { __DEV__ } from "../env.js"
 import { contextProviderSymbol } from "../constants.js"
 
@@ -7,11 +7,11 @@ type ContextProviderNode<T> = Kaioken.VNode & {
   props: { value: T; ctx: Kaioken.Context<T> }
 }
 
-type UseContextHook<T> = Hook<{
+type UseContextHookState<T> = {
   ctxNode: ContextProviderNode<T> | undefined
   context: Kaioken.Context<T>
   warnIfNotFound: boolean
-}>
+}
 
 export function useContext<T>(
   context: Kaioken.Context<T>,
@@ -28,7 +28,7 @@ const useContextCallback = <T>({
   hook,
   isInit,
   vNode,
-}: HookCallbackState<UseContextHook<T>>) => {
+}: HookCallbackState<UseContextHookState<T>>) => {
   if (isInit) {
     if (__DEV__) {
       hook.debug = {
