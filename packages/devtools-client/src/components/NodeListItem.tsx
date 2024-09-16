@@ -59,7 +59,7 @@ export function NodeListItem({
   if (
     !isComponent(node) ||
     (search.length > 0 &&
-      !searchMatchesItem(search.toLowerCase().split(""), node.type.name))
+      !searchMatchesItem(search.toLowerCase().split(" "), node.type.name))
   )
     return (
       <>
