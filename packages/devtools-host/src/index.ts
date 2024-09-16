@@ -8,23 +8,23 @@ if ("window" in globalThis) {
     if (hasMounted) return
     hasMounted = true
 
-    const dummy = document.createElement("div")
-    dummy.setAttribute("style", "display: contents")
-    document.body.appendChild(dummy)
+    const pageRoot = document.createElement("kaioken-devtools")
+    pageRoot.setAttribute("style", "display: contents")
+    document.body.appendChild(pageRoot)
 
-    const shadow = dummy.attachShadow({ mode: "open" })
+    const shadow = pageRoot.attachShadow({ mode: "open" })
     const sheet = new CSSStyleSheet()
     sheet.replaceSync(tailwindCssKaiokenDevToolCssInline)
     shadow.adoptedStyleSheets = [sheet]
 
-    const root = Object.assign(document.createElement("div"), {
+    const appRoot = Object.assign(document.createElement("div"), {
       id: "devtools-root",
+      className: "fixed flex bottom-0 right-0 z-[9999999]",
     })
-    root.setAttribute("class", "fixed flex bottom-0 right-0 z-[9999999]")
-    shadow.appendChild(root)
+    shadow.appendChild(appRoot)
 
     mount(App, {
-      root,
+      root: appRoot,
       name: "kaioken.devtools",
     })
     const handleMainWindowClose = () => popup.value?.close()

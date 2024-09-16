@@ -67,17 +67,10 @@ export const InspectComponent: Kaioken.FC = () => {
     if (toggleElementToVnode.value === true && vnode && elApp) {
       e.preventDefault()
       const emitSelectNode = (w: Window) => {
-        window.__kaioken?.emit(
-          // @ts-expect-error we have our own custom event
-          "__kaiokenDevtoolsInspectElementNode",
-          elApp,
-          vnode
-        )
-        window.__kaioken?.emit(
-          // @ts-expect-error we have our own custom event
-          "__kaiokenDevtoolsInspectElementValue",
-          { value: false }
-        )
+        // @ts-expect-error we have our own custom event
+        window.__kaioken?.emit("devtools:selectNode", elApp, vnode)
+        // @ts-expect-error we have our own custom event
+        window.__kaioken?.emit("devtools:toggleInspect", { value: false })
         w.focus()
       }
 

@@ -38,19 +38,13 @@ export function AppView() {
 
   useEffect(() => {
     kaiokenGlobal?.on("update", handleUpdate)
-    kaiokenGlobal?.on(
-      // @ts-expect-error
-      "__kaiokenDevtoolsInspectElementNode",
-      handleInspecNode
-    )
+    // @ts-expect-error
+    kaiokenGlobal?.on("devtools:selectNode", handleInspecNode)
 
     return () => {
       kaiokenGlobal?.off("update", handleUpdate)
-      kaiokenGlobal?.off(
-        // @ts-expect-error
-        "__kaiokenDevtoolsInspectElementNode",
-        handleInspecNode
-      )
+      // @ts-expect-error
+      kaiokenGlobal?.off("devtools:selectNode", handleInspecNode)
     }
   }, [])
 

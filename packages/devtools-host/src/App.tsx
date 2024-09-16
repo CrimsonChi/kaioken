@@ -53,7 +53,7 @@ export default function App() {
   const handleToggleInspect = () => {
     window.__kaioken?.emit(
       // @ts-expect-error We have our own custom type here
-      "__kaiokenDevtoolsInspectElementValue",
+      "devtools:toggleInspect",
       { value: !toggleElementToVnode.value }
     )
   }

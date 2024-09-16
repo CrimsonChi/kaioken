@@ -9,7 +9,7 @@ export const kaiokenGlobal =
 export const toggleElementToVnode = signal(false)
 kaiokenGlobal?.on(
   // @ts-expect-error We have our own custom type here
-  "__kaiokenDevtoolsInspectElementValue",
+  "devtools:toggleInspect",
   // @ts-expect-error We have our own custom type here
   ({ value }) => {
     toggleElementToVnode.value = !!value
