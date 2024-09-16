@@ -3,12 +3,27 @@ import { twMerge } from "tailwind-merge"
 import { Flame } from "./icon/Flame"
 import { useAnchorPos } from "./hooks/useAnchorPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
-import { signal, Transition, useEffect, useLayoutEffect, useRef } from "kaioken"
+import {
+  signal,
+  Transition,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "kaioken"
 import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
 import { toggleElementToVnode } from "./store"
+
+const handleToggleInspect = () => {
+  window.__kaioken?.emit(
+    // @ts-expect-error We have our own custom type here
+    "devtools:toggleInspect",
+    { value: !toggleElementToVnode.value }
+  )
+}
 
 export default function App() {
   const toggled = signal(false)
@@ -50,14 +65,6 @@ export default function App() {
     }
   }, [toggled.value, updateAnchorPos])
 
-  const handleToggleInspect = () => {
-    window.__kaioken?.emit(
-      // @ts-expect-error We have our own custom type here
-      "devtools:toggleInspect",
-      { value: !toggleElementToVnode.value }
-    )
-  }
-
   return (
     <>
       <div
@@ -85,7 +92,7 @@ export default function App() {
               <>
                 <button
                   title="Open Devtools"
-                  onclick={() => handleOpen()}
+                  onclick={handleOpen}
                   style={{ transform: `scale(${scale})`, opacity }}
                   className="transition text-white rounded-full p-1 hover:bg-[#0003]"
                 >

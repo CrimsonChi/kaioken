@@ -23,7 +23,7 @@ export function ValueEditor({
   const [page, setPage] = useState(0)
   const objectKeys = useMemo(() => {
     return Object.keys(data).slice(0, (page + 1) * objectKeysChunkSize)
-  }, [page, objectKeysChunkSize])
+  }, [page, objectKeysChunkSize, data])
 
   const handleShowMore = () => {
     objectKeys.forEach((key) => {

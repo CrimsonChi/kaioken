@@ -75,7 +75,7 @@ export const InspectComponent: Kaioken.FC = () => {
       }
 
       if (!popup.value) {
-        openDevTools((w) => emitSelectNode(w))
+        openDevTools().then((w) => emitSelectNode(w))
       } else {
         emitSelectNode(popup.value)
       }

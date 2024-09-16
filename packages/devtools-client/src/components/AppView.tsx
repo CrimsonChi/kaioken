@@ -1,57 +1,18 @@
-import {
-  AppContext,
-  signal,
-  useCallback,
-  useEffect,
-  useRequestUpdate,
-} from "kaioken"
-import { useDevtoolsStore, kaiokenGlobal, toggleElementToVnode } from "../store"
+import { ElementProps, signal } from "kaioken"
+import { useDevtoolsStore } from "../store"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
 import { SearchContext } from "../context"
 import { inspectComponent } from "../signal"
 
+const search = signal("")
+const handleSearch: ElementProps<"input">["oninput"] = (e) => {
+  search.value = e.target.value
+  if (inspectComponent.value) inspectComponent.value = null
+}
+
 export function AppView() {
-  const {
-    value: app,
-    setSelectedNode,
-    setSelectedApp,
-  } = useDevtoolsStore((state) => state.selectedApp)
-  const requestUpdate = useRequestUpdate()
-  const search = signal("")
-
-  function handleUpdate(appCtx: AppContext) {
-    if (appCtx !== app) return
-    requestUpdate()
-  }
-
-  const handleInspecNode = useCallback(
-    (ctx: AppContext, vnode: Kaioken.VNode & { type: Function }) => {
-      setSelectedApp(ctx)
-      setSelectedNode(vnode as any)
-      inspectComponent.value = vnode
-      toggleElementToVnode.value = false
-      search.value = ""
-    },
-    [setSelectedApp, setSelectedNode]
-  )
-
-  useEffect(() => {
-    kaiokenGlobal?.on("update", handleUpdate)
-    // @ts-expect-error
-    kaiokenGlobal?.on("devtools:selectNode", handleInspecNode)
-
-    return () => {
-      kaiokenGlobal?.off("update", handleUpdate)
-      // @ts-expect-error
-      kaiokenGlobal?.off("devtools:selectNode", handleInspecNode)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (inspectComponent.value) inspectComponent.value = null
-  }, [search.value])
-
+  const { value: app } = useDevtoolsStore((state) => state.selectedApp)
   const { searchRef } = useKeyboardControls()
 
   return (
@@ -64,7 +25,7 @@ export function AppView() {
           placeholder="Search for component"
           type="text"
           value={search.value}
-          oninput={(e) => (search.value = e.target.value)}
+          oninput={handleSearch}
         />
       </div>
       <SearchContext.Provider value={search.value}>

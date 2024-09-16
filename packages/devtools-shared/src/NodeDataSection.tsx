@@ -1,4 +1,4 @@
-import { type ElementProps, useEffect, useState } from "kaioken"
+import { type ElementProps, useCallback, useEffect, useState } from "kaioken"
 import { Chevron } from "./Chevron"
 
 type NodeDataSectionProps = {
@@ -15,17 +15,21 @@ export function NodeDataSection({
   ...rest
 }: NodeDataSectionProps) {
   const [collapsed, setCollapsed] = useState(true)
+
   useEffect(() => {
     if (!collapsed && disabled) setCollapsed(true)
   }, [disabled])
+
+  const handleToggleCollapsed = useCallback((e: Event) => {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    setCollapsed((prev) => !prev)
+  }, [])
+
   return (
     <div className="flex flex-col">
       <button
-        onclick={(e) => {
-          e.preventDefault()
-          e.stopImmediatePropagation()
-          setCollapsed((prev) => !prev)
-        }}
+        onclick={handleToggleCollapsed}
         disabled={disabled}
         className={`${disabled ? "opacity-50 cursor-default" : "cursor-pointer"}`}
       >

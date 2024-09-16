@@ -1,5 +1,6 @@
 import { mount } from "kaioken"
 import App from "./App"
+// @ts-expect-error
 import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
 import { popup } from "./store"
 if ("window" in globalThis) {

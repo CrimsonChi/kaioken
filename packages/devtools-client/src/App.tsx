@@ -5,6 +5,17 @@ import { Select } from "./components/Select"
 import { FiftyFiftySplitter } from "./components/FiftyFiftySplitter"
 import { SquareMouse } from "./icons/SquareMouse"
 import { SettingsDrawer } from "devtools-shared/src/Settings"
+import { type AppContext, useEffect, useRequestUpdate } from "kaioken"
+import { inspectComponent } from "./signal"
+
+const handleToggleInspect = () => {
+  if (!window.opener) return
+  kaiokenGlobal?.emit(
+    // @ts-expect-error We have our own custom type here
+    "devtools:toggleInspect",
+    { value: !toggleElementToVnode.value }
+  )
+}
 
 export function App() {
   const {
@@ -17,14 +28,31 @@ export function App() {
     selectedNode,
   }))
 
-  const handleToggleInspect = () => {
-    if (!window.opener) return
-    kaiokenGlobal?.emit(
-      // @ts-expect-error We have our own custom type here
-      "devtools:toggleInspect",
-      { value: !toggleElementToVnode.value }
-    )
-  }
+  const requestUpdate = useRequestUpdate()
+  useEffect(() => {
+    const handleUpdate = (appCtx: AppContext) => {
+      if (appCtx !== selectedApp) return
+      requestUpdate()
+    }
+    kaiokenGlobal?.on("update", handleUpdate)
+    return () => kaiokenGlobal?.off("update", handleUpdate)
+  }, [selectedApp])
+
+  useEffect(() => {
+    const handleSelectNode = (
+      ctx: AppContext,
+      vnode: Kaioken.VNode & { type: Function }
+    ) => {
+      setSelectedApp(ctx)
+      setSelectedNode(vnode)
+      inspectComponent.value = vnode
+      toggleElementToVnode.value = false
+    }
+    // @ts-expect-error
+    kaiokenGlobal?.on("devtools:selectNode", handleSelectNode)
+    // @ts-expect-error
+    return () => kaiokenGlobal?.off("devtools:selectNode", handleSelectNode)
+  }, [selectedApp])
 
   return (
     <SettingsProvider>

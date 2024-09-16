@@ -11,13 +11,14 @@ const SIZE_STORAGE_KEY = "kaioken-devtools-popup-size"
 export const useDevTools = () => {
   const _popup = popup.value
 
-  const handleOpen = useCallback(
-    (onOpened?: (window: Window) => void) => {
+  const handleOpen = useCallback(() => {
+    return new Promise<Window>((res, rej) => {
       if (_popup) {
         if (_popup.closed) {
           popup.value = null
         } else {
-          return _popup.focus()
+          _popup.focus()
+          return res(_popup)
         }
       }
       const savedSize_raw = sessionStorage.getItem(SIZE_STORAGE_KEY)
@@ -28,18 +29,25 @@ export const useDevTools = () => {
             height: Math.floor(window.innerHeight / 2),
           }
       const features = `popup,width=${size.width},height=${size.height};`
-      const w = window.open("/__devtools__", "_blank", features)
-      if (!w) return console.error("[kaioken]: Unable to open devtools window")
 
-      w.onload = () => {
-        popup.value = w
+      const w = window.open("/__devtools__", "_blank", features)
+      if (!w)
+        return console.error("[kaioken]: Unable to open devtools window"), rej()
+
+      const handleReady = () => {
+        // @ts-expect-error We have our own custom type here
+        window.__kaioken?.off("devtools:ready", handleReady)
         console.debug("[kaioken]: devtools window opened")
-        setTimeout(() => onOpened?.(w), 250)
+        res(w)
+        popup.value = w
         w.onbeforeunload = () => {
           console.debug("[kaioken]: devtools window closed")
           popup.value = null
         }
       }
+      // @ts-expect-error We have our own custom type here
+      window.__kaioken?.on("devtools:ready", handleReady)
+
       w.onresize = () => {
         sessionStorage.setItem(
           SIZE_STORAGE_KEY,
@@ -49,9 +57,8 @@ export const useDevTools = () => {
           })
         )
       }
-    },
-    [_popup]
-  )
+    })
+  }, [_popup])
 
   return handleOpen
 }
