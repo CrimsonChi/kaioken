@@ -443,7 +443,7 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
   while (stack.length) {
     const n = stack.pop()!
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
-    while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
+    while (n.subs?.length) Signal.unsubscribe(n, n.subs.pop()!)
     n.cleanups && Object.values(n.cleanups).forEach((c) => c())
     delete n.cleanups
 

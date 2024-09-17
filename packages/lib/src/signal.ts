@@ -1,11 +1,11 @@
 import { signalSymbol } from "./constants.js"
 import { __DEV__ } from "./env.js"
-import { node, renderMode } from "./globals.js"
+import { node } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
-import { getVNodeAppContext } from "./utils.js"
+import { getVNodeAppContext, sideEffectsEnabled } from "./utils.js"
 
 export const signal = <T>(initial: T, displayName?: string) => {
-  return !node.current
+  return !node.current || !sideEffectsEnabled()
     ? new Signal(initial, displayName)
     : useHook(
         "useSignal",
@@ -14,7 +14,7 @@ export const signal = <T>(initial: T, displayName?: string) => {
           if (isInit) {
             hook.signal = new Signal(initial, displayName)
             hook.cleanup = () => {
-              Signal.clearSubscribers(hook.signal)
+              Signal.subscribers(hook.signal).clear()
             }
             if (__DEV__) {
               hook.debug = {
@@ -55,7 +55,7 @@ export const computed = <T>(
           hook.cleanup = () => {
             hook.subs.forEach((fn) => fn())
             hook.subs.clear()
-            Signal.clearSubscribers(hook.signal)
+            Signal.subscribers(hook.signal).clear()
           }
           if (__DEV__) {
             hook.debug = {
@@ -79,17 +79,17 @@ export const computed = <T>(
 export type ReadonlySignal<T> = Signal<T> & {
   readonly value: T
 }
-
 export interface SignalLike<T> {
   value: T
   peek(): T
   subscribe(callback: (value: T) => void): () => void
 }
+type SignalSubscriber = Kaioken.VNode | Function
 
 export class Signal<T> {
   [signalSymbol] = true
   #value: T
-  #subscribers = new Set<Kaioken.VNode | Function>()
+  #subscribers = new Set<SignalSubscriber>()
   displayName?: string
   constructor(initial: T, displayName?: string) {
     this.#value = initial
@@ -97,7 +97,7 @@ export class Signal<T> {
   }
 
   get value() {
-    handleSignalGet(this)
+    onSignalValueObserved(this)
     return this.#value
   }
 
@@ -117,12 +117,14 @@ export class Signal<T> {
   map<U>(fn: (value: T) => U, displayName?: string): ReadonlySignal<U> {
     const initialVal = fn(this.#value)
     const sig = makeReadonly(signal(initialVal, displayName))
+    if (node.current && !sideEffectsEnabled()) return sig
+
     this.subscribe((value) => (sig.sneak(fn(value)), sig.notify()))
     return sig
   }
 
   toString() {
-    handleSignalGet(this)
+    onSignalValueObserved(this)
     return `${this.#value}`
   }
 
@@ -145,22 +147,8 @@ export class Signal<T> {
     return typeof x === "object" && !!x && signalSymbol in x
   }
 
-  static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
-    if (renderMode.current !== "dom" && renderMode.current !== "hydrate") return
-    if (!node.subs) node.subs = [signal]
-    else if (node.subs.indexOf(signal) === -1) node.subs.push(signal)
-    signal.#subscribers.add(node)
-  }
-
-  static unsubscribeNode(
-    node: Kaioken.VNode,
-    signal: Signal<any> | ReadonlySignal<any>
-  ) {
-    signal.#subscribers.delete(node)
-  }
-
-  static clearSubscribers(signal: Signal<any>) {
-    signal.#subscribers.clear()
+  static unsubscribe(sub: SignalSubscriber, signal: Signal<any>) {
+    signal.#subscribers.delete(sub)
   }
 
   static subscribers(signal: Signal<any>) {
@@ -184,6 +172,7 @@ const appliedTrackedSignals = <T>(
   isTracking = true
   computedSignal.sneak(getter())
   isTracking = false
+  if (node.current && !sideEffectsEnabled()) return
 
   for (const [sig, unsub] of subs) {
     if (trackedSignals.includes(sig)) continue
@@ -203,17 +192,27 @@ const appliedTrackedSignals = <T>(
   computedSignal.notify()
 }
 
-const handleSignalGet = (signal: Signal<any>) => {
-  if (node.current && isTracking === false)
-    Signal.subscribeNode(node.current, signal)
-  if (isTracking) trackedSignals.push(signal)
+const onSignalValueObserved = (signal: Signal<any>) => {
+  if (isTracking) {
+    if (!node.current || (node.current && sideEffectsEnabled())) {
+      trackedSignals.push(signal)
+    }
+    return
+  }
+  if (node.current) {
+    if (!sideEffectsEnabled()) return
+    if (!node.current.subs) node.current.subs = [signal]
+    else if (node.current.subs.indexOf(signal) === -1)
+      node.current.subs.push(signal)
+    Signal.subscribers(signal).add(node.current)
+  }
 }
 
 const makeReadonly = <T>(signal: Signal<T>): ReadonlySignal<T> => {
   if (!Object.getOwnPropertyDescriptor(signal, "value")?.writable) return signal
   return Object.defineProperty(signal, "value", {
     get: function () {
-      handleSignalGet(signal)
+      onSignalValueObserved(signal)
       return signal.peek()
     },
   })
