@@ -198,7 +198,8 @@ const appliedTrackedSignals = <T>(
 }
 
 const handleSignalGet = (signal: Signal<any>) => {
-  if (node.current) Signal.subscribeNode(node.current, signal)
+  if (node.current && isTracking === false)
+    Signal.subscribeNode(node.current, signal)
   if (isTracking) trackedSignals.push(signal)
 }
 
