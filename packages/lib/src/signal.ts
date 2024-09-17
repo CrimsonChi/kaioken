@@ -80,6 +80,12 @@ export type ReadonlySignal<T> = Signal<T> & {
   readonly value: T
 }
 
+export interface SignalLike<T> {
+  value: T
+  peek(): T
+  subscribe(callback: (value: T) => void): () => void
+}
+
 export class Signal<T> {
   [signalSymbol] = true
   #value: T
@@ -120,9 +126,9 @@ export class Signal<T> {
     return `${this.#value}`
   }
 
-  subscribe(cb: (state: T) => void) {
+  subscribe(cb: (state: T) => void): () => void {
     this.#subscribers.add(cb)
-    return () => this.#subscribers.delete(cb)
+    return () => (this.#subscribers.delete(cb), void 0)
   }
 
   notify(filterPredicate?: (sub: Function | Kaioken.VNode) => boolean) {
@@ -203,10 +209,12 @@ const handleSignalGet = (signal: Signal<any>) => {
   if (isTracking) trackedSignals.push(signal)
 }
 
-const makeReadonly = <T>(signal: Signal<T>): ReadonlySignal<T> =>
-  Object.defineProperty(signal, "value", {
+const makeReadonly = <T>(signal: Signal<T>): ReadonlySignal<T> => {
+  if (!Object.getOwnPropertyDescriptor(signal, "value")?.writable) return signal
+  return Object.defineProperty(signal, "value", {
     get: function () {
       handleSignalGet(signal)
       return signal.peek()
     },
   })
+}

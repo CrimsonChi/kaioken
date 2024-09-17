@@ -1,4 +1,8 @@
-import type { ReadonlySignal, Signal as SignalClass } from "./signal"
+import type {
+  ReadonlySignal,
+  Signal as SignalClass,
+  SignalLike,
+} from "./signal"
 import type {
   contextProviderSymbol,
   fragmentSymbol,
@@ -13,9 +17,10 @@ import type {
   SomeDom,
   SvgElementAttributes,
   SvgGlobalAttributes,
+  StyleObject,
 } from "./types.dom"
 
-export type { ElementProps }
+export type { ElementProps, StyleObject }
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
@@ -34,13 +39,15 @@ type WebComponentTag = `${string}-${string}`
 
 type ElementMap = {
   [Tag in keyof HtmlElementAttributes]: {
-    [K in keyof HtmlElementAttributes[Tag]]:
-      | HtmlElementAttributes[Tag][K]
-      | Kaioken.Signal<HtmlElementAttributes[Tag][K]>
+    [K in keyof HtmlElementAttributes[Tag]]: K extends "style"
+      ? HtmlElementAttributes[Tag][K]
+      :
+          | HtmlElementAttributes[Tag][K]
+          | SignalLike<HtmlElementAttributes[Tag][K]>
   } & {
     [K in keyof GlobalAttributes]:
       | GlobalAttributes[K]
-      | Kaioken.Signal<GlobalAttributes[K]>
+      | SignalLike<GlobalAttributes[K]>
   } & EventAttributes<Tag> &
     GlobalEventAttributes &
     Partial<ARIAMixin> &
@@ -53,15 +60,15 @@ type ElementMap = {
   [Tag in keyof SvgElementAttributes]: {
     [K in keyof SvgElementAttributes[Tag]]:
       | SvgElementAttributes[Tag][K]
-      | Kaioken.Signal<SvgElementAttributes[Tag][K]>
+      | SignalLike<SvgElementAttributes[Tag][K]>
   } & {
     [K in keyof SvgGlobalAttributes]:
       | SvgGlobalAttributes[K]
-      | Kaioken.Signal<SvgGlobalAttributes[K]>
+      | SignalLike<SvgGlobalAttributes[K]>
   } & {
     [K in keyof GlobalAttributes]:
       | GlobalAttributes[K]
-      | Kaioken.Signal<GlobalAttributes[K]>
+      | SignalLike<GlobalAttributes[K]>
   } & EventAttributes<Tag> &
     GlobalEventAttributes &
     Partial<ARIAMixin> &
@@ -184,6 +191,8 @@ declare global {
       frozen?: boolean
       effects?: Array<Function>
       immediateEffects?: Array<Function>
+      prevStyleStr?: string
+      prevStyleObj?: StyleObject
     }
   }
 

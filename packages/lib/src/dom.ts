@@ -2,7 +2,6 @@ import {
   booleanAttributes,
   propFilters,
   propToHtmlAttr,
-  styleObjectToCss,
   svgTags,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
@@ -10,7 +9,7 @@ import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
 import { Signal } from "./signal.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
-import { MaybeDom, SomeDom, SomeElement } from "./types.dom.js"
+import { MaybeDom, SomeDom, SomeElement, StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 
@@ -69,7 +68,7 @@ function createDom(vNode: VNode): SomeDom {
 function createTextNode(vNode: VNode): Text {
   const prop = vNode.props.nodeValue
   const isSig = Signal.isSignal(prop)
-  const value = isSig ? prop.peek() : vNode.props.nodeValue
+  const value = unwrap(prop)
   const el = document.createTextNode(value)
   if (isSig) {
     subTextNode(vNode, el, prop)
@@ -111,13 +110,19 @@ function updateDom(node: VNode) {
       }
       if (Signal.isSignal(nextProps[key])) {
         const unsub = nextProps[key].subscribe((v) => {
-          setProp(dom, key, v, unwrap(node.prev?.props[key]))
+          setProp(node, dom, key, v, unwrap(node.prev?.props[key]))
           emitGranularSignalChange(nextProps[key])
         })
         ;(node.cleanups ??= {})[key] = unsub
-        return setProp(dom, key, nextProps[key].peek(), unwrap(prevProps[key]))
+        return setProp(
+          node,
+          dom,
+          key,
+          nextProps[key].peek(),
+          unwrap(prevProps[key])
+        )
       }
-      setProp(dom, key, nextProps[key], prevProps[key])
+      setProp(node, dom, key, nextProps[key], prevProps[key])
       return
     }
     const nodeVal = unwrap(nextProps[key])
@@ -228,8 +233,14 @@ const needsExplicitValueSet = (
   return explicitValueElementTags.indexOf(dom.nodeName) > -1
 }
 
-function setProp(dom: SomeElement, key: string, value: unknown, prev: unknown) {
-  if (key === "style") return setStyleProp(dom, value, prev)
+function setProp(
+  node: VNode,
+  dom: SomeElement,
+  key: string,
+  value: unknown,
+  prev: unknown
+) {
+  if (key === "style") return setStyleProp(node, dom, value, prev)
   if (key === "value" && needsExplicitValueSet(dom)) {
     dom.value = String(value)
     return
@@ -250,24 +261,41 @@ function setInnerHTML(dom: SomeElement, value: unknown, prev: unknown) {
   dom.innerHTML = String(value)
 }
 
-function setStyleProp(dom: SomeElement, value: unknown, prev: unknown) {
+function setStyleProp(
+  node: VNode,
+  dom: SomeElement,
+  value: unknown,
+  prev: unknown
+) {
+  if (typeof value !== typeof prev) {
+    if (typeof prev === "object" && prev !== null) {
+      delete node.prevStyleObj
+    } else if (typeof prev === "string") {
+      delete node.prevStyleStr
+    }
+  }
   if (handleAttributeRemoval(dom, "style", value)) return
-  if (prev === value) return
   switch (typeof value) {
     case "string":
+      if (value === node.prevStyleStr) return
       dom.setAttribute("style", value)
+      node.prevStyleStr = value
       break
     case "object":
-      const newStyleString = styleObjectToCss(
-        value as Partial<CSSStyleDeclaration>
-      )
-      const prevStyleString =
-        prev == null
-          ? null
-          : styleObjectToCss(prev as Partial<CSSStyleDeclaration>)
-      if (newStyleString !== prevStyleString) {
-        dom.setAttribute("style", newStyleString)
-      }
+      const style = node.prevStyleObj ?? {}
+      Object.entries(value as object).forEach(([k, v]) => {
+        if (style[k as keyof typeof style] !== v) {
+          style[k as keyof typeof style] = v
+          dom.style[k as any] = v
+        }
+      })
+      Object.keys(style).forEach((k) => {
+        if (!(k in (value as object))) {
+          delete style[k as keyof StyleObject]
+          dom.style[k as any] = ""
+        }
+      })
+      node.prevStyleObj = style
       break
     default:
       break

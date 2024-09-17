@@ -8,11 +8,24 @@ export type {
   SomeDom,
   SomeElement,
   MaybeDom,
+  StyleObject,
 }
 
 type SomeElement = HTMLElement | SVGElement
 type SomeDom = HTMLElement | SVGElement | Text
 type MaybeDom = SomeDom | undefined
+type StyleObject = Partial<
+  Omit<
+    CSSStyleDeclaration,
+    | "length"
+    | "parentRule"
+    | "setProperty"
+    | "removeProperty"
+    | "item"
+    | "getPropertyValue"
+    | "getPropertyPriority"
+  >
+>
 
 type ValidUrl = `http${"s" | ""}://${string}`
 type ValidPath = `/${string}`
@@ -185,7 +198,7 @@ type GlobalAttributes = {
   inputMode?: InputMode
   lang?: LanguageCode
   spellcheck?: boolean | "default"
-  style?: string | Partial<CSSStyleDeclaration>
+  style?: string | StyleObject
   tabIndex?: number
   title?: string
   translate?: "yes" | "no"
