@@ -2,11 +2,9 @@ import { ctx, node, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
 import { createElement } from "./element.js"
 import {
-  encodeHtmlEntities,
   isVNode,
-  propFilters,
-  propToHtmlAttr,
-  propValueToHtmlAttrValue,
+  encodeHtmlEntities,
+  propsToElementAttributes,
   selfClosingTags,
 } from "./utils.js"
 import { Signal } from "./signal.js"
@@ -69,14 +67,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   }
 
   assertValidElementProps(el)
-  const isSelfClosing = selfClosingTags.includes(type)
-  const attrs = Object.keys(props)
-    .filter(propFilters.isProperty)
-    .map(
-      (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
-    )
-    .join(" ")
-
+  const attrs = propsToElementAttributes(props)
   const inner =
     "innerHTML" in props
       ? Signal.isSignal(props.innerHTML)
@@ -86,5 +77,6 @@ function renderToString_internal<T extends Record<string, unknown>>(
         ? children.map((c) => renderToString_internal(c, el)).join("")
         : renderToString_internal(children, el)
 
+  const isSelfClosing = selfClosingTags.includes(type)
   return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
 }

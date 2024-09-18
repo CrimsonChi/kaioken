@@ -6,7 +6,7 @@ import {
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
-import { Signal } from "./signal.js"
+import { Signal, unwrap } from "./signal.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { MaybeDom, SomeDom, SomeElement, StyleObject } from "./types.dom.js"
@@ -130,10 +130,6 @@ function updateDom(node: VNode) {
       dom.nodeValue = nodeVal
     }
   })
-}
-
-function unwrap(value: unknown) {
-  return Signal.isSignal(value) ? value.peek() : value
 }
 
 function emitGranularSignalChange(signal: Signal<any>) {

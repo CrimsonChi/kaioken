@@ -4,6 +4,7 @@ import {
   fragmentSymbol,
   REGEX_UNIT,
 } from "./constants.js"
+import { unwrap } from "./signal.js"
 
 export {
   isVNode,
@@ -14,6 +15,7 @@ export {
   applyRecursive,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
+  propsToElementAttributes,
   styleObjectToCss,
   shallowCompare,
   sideEffectsEnabled,
@@ -381,4 +383,19 @@ function propValueToHtmlAttrValue(key: string, value: unknown) {
   return key === "style" && typeof value === "object" && !!value
     ? styleObjectToCss(value)
     : String(value)
+}
+function propsToElementAttributes(props: Record<string, unknown>) {
+  const attrs: string[] = []
+  const keys = Object.keys(props).filter(propFilters.isProperty)
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i]
+    const key = propToHtmlAttr(k)
+    const val = unwrap(props[k])
+    if (booleanAttributes.indexOf(key) > -1) {
+      if (Boolean(val)) attrs.push(key)
+      continue
+    }
+    attrs.push(`${key}="${propValueToHtmlAttrValue(k, val)}"`)
+  }
+  return attrs.join(" ")
 }

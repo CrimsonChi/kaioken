@@ -76,6 +76,10 @@ export const computed = <T>(
   }
 }
 
+export function unwrap(value: unknown) {
+  return Signal.isSignal(value) ? value.peek() : value
+}
+
 export type ReadonlySignal<T> = Signal<T> & {
   readonly value: T
 }

@@ -2,20 +2,16 @@ import { Readable } from "node:stream"
 import { createElement } from "../index.js"
 import { AppContext } from "../appContext.js"
 import { renderMode, ctx, node } from "../globals.js"
-
 import {
-  encodeHtmlEntities,
   isVNode,
-  propFilters,
-  propToHtmlAttr,
-  propValueToHtmlAttrValue,
+  encodeHtmlEntities,
+  propsToElementAttributes,
   selfClosingTags,
 } from "../utils.js"
-
 import { Signal } from "../signal.js"
 import {
   contextProviderSymbol,
-  ELEMENT_TYPE as et,
+  ELEMENT_TYPE,
   fragmentSymbol,
 } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
@@ -85,7 +81,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
-  if (type === et.text) {
+  if (type === ELEMENT_TYPE.text) {
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
@@ -103,14 +99,8 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   }
 
   assertValidElementProps(el)
+  const attrs = propsToElementAttributes(props)
   const isSelfClosing = selfClosingTags.includes(type)
-  const attrs = Object.keys(props)
-    .filter(propFilters.isProperty)
-    .map(
-      (k) => `${propToHtmlAttr(k)}="${propValueToHtmlAttrValue(k, props[k])}"`
-    )
-    .join(" ")
-
   state.stream.push(
     `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : ">"}`
   )
