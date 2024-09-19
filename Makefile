@@ -8,3 +8,6 @@ dt:
 
 test:
 	NODE_ENV=development pnpm --filter !"./sandbox/*" run -r --parallel test
+
+test_lib:
+	NODE_ENV=development pnpm --filter "./packages/lib" run -r --parallel test

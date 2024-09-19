@@ -1,33 +1,22 @@
-import { PageTitle } from "$/components/PageTitle"
-import { signal, useState } from "kaioken"
-
-export { Page }
-
-function Page() {
-  const [option, setOption] = useState<"A" | "B">("A")
-  const className = signal("text-red-500")
-  const disabled = signal(false)
+import { Signal, signal, useEffect, useState } from "kaioken"
+export function Page() {
+  const [codeInput, setCodeInput] = useState(
+    "const x = () => <h1>Hello World!</h1>"
+  )
+  const compiled = signal("")
+  useEffect(() => {
+    compiled.value = "bar"
+  }, [codeInput])
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <PageTitle>Home</PageTitle>
-      <div>
-        <p className={className}>option: {option}</p>
-        <input
-          type="radio"
-          name="option"
-          value="A"
-          disabled={disabled}
-          checked={option === "A"}
-          onchange={(e) => setOption(e.target.value as any)}
-        />
-        <input
-          type="radio"
-          name="option"
-          value="B"
-          checked={option === "B"}
-          onchange={(e) => setOption(e.target.value as any)}
-        />
-      </div>
+    <div className="p-6">
+      <textarea
+        style="width: 100%;"
+        value={codeInput}
+        oninput={(e) => setCodeInput(e.target.value)}
+      />
+      <pre>
+        <code style="white-space:normal;">foo {compiled} baz</code>
+      </pre>
     </div>
   )
 }

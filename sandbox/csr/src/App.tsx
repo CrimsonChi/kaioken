@@ -1,14 +1,4 @@
-import {
-  Router,
-  Route,
-  useRouter,
-  useRef,
-  useState,
-  useEffect,
-  useHookDebugGroup,
-  HookDebugGroupAction,
-  signal,
-} from "kaioken"
+import { Router, Route, useRouter, useState } from "kaioken"
 import { Todos } from "./components/ToDos"
 import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
@@ -27,56 +17,8 @@ import { UseModelExample } from "./components/useModelExample"
 import { GlobalComputedExample } from "./components/ComputedExample"
 import { LocalComputedExample } from "./components/ComputedExample"
 
-// function useTimer() {
-//   useHookDebugGroup("useTimer", HookDebugGroupAction.Start)
-//   const [time, setTime] = useState(0)
-//   useEffect(() => {
-//     const interval = setInterval(() => {
-//       setTime((t) => t + 1)
-//     }, 1000)
-//     return () => clearInterval(interval)
-//   }, [])
-//   useHookDebugGroup("useTimer", HookDebugGroupAction.End)
-//   return time
-// }
-
-// function useSecondsList() {
-//   useHookDebugGroup("useSecondsList", HookDebugGroupAction.Start)
-//   const tick = useTimer()
-//   const [items, setItems] = useState<number[]>([])
-//   useEffect(() => {
-//     setItems((items) => [...items, tick])
-//   }, [tick])
-//   useHookDebugGroup("useSecondsList", HookDebugGroupAction.End)
-//   return items
-// }
-
 function Home() {
-  console.log("Home")
-  const count = signal(0, "count")
-  return (
-    <div
-      id={count.map((c) => `home-${c}`, "div id")}
-      className="flex flex-col gap-2"
-    >
-      <p
-        className={count.map(
-          (c) => `font-bold ${c > 0 && c % 2 === 0 ? "text-red-500" : ""}`,
-          "p class"
-        )}
-      >
-        Home {count} <SomeThing />
-      </p>
-
-      <button onclick={() => count.value++}>+1</button>
-    </div>
-  )
-}
-
-let renderCount = 123
-
-function SomeThing() {
-  return renderCount++
+  return <h1>Home</h1>
 }
 
 function Nav() {

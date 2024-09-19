@@ -50,6 +50,20 @@ describe("renderToString", () => {
 
     assert.strictEqual(res, expected)
   })
+  it("is able to use Signals for DOM attributes", () => {
+    const className = kaioken.signal("main-header")
+    const App = () => {
+      return (
+        <div>
+          <h1 className={className}>Hello world!</h1>
+        </div>
+      )
+    }
+    const expected = `<div><h1 class="main-header">Hello world!</h1></div>`
+    const res = renderToString(App)
+
+    assert.strictEqual(res, expected)
+  })
   it("does not render null, boolean or undefined values", () => {
     const App = () => {
       return (
@@ -65,6 +79,20 @@ describe("renderToString", () => {
     const UndefinedComponent = () => undefined
     const BooleanComponent = () => true
     const expected = `<div><h1>Hello world!</h1></div>`
+    const res = renderToString(App)
+
+    assert.strictEqual(res, expected)
+  })
+  it("correctly renders boolean attributes", () => {
+    const checked = kaioken.signal(true)
+    const App = () => {
+      return (
+        <div>
+          <input type="checkbox" checked={checked} disabled={false} />
+        </div>
+      )
+    }
+    const expected = `<div><input type="checkbox" checked/></div>`
     const res = renderToString(App)
 
     assert.strictEqual(res, expected)
