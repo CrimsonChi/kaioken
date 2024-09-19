@@ -1,3 +1,5 @@
+import { type Prettify } from "./types"
+
 export type {
   HtmlElementAttributes,
   SvgElementAttributes,
@@ -14,16 +16,20 @@ export type {
 type SomeElement = HTMLElement | SVGElement
 type SomeDom = HTMLElement | SVGElement | Text
 type MaybeDom = SomeDom | undefined
-type StyleObject = Partial<
-  Omit<
-    CSSStyleDeclaration,
-    | "length"
-    | "parentRule"
-    | "setProperty"
-    | "removeProperty"
-    | "item"
-    | "getPropertyValue"
-    | "getPropertyPriority"
+type StyleObject = Prettify<
+  Partial<
+    Omit<
+      CSSStyleDeclaration,
+      | number
+      | "length"
+      | "parentRule"
+      | "setProperty"
+      | "removeProperty"
+      | "item"
+      | "getPropertyValue"
+      | "getPropertyPriority"
+      | typeof Symbol.iterator
+    >
   >
 >
 

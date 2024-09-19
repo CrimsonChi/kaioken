@@ -20,7 +20,11 @@ import type {
   StyleObject,
 } from "./types.dom"
 
-export type { ElementProps, StyleObject }
+export type { ElementProps, StyleObject, Prettify }
+
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
@@ -37,48 +41,56 @@ type ElementProps<T extends keyof JSX.IntrinsicElements> =
 
 type WebComponentTag = `${string}-${string}`
 
+type SignalableHtmlElementAttributes<Tag extends keyof HtmlElementAttributes> =
+  {
+    [K in keyof HtmlElementAttributes[Tag]]:
+      | SignalLike<HtmlElementAttributes[Tag][K]>
+      | HtmlElementAttributes[Tag][K]
+  }
+type SignalableSvgElementAttributes<Tag extends keyof SvgElementAttributes> = {
+  [K in keyof SvgElementAttributes[Tag]]:
+    | SvgElementAttributes[Tag][K]
+    | SignalLike<SvgElementAttributes[Tag][K]>
+}
+type SignalableAriaProps = {
+  [K in keyof ARIAMixin]?: ARIAMixin[K] | SignalLike<ARIAMixin[K]>
+}
+type SignalableGlobalAttributes = {
+  [K in keyof GlobalAttributes]:
+    | GlobalAttributes[K]
+    | SignalLike<GlobalAttributes[K]>
+}
+type SignalableSvgGlobalAttributes = {
+  [K in keyof SvgGlobalAttributes]:
+    | SvgGlobalAttributes[K]
+    | SignalLike<SvgGlobalAttributes[K]>
+}
+
 type ElementMap = {
-  [Tag in keyof HtmlElementAttributes]: {
-    [K in keyof HtmlElementAttributes[Tag]]: K extends "style"
-      ? HtmlElementAttributes[Tag][K]
-      :
-          | HtmlElementAttributes[Tag][K]
-          | SignalLike<HtmlElementAttributes[Tag][K]>
-  } & {
-    [K in keyof GlobalAttributes]:
-      | GlobalAttributes[K]
-      | SignalLike<GlobalAttributes[K]>
-  } & EventAttributes<Tag> &
+  [Tag in keyof HtmlElementAttributes]: SignalableHtmlElementAttributes<Tag> &
+    SignalableGlobalAttributes &
+    SignalableAriaProps &
+    EventAttributes<Tag> &
     GlobalEventAttributes &
-    Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<HTMLTagToElement<Tag>>
         | SignalClass<HTMLTagToElement<Tag> | null>
     }
 } & {
-  [Tag in keyof SvgElementAttributes]: {
-    [K in keyof SvgElementAttributes[Tag]]:
-      | SvgElementAttributes[Tag][K]
-      | SignalLike<SvgElementAttributes[Tag][K]>
-  } & {
-    [K in keyof SvgGlobalAttributes]:
-      | SvgGlobalAttributes[K]
-      | SignalLike<SvgGlobalAttributes[K]>
-  } & {
-    [K in keyof GlobalAttributes]:
-      | GlobalAttributes[K]
-      | SignalLike<GlobalAttributes[K]>
-  } & EventAttributes<Tag> &
+  [Tag in keyof SvgElementAttributes]: SignalableSvgElementAttributes<Tag> &
+    SignalableSvgGlobalAttributes &
+    SignalableGlobalAttributes &
+    SignalableAriaProps &
+    EventAttributes<Tag> &
     GlobalEventAttributes &
-    Partial<ARIAMixin> &
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<SVGTagToElement<Tag>>
         | SignalClass<SVGTagToElement<Tag> | null>
     }
 } & {
-  [K in WebComponentTag]: Record<string, any>
+  [Tag in WebComponentTag]: Record<string, any>
 }
 
 declare global {

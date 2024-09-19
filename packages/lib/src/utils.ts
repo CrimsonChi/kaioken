@@ -389,11 +389,19 @@ function propsToElementAttributes(props: Record<string, unknown>) {
   const keys = Object.keys(props).filter(propFilters.isProperty)
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i]
-    const key = propToHtmlAttr(k)
     const val = unwrap(props[k])
-    if (booleanAttributes.indexOf(key) > -1) {
-      if (Boolean(val)) attrs.push(key)
-      continue
+    if (val === null || val === undefined) continue
+
+    const key = propToHtmlAttr(k)
+    switch (typeof val) {
+      case "function":
+      case "symbol":
+        continue
+      case "boolean":
+        if (booleanAttributes.indexOf(key) > -1) {
+          if (val) attrs.push(key)
+          continue
+        }
     }
     attrs.push(`${key}="${propValueToHtmlAttrValue(k, val)}"`)
   }
