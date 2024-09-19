@@ -172,7 +172,7 @@ function hydrateDom(vNode: VNode) {
   while (sibling && sibling.type === ELEMENT_TYPE.text) {
     const sib = sibling
     hydrationStack.bumpChildIndex()
-    const prevText = String(unwrap(prev.props.nodeValue))
+    const prevText = String(unwrap(prev.props.nodeValue) ?? "")
     const dom = (prev.dom as Text).splitText(prevText.length)
     sib.dom = dom
     if (Signal.isSignal(sib.props.nodeValue)) {

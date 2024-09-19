@@ -256,7 +256,8 @@ function createChild(
   sig: Signal<any> | null = null
 ): VNode | null {
   if (
-    (typeof child === "string" && (child !== "" || sig)) ||
+    sig ||
+    (typeof child === "string" && child !== "") ||
     typeof child === "number" ||
     typeof child === "bigint"
   ) {
