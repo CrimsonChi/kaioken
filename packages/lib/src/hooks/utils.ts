@@ -1,3 +1,4 @@
+import { KaiokenError } from "../error.js"
 import { __DEV__ } from "../env.js"
 import { node, nodeToCtxMap } from "../globals.js"
 import { getVNodeAppContext, noop } from "../utils.js"
@@ -87,7 +88,7 @@ function useHook<T, U extends HookCallback<T>>(
     !nestedHookWarnings.has(hookName + currentHookName)
   ) {
     nestedHookWarnings.add(hookName + currentHookName)
-    throw new Error(
+    throw new KaiokenError(
       `[kaioken]: nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange things may happen.`
     )
   }
@@ -139,7 +140,7 @@ function useHook<T, U extends HookCallback<T>>(
 }
 
 function error_hookMustBeCalledTopLevel(hookName: string): never {
-  throw new Error(
+  throw new KaiokenError(
     `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another composite hook.`
   )
 }

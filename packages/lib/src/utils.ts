@@ -5,6 +5,7 @@ import {
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signal.js"
+import { KaiokenError } from "./error.js"
 
 export {
   isVNode,
@@ -49,7 +50,7 @@ function isContextProvider(thing: unknown) {
 
 function getVNodeAppContext(node: Kaioken.VNode) {
   const n = nodeToCtxMap.get(node)
-  if (!n) throw new Error("[kaioken]: Unable to find node's AppContext")
+  if (!n) throw new KaiokenError("[kaioken]: Unable to find node's AppContext")
   return n
 }
 

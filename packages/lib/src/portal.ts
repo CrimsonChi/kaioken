@@ -1,4 +1,5 @@
 import { __DEV__ } from "./env.js"
+import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { useVNode } from "./hooks/utils.js"
 import { getVNodeAppContext, isVNode } from "./utils.js"
@@ -17,7 +18,7 @@ function Portal({ children, container }: PortalProps) {
       node.dom = typeof container === "function" ? container() : container
       if (!(node.dom instanceof HTMLElement)) {
         if (__DEV__) {
-          throw new Error(
+          throw new KaiokenError(
             `[kaioken]: Invalid portal container, expected HTMLElement, got ${node.dom}`
           )
         }

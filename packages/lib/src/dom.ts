@@ -12,6 +12,7 @@ import { hydrationStack } from "./hydration.js"
 import { MaybeDom, SomeDom, SomeElement, StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
+import { KaiokenError } from "./error.js"
 
 export { commitWork, createDom, updateDom, hydrateDom, setRef, clearRef }
 
@@ -150,10 +151,11 @@ function subTextNode(node: Kaioken.VNode, dom: Text, sig: Signal<string>) {
 
 function hydrateDom(vNode: VNode) {
   const dom = hydrationStack.nextChild()
-  if (!dom) throw new Error(`[kaioken]: Hydration mismatch - no node found`)
+  if (!dom)
+    throw new KaiokenError(`[kaioken]: Hydration mismatch - no node found`)
   const nodeName = dom.nodeName.toLowerCase()
   if ((vNode.type as string) !== nodeName) {
-    throw new Error(
+    throw new KaiokenError(
       `[kaioken]: Hydration mismatch - expected node of type ${vNode.type.toString()} but received ${nodeName}`
     )
   }
@@ -313,7 +315,7 @@ function getDomParent(node: VNode): DomParentSearchResult {
       if (node.dom) return { node, element: node.dom }
     }
 
-    throw new Error(
+    throw new KaiokenError(
       "[kaioken]: no domParent found - seek help!\n" + String(node)
     )
   }

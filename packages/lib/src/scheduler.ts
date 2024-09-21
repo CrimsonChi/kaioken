@@ -7,6 +7,7 @@ import {
 } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
+import { KaiokenError } from "./error.js"
 import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
@@ -331,12 +332,15 @@ export class Scheduler {
           })
           throw error
         }
-        console.error(error)
         window.__kaioken?.emit(
           "error",
           this.appCtx,
           error instanceof Error ? error : new Error(String(error))
         )
+        if (!KaiokenError.isKaiokenError(error)) {
+          throw error
+        }
+        console.error(error)
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
@@ -371,7 +375,7 @@ export class Scheduler {
       if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
         const stackMsg = this.captureErrorStack(vNode)
         this.fatalError = stackMsg
-        throw new Error(
+        throw new KaiokenError(
           "[kaioken]: Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop."
         )
       }
@@ -429,7 +433,7 @@ ${componentFns.map((x) => `   at ${x}`).join("\n")}\n`
 
   private checkForTooManyConsecutiveDirtyRenders() {
     if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
-      throw new Error(
+      throw new KaiokenError(
         "[kiakoken]: Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
       )
     }

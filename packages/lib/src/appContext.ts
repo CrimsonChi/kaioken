@@ -1,6 +1,7 @@
 import { EFFECT_TAG } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
+import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { Scheduler } from "./scheduler.js"
@@ -87,7 +88,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     const rootChild = this.rootNode?.child
     const scheduler = this.scheduler
     if (!this.mounted || !rootChild || !scheduler)
-      throw new Error(
+      throw new KaiokenError(
         "[kaioken]: failed to apply new props - ensure the app is mounted"
       )
     return new Promise<AppContext<T>>((resolve) => {
