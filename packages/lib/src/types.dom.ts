@@ -209,6 +209,7 @@ type GlobalAttributes = {
   title?: string
   translate?: "yes" | "no"
   popover?: "auto" | "manual" | boolean
+  inert?: boolean
 }
 
 type GlobalEventAttributes = Omit<

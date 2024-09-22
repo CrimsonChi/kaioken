@@ -237,6 +237,7 @@ const booleanAttributes = [
   "download",
   // "draggable",
   "hidden",
+  "inert",
   "ismap",
   "multiple",
   "nohref",
