@@ -337,10 +337,14 @@ export class Scheduler {
           this.appCtx,
           error instanceof Error ? error : new Error(String(error))
         )
-        if (!KaiokenError.isKaiokenError(error)) {
-          throw error
+        if (KaiokenError.isKaiokenError(error)) {
+          console.error(error)
+        } else {
+          // ensure that the error is thrown in the next tick
+          setTimeout(() => {
+            throw error
+          })
         }
-        console.error(error)
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
