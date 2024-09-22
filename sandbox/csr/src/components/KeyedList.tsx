@@ -1,4 +1,4 @@
-import { useState } from "kaioken"
+import { Fragment, useState } from "kaioken"
 import { Button } from "./atoms/Button"
 
 export function KeyedList() {
@@ -20,13 +20,15 @@ export function KeyedList() {
   return (
     <ul>
       {counters.map((c) => (
-        <li key={"item-" + c} className="flex gap-2">
-          <KeyedCounterItem
-            id={c}
-            move={(dist) => move(c, dist)}
-            remove={() => remove(c)}
-          />
-        </li>
+        <Fragment key={"item-" + c}>
+          <li className="flex gap-2">
+            <KeyedCounterItem
+              id={c}
+              move={(dist) => move(c, dist)}
+              remove={() => remove(c)}
+            />
+          </li>
+        </Fragment>
       ))}
     </ul>
   )

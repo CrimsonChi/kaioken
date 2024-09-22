@@ -31,7 +31,7 @@ export const options = {
   jsx: "transform",
   outdir: "dist",
   jsxFactory: "kaioken.createElement",
-  jsxFragment: "kaioken.fragment",
+  jsxFragment: "kaioken.Fragment",
   bundle: true,
   platform: "browser",
   target: "es2020",

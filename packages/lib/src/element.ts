@@ -7,8 +7,8 @@ export function createElement<T extends Kaioken.VNode["type"]>(
   props: null | Record<string, unknown> = null,
   ...children: unknown[]
 ): Kaioken.VNode {
-  if ((type as any) === fragment) {
-    return fragment({ children })
+  if ((type as any) === Fragment) {
+    return Fragment({ children: children as any, ...props })
   }
   const node: Kaioken.VNode = {
     type,
@@ -34,6 +34,12 @@ export function createElement<T extends Kaioken.VNode["type"]>(
   return node
 }
 
-export function fragment({ children }: { children: unknown[] }): Kaioken.VNode {
-  return createElement(fragmentSymbol, null, ...children)
+export function Fragment({
+  children,
+  key,
+}: {
+  children: JSX.Children
+  key?: JSX.ElementKey
+}): Kaioken.VNode {
+  return createElement(fragmentSymbol, key ? { key } : null, children)
 }

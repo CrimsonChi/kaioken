@@ -7,7 +7,7 @@ export default defineConfig({
     jsxInject: `import * as kaioken from "kaioken"`,
     jsx: "transform",
     jsxFactory: "kaioken.createElement",
-    jsxFragment: "kaioken.fragment",
+    jsxFragment: "kaioken.Fragment",
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },

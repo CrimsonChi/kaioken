@@ -21,7 +21,7 @@
     "sourceMap": false,
     "jsx": "react",
     "jsxFactory": "kaioken.createElement",
-    "jsxFragmentFactory": "kaioken.fragment"
+    "jsxFragmentFactory": "kaioken.Fragment"
   },
   "include": [
     "./src/*",

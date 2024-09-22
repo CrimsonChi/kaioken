@@ -4,7 +4,7 @@ import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { Signal } from "./signal.js"
 import { __DEV__ } from "./env.js"
-import { createElement, fragment } from "./element.js"
+import { createElement, Fragment } from "./element.js"
 
 type VNode = Kaioken.VNode
 
@@ -279,7 +279,7 @@ function createChild(
       return newNode
     }
     if (Array.isArray(child)) {
-      const el = fragment({ children: child })
+      const el = Fragment({ children: child })
       el.parent = parent
       el.depth = parent.depth + 1
       return el
@@ -368,7 +368,7 @@ function updateFromMap(
       oldChild.props.children = newChild
       return oldChild
     } else {
-      const n = fragment({ children: newChild })
+      const n = Fragment({ children: newChild })
       n.parent = parent
       n.depth = parent.depth + 1
       n.effectTag = EFFECT_TAG.PLACEMENT
