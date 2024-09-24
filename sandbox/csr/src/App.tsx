@@ -17,21 +17,6 @@ import { UseModelExample } from "./components/useModelExample"
 import { GlobalComputedExample } from "./components/ComputedExample"
 import { LocalComputedExample } from "./components/ComputedExample"
 
-export function App() {
-  return (
-    <ul className="list-decimal">
-      {Array.from({ length: 10 }).map((_, i) => (
-        //<li key={i}>{i}</li>
-        <ListItem key={i}>{i}</ListItem>
-      ))}
-    </ul>
-  )
-}
-
-function ListItem({ children }: { children: JSX.Element }) {
-  return <li>{children}</li>
-}
-
 function Home() {
   return <h1>Home</h1>
 }
@@ -62,7 +47,7 @@ function Nav() {
   )
 }
 
-export function _App() {
+export function App() {
   return (
     <>
       <Nav />

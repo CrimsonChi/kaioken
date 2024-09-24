@@ -18,10 +18,8 @@ import { bitmapOps } from "./bitmap.js"
 export { commitWork, createDom, updateDom, hydrateDom, setRef, clearRef }
 
 type VNode = Kaioken.VNode
-type DomParentSearchResult = {
-  node: VNode
-  element: SomeDom
-}
+type ElementVNode = VNode & { dom: SomeElement }
+type DomVNode = VNode & { dom: SomeDom }
 
 function setRefSignal(
   signal: Signal<SomeDom | null>,
@@ -302,7 +300,7 @@ function setStyleProp(
   }
 }
 
-function getDomParent(node: VNode): DomParentSearchResult {
+function getDomParent(node: VNode): ElementVNode {
   let parentNode: VNode | undefined = node.parent ?? node.prev?.parent
   let parentNodeElement = parentNode?.dom
   while (parentNode && !parentNodeElement) {
@@ -313,36 +311,37 @@ function getDomParent(node: VNode): DomParentSearchResult {
   if (!parentNodeElement || !parentNode) {
     if (!node.parent) {
       // handle app entry
-      if (node.dom) return { node, element: node.dom }
+      if (node.dom) return node as ElementVNode
     }
 
     throw new KaiokenError(
       "[kaioken]: no domParent found - seek help!\n" + String(node)
     )
   }
-  return { node: parentNode, element: parentNodeElement }
+  return parentNode as ElementVNode
 }
 
-function placeDom(vNode: VNode) {
-  const dom = vNode.dom as SomeDom
-  const [mntParent, prevSiblingDom] = useHostContext(vNode as ElementVNode)
+function placeDom(
+  dom: SomeDom,
+  mntParent: ElementVNode,
+  prevSiblingDom?: SomeDom
+) {
   if (prevSiblingDom) {
     prevSiblingDom.after(dom)
     return
   }
-  const { element, node: mountParentNode } = mntParent
-  if (isPortal(mountParentNode) && !dom.isConnected) {
-    element.appendChild(dom)
+  if (isPortal(mntParent) && !dom.isConnected) {
+    mntParent.dom.appendChild(dom)
     return
   }
-  if (element.childNodes.length === 0) {
-    element.appendChild(dom)
+  if (mntParent.dom.childNodes.length === 0) {
+    mntParent.dom.appendChild(dom)
   } else {
     /**
      * scan depth-first through the tree from the mount parent
      * and find the previous dom node (if any)
      */
-    const stack = [mountParentNode.child]
+    const stack = [mntParent.child]
     let prevDom: MaybeDom
 
     while (stack.length) {
@@ -354,87 +353,96 @@ function placeDom(vNode: VNode) {
       if (!_isPortal && !n.dom && n.child) stack.push(n.child)
     }
     if (!prevDom) {
-      element.insertBefore(dom, element.firstChild)
+      mntParent.dom.insertBefore(dom, mntParent.dom.firstChild)
     } else {
       prevDom.after(dom)
     }
   }
 }
 
-const hostDpStack: [DomParentSearchResult, MaybeDom][] = []
-type ElementVNode = VNode & { dom: SomeElement }
-function useHostContext(node: ElementVNode): [DomParentSearchResult, MaybeDom] {
-  const dp = getDomParent(node)
-  let i = hostDpStack.length
-  while (i--) {
-    if (hostDpStack[i][0].node === dp.node) {
-      const prev = hostDpStack[i][1]
-      hostDpStack[i][1] = node.dom
-      return [hostDpStack[i][0], prev]
-    }
-  }
-  hostDpStack.push([dp, node.dom === dp.element ? undefined : node.dom])
-  return [dp, undefined]
-}
-
-function resetHostContext() {
-  hostDpStack.length = 0
-}
-
 function commitWork(vNode: VNode) {
-  let commitSibling = false
-  const stack: VNode[] = [vNode]
-  resetHostContext()
-
-  while (stack.length) {
-    const n = stack.pop()!
-    //console.log("committing work - flags:", bitmapOps.getFlags(n))
-    const dom = n.dom
-
-    if (dom && !bitmapOps.isFlagSet(n, FLAG.DELETION)) {
-      commitDom(n)
-    } else if (bitmapOps.isFlagSet(n, FLAG.PLACEMENT)) {
-      // propagate the effect to children
-      let c = n.child
-      while (c) {
-        bitmapOps.setFlag(c, FLAG.PLACEMENT)
-        c = c.sibling
-      }
-    }
-
-    if (!n.sibling) {
-      hostDpStack.pop()
-    }
-    if (commitSibling && n.sibling) {
-      stack.push(n.sibling)
-    }
-    commitSibling = true
-
-    if (bitmapOps.isFlagSet(n, FLAG.DELETION)) {
-      commitDeletion(n)
-      continue
-    }
-
-    if (n.child) {
-      stack.push(n.child)
-    }
-
-    n.flags = 0
-    n.prev = { ...n, props: { ...n.props }, prev: undefined }
+  if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) {
+    return commitDeletion(vNode)
   }
-}
-
-function commitDom(n: VNode) {
-  const dom = n.dom as SomeDom
-  if (renderMode.current === "hydrate") {
+  if (vNode.type === ELEMENT_TYPE.text) {
+    // this is a text node, just update its value
+    const dom = vNode.dom as SomeDom
+    if (renderMode.current === "hydrate") {
+      return
+    }
+    if (!dom.isConnected || bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)) {
+      const mntParent = getDomParent(vNode)
+      placeDom(dom, mntParent)
+    }
+    if (!vNode.prev || bitmapOps.isFlagSet(vNode, FLAG.UPDATE)) {
+      updateDom(vNode)
+    }
+    vNode.flags = 0
+    vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
     return
   }
-  if (isPortal(n)) return
-  if (!dom.isConnected || bitmapOps.isFlagSet(n, FLAG.PLACEMENT)) {
-    placeDom(n)
+
+  // perform a depth-first crawl through the tree, starting from the root.
+  // we should accumulate a stack of 'currentHostElement's as we go, so that we can
+  // do dom operations in the correct order, i.e. children before parents.
+  const root = vNode
+  const hostNodes: { node: ElementVNode; lastChild?: ElementVNode }[] = []
+  let branch = root.child
+  while (branch) {
+    let c = branch
+    while (c) {
+      if (c.dom && c.type !== ELEMENT_TYPE.text && c.child) {
+        hostNodes.push({
+          node: c as ElementVNode,
+        })
+      }
+      if (!c.child) break
+      if (!c.dom && bitmapOps.isFlagSet(c, FLAG.PLACEMENT)) {
+        // propagate the flag down the tree
+        let child: VNode | undefined = c.child
+        while (child) {
+          bitmapOps.setFlag(child, FLAG.PLACEMENT)
+          child = child.sibling
+        }
+      }
+      c = c.child
+    }
+    while (c && c !== root) {
+      if (bitmapOps.isFlagSet(c, FLAG.DELETION)) {
+        commitDeletion(c)
+      } else if (c.dom) {
+        commitDom(c as DomVNode, hostNodes)
+      }
+      c.flags = 0
+      c.prev = { ...c, props: { ...c.props }, prev: undefined }
+      if (c.sibling) {
+        branch = c.sibling
+        break
+      }
+      if (hostNodes[hostNodes.length - 1]?.node === c.parent) {
+        hostNodes.pop()
+      }
+      c = c.parent!
+    }
+    if (c === root) break
   }
-  if (!n.prev || bitmapOps.isFlagSet(n, FLAG.UPDATE)) {
-    updateDom(n)
+}
+
+function commitDom(
+  node: DomVNode,
+  hostNodes: { node: ElementVNode; lastChild?: ElementVNode }[]
+) {
+  if (isPortal(node)) return
+  const dpNode = hostNodes[hostNodes.length - 1]
+  if (!node.dom.isConnected || bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
+    const parent = dpNode?.node ?? getDomParent(node)
+    placeDom(node.dom, parent, dpNode?.lastChild?.dom)
+  }
+  if (!node.prev || bitmapOps.isFlagSet(node, FLAG.UPDATE)) {
+    updateDom(node)
+  }
+  if (dpNode) {
+    dpNode.lastChild = node as ElementVNode
   }
 }
 
