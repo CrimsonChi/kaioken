@@ -1,8 +1,9 @@
 import type { AppContext } from "./appContext"
+import { bitmapOps } from "./bitmap.js"
 import {
   CONSECUTIVE_DIRTY_LIMIT,
   contextProviderSymbol,
-  EFFECT_TAG,
+  FLAG,
   fragmentSymbol,
 } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
@@ -216,7 +217,7 @@ export class Scheduler {
     applyRecursive(
       vNode,
       (n) => {
-        n.effectTag = EFFECT_TAG.DELETION
+        bitmapOps.setFlag(n, FLAG.DELETION)
       },
       false
     )
@@ -306,7 +307,7 @@ export class Scheduler {
 
   private performUnitOfWork(vNode: VNode): VNode | void {
     const frozen = "frozen" in vNode && vNode.frozen === true
-    const skip = frozen && vNode.effectTag !== EFFECT_TAG.PLACEMENT
+    const skip = frozen && !bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)
     if (!skip) {
       try {
         if (typeof vNode.type === "function") {

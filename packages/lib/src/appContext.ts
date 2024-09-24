@@ -1,4 +1,5 @@
-import { EFFECT_TAG } from "./constants.js"
+import { bitmapOps } from "./bitmap.js"
+import { FLAG } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
@@ -106,20 +107,20 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   }
 
   requestUpdate(node: VNode) {
-    if (node.effectTag === EFFECT_TAG.DELETION) return
+    if (bitmapOps.isFlagSet(node, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        node.effectTag !== EFFECT_TAG.DELETION && s.queueUpdate(node)
+        !bitmapOps.isFlagSet(node, FLAG.DELETION) && s.queueUpdate(node)
       })
     }
     this.scheduler?.queueUpdate(node)
   }
 
   requestDelete(node: VNode) {
-    if (node.effectTag === EFFECT_TAG.DELETION) return
+    if (bitmapOps.isFlagSet(node, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        node.effectTag !== EFFECT_TAG.DELETION && s.queueDelete(node)
+        !bitmapOps.isFlagSet(node, FLAG.DELETION) && s.queueDelete(node)
       })
     }
     this.scheduler?.queueDelete(node)

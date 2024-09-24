@@ -3,8 +3,9 @@ import assert from "node:assert"
 import { reconcileChildren } from "../../reconciler.js"
 import { ctx } from "../../globals.js"
 import * as kaioken from "../../index.js"
-import { EFFECT_TAG } from "../../constants.js"
+import { FLAG } from "../../constants.js"
 import { shuffle } from "./utils.js"
+import { bitmapOps } from "../../bitmap.js"
 
 describe("reconciler", () => {
   it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", (t) => {
@@ -69,6 +70,7 @@ describe("reconciler", () => {
     const commitFragmentChildren = () => {
       let n: Kaioken.VNode | undefined = node.child!.child
       while (n) {
+        n.flags = 0
         n.prev = { ...n, props: { ...n.props }, prev: undefined }
         n = n.sibling
       }
@@ -93,9 +95,9 @@ describe("reconciler", () => {
         const prev = c?.prev
         if (prev === undefined || prev.index < i) {
           assert.strictEqual(
-            c!.effectTag,
-            EFFECT_TAG.PLACEMENT,
-            `[${opName}]: effectTag for ${i}th child should be "placement"`
+            bitmapOps.isFlagSet(c!, FLAG.PLACEMENT),
+            true,
+            `[${opName}]: ${i}th child should have flag "placement"`
           )
         }
         c = c!.sibling

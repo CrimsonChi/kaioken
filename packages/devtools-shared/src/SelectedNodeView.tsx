@@ -8,6 +8,8 @@ import { NodeDataSection } from "./NodeDataSection"
 import { RefreshIcon } from "./RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
 import { ExternalLinkIcon } from "./ExternalLinkIcon"
+import { FLAG } from "../../lib/dist/constants"
+import { bitmapOps } from "../../lib/dist/bitmap"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
@@ -27,7 +29,7 @@ export function SelectedNodeView({
   useEffect(() => {
     const handleUpdate = (appCtx: AppContext) => {
       if (appCtx !== selectedApp) return
-      if (selectedNode?.effectTag === 3) {
+      if (bitmapOps.isFlagSet(selectedNode, FLAG.DELETION)) {
         setSelectedNode(null)
       } else {
         requestUpdate()

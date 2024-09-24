@@ -1,10 +1,11 @@
 import type { AppContext } from "./appContext"
-import { EFFECT_TAG, ELEMENT_TYPE, fragmentSymbol } from "./constants.js"
+import { ELEMENT_TYPE, FLAG, fragmentSymbol } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { Signal } from "./signal.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
+import { bitmapOps } from "./bitmap.js"
 
 type VNode = Kaioken.VNode
 
@@ -202,7 +203,7 @@ function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
   } else {
     const newNode = oldNode
     newNode.props.nodeValue = content
-    newNode.effectTag = EFFECT_TAG.UPDATE
+    bitmapOps.setFlag(newNode, FLAG.UPDATE)
     newNode.sibling = undefined
     return oldNode
   }
@@ -222,7 +223,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.index = 0
     oldNode.props = newNode.props
     oldNode.sibling = undefined
-    oldNode.effectTag = EFFECT_TAG.UPDATE
+    bitmapOps.setFlag(oldNode, FLAG.UPDATE)
     oldNode.frozen = newNode.frozen
     return oldNode
   }
@@ -245,7 +246,7 @@ function updateFragment(
     return el
   }
   oldNode.props = { ...oldNode.props, ...newProps, children }
-  oldNode.effectTag = EFFECT_TAG.UPDATE
+  bitmapOps.setFlag(oldNode, FLAG.UPDATE)
   oldNode.sibling = undefined
   return oldNode
 }
@@ -274,7 +275,7 @@ function createChild(
       const newNode = createElement(child.type, child.props)
       newNode.parent = parent
       newNode.depth = parent.depth! + 1
-      newNode.effectTag = EFFECT_TAG.PLACEMENT
+      bitmapOps.setFlag(newNode, FLAG.PLACEMENT)
       if ("frozen" in child) newNode.frozen = child.frozen
       return newNode
     }
@@ -301,13 +302,13 @@ function placeChild(
   if (vNode.prev !== undefined) {
     const oldIndex = vNode.prev.index
     if (oldIndex < lastPlacedIndex) {
-      vNode.effectTag = EFFECT_TAG.PLACEMENT
+      bitmapOps.setFlag(vNode, FLAG.PLACEMENT)
       return lastPlacedIndex
     } else {
       return oldIndex
     }
   } else {
-    vNode.effectTag = EFFECT_TAG.PLACEMENT
+    bitmapOps.setFlag(vNode, FLAG.PLACEMENT)
     return lastPlacedIndex
   }
 }
@@ -325,7 +326,7 @@ function updateFromMap(
   ) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
-      oldChild.effectTag = EFFECT_TAG.UPDATE
+      bitmapOps.setFlag(oldChild, FLAG.UPDATE)
       oldChild.props.nodeValue = newChild
       return oldChild
     } else {
@@ -334,7 +335,7 @@ function updateFromMap(
       })
       n.parent = parent
       n.depth = parent.depth + 1
-      n.effectTag = EFFECT_TAG.PLACEMENT
+      bitmapOps.setFlag(n, FLAG.PLACEMENT)
       n.index = index
       return n
     }
@@ -345,7 +346,7 @@ function updateFromMap(
       newChild.props.key === undefined ? index : newChild.props.key
     )
     if (oldChild) {
-      oldChild.effectTag = EFFECT_TAG.UPDATE
+      bitmapOps.setFlag(oldChild, FLAG.UPDATE)
       oldChild.props = newChild.props
       if ("frozen" in newChild) oldChild.frozen = newChild.frozen
       oldChild.sibling = undefined
@@ -355,7 +356,7 @@ function updateFromMap(
       const n = createElement(newChild.type, newChild.props)
       n.parent = parent
       n.depth = parent.depth + 1
-      n.effectTag = EFFECT_TAG.PLACEMENT
+      bitmapOps.setFlag(n, FLAG.PLACEMENT)
       n.index = index
       return n
     }
@@ -364,14 +365,14 @@ function updateFromMap(
   if (Array.isArray(newChild)) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
-      oldChild.effectTag = EFFECT_TAG.UPDATE
+      bitmapOps.setFlag(oldChild, FLAG.UPDATE)
       oldChild.props.children = newChild
       return oldChild
     } else {
       const n = Fragment({ children: newChild })
       n.parent = parent
       n.depth = parent.depth + 1
-      n.effectTag = EFFECT_TAG.PLACEMENT
+      bitmapOps.setFlag(n, FLAG.PLACEMENT)
       n.index = index
       return n
     }

@@ -12,6 +12,7 @@ export function createElement<T extends Kaioken.VNode["type"]>(
   }
   const node: Kaioken.VNode = {
     type,
+    flags: 0,
     index: 0,
     depth: 0,
     props: {},

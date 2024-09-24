@@ -7,7 +7,7 @@ export const kaiokenErrorSymbol = Symbol.for("kaioken.error")
 export const ELEMENT_ID_BASE = 16
 export const CONSECUTIVE_DIRTY_LIMIT = 50
 
-export const EFFECT_TAG = {
+export const FLAG = {
   UPDATE: 1,
   PLACEMENT: 2,
   DELETION: 3,

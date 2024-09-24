@@ -5,7 +5,7 @@ import {
   svgTags,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { EFFECT_TAG, ELEMENT_TYPE } from "./constants.js"
+import { ELEMENT_TYPE, FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signal.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
@@ -13,6 +13,7 @@ import { MaybeDom, SomeDom, SomeElement, StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
+import { bitmapOps } from "./bitmap.js"
 
 export { commitWork, createDom, updateDom, hydrateDom, setRef, clearRef }
 
@@ -387,15 +388,16 @@ function commitWork(vNode: VNode) {
 
   while (stack.length) {
     const n = stack.pop()!
+    //console.log("committing work - flags:", bitmapOps.getFlags(n))
     const dom = n.dom
 
-    if (dom && n.effectTag !== EFFECT_TAG.DELETION) {
+    if (dom && !bitmapOps.isFlagSet(n, FLAG.DELETION)) {
       commitDom(n)
-    } else if (n.effectTag === EFFECT_TAG.PLACEMENT) {
+    } else if (bitmapOps.isFlagSet(n, FLAG.PLACEMENT)) {
       // propagate the effect to children
       let c = n.child
       while (c) {
-        c.effectTag = EFFECT_TAG.PLACEMENT
+        bitmapOps.setFlag(c, FLAG.PLACEMENT)
         c = c.sibling
       }
     }
@@ -408,7 +410,7 @@ function commitWork(vNode: VNode) {
     }
     commitSibling = true
 
-    if (n.effectTag === EFFECT_TAG.DELETION) {
+    if (bitmapOps.isFlagSet(n, FLAG.DELETION)) {
       commitDeletion(n)
       continue
     }
@@ -417,7 +419,7 @@ function commitWork(vNode: VNode) {
       stack.push(n.child)
     }
 
-    n.effectTag = undefined
+    n.flags = 0
     n.prev = { ...n, props: { ...n.props }, prev: undefined }
   }
 }
@@ -428,10 +430,12 @@ function commitDom(n: VNode) {
     return
   }
   if (isPortal(n)) return
-  if (!dom.isConnected || n.effectTag === EFFECT_TAG.PLACEMENT) {
+  if (!dom.isConnected || bitmapOps.isFlagSet(n, FLAG.PLACEMENT)) {
     placeDom(n)
   }
-  updateDom(n)
+  if (!n.prev || bitmapOps.isFlagSet(n, FLAG.UPDATE)) {
+    updateDom(n)
+  }
 }
 
 function commitDeletion(vNode: VNode, deleteSibling = false) {

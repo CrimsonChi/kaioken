@@ -3,11 +3,7 @@ import type {
   Signal as SignalClass,
   SignalLike,
 } from "./signal"
-import type {
-  contextProviderSymbol,
-  fragmentSymbol,
-  EFFECT_TAG,
-} from "./constants"
+import type { contextProviderSymbol, fragmentSymbol } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
@@ -199,7 +195,7 @@ declare global {
       child?: VNode
       sibling?: VNode
       prev?: VNode
-      effectTag?: (typeof EFFECT_TAG)[keyof typeof EFFECT_TAG]
+      flags: number
       frozen?: boolean
       effects?: Array<Function>
       immediateEffects?: Array<Function>
