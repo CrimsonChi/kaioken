@@ -364,67 +364,61 @@ function commitWork(vNode: VNode) {
   if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) {
     return commitDeletion(vNode)
   }
-  if (vNode.type === ELEMENT_TYPE.text) {
-    // this is a text node, just update its value
-    const dom = vNode.dom as SomeDom
-    if (renderMode.current === "hydrate") {
-      return
-    }
-    if (!dom.isConnected || bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)) {
-      const mntParent = getDomParent(vNode)
-      placeDom(dom, mntParent)
-    }
-    if (!vNode.prev || bitmapOps.isFlagSet(vNode, FLAG.UPDATE)) {
-      updateDom(vNode)
-    }
-    vNode.flags = 0
-    vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
-    return
-  }
 
   // perform a depth-first crawl through the tree, starting from the root.
-  // we should accumulate a stack of 'currentHostElement's as we go, so that we can
-  // do dom operations in the correct order, i.e. children before parents.
+  // we accumulate a stack of 'host node -> last child' as we go,
+  // so that we can reuse them in the next iteration.
   const root = vNode
-  const hostNodes: { node: ElementVNode; lastChild?: ElementVNode }[] = []
+  const hostNodes: Array<{
+    node: ElementVNode
+    lastChild?: ElementVNode
+  }> = []
   let branch = root.child
   while (branch) {
-    let c = branch
-    while (c) {
-      if (c.dom && c.type !== ELEMENT_TYPE.text && c.child) {
+    let node = branch
+    // traverse the tree in a depth first manner,
+    // collecting host nodes as we go
+    while (node) {
+      if (node.dom && node.type !== ELEMENT_TYPE.text && node.child) {
         hostNodes.push({
-          node: c as ElementVNode,
+          node: node as ElementVNode,
         })
       }
-      if (!c.child) break
-      if (!c.dom && bitmapOps.isFlagSet(c, FLAG.PLACEMENT)) {
-        // propagate the flag down the tree
-        let child: VNode | undefined = c.child
+      if (!node.child) break
+      if (!node.dom && bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
+        // no dom node, propagate the flag down the tree.
+        // we shouldn't need to do this if we were to instead
+        // treat the placement flag as a modifier that affects
+        // operations on children during this iteration
+        let child: VNode | undefined = node.child
         while (child) {
           bitmapOps.setFlag(child, FLAG.PLACEMENT)
           child = child.sibling
         }
       }
-      c = c.child
+      node = node.child
     }
-    while (c && c !== root) {
-      if (bitmapOps.isFlagSet(c, FLAG.DELETION)) {
-        commitDeletion(c)
-      } else if (c.dom) {
-        commitDom(c as DomVNode, hostNodes)
+    while (node && node !== root) {
+      // at this point we're operating on the deepest nodes,
+      // traversing back up the tree until we reach a new branch
+      // or the root.
+      if (bitmapOps.isFlagSet(node, FLAG.DELETION)) {
+        commitDeletion(node)
+      } else if (node.dom) {
+        commitDom(node as DomVNode, hostNodes)
+        node.flags = 0
+        node.prev = { ...node, props: { ...node.props }, prev: undefined }
       }
-      c.flags = 0
-      c.prev = { ...c, props: { ...c.props }, prev: undefined }
-      if (c.sibling) {
-        branch = c.sibling
+      if (node.sibling) {
+        branch = node.sibling
         break
       }
-      if (hostNodes[hostNodes.length - 1]?.node === c.parent) {
+      if (hostNodes[hostNodes.length - 1]?.node === node.parent) {
         hostNodes.pop()
       }
-      c = c.parent!
+      node = node.parent!
     }
-    if (c === root) break
+    if (node === root) break
   }
 }
 
