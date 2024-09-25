@@ -404,8 +404,10 @@ function commitWork(vNode: VNode) {
       // or the root.
       if (bitmapOps.isFlagSet(node, FLAG.DELETION)) {
         commitDeletion(node)
-      } else if (node.dom) {
-        commitDom(node as DomVNode, hostNodes)
+      } else {
+        if (node.dom) {
+          commitDom(node as DomVNode, hostNodes)
+        }
         node.flags = 0
         node.prev = { ...node, props: { ...node.props }, prev: undefined }
       }
