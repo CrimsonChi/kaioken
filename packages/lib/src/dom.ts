@@ -15,43 +15,26 @@ import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { bitmapOps } from "./bitmap.js"
 
-export { commitWork, createDom, updateDom, hydrateDom, setRef, clearRef }
+export { commitWork, createDom, updateDom, hydrateDom }
 
 type VNode = Kaioken.VNode
 type ElementVNode = VNode & { dom: SomeElement }
 type DomVNode = VNode & { dom: SomeDom }
 
-function setRefSignal(
-  signal: Signal<SomeDom | null>,
-  domOrNull: SomeDom | null
-) {
-  signal.sneak(domOrNull)
-  signal.notify((sub) => typeof sub === "function")
-}
-
-function setRef(vNode: VNode, dom: SomeDom) {
+function setDomRef(vNode: VNode, value: SomeDom | null) {
   if (!vNode.props.ref) return
   if (typeof vNode.props.ref === "function") {
-    vNode.props.ref(dom)
+    vNode.props.ref(value)
     return
   }
   if (Signal.isSignal(vNode.props.ref)) {
-    setRefSignal(vNode.props.ref, dom)
+    vNode.props.ref.sneak(value)
+    vNode.props.ref.notify({
+      filter: (sub) => typeof sub === "function",
+    })
     return
   }
-  ;(vNode.props.ref as Kaioken.MutableRefObject<SomeDom | null>).current = dom
-}
-
-function clearRef(vNode: VNode) {
-  if (!vNode.props.ref) return
-  if (typeof vNode.props.ref === "function") {
-    vNode.props.ref(null)
-  }
-  if (Signal.isSignal(vNode.props.ref)) {
-    setRefSignal(vNode.props.ref, null)
-    return
-  }
-  ;(vNode.props.ref as Kaioken.MutableRefObject<SomeDom | null>).current = null
+  ;(vNode.props.ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
 }
 
 function createDom(vNode: VNode): SomeDom {
@@ -62,7 +45,7 @@ function createDom(vNode: VNode): SomeDom {
       : svgTags.includes(t)
         ? document.createElementNS("http://www.w3.org/2000/svg", t)
         : document.createElement(t)
-  setRef(vNode, dom)
+  setDomRef(vNode, dom)
   return dom
 }
 function createTextNode(vNode: VNode): Text {
@@ -159,7 +142,7 @@ function hydrateDom(vNode: VNode) {
     )
   }
   vNode.dom = dom
-  setRef(vNode, dom)
+  setDomRef(vNode, dom)
   if (vNode.type !== ELEMENT_TYPE.text) {
     updateDom(vNode)
     return
@@ -457,7 +440,7 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
     if (n.dom) {
       if (n.dom.isConnected && !isPortal(n)) n.dom.remove()
       delete n.dom
-      clearRef(n)
+      setDomRef(n, null)
     }
     if (deleteSibling && n.sibling) stack.push(n.sibling)
     if (n.child) stack.push(n.child)

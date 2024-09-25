@@ -137,9 +137,9 @@ export class Signal<T> {
     return () => (this.#subscribers.delete(cb), void 0)
   }
 
-  notify(filterPredicate?: (sub: Function | Kaioken.VNode) => boolean) {
+  notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
     this.#subscribers.forEach((sub) => {
-      if (filterPredicate && !filterPredicate(sub)) return
+      if (options?.filter && !options.filter(sub)) return
       if (sub instanceof Function) {
         return sub(this.#value)
       }
