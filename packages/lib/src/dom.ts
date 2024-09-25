@@ -1,5 +1,7 @@
 import {
+  applyRecursive,
   booleanAttributes,
+  commitSnapshot,
   propFilters,
   propToHtmlAttr,
   svgTags,
@@ -348,6 +350,9 @@ function placeDom(
 }
 
 function commitWork(vNode: VNode) {
+  if (renderMode.current === "hydrate") {
+    return applyRecursive(vNode, commitSnapshot)
+  }
   if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) {
     return commitDeletion(vNode)
   }
@@ -392,8 +397,7 @@ function commitWork(vNode: VNode) {
         if (node.dom) {
           commitDom(node as DomVNode, hostNodes)
         }
-        node.flags = 0
-        node.prev = { ...node, props: { ...node.props }, prev: undefined }
+        commitSnapshot(node)
       }
       if (node.sibling) {
         branch = node.sibling
@@ -409,7 +413,6 @@ function commitWork(vNode: VNode) {
 }
 
 function commitDom(node: DomVNode, hostNodes: HostNode[]) {
-  if (renderMode.current === "hydrate") return
   if (isPortal(node)) return
   const host = hostNodes[hostNodes.length - 1]
   if (!node.dom.isConnected || bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
@@ -424,13 +427,11 @@ function commitDom(node: DomVNode, hostNodes: HostNode[]) {
   }
 }
 
-function commitDeletion(vNode: VNode, deleteSibling = false) {
+function commitDeletion(vNode: VNode) {
   if (vNode === vNode.parent?.child) {
     vNode.parent.child = vNode.sibling
   }
-  const stack: VNode[] = [vNode]
-  while (stack.length) {
-    const n = stack.pop()!
+  applyRecursive(vNode, (n) => {
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribe(n, n.subs.pop()!)
     n.cleanups && Object.values(n.cleanups).forEach((c) => c())
@@ -441,8 +442,5 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
       delete n.dom
       setDomRef(n, null)
     }
-    if (deleteSibling && n.sibling) stack.push(n.sibling)
-    if (n.child) stack.push(n.child)
-    deleteSibling = true
-  }
+  })
 }

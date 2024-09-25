@@ -6,6 +6,7 @@ import * as kaioken from "../../index.js"
 import { FLAG } from "../../constants.js"
 import { shuffle } from "./utils.js"
 import { bitmapOps } from "../../bitmap.js"
+import { commitSnapshot } from "../../utils.js"
 
 describe("reconciler", () => {
   it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", (t) => {
@@ -25,9 +26,9 @@ describe("reconciler", () => {
       let stack: Kaioken.VNode[] = [node.child!]
       while (stack.length) {
         const n = stack.pop()!
+        commitSnapshot(n)
         if (n.child) stack.push(n.child)
         if (n.sibling) stack.push(n.sibling)
-        n.prev = { ...n, props: { ...n.props }, prev: undefined }
       }
     }
 
@@ -70,8 +71,7 @@ describe("reconciler", () => {
     const commitFragmentChildren = () => {
       let n: Kaioken.VNode | undefined = node.child!.child
       while (n) {
-        n.flags = 0
-        n.prev = { ...n, props: { ...n.props }, prev: undefined }
+        commitSnapshot(n)
         n = n.sibling
       }
     }

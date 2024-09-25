@@ -13,6 +13,7 @@ export {
   isContextProvider,
   vNodeContains,
   getVNodeAppContext,
+  commitSnapshot,
   applyRecursive,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
@@ -54,6 +55,11 @@ function getVNodeAppContext(node: Kaioken.VNode) {
   return n
 }
 
+function commitSnapshot(vNode: Kaioken.VNode) {
+  vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
+  vNode.flags = 0
+}
+
 function vNodeContains(
   haystack: Kaioken.VNode,
   needle: Kaioken.VNode,
@@ -73,15 +79,15 @@ function vNodeContains(
 
 function applyRecursive(
   node: Kaioken.VNode,
-  func: (node: Kaioken.VNode) => void,
-  includeImmediateSiblings = true
+  func: (node: Kaioken.VNode) => void
 ) {
+  let commitSiblings = false
   const nodes: Kaioken.VNode[] = [node]
   const apply = (node: Kaioken.VNode) => {
     func(node)
     node.child && nodes.push(node.child)
-    includeImmediateSiblings && node.sibling && nodes.push(node.sibling)
-    includeImmediateSiblings = true
+    commitSiblings && node.sibling && nodes.push(node.sibling)
+    commitSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
 }

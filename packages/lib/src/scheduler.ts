@@ -214,13 +214,7 @@ export class Scheduler {
   }
 
   queueDelete(vNode: VNode) {
-    applyRecursive(
-      vNode,
-      (n) => {
-        bitmapOps.setFlag(n, FLAG.DELETION)
-      },
-      false
-    )
+    applyRecursive(vNode, (n) => bitmapOps.setFlag(n, FLAG.DELETION))
     this.deletions.push(vNode)
   }
 
