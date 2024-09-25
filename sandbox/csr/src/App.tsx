@@ -1,6 +1,6 @@
 import { Router, Route, useRouter, useState } from "kaioken"
 import { Todos } from "./components/ToDos"
-import { Counter } from "./components/Counter"
+//import { Counter } from "./components/Counter"
 import { ProductPage } from "./components/Product"
 import { Link } from "./components/atoms/Link"
 import { GithubIcon } from "./components/GithubIcon"
@@ -16,6 +16,7 @@ import { UseSyncExternalStoreExample } from "./components/UseSyncExternalStoreEx
 import { UseModelExample } from "./components/useModelExample"
 import { GlobalComputedExample } from "./components/ComputedExample"
 import { LocalComputedExample } from "./components/ComputedExample"
+import { LazyDemo } from "./components/LazyDemo"
 
 function Home() {
   return <h1>Home</h1>
@@ -26,10 +27,11 @@ function Nav() {
     <nav className=" min-h-screen p-2  mb-5 h-full">
       <div className="sticky top-0 flex flex-col gap-2">
         <Link to="/">Home</Link>
+        <Link to="/lazy">Lazy</Link>
         <Link to="/useModel">UseModel</Link>
         <Link to="/todos">Todos (state, model, memo)</Link>
         <Link to="/todos-with-store">Todos (with store)</Link>
-        <Link to="/counter">Counter (store)</Link>
+        {/* <Link to="/counter">Counter (store)</Link> */}
         <Link to="/query?id=1">Query (useAsync)</Link>
         <Link to="/transitions">Dialogs (transitions, portal)</Link>
         <Link to="/memo">Memo demo</Link>
@@ -54,13 +56,14 @@ export function App() {
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
           <Route path="/" element={<Home />} />
+          <Route path="/lazy" element={<LazyDemo />} />
           <Route path="/useModel" element={<UseModelExample />} />
           <Route path="/big-list" element={<BigListComponent />} />
           <Route path="/router-test/:id" element={<RouterTest />} fallthrough />
           <Route path="/memo" element={<MemoDemo />} />
           <Route path="/todos" element={<Todos />} />
           <Route path="/todos-with-store" element={<TodosWithStore />} />
-          <Route path="/counter" element={<Counter />} />
+          {/* <Route path="/counter" element={<Counter />} /> */}
           <Route path="/query" element={<ProductPage />} />
           <Route path="/transitions" element={<Transitions />} />
           <Route path="/filtered-list" element={<FilteredList />} />
