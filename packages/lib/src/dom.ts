@@ -409,6 +409,7 @@ function commitWork(vNode: VNode) {
 }
 
 function commitDom(node: DomVNode, hostNodes: HostNode[]) {
+  if (renderMode.current === "hydrate") return
   if (isPortal(node)) return
   const host = hostNodes[hostNodes.length - 1]
   if (!node.dom.isConnected || bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
