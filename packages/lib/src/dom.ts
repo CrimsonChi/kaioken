@@ -20,6 +20,10 @@ export { commitWork, createDom, updateDom, hydrateDom }
 type VNode = Kaioken.VNode
 type ElementVNode = VNode & { dom: SomeElement }
 type DomVNode = VNode & { dom: SomeDom }
+type HostNode = {
+  node: ElementVNode
+  lastChild?: DomVNode
+}
 
 function setDomRef(vNode: VNode, value: SomeDom | null) {
   if (!vNode.props.ref) return
@@ -352,10 +356,7 @@ function commitWork(vNode: VNode) {
   // we accumulate a stack of 'host node -> last child' as we go,
   // so that we can reuse them in the next iteration.
   const root = vNode
-  const hostNodes: Array<{
-    node: ElementVNode
-    lastChild?: ElementVNode
-  }> = []
+  const hostNodes: HostNode[] = []
   let branch = root.child
   while (branch) {
     let node = branch
@@ -407,21 +408,18 @@ function commitWork(vNode: VNode) {
   }
 }
 
-function commitDom(
-  node: DomVNode,
-  hostNodes: { node: ElementVNode; lastChild?: ElementVNode }[]
-) {
+function commitDom(node: DomVNode, hostNodes: HostNode[]) {
   if (isPortal(node)) return
-  const dpNode = hostNodes[hostNodes.length - 1]
+  const host = hostNodes[hostNodes.length - 1]
   if (!node.dom.isConnected || bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
-    const parent = dpNode?.node ?? getDomParent(node)
-    placeDom(node.dom, parent, dpNode?.lastChild?.dom)
+    const parent = host?.node ?? getDomParent(node)
+    placeDom(node.dom, parent, host?.lastChild?.dom)
   }
   if (!node.prev || bitmapOps.isFlagSet(node, FLAG.UPDATE)) {
     updateDom(node)
   }
-  if (dpNode) {
-    dpNode.lastChild = node as ElementVNode
+  if (host) {
+    host.lastChild = node
   }
 }
 
