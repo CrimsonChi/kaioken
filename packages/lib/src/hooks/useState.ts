@@ -4,7 +4,7 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
 
 export function useState<T>(
   initial: T | (() => T)
-): [T, (value: Kaioken.StateSetter<T>) => void] {
+): readonly [T, (value: Kaioken.StateSetter<T>) => void] {
   if (!sideEffectsEnabled()) {
     return [initial instanceof Function ? initial() : initial, noop]
   }
@@ -33,10 +33,7 @@ export function useState<T>(
         }
       }
 
-      return [hook.state, hook.dispatch] as [
-        T,
-        (value: Kaioken.StateSetter<T>) => void,
-      ]
+      return [hook.state, hook.dispatch] as const
     }
   )
 }

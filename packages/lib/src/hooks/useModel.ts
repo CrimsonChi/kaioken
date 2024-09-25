@@ -17,16 +17,24 @@ type ToPrimitive<T extends string | number | boolean | FileList | null> =
 type UseModelReturn<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   U extends string | boolean | FileList | null,
-> = [Kaioken.RefObject<T>, ToPrimitive<U>, (newValue: ToPrimitive<U>) => void]
+> = readonly [
+  Kaioken.RefObject<T>,
+  ToPrimitive<U>,
+  (newValue: ToPrimitive<U>) => void,
+]
 
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   U extends string | boolean | FileList | null = string,
 >(
   initial: U
-): [Kaioken.RefObject<T>, ToPrimitive<U>, (newValue: ToPrimitive<U>) => void] {
+): readonly [
+  Kaioken.RefObject<T>,
+  ToPrimitive<U>,
+  (newValue: ToPrimitive<U>) => void,
+] {
   if (!sideEffectsEnabled()) {
-    return [{ current: null }, initial, noop] as unknown as UseModelReturn<T, U>
+    return [{ current: null }, initial, noop] as any as UseModelReturn<T, U>
   }
   return useHook(
     "useModel",

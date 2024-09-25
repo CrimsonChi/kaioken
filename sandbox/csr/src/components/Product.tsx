@@ -37,7 +37,7 @@ export function ProductPage() {
           <Link to={`/query?id=${Number(id) - 1}`}>Back</Link>
         )}
         <Link to={`/query?id=${Number(id) + 1}`}>Next</Link>
-        <button onclick={() => invalidate(true)}>Invalidate</button>
+        <button onclick={() => invalidate()}>Invalidate</button>
       </div>
     </>
   )

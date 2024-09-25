@@ -5,7 +5,7 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
 export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
   state: T
-): [T, (action: A) => void] {
+): readonly [T, (action: A) => void] {
   if (!sideEffectsEnabled()) return [state, noop]
 
   return useHook(
@@ -26,7 +26,7 @@ export function useReducer<T, A>(
           } satisfies Kaioken.HookDebug<{ value: T }>
         }
       }
-      return [hook.state, hook.dispatch] as [T, (action: A) => void]
+      return [hook.state, hook.dispatch] as const
     }
   )
 }
