@@ -1,4 +1,6 @@
 import type { AppContext } from "./appContext"
+import { __DEV__ } from "./env.js"
+import { traverseApply } from "./utils.js"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
@@ -34,6 +36,35 @@ class KaiokenGlobalContext {
     this.on("unmount", (ctx) => this.#contexts.delete(ctx))
   }
 
+  HMRContext = {
+    register: (filePath: string, componentMap: Record<string, Kaioken.FC>) => {
+      if (__DEV__) {
+        const components = this.moduleMap.get(filePath)
+        if (!components) {
+          this.moduleMap.set(filePath, new Map(Object.entries(componentMap)))
+          return
+        }
+        for (const [name, newFn] of Object.entries(componentMap)) {
+          const oldFn = components.get(name)
+          components.set(name, newFn)
+          if (!oldFn) continue
+          this.#contexts.forEach((ctx) => {
+            if (!ctx.mounted || !ctx.rootNode) return
+            traverseApply(ctx.rootNode, (node) => {
+              if (node.type === oldFn) {
+                node.type = newFn
+                if (node.prev) {
+                  node.prev.type = newFn
+                }
+                ctx.requestUpdate(node)
+              }
+            })
+          })
+        }
+      }
+    },
+  }
+
   get apps() {
     return Array.from(this.#contexts)
   }
@@ -58,4 +89,6 @@ class KaiokenGlobalContext {
     }
     this.listeners.get(event)!.delete(callback)
   }
+
+  private moduleMap = new Map<string, Map<string, Kaioken.FC>>()
 }

@@ -13,7 +13,7 @@ import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { applyRecursive, vNodeContains } from "./utils.js"
+import { traverseApply, vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 type FunctionNode = VNode & { type: (...args: any) => any }
@@ -214,7 +214,7 @@ export class Scheduler {
   }
 
   queueDelete(vNode: VNode) {
-    applyRecursive(vNode, (n) => bitmapOps.setFlag(n, FLAG.DELETION))
+    traverseApply(vNode, (n) => bitmapOps.setFlag(n, FLAG.DELETION))
     this.deletions.push(vNode)
   }
 

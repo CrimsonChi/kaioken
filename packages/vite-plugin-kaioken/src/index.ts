@@ -34,8 +34,11 @@ export default function kaioken(
     formatFileLink: vscodeFilePathFormatter,
   }
 ): Plugin {
+  const tsxOrJsxRegex = /\.(tsx|jsx)$/
   let isProduction = false
   let isBuild = false
+
+  const fileLinkFormatter = opts.formatFileLink || vscodeFilePathFormatter
 
   return {
     name: "vite-plugin-kaioken",
@@ -79,15 +82,15 @@ export default function kaioken(
     },
     handleHotUpdate(ctx) {
       if (isProduction || isBuild) return
-      if (!/\.(tsx|jsx)$/.test(ctx.file)) return
+      if (!tsxOrJsxRegex.test(ctx.file)) return
       const module = ctx.modules.find((m) => m.file === ctx.file)
-      if (!module || !module.isSelfAccepting) return
+      if (!module) return []
 
       const importers: ModuleNode[] = []
       const addImporters = (module: ModuleNode) => {
         if (
           module.file &&
-          /\.(tsx|jsx)$/.test(module.file) &&
+          tsxOrJsxRegex.test(module.file) &&
           !importers.includes(module) &&
           module.isSelfAccepting
         ) {
@@ -100,47 +103,24 @@ export default function kaioken(
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (!/\.(tsx|jsx)$/.test(id)) return { code }
+      if (!tsxOrJsxRegex.test(id)) return { code }
       const ast = this.parse(code)
       try {
-        const componentNames = findExportedComponentNames(ast.body as AstNode[])
-        if (componentNames.length > 0) {
-          code = transformIncludeFilePath(
-            opts.formatFileLink || vscodeFilePathFormatter,
-            ast.body as AstNode[],
-            code,
-            id
-          )
-          code = `
-import {applyRecursive} from "kaioken/utils";\n
-${code}\n
+        const componentNames = findComponentNames(ast.body as AstNode[])
+        if (componentNames.length === 0) return { code }
+        code = transformIncludeFilePath(
+          fileLinkFormatter,
+          ast.body as AstNode[],
+          code,
+          id
+        )
+        code += `
 if (import.meta.hot && "window" in globalThis) {
-  function handleUpdate(newModule, name, funcRef) {
-    if (newModule[name] || newModule.default?.name === name) {
-      const fn = newModule.default?.name === name ? newModule.default : newModule[name];
-      window.__kaioken.apps.forEach((ctx) => {
-        applyRecursive(ctx.rootNode, (node) => {
-          if (node.type === funcRef) {
-            node.type = fn;
-            if (node.prev) {
-              node.prev.type = fn;
-            }
-            ctx.requestUpdate(node);
-          }
-        })
-      });
-    }
-  }
-
-  import.meta.hot.accept((newModule) => {
-    if (newModule) {
-      ${componentNames
-        .map((name) => `handleUpdate(newModule, "${name}", ${name})`)
-        .join(";")}
-    }
-  })
+  import.meta.hot.accept();
+  window.__kaioken.HMRContext?.register("${id}", {
+    ${componentNames.map((name) => `"${name}": ${name}`).join(",\n")}
+  });
 }`
-        }
       } catch (error) {
         console.error(error)
       }
@@ -165,6 +145,7 @@ interface AstNode {
   init?: AstNode
   object?: AstNodeId
   property?: AstNodeId
+  properties?: AstNode[]
   argument?: AstNode
   arguments?: AstNode[]
   specifiers?: AstNode[]
@@ -174,6 +155,7 @@ interface AstNode {
   consequent?: AstNode | AstNode[]
   alternate?: AstNode
   local?: AstNode & { name: string }
+  value?: unknown
 }
 
 const createFilePathComment = (
@@ -181,6 +163,56 @@ const createFilePathComment = (
   filePath: string,
   line = 0
 ) => `// [kaioken_devtools]:${formatter(filePath, line)}`
+
+function findComponentNames(nodes: AstNode[]): string[] {
+  const components: string[] = []
+  for (const node of nodes) {
+    if (
+      node.type === "ExportNamedDeclaration" ||
+      node.type === "ExportDefaultDeclaration"
+    ) {
+      const dec = node.declaration as AstNode
+      if (!dec) {
+        if (node.specifiers && node.specifiers.length) {
+          for (const spec of node.specifiers) {
+            if (spec.local?.name) {
+              components.push(spec.local.name)
+            }
+          }
+        }
+        continue
+      }
+      if (!dec.id) {
+        // handle 'export const MyComponent = () => {}'
+        const declarations = dec.declarations
+        if (!declarations) continue
+        for (const dec of declarations) {
+          const name = dec.id?.name
+          if (!name) continue
+          if (components.find((c) => c === name)) continue
+          if (dec.init && nodeContainsCreateElement(dec.init)) {
+            components.push(name)
+          }
+        }
+      }
+
+      const name = dec.id?.name // handle 'export function MyComponent() {}'
+      if (!name) continue
+
+      if (nodeContainsCreateElement(dec)) {
+        components.push(name)
+      }
+    } else {
+      if (nodeContainsCreateElement(node)) {
+        const name = node.id?.name
+        if (!name) continue
+        if (components.find((c) => c === name)) continue
+        components.push(name)
+      }
+    }
+  }
+  return components
+}
 
 function transformIncludeFilePath(
   linkFormatter: FilePathFormatter,
@@ -244,70 +276,18 @@ function transformIncludeFilePath(
   return code
 }
 
-function findExportedComponentNames(nodes: AstNode[]): string[] {
-  const exportNames: string[] = []
-  const componentNames: string[] = []
-  for (const node of nodes) {
-    if (
-      node.type === "ExportNamedDeclaration" ||
-      node.type === "ExportDefaultDeclaration"
-    ) {
-      const dec = node.declaration as AstNode
-      if (!dec) {
-        if (node.specifiers && node.specifiers.length) {
-          for (const spec of node.specifiers) {
-            if (spec.local?.name) exportNames.push(spec.local.name)
-          }
-        }
-        continue
-      }
-      if (!dec.id) {
-        // handle 'export const MyComponent = () => {}'
-        const declarations = dec.declarations
-        if (!declarations) continue
-        for (const dec of declarations) {
-          const name = dec.id?.name
-          if (!name) continue
-          if (componentNames.includes(name)) continue
-          if (dec.init && nodeContainsCreateElement(dec.init)) {
-            componentNames.push(name)
-          }
-        }
-      }
-
-      const name = dec.id?.name // handle 'export function MyComponent() {}'
-      if (!name) continue
-
-      if (nodeContainsCreateElement(dec)) {
-        componentNames.push(name)
-      }
-    } else {
-      if (nodeContainsCreateElement(node)) {
-        const name = node.id?.name
-        if (
-          name &&
-          exportNames.includes(name) &&
-          !componentNames.includes(name)
-        ) {
-          componentNames.push(name)
-        }
-      }
-    }
-  }
-  return componentNames
+function isNodeCreateElementExpression(node: AstNode): boolean {
+  return (
+    node.type === "MemberExpression" &&
+    node.object?.type === "Identifier" &&
+    node.object.name === "kaioken" &&
+    node.property?.type === "Identifier" &&
+    node.property.name === "createElement"
+  )
 }
 
 function nodeContainsCreateElement(node: AstNode): boolean {
-  if (node.type === "MemberExpression") {
-    if (
-      node.object?.type === "Identifier" &&
-      node.object.name === "kaioken" &&
-      node.property?.type === "Identifier" &&
-      node.property.name === "createElement"
-    ) {
-      return true
-    }
-  }
+  if (isNodeCreateElementExpression(node)) return true
   if (node.body && Array.isArray(node.body)) {
     for (const child of node.body) {
       if (nodeContainsCreateElement(child)) return true

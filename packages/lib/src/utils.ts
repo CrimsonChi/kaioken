@@ -14,7 +14,7 @@ export {
   vNodeContains,
   getVNodeAppContext,
   commitSnapshot,
-  applyRecursive,
+  traverseApply,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   propsToElementAttributes,
@@ -77,7 +77,7 @@ function vNodeContains(
   return false
 }
 
-function applyRecursive(
+function traverseApply(
   node: Kaioken.VNode,
   func: (node: Kaioken.VNode) => void
 ) {

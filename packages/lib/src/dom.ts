@@ -1,5 +1,5 @@
 import {
-  applyRecursive,
+  traverseApply,
   booleanAttributes,
   commitSnapshot,
   propFilters,
@@ -351,7 +351,7 @@ function placeDom(
 
 function commitWork(vNode: VNode) {
   if (renderMode.current === "hydrate") {
-    return applyRecursive(vNode, commitSnapshot)
+    return traverseApply(vNode, commitSnapshot)
   }
   if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) {
     return commitDeletion(vNode)
@@ -431,7 +431,7 @@ function commitDeletion(vNode: VNode) {
   if (vNode === vNode.parent?.child) {
     vNode.parent.child = vNode.sibling
   }
-  applyRecursive(vNode, (n) => {
+  traverseApply(vNode, (n) => {
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribe(n, n.subs.pop()!)
     n.cleanups && Object.values(n.cleanups).forEach((c) => c())
