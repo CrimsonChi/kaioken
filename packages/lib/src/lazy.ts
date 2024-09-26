@@ -1,11 +1,16 @@
 import { createElement } from "./element.js"
 import { useRequestUpdate } from "./hooks/utils.js"
 
-const lazyCache = new WeakMap<() => Promise<Kaioken.FC>, Kaioken.FC | null>()
+type LazyState = {
+  promise: Promise<Kaioken.FC>
+  result: Kaioken.FC | null
+}
 
 type LazyComponentProps<T extends Kaioken.FC> = Kaioken.InferProps<T> & {
   fallback?: JSX.Element
 }
+
+const lazyCache = new WeakMap<() => Promise<Kaioken.FC>, LazyState>()
 
 export function lazy<T extends Kaioken.FC>(
   componentPromise: () => Promise<T>
@@ -13,22 +18,27 @@ export function lazy<T extends Kaioken.FC>(
   function LazyComponent(props: LazyComponentProps<T>) {
     const { fallback = null, ...rest } = props
     const requestUpdate = useRequestUpdate()
-    if (!lazyCache.has(componentPromise)) {
-      lazyCache.set(componentPromise, null)
-      componentPromise().then((component) => {
-        lazyCache.set(componentPromise, component)
+    const cachedState = lazyCache.get(componentPromise)
+
+    if (!cachedState) {
+      const promise = componentPromise()
+      const state: LazyState = {
+        promise,
+        result: null,
+      }
+      lazyCache.set(componentPromise, state)
+      promise.then((component) => {
+        state.result = component
         requestUpdate()
       })
       return fallback
     }
 
-    const component: Kaioken.FC<LazyComponentProps<T>> | null =
-      lazyCache.get(componentPromise)!
-    if (component === null) {
-      componentPromise().then(requestUpdate)
+    if (cachedState.result === null) {
+      cachedState.promise.then(requestUpdate)
       return fallback
     }
-    return createElement(component, rest)
+    return createElement(cachedState.result, rest)
   }
   LazyComponent.displayName = "Kaioken.lazy"
   return LazyComponent
