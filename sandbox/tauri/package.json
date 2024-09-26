@@ -12,15 +12,15 @@
     "preview:vite": "vite preview"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.6.1",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.3",
-    "vite": "^5.3.4",
-    "vite-plugin-kaioken": "0.9.2"
+    "@tauri-apps/cli": "^1.6.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vite-plugin-kaioken": "workspace:^"
   },
   "dependencies": {
-    "kaioken": "0.27.2"
+    "kaioken": "workspace:^"
   }
 }

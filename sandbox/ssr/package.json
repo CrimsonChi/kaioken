@@ -11,19 +11,19 @@
   "keywords": [],
   "author": "",
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@types/express": "^5.0.0",
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.40",
+    "postcss": "^8.4.47",
     "prettier": "^3.3.3",
-    "tailwindcss": "^3.4.7",
-    "typescript": "^5.5.4",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2",
     "vite-plugin-kaioken": "workspace:^"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "express": "^4.21.0",
     "kaioken": "workspace:^",
-    "tsx": "^4.16.5",
-    "vike": "^0.4.182",
-    "vite": "^5.3.5"
+    "tsx": "^4.19.1",
+    "vike": "^0.4.197",
+    "vite": "^5.4.8"
   }
 }
