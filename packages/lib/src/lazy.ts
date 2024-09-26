@@ -1,4 +1,5 @@
 import { createElement } from "./element.js"
+import { renderMode } from "./globals.js"
 import { useRequestUpdate } from "./hooks/utils.js"
 
 type LazyState = {
@@ -17,6 +18,9 @@ export function lazy<T extends Kaioken.FC>(
 ): Kaioken.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
     const { fallback = null, ...rest } = props
+    if (renderMode.current === "string" || renderMode.current === "stream") {
+      return fallback
+    }
     const requestUpdate = useRequestUpdate()
     const cachedState = lazyCache.get(componentPromise)
 
