@@ -3,9 +3,10 @@ import { Signal } from "./signal.js"
 
 export function assertValidElementProps(vNode: Kaioken.VNode) {
   if ("children" in vNode.props && vNode.props.innerHTML) {
-    throw new KaiokenError(
-      "[kaioken]: Cannot use both children and innerHTML on an element"
-    )
+    throw new KaiokenError({
+      message: "Cannot use both children and innerHTML on an element",
+      vNode,
+    })
   }
 }
 

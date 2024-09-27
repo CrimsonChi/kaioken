@@ -13,44 +13,10 @@ import { ctx, node, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { traverseApply, vNodeContains } from "./utils.js"
+import { postOrderApply, traverseApply, vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 type FunctionNode = VNode & { type: (...args: any) => any }
-
-function fireEffects(tree: VNode, immediate?: boolean) {
-  const root = tree
-  // traverse tree in a depth first manner
-  // fire effects from the child to the root
-  const rootChild = root.child
-  if (!rootChild) {
-    const arr = immediate ? tree.immediateEffects : tree.effects
-    while (arr?.length) arr.shift()!()
-    return
-  }
-
-  let branch = root.child!
-  while (branch) {
-    let c = branch
-    while (c) {
-      if (!c.child) break
-      c = c.child
-    }
-    inner: while (c && c !== root) {
-      const arr = immediate ? c.immediateEffects : c.effects
-      while (arr?.length) arr.shift()!()
-      if (c.sibling) {
-        branch = c.sibling
-        break inner
-      }
-      c = c.parent!
-    }
-    if (c === root) break
-  }
-
-  const arr = immediate ? root.immediateEffects : root.effects
-  while (arr?.length) arr.shift()!()
-}
 
 export class Scheduler {
   private nextUnitOfWork: VNode | undefined = undefined
@@ -67,7 +33,6 @@ export class Scheduler {
   private immediateEffectDirtiedRender = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
-  private fatalError = ""
 
   constructor(
     private appCtx: AppContext<any>,
@@ -321,25 +286,26 @@ export class Scheduler {
           this.updateHostComponent(vNode)
         }
       } catch (error) {
-        if (this.fatalError) {
-          setTimeout(() => {
-            throw new Error(this.fatalError)
-          })
-          throw error
-        }
         window.__kaioken?.emit(
           "error",
           this.appCtx,
           error instanceof Error ? error : new Error(String(error))
         )
         if (KaiokenError.isKaiokenError(error)) {
-          console.error(error)
-        } else {
-          // ensure that the error is thrown in the next tick
-          setTimeout(() => {
+          if (error.customNodeStack) {
+            setTimeout(() => {
+              throw new Error(error.customNodeStack)
+            })
+          }
+          if (error.fatal) {
             throw error
-          })
+          }
+          console.error(error)
+          return
         }
+        setTimeout(() => {
+          throw error
+        })
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
@@ -364,96 +330,78 @@ export class Scheduler {
   }
 
   private updateFunctionComponent(vNode: FunctionNode) {
-    node.current = vNode
-    let newChildren
-    let renderTryCount = 0
-    do {
-      this.isRenderDirtied = false
-      this.appCtx.hookIndex = 0
-      newChildren = vNode.type(vNode.props)
-      if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
-        const stackMsg = this.captureErrorStack(vNode)
-        this.fatalError = stackMsg
-        throw new KaiokenError(
-          "[kaioken]: Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop."
-        )
-      }
-    } while (this.isRenderDirtied)
-    vNode.child =
-      reconcileChildren(this.appCtx, vNode, vNode.child || null, newChildren) ||
-      undefined
-    node.current = undefined
+    try {
+      node.current = vNode
+      let newChildren
+      let renderTryCount = 0
+      do {
+        this.isRenderDirtied = false
+        this.appCtx.hookIndex = 0
+        newChildren = vNode.type(vNode.props)
+        if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
+          throw new KaiokenError({
+            message:
+              "Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop.",
+            fatal: true,
+            vNode,
+          })
+        }
+      } while (this.isRenderDirtied)
+      vNode.child =
+        reconcileChildren(
+          this.appCtx,
+          vNode,
+          vNode.child || null,
+          newChildren
+        ) || undefined
+    } finally {
+      node.current = undefined
+    }
   }
 
   private updateHostComponent(vNode: VNode) {
-    node.current = vNode
-    assertValidElementProps(vNode)
-    if (!vNode.dom) {
-      if (renderMode.current === "hydrate") {
-        hydrateDom(vNode)
-      } else {
-        vNode.dom = createDom(vNode)
+    try {
+      node.current = vNode
+      assertValidElementProps(vNode)
+      if (!vNode.dom) {
+        if (renderMode.current === "hydrate") {
+          hydrateDom(vNode)
+        } else {
+          vNode.dom = createDom(vNode)
+        }
       }
-    }
 
-    if (vNode.dom) {
-      // @ts-expect-error we apply vNode to the dom node
-      vNode.dom!.__kaiokenNode = vNode
-    }
-
-    vNode.child =
-      reconcileChildren(
-        this.appCtx,
-        vNode,
-        vNode.child || null,
-        vNode.props.children
-      ) || undefined
-
-    node.current = undefined
-  }
-
-  private captureErrorStack(vNode: FunctionNode) {
-    let n: VNode | undefined = vNode.parent
-    const srcText = getComponentErrorDisplayText(vNode.type)
-    let componentFns: string[] = [srcText]
-    while (n) {
-      if (n === this.appCtx.rootNode) break
-      if (typeof n.type === "function") {
-        componentFns.push(getComponentErrorDisplayText(n.type))
-      } else if (typeof n.type === "string") {
-        componentFns.push(n.type)
+      if (vNode.dom) {
+        // @ts-expect-error we apply vNode to the dom node
+        vNode.dom!.__kaiokenNode = vNode
       }
-      n = n.parent
-    }
-    return `The above error occurred in the <${getFunctionName(vNode.type as any)}> component:
 
-${componentFns.map((x) => `   at ${x}`).join("\n")}\n`
+      vNode.child =
+        reconcileChildren(
+          this.appCtx,
+          vNode,
+          vNode.child || null,
+          vNode.props.children
+        ) || undefined
+    } finally {
+      node.current = undefined
+    }
   }
 
   private checkForTooManyConsecutiveDirtyRenders() {
     if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
       throw new KaiokenError(
-        "[kiakoken]: Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
+        "Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
       )
     }
   }
 }
 
-function getComponentErrorDisplayText(fn: Function) {
-  let str = getFunctionName(fn)
-  if (__DEV__) {
-    const fileLink = getComponentFileLink(fn)
-    if (fileLink) {
-      str = `${str} (${fileLink})`
-    }
-  }
-  return str
-}
-
-function getFunctionName(fn: Function) {
-  return (fn as any).displayName ?? (fn.name || "Anonymous Function")
-}
-
-function getComponentFileLink(fn: Function) {
-  return fn.toString().match(/\/\/ \[kaioken_devtools\]:(.*)/)?.[1] ?? null
+function fireEffects(tree: VNode, immediate?: boolean) {
+  postOrderApply(tree, {
+    onAscent(node) {
+      const arr = immediate ? node.immediateEffects : node.effects
+      while (arr?.length) arr.shift()!()
+    },
+  })
 }

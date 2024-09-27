@@ -1,4 +1,4 @@
-import { nodeToCtxMap, renderMode } from "./globals.js"
+import { node, nodeToCtxMap, renderMode } from "./globals.js"
 import {
   contextProviderSymbol,
   fragmentSymbol,
@@ -6,15 +6,19 @@ import {
 } from "./constants.js"
 import { unwrap } from "./signal.js"
 import { KaiokenError } from "./error.js"
+import type { AppContext } from "./appContext.js"
 
 export {
   isVNode,
   isFragment,
   isContextProvider,
   vNodeContains,
+  getCurrentVNode,
   getVNodeAppContext,
   commitSnapshot,
   traverseApply,
+  postOrderApply,
+  findParent,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   propsToElementAttributes,
@@ -29,44 +33,56 @@ export {
   booleanAttributes,
 }
 
-const noop = Object.freeze(() => {})
+type VNode = Kaioken.VNode
 
-function sideEffectsEnabled() {
+const noop: () => void = Object.freeze(() => {})
+
+function sideEffectsEnabled(): boolean {
   return renderMode.current === "dom" || renderMode.current === "hydrate"
 }
 
-function isVNode(thing: unknown): thing is Kaioken.VNode {
+function isVNode(thing: unknown): thing is VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
 function isFragment(
   thing: unknown
-): thing is Kaioken.VNode & { type: typeof fragmentSymbol } {
+): thing is VNode & { type: typeof fragmentSymbol } {
   return isVNode(thing) && thing.type === fragmentSymbol
 }
 
-function isContextProvider(thing: unknown) {
+function isContextProvider(
+  thing: unknown
+): thing is VNode & { type: typeof contextProviderSymbol } {
   return isVNode(thing) && thing.type === contextProviderSymbol
 }
 
-function getVNodeAppContext(node: Kaioken.VNode) {
+function getCurrentVNode(): VNode | undefined {
+  return node.current
+}
+
+function getVNodeAppContext(node: VNode): AppContext {
   const n = nodeToCtxMap.get(node)
-  if (!n) throw new KaiokenError("[kaioken]: Unable to find node's AppContext")
+  if (!n)
+    throw new KaiokenError({
+      message: "Unable to find VNode's AppContext.",
+      vNode: node,
+    })
   return n
 }
 
-function commitSnapshot(vNode: Kaioken.VNode) {
+function commitSnapshot(vNode: VNode): void {
   vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
   vNode.flags = 0
 }
 
 function vNodeContains(
-  haystack: Kaioken.VNode,
-  needle: Kaioken.VNode,
+  haystack: VNode,
+  needle: VNode,
   checkImmediateSiblings = false
 ): boolean {
   if (haystack === needle) return true
-  const stack: Kaioken.VNode[] = [haystack]
+  const stack: VNode[] = [haystack]
   while (stack.length) {
     const n = stack.pop()!
     if (n === needle) return true
@@ -77,22 +93,73 @@ function vNodeContains(
   return false
 }
 
-function traverseApply(
-  node: Kaioken.VNode,
-  func: (node: Kaioken.VNode) => void
-) {
-  let commitSiblings = false
-  const nodes: Kaioken.VNode[] = [node]
-  const apply = (node: Kaioken.VNode) => {
+function traverseApply(node: VNode, func: (node: VNode) => void): void {
+  let applyToSiblings = false
+  const nodes: VNode[] = [node]
+  const apply = (node: VNode) => {
     func(node)
     node.child && nodes.push(node.child)
-    commitSiblings && node.sibling && nodes.push(node.sibling)
-    commitSiblings = true
+    applyToSiblings && node.sibling && nodes.push(node.sibling)
+    applyToSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
 }
 
-function shallowCompare<T>(objA: T, objB: T) {
+function postOrderApply(
+  tree: VNode,
+  callbacks: {
+    /** called upon traversing to the next parent, and on the root */
+    onAscent: (node: VNode) => void
+    /** called before traversing to the next parent */
+    onBeforeAscent?: (node: VNode) => void
+    /** called before traversing to the next child */
+    onDescent?: (node: VNode) => void
+  }
+): void {
+  const root = tree
+  const rootChild = root.child
+  if (!rootChild) {
+    callbacks.onAscent(root)
+    return
+  }
+
+  let branch = rootChild
+  while (branch) {
+    let c = branch
+    while (c) {
+      callbacks.onDescent?.(c)
+      if (!c.child) break
+      c = c.child
+    }
+
+    while (c && c !== root) {
+      callbacks.onAscent(c)
+      if (c.sibling) {
+        branch = c.sibling
+        break
+      }
+      callbacks.onBeforeAscent?.(c)
+      c = c.parent!
+    }
+    if (c === root) break
+  }
+
+  callbacks.onAscent(root)
+}
+
+function findParent(
+  vNode: Kaioken.VNode,
+  predicate: (n: Kaioken.VNode) => boolean
+) {
+  let n: Kaioken.VNode | undefined = vNode.parent
+  while (n) {
+    if (predicate(n)) return n
+    n = n.parent
+  }
+  return undefined
+}
+
+function shallowCompare<T>(objA: T, objB: T): boolean {
   if (Object.is(objA, objB)) {
     return true
   }
@@ -263,7 +330,7 @@ const booleanAttributes = [
   "wrap",
 ]
 
-function propToHtmlAttr(key: string) {
+function propToHtmlAttr(key: string): string {
   switch (key) {
     case "className":
       return "class"
@@ -378,7 +445,7 @@ const snakeCaseAttrs = new Map([
   ["xHeight", "x-height"],
 ])
 
-function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
+function styleObjectToCss(obj: Partial<CSSStyleDeclaration>): string {
   let cssString = ""
   for (const key in obj) {
     const cssKey = key.replace(REGEX_UNIT.ALPHA_UPPER_G, "-$&").toLowerCase()
@@ -387,12 +454,12 @@ function styleObjectToCss(obj: Partial<CSSStyleDeclaration>) {
   return cssString
 }
 
-function propValueToHtmlAttrValue(key: string, value: unknown) {
+function propValueToHtmlAttrValue(key: string, value: unknown): string {
   return key === "style" && typeof value === "object" && !!value
     ? styleObjectToCss(value)
     : String(value)
 }
-function propsToElementAttributes(props: Record<string, unknown>) {
+function propsToElementAttributes(props: Record<string, unknown>): string {
   const attrs: string[] = []
   const keys = Object.keys(props).filter(propFilters.isProperty)
   for (let i = 0; i < keys.length; i++) {

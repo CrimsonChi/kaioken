@@ -38,7 +38,7 @@ export const computed = <T>(
   displayName?: string
 ): ReadonlySignal<T> => {
   if (!node.current) {
-    const computed = makeReadonly(new Signal(null as T, displayName))
+    const computed = Signal.makeReadonly(new Signal(null as T, displayName))
     const subs = new Map<Signal<any>, Function>()
     appliedTrackedSignals(getter, computed, subs)
 
@@ -66,7 +66,7 @@ export const computed = <T>(
             }
           }
           hook.subs = new Map()
-          hook.signal = makeReadonly(new Signal(null as T, displayName))
+          hook.signal = Signal.makeReadonly(new Signal(null as T, displayName))
           appliedTrackedSignals(getter, hook.signal, hook.subs)
         }
 
@@ -120,7 +120,7 @@ export class Signal<T> {
 
   map<U>(fn: (value: T) => U, displayName?: string): ReadonlySignal<U> {
     const initialVal = fn(this.#value)
-    const sig = makeReadonly(signal(initialVal, displayName))
+    const sig = Signal.makeReadonly(signal(initialVal, displayName))
     if (node.current && !sideEffectsEnabled()) return sig
 
     this.subscribe((value) => (sig.sneak(fn(value)), sig.notify()))
@@ -159,8 +159,31 @@ export class Signal<T> {
     return signal.#subscribers
   }
 
-  static setValueQuietly<T>(signal: Signal<T>, value: T) {
-    signal.sneak(value)
+  static makeReadonly<T>(signal: Signal<T>): ReadonlySignal<T> {
+    const desc = Object.getOwnPropertyDescriptor(signal, "value")
+    if (desc && !desc.writable) return signal
+    return Object.defineProperty(signal, "value", {
+      get: function (this: Signal<T>) {
+        onSignalValueObserved(this)
+        return this.#value
+      },
+      configurable: true,
+    })
+  }
+  static makeWritable<T>(signal: Signal<T>): Signal<T> {
+    const desc = Object.getOwnPropertyDescriptor(signal, "value")
+    if (desc && desc.writable) return signal
+    return Object.defineProperty(signal, "value", {
+      get: function (this: Signal<T>) {
+        onSignalValueObserved(this)
+        return this.#value
+      },
+      set: function (this: Signal<T>, value) {
+        this.#value = value
+        this.notify()
+      },
+      configurable: true,
+    })
   }
 }
 
@@ -210,14 +233,4 @@ const onSignalValueObserved = (signal: Signal<any>) => {
       node.current.subs.push(signal)
     Signal.subscribers(signal).add(node.current)
   }
-}
-
-const makeReadonly = <T>(signal: Signal<T>): ReadonlySignal<T> => {
-  if (!Object.getOwnPropertyDescriptor(signal, "value")?.writable) return signal
-  return Object.defineProperty(signal, "value", {
-    get: function () {
-      onSignalValueObserved(signal)
-      return signal.peek()
-    },
-  })
 }

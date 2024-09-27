@@ -5,6 +5,7 @@ import {
   propFilters,
   propToHtmlAttr,
   svgTags,
+  postOrderApply,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
@@ -140,12 +141,16 @@ function subTextNode(node: Kaioken.VNode, dom: Text, sig: Signal<string>) {
 function hydrateDom(vNode: VNode) {
   const dom = hydrationStack.nextChild()
   if (!dom)
-    throw new KaiokenError(`[kaioken]: Hydration mismatch - no node found`)
+    throw new KaiokenError({
+      message: `Hydration mismatch - no node found`,
+      vNode,
+    })
   const nodeName = dom.nodeName.toLowerCase()
   if ((vNode.type as string) !== nodeName) {
-    throw new KaiokenError(
-      `[kaioken]: Hydration mismatch - expected node of type ${vNode.type.toString()} but received ${nodeName}`
-    )
+    throw new KaiokenError({
+      message: `Hydration mismatch - expected node of type ${vNode.type.toString()} but received ${nodeName}`,
+      vNode,
+    })
   }
   vNode.dom = dom
   setDomRef(vNode, dom)
@@ -303,9 +308,10 @@ function getDomParent(node: VNode): ElementVNode {
       if (node.dom) return node as ElementVNode
     }
 
-    throw new KaiokenError(
-      "[kaioken]: no domParent found - seek help!\n" + String(node)
-    )
+    throw new KaiokenError({
+      message: "No DOM parent found while attempting to place node.",
+      vNode: node,
+    })
   }
   return parentNode as ElementVNode
 }
@@ -357,24 +363,14 @@ function commitWork(vNode: VNode) {
     return commitDeletion(vNode)
   }
 
-  // perform a depth-first crawl through the tree, starting from the root.
-  // we accumulate a stack of 'host node -> last child' as we go,
-  // so that we can reuse them in the next iteration.
-  const root = vNode
   const hostNodes: HostNode[] = []
-  let branch = root.child
-  while (branch) {
-    let node = branch
-    // traverse the tree in a depth first manner,
-    // collecting host nodes as we go
-    while (node) {
-      if (node.dom && node.type !== ELEMENT_TYPE.text && node.child) {
-        hostNodes.push({
-          node: node as ElementVNode,
-        })
-      }
-      if (!node.child) break
-      if (!node.dom && bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
+  postOrderApply(vNode, {
+    onDescent: (node) => {
+      if (!node.child) return
+      if (node.dom) {
+        // collect host nodes as we go
+        hostNodes.push({ node: node as ElementVNode })
+      } else if (bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
         // no dom node, propagate the flag down the tree.
         // we shouldn't need to do this if we were to instead
         // treat the placement flag as a modifier that affects
@@ -385,31 +381,22 @@ function commitWork(vNode: VNode) {
           child = child.sibling
         }
       }
-      node = node.child
-    }
-    while (node && node !== root) {
-      // at this point we're operating on the deepest nodes,
-      // traversing back up the tree until we reach a new branch
-      // or the root.
+    },
+    onAscent: (node) => {
       if (bitmapOps.isFlagSet(node, FLAG.DELETION)) {
-        commitDeletion(node)
-      } else {
-        if (node.dom) {
-          commitDom(node as DomVNode, hostNodes)
-        }
-        commitSnapshot(node)
+        return commitDeletion(node)
       }
-      if (node.sibling) {
-        branch = node.sibling
-        break
+      if (node.dom) {
+        commitDom(node as DomVNode, hostNodes)
       }
+      commitSnapshot(node)
+    },
+    onBeforeAscent(node) {
       if (hostNodes[hostNodes.length - 1]?.node === node.parent) {
         hostNodes.pop()
       }
-      node = node.parent!
-    }
-    if (node === root) break
-  }
+    },
+  })
 }
 
 function commitDom(node: DomVNode, hostNodes: HostNode[]) {

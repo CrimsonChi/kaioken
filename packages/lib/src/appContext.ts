@@ -90,7 +90,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     const scheduler = this.scheduler
     if (!this.mounted || !rootChild || !scheduler)
       throw new KaiokenError(
-        "[kaioken]: failed to apply new props - ensure the app is mounted"
+        "Failed to apply new props - ensure the app is mounted"
       )
     return new Promise<AppContext<T>>((resolve) => {
       scheduler.clear()

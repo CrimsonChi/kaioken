@@ -83,19 +83,21 @@ function useHook<T, U extends HookCallback<T>>(
   hookDataOrInitializer: (() => Hook<T>) | Hook<T>,
   callback: U
 ): ReturnType<U> {
+  const vNode = node.current
+  if (!vNode) error_hookMustBeCalledTopLevel(hookName)
+
   if (
     currentHookName !== null &&
     !nestedHookWarnings.has(hookName + currentHookName)
   ) {
     nestedHookWarnings.add(hookName + currentHookName)
-    throw new KaiokenError(
-      `[kaioken]: nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange things may happen.`
-    )
+    throw new KaiokenError({
+      message: `Nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange will most certainly happen.`,
+      vNode: node.current,
+    })
   }
-  const vNode = node.current
-  if (!vNode) error_hookMustBeCalledTopLevel(hookName)
-  const ctx = getVNodeAppContext(vNode)
 
+  const ctx = getVNodeAppContext(vNode)
   const oldHook = (
     vNode.prev
       ? vNode.prev.hooks?.at(ctx.hookIndex)
@@ -141,7 +143,7 @@ function useHook<T, U extends HookCallback<T>>(
 
 function error_hookMustBeCalledTopLevel(hookName: string): never {
   throw new KaiokenError(
-    `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another composite hook.`
+    `Hook "${hookName}" must be used at the top level of a component or inside another composite hook.`
   )
 }
 

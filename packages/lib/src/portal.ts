@@ -18,9 +18,10 @@ function Portal({ children, container }: PortalProps) {
       node.dom = typeof container === "function" ? container() : container
       if (!(node.dom instanceof HTMLElement)) {
         if (__DEV__) {
-          throw new KaiokenError(
-            `[kaioken]: Invalid portal container, expected HTMLElement, got ${node.dom}`
-          )
+          throw new KaiokenError({
+            message: `Invalid portal container, expected HTMLElement, got ${node.dom}`,
+            vNode: node,
+          })
         }
         return null
       }
