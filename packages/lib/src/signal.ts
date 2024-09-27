@@ -76,6 +76,45 @@ export const computed = <T>(
   }
 }
 
+export const watch = <T>(getter: () => T, deps?: Signal<unknown>[]) => {
+  if (!node.current) {
+    if (deps) {
+      getter()
+      deps.forEach((sig) => {
+        sig.subscribe(getter)
+      })
+    } else {
+      const subs = new Map<Signal<any>, Function>()
+      appliedTrackedEffects(getter, subs)
+    }
+  } else {
+    return useHook(
+      "useWatch",
+      {
+        subs: null as any as Map<Signal<any>, Function>,
+      },
+      ({ hook, isInit }) => {
+        if (isInit) {
+          hook.subs = new Map()
+          hook.cleanup = () => {
+            hook.subs.forEach((fn) => fn())
+            hook.subs.clear()
+          }
+
+          if (deps) {
+            deps.forEach((sig) => {
+              const unsub = sig.subscribe(getter)
+              hook.subs.set(sig, unsub)
+            })
+          } else {
+            appliedTrackedEffects(getter, hook.subs)
+          }
+        }
+      }
+    )
+  }
+}
+
 export function unwrap(value: unknown) {
   return Signal.isSignal(value) ? value.peek() : value
 }
@@ -199,7 +238,11 @@ const appliedTrackedSignals = <T>(
   isTracking = true
   computedSignal.sneak(getter())
   isTracking = false
-  if (node.current && !sideEffectsEnabled()) return
+
+  if (node.current && !sideEffectsEnabled()) {
+    trackedSignals = []
+    return
+  }
 
   for (const [sig, unsub] of subs) {
     if (trackedSignals.includes(sig)) continue
@@ -217,6 +260,36 @@ const appliedTrackedSignals = <T>(
 
   trackedSignals = []
   computedSignal.notify()
+}
+
+const appliedTrackedEffects = <T>(
+  getter: () => T,
+  subs: Map<Signal<any>, Function>
+) => {
+  isTracking = true
+  getter()
+  isTracking = false
+
+  if (node.current && !sideEffectsEnabled()) {
+    trackedSignals = []
+    return
+  }
+
+  for (const [sig, unsub] of subs) {
+    if (trackedSignals.includes(sig)) continue
+    unsub()
+    subs.delete(sig)
+  }
+
+  trackedSignals.forEach((dependencySignal) => {
+    if (subs.get(dependencySignal)) return
+    const unsub = dependencySignal.subscribe(() => {
+      appliedTrackedEffects(getter, subs)
+    })
+    subs.set(dependencySignal, unsub)
+  })
+
+  trackedSignals = []
 }
 
 const onSignalValueObserved = (signal: Signal<any>) => {

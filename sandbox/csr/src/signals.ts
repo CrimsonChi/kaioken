@@ -1,4 +1,4 @@
-import { computed, signal } from "kaioken"
+import { computed, signal, watch } from "kaioken"
 
 export const count = signal(0, "count")
 
@@ -11,6 +11,10 @@ export const double = computed(() => {
 
   return 0
 }, "double")
+
+watch(() => {
+  console.log("outside watch", double.value)
+})
 
 /* export const quadruple = computed(() => {
   return double.value * 2

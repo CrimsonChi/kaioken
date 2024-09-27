@@ -1,4 +1,4 @@
-import { computed, signal } from "kaioken"
+import { computed, signal, watch } from "kaioken"
 import { count, double, isTracking } from "../signals"
 
 export const GlobalComputedExample = () => {
@@ -10,6 +10,10 @@ export const GlobalComputedExample = () => {
     isTracking.value = !isTracking.value
     console.log("calling on switch metohd")
   }
+
+  watch(() => {
+    console.log("inner watch", count.value)
+  }, [count])
 
   return (
     <div className="flex flex-col">
