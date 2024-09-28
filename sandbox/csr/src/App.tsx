@@ -1,49 +1,107 @@
-import { Router, Route, useRouter, useState } from "kaioken"
-import { Todos } from "./components/ToDos"
-//import { Counter } from "./components/Counter"
-import { ProductPage } from "./components/Product"
-import { Link } from "./components/atoms/Link"
-import { GithubIcon } from "./components/GithubIcon"
-import { MemoDemo } from "./MemoDemo"
-import { BigListComponent } from "./components/BigList"
-import { TodosWithStore } from "./components/TodosWithStore"
-import { FilteredList } from "./components/FilteredList"
-import { Transitions } from "./components/Transitions"
-import { KeyedList } from "./components/KeyedList"
-import { ContextExample } from "./components/ContextExample"
-import { UseAsyncExample } from "./components/UseAsyncExample"
-import { UseSyncExternalStoreExample } from "./components/UseSyncExternalStoreExample"
-import { UseModelExample } from "./components/useModelExample"
-import { GlobalComputedExample } from "./components/ComputedExample"
-import { LocalComputedExample } from "./components/ComputedExample"
-import { LazyDemo } from "./components/LazyDemo"
+import { Router, Route, Link, lazy } from "kaioken"
 
-function Home() {
+type AppRoute = {
+  title: string
+  component: Kaioken.FC<any>
+  fallthrough?: boolean
+}
+
+const Home: Kaioken.FC = () => {
   return <h1>Home</h1>
 }
+
+const ROUTES: Record<string, AppRoute> = {
+  "/home": {
+    title: "Home",
+    component: Home,
+  },
+  "/keyed-list-example": {
+    title: "Keyed list",
+    component: lazy(() =>
+      import("./components/KeyedListExample").then((m) => m.KeyedListExample)
+    ),
+  },
+  "/filtered-list-example": {
+    title: "Filtered list",
+    component: lazy(() =>
+      import("./components/FilteredListExample").then(
+        (m) => m.FilteredListExample
+      )
+    ),
+  },
+  "/big-list": {
+    title: "Big list",
+    component: lazy(() =>
+      import("./components/BigListExample").then((m) => m.BigListExample)
+    ),
+  },
+  "/use-model-example": {
+    title: "useModel",
+    component: lazy(() =>
+      import("./components/useModelExample").then((m) => m.UseModelExample)
+    ),
+  },
+  "/memo-example": {
+    title: "Memo",
+    component: lazy(() =>
+      import("./components/MemoExample").then((m) => m.MemoExample)
+    ),
+  },
+  "/router-example": {
+    title: "Router",
+    component: lazy(() =>
+      import("./components/RouterExample").then((m) => m.RouterExample)
+    ),
+    fallthrough: true,
+  },
+  "/transitions-example": {
+    title: "Transitions",
+    component: lazy(() =>
+      import("./components/TransitionsExample").then(
+        (m) => m.TransitionsExample
+      )
+    ),
+  },
+  "/context-example": {
+    title: "Context",
+    component: lazy(() =>
+      import("./components/ContextExample").then((m) => m.ContextExample)
+    ),
+  },
+  "/use-async-example": {
+    title: "useAsync",
+    component: lazy(() =>
+      import("./components/UseAsyncExample").then((m) => m.UseAsyncExample)
+    ),
+  },
+  "/use-sync-external-store-example": {
+    title: "useSyncExternalStore",
+    component: lazy(() =>
+      import("./components/UseSyncExternalStoreExample").then(
+        (m) => m.UseSyncExternalStoreExample
+      )
+    ),
+  },
+  "/store-example": {
+    title: "Store",
+    component: lazy(() =>
+      import("./components/StoreExample").then((m) => m.StoreExample)
+    ),
+  },
+}
+
+console.log("ROUTES", ROUTES)
 
 function Nav() {
   return (
     <nav className=" min-h-screen p-2  mb-5 h-full">
       <div className="sticky top-0 flex flex-col gap-2">
-        <Link to="/">Home</Link>
-        <Link to="/lazy">Lazy</Link>
-        <Link to="/useModel">UseModel</Link>
-        <Link to="/todos">Todos (state, model, memo)</Link>
-        <Link to="/todos-with-store">Todos (with store)</Link>
-        {/* <Link to="/counter">Counter (store)</Link> */}
-        <Link to="/query?id=1">Query (useAsync)</Link>
-        <Link to="/transitions">Dialogs (transitions, portal)</Link>
-        <Link to="/memo">Memo demo</Link>
-        <Link to="/big-list">Large-list rendering</Link>
-        <Link to="/router-test/123?sort=desc">Route Params / Query</Link>
-        <Link to="/unhandled-route">Unhandled Route</Link>
-        <Link to="/filtered-list">Filtered list</Link>
-        <Link to="/keyed-list">Keyed list</Link>
-        <Link to="/context">Context</Link>
-        <GithubIcon />
-        <Link to="/useAsync">useAsync</Link>
-        <Link to="/useSyncExternalStoreExample">useSyncExternalStore</Link>
+        {Object.entries(ROUTES).map(([path, route]) => (
+          <Link key={route.title} to={path}>
+            {route.title}
+          </Link>
+        ))}
+        <Link to="/unhandled-route">Unhandled route</Link>
       </div>
     </nav>
   )
@@ -55,67 +113,17 @@ export function App() {
       <Nav />
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route path="/" element={<Home />} />
-          <Route path="/lazy" element={<LazyDemo />} />
-          <Route path="/useModel" element={<UseModelExample />} />
-          <Route path="/big-list" element={<BigListComponent />} />
-          <Route path="/router-test/:id" element={<RouterTest />} fallthrough />
-          <Route path="/memo" element={<MemoDemo />} />
-          <Route path="/todos" element={<Todos />} />
-          <Route path="/todos-with-store" element={<TodosWithStore />} />
-          {/* <Route path="/counter" element={<Counter />} /> */}
-          <Route path="/query" element={<ProductPage />} />
-          <Route path="/transitions" element={<Transitions />} />
-          <Route path="/filtered-list" element={<FilteredList />} />
-          <Route path="/keyed-list" element={<KeyedList />} />
-          <Route path="/context" element={<ContextExample />} />
-          <Route path="/useAsync" element={<UseAsyncExample />} />
-          <Route path="/computed" element={<GlobalComputedExample />} />
-          <Route path="/computed-local" element={<LocalComputedExample />} />
-          <Route
-            path="/useSyncExternalStoreExample"
-            element={<UseSyncExternalStoreExample />}
-          />
+          {Object.entries(ROUTES).map(([path, route]) => (
+            <Route
+              key={path}
+              path={path}
+              element={<route.component />}
+              fallthrough={route.fallthrough}
+            />
+          ))}
           <Route path="*" element={<h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>
     </>
-  )
-}
-
-function RouterTest() {
-  const [count, setCount] = useState(0)
-  const { params, query } = useRouter()
-  console.log("RouterTest", params, query)
-  return (
-    <div>
-      <p>query: {query.sort}</p>
-      <p>params: {JSON.stringify(params, null, 2)}</p>
-      <p>count: {count}</p>
-      <button onclick={() => setCount((c) => c + 1)}>+</button>
-      <Link to="/router-test/123?sort=desc">Home</Link>
-      <Link to="/router-test/123/child-route/420?sort=desc">Child Route</Link>
-      <Router>
-        <Route path="/" element={<h2>Home</h2>} />
-        <Route path="/child-route/:test" element={<ChildRoute />} />
-      </Router>
-    </div>
-  )
-}
-
-function ChildRoute() {
-  console.log("ChildRoute")
-  const { params, query, setQuery } = useRouter()
-  return (
-    <div>
-      <h2>Child Route - {params.test}</h2>
-      <button
-        onclick={() =>
-          setQuery({ sort: query.sort === "desc" ? "asc" : "desc" })
-        }
-      >
-        Sort
-      </button>
-    </div>
   )
 }

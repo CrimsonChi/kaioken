@@ -1,7 +1,16 @@
 import { computed, signal } from "kaioken"
 import { count, double, isTracking } from "../signals"
 
-export const GlobalComputedExample = () => {
+export function ComputedExample() {
+  return (
+    <div className="flex flex-col">
+      <GlobalComputedExample />
+      <LocalComputedExample />
+    </div>
+  )
+}
+
+const GlobalComputedExample = () => {
   const onInc = () => {
     count.value += 1
   }
@@ -27,7 +36,7 @@ export const GlobalComputedExample = () => {
   )
 }
 
-export const LocalComputedExample = () => {
+const LocalComputedExample = () => {
   const localCount = signal(0, "local count")
   const localIsTracking = signal(false, "local is tracking")
   const localDouble = computed(() => {

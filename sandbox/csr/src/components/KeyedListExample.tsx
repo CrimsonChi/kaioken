@@ -1,7 +1,7 @@
 import { Fragment, useState } from "kaioken"
 import { Button } from "./atoms/Button"
 
-export function KeyedList() {
+export function KeyedListExample() {
   const [counters, setCounters] = useState<number[]>([1, 2, 3, 4, 5])
 
   function move(id: number, dist: number) {
