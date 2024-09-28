@@ -1,0 +1,30 @@
+import { HookCallback, useHook } from "./utils"
+
+export function useId() {
+  return useHook("useId", createUseIdState, useIdCallback)
+}
+
+type UseIdState = {
+  id: string
+  idx: number
+}
+
+const createUseIdState = (): UseIdState => ({
+  id: "",
+  idx: 0,
+})
+
+const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
+  if (isInit) {
+    hook.idx = vNode.index
+    const accumulator: number[] = []
+    let n: Kaioken.VNode | undefined = vNode
+    while (n) {
+      accumulator.push(n.index)
+      accumulator.push(n.depth)
+      n = n.parent
+    }
+    hook.id = `k:${parseInt(accumulator.join(""), 10).toString(36)}`
+  }
+  return hook.id
+}

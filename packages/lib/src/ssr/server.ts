@@ -1,5 +1,5 @@
 import { Readable } from "node:stream"
-import { createElement } from "../index.js"
+import { createElement, Fragment } from "../index.js"
 import { AppContext } from "../appContext.js"
 import { renderMode, ctx, node } from "../globals.js"
 import {
@@ -33,9 +33,11 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
-  state.ctx.rootNode = createElement(el, elProps)
-  renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
-
+  const appNode = createElement(el, elProps)
+  state.ctx.rootNode = Fragment({ children: [appNode] })
+  state.ctx.rootNode.depth = 0
+  appNode.depth = 1
+  renderToStream_internal(state, appNode, state.ctx.rootNode, 0)
   state.stream.push(null)
   renderMode.current = prev
   ctx.current = prevCtx
@@ -43,11 +45,11 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   return state.stream
 }
 
-function renderToStream_internal<T extends Record<string, unknown>>(
+function renderToStream_internal(
   state: RequestState,
   el: unknown,
-  parent?: Kaioken.VNode | undefined,
-  elProps = {} as T
+  parent: Kaioken.VNode,
+  idx: number
 ): void {
   if (el === null) return
   if (el === undefined) return
@@ -60,24 +62,21 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     state.stream.push(el.toString())
     return
   }
-  if (typeof el === "function") {
-    renderToStream_internal(state, createElement(el, elProps), parent)
-    return
-  }
   if (el instanceof Array) {
-    el.forEach((c) => renderToStream_internal(state, c, parent))
+    el.forEach((c, i) => renderToStream_internal(state, c, parent, i))
     return
   }
   if (Signal.isSignal(el)) {
-    renderToStream_internal(state, el.peek(), parent)
+    state.stream.push(String(el.peek()))
     return
   }
   if (!isVNode(el)) {
     state.stream.push(String(el))
     return
   }
-
   el.parent = parent
+  el.depth = parent.depth + 1
+  el.index = idx
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
@@ -87,15 +86,15 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   }
   if (type === fragmentSymbol || type === contextProviderSymbol) {
     if (!Array.isArray(children))
-      return renderToStream_internal(state, children, el)
-    return children.forEach((c) => renderToStream_internal(state, c, el))
+      return renderToStream_internal(state, children, el, idx)
+    return children.forEach((c, i) => renderToStream_internal(state, c, el, i))
   }
 
   if (typeof type !== "string") {
     node.current = el
     const res = type(props)
     node.current = undefined
-    return renderToStream_internal(state, res, parent, props)
+    return renderToStream_internal(state, res, parent, idx)
   }
 
   assertValidElementProps(el)
@@ -116,9 +115,9 @@ function renderToStream_internal<T extends Record<string, unknown>>(
       )
     } else {
       if (Array.isArray(children)) {
-        children.forEach((c) => renderToStream_internal(state, c, el))
+        children.forEach((c, i) => renderToStream_internal(state, c, el, i))
       } else {
-        renderToStream_internal(state, children, el)
+        renderToStream_internal(state, children, el, 0)
       }
     }
 
