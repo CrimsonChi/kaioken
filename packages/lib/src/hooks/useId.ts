@@ -1,4 +1,4 @@
-import { HookCallback, useHook } from "./utils"
+import { HookCallback, useHook } from "./utils.js"
 
 export function useId() {
   return useHook("useId", createUseIdState, useIdCallback)
