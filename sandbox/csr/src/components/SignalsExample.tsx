@@ -1,4 +1,4 @@
-import { signal, computed, Route, Router, Link } from "kaioken"
+import { signal, computed, watch, Route, Router, Link } from "kaioken"
 
 const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
@@ -8,6 +8,10 @@ const double = computed(() => {
   }
   return 0
 }, "double")
+
+watch(() => {
+  console.log("outer watch", count.value)
+})
 
 export function SignalsExample() {
   return (
@@ -43,7 +47,7 @@ const GlobalComputedExample = () => {
 
   watch(() => {
     console.log("inner watch", count.value)
-  }, [count])
+  })
 
   return (
     <div id={divId} className="flex flex-col">
