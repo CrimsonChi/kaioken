@@ -11,7 +11,7 @@ const Home: Kaioken.FC = () => {
 }
 
 const ROUTES: Record<string, AppRoute> = {
-  "/home": {
+  "/": {
     title: "Home",
     component: Home,
   },
@@ -35,6 +35,12 @@ const ROUTES: Record<string, AppRoute> = {
       import("./components/BigListExample").then((m) => m.BigListExample)
     ),
   },
+  "/context-example": {
+    title: "Context",
+    component: lazy(() =>
+      import("./components/ContextExample").then((m) => m.ContextExample)
+    ),
+  },
   "/use-model-example": {
     title: "useModel",
     component: lazy(() =>
@@ -54,18 +60,25 @@ const ROUTES: Record<string, AppRoute> = {
     ),
     fallthrough: true,
   },
+  "/signals-example": {
+    title: "Signals",
+    component: lazy(() =>
+      import("./components/SignalsExample").then((m) => m.SignalsExample)
+    ),
+    fallthrough: true,
+  },
+  "/store-example": {
+    title: "Store",
+    component: lazy(() =>
+      import("./components/StoreExample").then((m) => m.StoreExample)
+    ),
+  },
   "/transitions-example": {
     title: "Transitions",
     component: lazy(() =>
       import("./components/TransitionsExample").then(
         (m) => m.TransitionsExample
       )
-    ),
-  },
-  "/context-example": {
-    title: "Context",
-    component: lazy(() =>
-      import("./components/ContextExample").then((m) => m.ContextExample)
     ),
   },
   "/use-async-example": {
@@ -80,12 +93,6 @@ const ROUTES: Record<string, AppRoute> = {
       import("./components/UseSyncExternalStoreExample").then(
         (m) => m.UseSyncExternalStoreExample
       )
-    ),
-  },
-  "/store-example": {
-    title: "Store",
-    component: lazy(() =>
-      import("./components/StoreExample").then((m) => m.StoreExample)
     ),
   },
 }

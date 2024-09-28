@@ -1,3 +1,2 @@
-export { Router, useRouter, navigate } from "./router.js"
+export { Router, useRouter, navigate, Link, type LinkProps } from "./router.js"
 export { Route } from "./route.js"
-export { Link, type LinkProps } from "./link.js"

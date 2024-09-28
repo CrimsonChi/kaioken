@@ -10,8 +10,8 @@ export function RouterExample() {
       <p>params: {JSON.stringify(params, null, 2)}</p>
       <p>count: {count}</p>
       <button onclick={() => setCount((c) => c + 1)}>+</button>
-      <Link to="/router-example?sort=desc">Home</Link>
-      <Link to="/router-example/child-route/420?sort=desc">Child Route</Link>
+      <Link to="/?sort=desc">Home</Link>
+      <Link to="/child-route/420?sort=desc">Child Route</Link>
       <Router>
         <Route path="/" element={<h2>Home</h2>} />
         <Route path="/child-route/:funny-number" element={<ChildRoute />} />

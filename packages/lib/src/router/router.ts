@@ -16,6 +16,29 @@ import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
 import { getVNodeAppContext, noop } from "../utils.js"
 import { node } from "../globals.js"
+import { ElementProps } from "../types"
+
+export interface LinkProps extends ElementProps<"a"> {
+  to: string
+  onclick?: (e: Event) => void
+  replace?: boolean
+  explicit?: boolean
+}
+export function Link(props: LinkProps) {
+  const router = useContext(RouterContext, false)
+  const parentPath = router.isDefault ? "" : router.routePath
+  const href = props.explicit ? props.to : parentPath + props.to
+
+  return createElement("a", {
+    ...props,
+    href,
+    onclick: (e: Event) => {
+      e.preventDefault()
+      navigate(href, { replace: props.replace })
+      props.onclick?.(e)
+    },
+  })
+}
 
 type RouterCtx = {
   queueSyncNav: (callback: () => void) => void
