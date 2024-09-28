@@ -76,17 +76,10 @@ export const computed = <T>(
   }
 }
 
-export const watch = <T>(getter: () => T, deps?: Signal<unknown>[]) => {
+export const watch = <T>(getter: () => T) => {
   if (!node.current) {
-    if (deps) {
-      getter()
-      deps.forEach((sig) => {
-        sig.subscribe(getter)
-      })
-    } else {
-      const subs = new Map<Signal<any>, Function>()
-      appliedTrackedEffects(getter, subs)
-    }
+    const subs = new Map<Signal<any>, Function>()
+    appliedTrackedEffects(getter, subs)
   } else {
     return useHook(
       "useWatch",
@@ -101,14 +94,7 @@ export const watch = <T>(getter: () => T, deps?: Signal<unknown>[]) => {
             hook.subs.clear()
           }
 
-          if (deps) {
-            deps.forEach((sig) => {
-              const unsub = sig.subscribe(getter)
-              hook.subs.set(sig, unsub)
-            })
-          } else {
-            appliedTrackedEffects(getter, hook.subs)
-          }
+          appliedTrackedEffects(getter, hook.subs)
         }
       }
     )
