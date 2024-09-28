@@ -1,9 +1,39 @@
-import { computed, signal, watch } from "kaioken"
-import { count, double, isTracking } from "../signals"
+import { signal, computed, Route, Router, Link } from "kaioken"
 
-export const GlobalComputedExample = () => {
+const count = signal(0, "count")
+const isTracking = signal(false, "isTracking")
+const double = computed(() => {
+  if (isTracking.value) {
+    return count.value * 2
+  }
+  return 0
+}, "double")
+
+export function SignalsExample() {
+  return (
+    <div>
+      <nav className="flex gap-2 bg-transparent">
+        <Link to="/" className="underline">
+          Global
+        </Link>
+        <Link to="/local" className="underline">
+          Local
+        </Link>
+      </nav>
+      <Router>
+        <Route path="/" element={<GlobalComputedExample />} />
+        <Route path="/local" element={<LocalComputedExample />} />
+      </Router>
+    </div>
+  )
+}
+
+const GlobalComputedExample = () => {
+  console.log("GlobalComputedExample")
+  const divId = signal("test")
   const onInc = () => {
     count.value += 1
+    divId.value += "|test"
   }
 
   const onSwitch = () => {
@@ -16,7 +46,7 @@ export const GlobalComputedExample = () => {
   }, [count])
 
   return (
-    <div className="flex flex-col">
+    <div id={divId} className="flex flex-col">
       <h1>Count: {count}</h1>
       <h1>Double: {double}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
@@ -31,7 +61,7 @@ export const GlobalComputedExample = () => {
   )
 }
 
-export const LocalComputedExample = () => {
+const LocalComputedExample = () => {
   const localCount = signal(0, "local count")
   const localIsTracking = signal(false, "local is tracking")
   const localDouble = computed(() => {

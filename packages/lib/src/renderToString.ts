@@ -1,6 +1,6 @@
 import { ctx, node, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
-import { createElement } from "./element.js"
+import { createElement, Fragment } from "./element.js"
 import {
   isVNode,
   encodeHtmlEntities,
@@ -23,47 +23,50 @@ export function renderToString<T extends Record<string, unknown>>(
   renderMode.current = "string"
   const prevCtx = ctx.current
   const c = (ctx.current = new AppContext(el, elProps))
-  c.rootNode = createElement(el, elProps)
-  const res = renderToString_internal(c.rootNode, undefined, elProps)
+  const appNode = createElement(el, elProps)
+  c.rootNode = Fragment({ children: [appNode] })
+  c.rootNode.depth = 0
+  appNode.depth = 1
+  const res = renderToString_internal(appNode, c.rootNode, 0)
   renderMode.current = prev
   ctx.current = prevCtx
   return res
 }
 
-function renderToString_internal<T extends Record<string, unknown>>(
+function renderToString_internal(
   el: unknown,
-  parent?: Kaioken.VNode | undefined,
-  elProps = {} as T
+  parent: Kaioken.VNode,
+  idx: number
 ): string {
   if (el === null) return ""
   if (el === undefined) return ""
   if (typeof el === "boolean") return ""
   if (typeof el === "string") return encodeHtmlEntities(el)
   if (typeof el === "number" || typeof el === "bigint") return el.toString()
-  if (typeof el === "function")
-    return renderToString_internal(createElement(el, elProps), parent)
   if (el instanceof Array) {
-    return el.map((c) => renderToString_internal(c, parent)).join("")
+    return el.map((c, i) => renderToString_internal(c, parent, i)).join("")
   }
-  if (Signal.isSignal(el)) return renderToString_internal(el.peek(), parent)
+  if (Signal.isSignal(el)) return String(el.peek())
   if (!isVNode(el)) return String(el)
-
   el.parent = parent
+  el.depth = parent!.depth + 1
+  el.index = idx
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
   if (type === ELEMENT_TYPE.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
   if (type === fragmentSymbol || type === contextProviderSymbol) {
-    if (!Array.isArray(children)) return renderToString_internal(children, el)
-    return children.map((c) => renderToString_internal(c, el, props)).join("")
+    if (!Array.isArray(children))
+      return renderToString_internal(children, el, idx)
+    return children.map((c, i) => renderToString_internal(c, el, i)).join("")
   }
 
   if (typeof type !== "string") {
     node.current = el
     const res = type(props)
     node.current = undefined
-    return renderToString_internal(res, el, props)
+    return renderToString_internal(res, el, idx)
   }
 
   assertValidElementProps(el)
@@ -74,8 +77,8 @@ function renderToString_internal<T extends Record<string, unknown>>(
         ? props.innerHTML.peek()
         : props.innerHTML
       : Array.isArray(children)
-        ? children.map((c) => renderToString_internal(c, el)).join("")
-        : renderToString_internal(children, el)
+        ? children.map((c, i) => renderToString_internal(c, el, i)).join("")
+        : renderToString_internal(children, el, 0)
 
   const isSelfClosing = selfClosingTags.includes(type)
   return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`

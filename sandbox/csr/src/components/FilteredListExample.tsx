@@ -40,7 +40,7 @@ const albums: Album[] = [
   },
 ]
 
-export function FilteredList() {
+export function FilteredListExample() {
   const [sort, setSort] = useState<"asc" | "desc">("asc")
   const [inputRef, inputValue] = useModel<HTMLInputElement>("")
   useEffect(() => {

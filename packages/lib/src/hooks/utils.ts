@@ -78,9 +78,12 @@ type HookCallback<T> = (state: HookCallbackState<T>) => any
 let currentHookName: string | null = null
 const nestedHookWarnings = new Set<string>()
 
-function useHook<T, U extends HookCallback<T>>(
+function useHook<
+  T,
+  U extends T extends () => any ? HookCallback<ReturnType<T>> : HookCallback<T>,
+>(
   hookName: string,
-  hookDataOrInitializer: (() => Hook<T>) | Hook<T>,
+  hookDataOrInitializer: Kaioken.Hook<T> | (() => Kaioken.Hook<T>),
   callback: U
 ): ReturnType<U> {
   const vNode = node.current
@@ -107,7 +110,7 @@ function useHook<T, U extends HookCallback<T>>(
     oldHook ??
     (typeof hookDataOrInitializer === "function"
       ? hookDataOrInitializer()
-      : hookDataOrInitializer)
+      : { ...hookDataOrInitializer })
 
   if (!oldHook) hook.name = hookName
   else if (oldHook.name !== hookName) {
@@ -121,8 +124,8 @@ function useHook<T, U extends HookCallback<T>>(
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
   try {
-    const res = callback({
-      hook,
+    const res = (callback as HookCallback<T>)({
+      hook: hook,
       isInit: !oldHook,
       update: () => ctx.requestUpdate(vNode),
       queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {

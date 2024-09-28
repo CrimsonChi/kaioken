@@ -2,7 +2,7 @@ import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
 import devtoolsLinkScript from "kaioken-devtools-host"
 import devtoolsUiScript from "kaioken-devtools-client"
 
-const defaultEsBuildOptions: ESBuildOptions = {
+export const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
   jsx: "transform",
   jsxFactory: "kaioken.createElement",

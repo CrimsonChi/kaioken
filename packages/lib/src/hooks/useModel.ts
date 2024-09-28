@@ -23,6 +23,17 @@ type UseModelReturn<
   (newValue: ToPrimitive<U>) => void,
 ]
 
+type UseModelState<
+  T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  U extends string | boolean | FileList | null,
+> = {
+  value: U
+  element: T | null
+  ref: Kaioken.RefObject<T>
+  dispatch: (value: U) => void
+  listener: () => void
+}
+
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   U extends string | boolean | FileList | null = string,
@@ -38,15 +49,10 @@ export function useModel<
   }
   return useHook(
     "useModel",
-    {
-      value: initial,
-      element: null as T | null,
-      ref: { current: null } as Kaioken.RefObject<T>,
-      dispatch: noop as (value: U) => void,
-      listener: noop as () => void,
-    },
+    createUseModelState,
     ({ hook, isInit, update, queueEffect }) => {
       if (isInit) {
+        hook.value = initial
         hook.cleanup = () => {
           hook.element &&
             hook.element.removeEventListener("input", hook.listener)
@@ -101,6 +107,14 @@ export function useModel<
     }
   )
 }
+
+const createUseModelState = (): UseModelState<any, any> => ({
+  value: undefined,
+  element: null,
+  ref: { current: null } as Kaioken.RefObject<any>,
+  dispatch: noop as (value: any) => void,
+  listener: noop as () => void,
+})
 
 function setElementValue(
   element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
