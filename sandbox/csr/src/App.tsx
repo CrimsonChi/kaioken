@@ -29,7 +29,7 @@ const ROUTES: Record<string, AppRoute> = {
       )
     ),
   },
-  "/big-list": {
+  "/big-list-example": {
     title: "Big list",
     component: lazy(() =>
       import("./components/BigListExample").then((m) => m.BigListExample)
