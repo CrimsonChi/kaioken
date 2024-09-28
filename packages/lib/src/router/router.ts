@@ -124,9 +124,9 @@ export function Router(props: RouterProps) {
   }
   let fallbackRoute: RouteComponent | undefined
   let route: RouteComponent | undefined
-  const _children = Array.isArray(props.children)
-    ? props.children
-    : [props.children]
+  const _children = (
+    Array.isArray(props.children) ? props.children : [props.children]
+  ).flat()
 
   for (const child of _children) {
     if (!isRoute(child)) continue
