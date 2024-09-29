@@ -2,18 +2,24 @@ import { createElement } from "./element.js"
 import { renderMode } from "./globals.js"
 import { useRequestUpdate } from "./hooks/utils.js"
 
+type FCModule = { default: Kaioken.FC<any> }
+type LazyImportValue = Kaioken.FC<any> | FCModule
+type InferProps<T extends LazyImportValue> = T extends FCModule
+  ? Kaioken.InferProps<T["default"]>
+  : Kaioken.InferProps<T>
+
 type LazyState = {
-  promise: Promise<Kaioken.FC>
+  promise: Promise<LazyImportValue>
   result: Kaioken.FC | null
 }
 
-type LazyComponentProps<T extends Kaioken.FC> = Kaioken.InferProps<T> & {
+type LazyComponentProps<T extends LazyImportValue> = InferProps<T> & {
   fallback?: JSX.Element
 }
 
-const lazyCache = new WeakMap<() => Promise<Kaioken.FC>, LazyState>()
+const lazyCache = new WeakMap<() => Promise<LazyImportValue>, LazyState>()
 
-export function lazy<T extends Kaioken.FC>(
+export function lazy<T extends LazyImportValue>(
   componentPromise: () => Promise<T>
 ): Kaioken.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
@@ -31,8 +37,11 @@ export function lazy<T extends Kaioken.FC>(
         result: null,
       }
       lazyCache.set(componentPromise, state)
-      promise.then((component) => {
-        state.result = component
+      promise.then((componentOrModule) => {
+        state.result =
+          typeof componentOrModule === "function"
+            ? componentOrModule
+            : componentOrModule.default
         requestUpdate()
       })
       return fallback

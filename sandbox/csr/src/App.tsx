@@ -44,7 +44,7 @@ const ROUTES: Record<string, AppRoute> = {
   "/use-model-example": {
     title: "useModel",
     component: lazy(() =>
-      import("./components/useModelExample").then((m) => m.UseModelExample)
+      import("./components/UseModelExample").then((m) => m.UseModelExample)
     ),
   },
   "/memo-example": {
@@ -89,11 +89,7 @@ const ROUTES: Record<string, AppRoute> = {
   },
   "/use-sync-external-store-example": {
     title: "useSyncExternalStore",
-    component: lazy(() =>
-      import("./components/UseSyncExternalStoreExample").then(
-        (m) => m.UseSyncExternalStoreExample
-      )
-    ),
+    component: lazy(() => import("./components/UseSyncExternalStoreExample")),
   },
 }
 
