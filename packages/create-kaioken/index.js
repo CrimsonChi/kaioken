@@ -6,7 +6,7 @@ import { program } from "commander"
 import inquirer from "inquirer"
 import { execa } from "execa"
 
-const pieces = process.argv[1].split("/")
+const pieces = process.argv[1]?.split("/") || []
 let executingPackageManager = "npm"
 if (pieces.find((x) => x.includes("pnpm"))) {
   executingPackageManager = "pnpm"
@@ -25,15 +25,18 @@ const templates = [
     name: "SSR/SSG (Server-side rendering)",
     value: "https://github.com/CrimsonChi/kaioken-ssr-template.git",
   },
+  {
+    name: "Tauri (Webview-based Desktop app)",
+    value: "https://github.com/CrimsonChi/kaioken-tauri-template.git",
+  },
 ]
 
 const defaultDir = "."
 
 program
   .option("-d, --dest <dest>", "Destination directory")
-  .option("-csr, --csr", "Use CSR template")
-  .option("-ssr, --ssr", "Use SSR template")
-  .action(async ({ dest, csr, ssr }) => {
+  .option("-t, --template <template>", "Choose template")
+  .action(async ({ dest, template }) => {
     console.log("Welcome to Kaioken!\n")
     if (!dest) {
       const { selectedDest } = await inquirer.prompt([
@@ -105,8 +108,8 @@ program
       }
     }
 
-    let template = ""
-    if ((csr && ssr) || (!csr && !ssr)) {
+    let templateUrl = ""
+    if (!template) {
       const { selectedTemplate } = await inquirer.prompt([
         {
           type: "list",
@@ -115,16 +118,20 @@ program
           choices: templates,
         },
       ])
-      template = selectedTemplate
+      templateUrl = selectedTemplate
     } else {
-      if (csr) template = templates[0].value
-      if (ssr) template = templates[1].value
+      templateUrl = templates.find((t) => t.value === template)?.value || ""
+    }
+    const isValidTemplate = templates.some((t) => t.value === templateUrl)
+    if (!isValidTemplate) {
+      console.error("Invalid template. Exiting...")
+      return
     }
 
-    console.log(`Downloading project template '${template}'...`)
+    console.log(`Downloading project template '${templateUrl}'...`)
     try {
       const git = simpleGit()
-      await git.clone(template, dest)
+      await git.clone(templateUrl, dest)
     } catch (error) {
       console.error(
         `[create-kaioken]: An error occurred while cloning the template:`,
@@ -193,6 +200,8 @@ const detectPackageManager = async () => {
 
 /**
  * Check if a global pm is available
+ * @param {string} pm
+ * @returns {Promise<boolean>}
  */
 function hasGlobalInstallation(pm) {
   return execa(pm, ["--version"])
