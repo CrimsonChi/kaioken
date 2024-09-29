@@ -15,7 +15,7 @@ const createUseIdState = (): UseIdState => ({
 })
 
 const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
-  if (isInit) {
+  if (isInit || vNode.index !== hook.idx) {
     hook.idx = vNode.index
     const accumulator: number[] = []
     let n: Kaioken.VNode | undefined = vNode
