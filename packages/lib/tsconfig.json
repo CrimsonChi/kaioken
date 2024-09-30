@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "useDefineForClassFields": true,
+    //"useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "moduleResolution": "Node",
@@ -18,7 +18,8 @@
     "outDir": "dist",
     "baseUrl": ".",
     "removeComments": false,
-    "sourceMap": false,
+    "sourceMap": true,
+    "declarationMap": true,
     "jsx": "react",
     "jsxFactory": "kaioken.createElement",
     "jsxFragmentFactory": "kaioken.Fragment"
