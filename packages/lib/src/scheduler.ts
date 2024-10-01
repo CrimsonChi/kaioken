@@ -9,7 +9,7 @@ import {
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
-import { ctx, node, renderMode } from "./globals.js"
+import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
@@ -332,6 +332,7 @@ export class Scheduler {
   private updateFunctionComponent(vNode: FunctionNode) {
     try {
       node.current = vNode
+      nodeToCtxMap.set(vNode, this.appCtx)
       let newChildren
       let renderTryCount = 0
       do {
