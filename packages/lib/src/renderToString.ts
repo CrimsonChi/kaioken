@@ -1,4 +1,4 @@
-import { ctx, node, renderMode } from "./globals.js"
+import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
 import { createElement, Fragment } from "./element.js"
 import {
@@ -63,6 +63,7 @@ function renderToString_internal(
   }
 
   if (typeof type !== "string") {
+    nodeToCtxMap.set(el, ctx.current)
     node.current = el
     const res = type(props)
     node.current = undefined

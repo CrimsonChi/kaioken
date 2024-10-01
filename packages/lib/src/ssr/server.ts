@@ -1,7 +1,7 @@
 import { Readable } from "node:stream"
 import { createElement, Fragment } from "../index.js"
 import { AppContext } from "../appContext.js"
-import { renderMode, ctx, node } from "../globals.js"
+import { renderMode, ctx, node, nodeToCtxMap } from "../globals.js"
 import {
   isVNode,
   encodeHtmlEntities,
@@ -91,6 +91,7 @@ function renderToStream_internal(
   }
 
   if (typeof type !== "string") {
+    nodeToCtxMap.set(el, state.ctx)
     node.current = el
     const res = type(props)
     node.current = undefined
