@@ -19,6 +19,7 @@ export interface AppContextOptions {
   name?: string
 }
 
+let appCounter = 0
 export class AppContext<T extends Record<string, unknown> = {}> {
   id: number
   name: string
@@ -33,7 +34,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     private appProps = {},
     private options?: AppContextOptions
   ) {
-    this.id = Date.now()
+    this.id = appCounter++
     this.name = options?.name ?? "App-" + this.id
     this.root = options?.root
   }
