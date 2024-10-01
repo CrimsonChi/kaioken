@@ -21,31 +21,31 @@ export function memo<T extends Record<string, unknown> = {}>(
 ): (props: T) => JSX.Element {
   const memo = function (props: T) {
     const prevProps = useRef<T | null>(null)
-    const node = useRef<Kaioken.VNode | null>(null)
+    const vNode = useRef<Kaioken.VNode | null>(null)
     const thisNode = useVNode()
     thisNode.props = props
     thisNode.depth = (thisNode.parent?.depth || 0) + 1
 
     if (
-      node.current &&
+      vNode.current &&
       prevProps.current &&
       arePropsEqual(prevProps.current, props)
     ) {
-      node.current.props = props
+      vNode.current.props = props
       prevProps.current = props
-      node.current.frozen = true
-      return node.current
+      vNode.current.frozen = true
+      return vNode.current
     }
 
     prevProps.current = props
 
-    if (!node.current) {
-      node.current = createElement(fn, props)
+    if (!vNode.current) {
+      vNode.current = createElement(fn, props)
     } else {
-      Object.assign(node.current.props, props)
+      Object.assign(vNode.current.props, props)
     }
-    node.current.frozen = false
-    return node.current
+    vNode.current.frozen = false
+    return vNode.current
   }
   memo.displayName = "Kaioken.memo"
   return memo

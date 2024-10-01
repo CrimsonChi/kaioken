@@ -61,12 +61,12 @@ function getCurrentVNode(): VNode | undefined {
   return node.current
 }
 
-function getVNodeAppContext(node: VNode): AppContext {
-  const n = nodeToCtxMap.get(node)
+function getVNodeAppContext(vNode: VNode): AppContext {
+  const n = nodeToCtxMap.get(vNode)
   if (!n)
     throw new KaiokenError({
       message: "Unable to find VNode's AppContext.",
-      vNode: node,
+      vNode,
     })
   return n
 }
@@ -76,26 +76,23 @@ function commitSnapshot(vNode: VNode): void {
   vNode.flags = 0
 }
 
-function vNodeContains(
-  haystack: VNode,
-  needle: VNode,
-  checkImmediateSiblings = false
-): boolean {
+function vNodeContains(haystack: VNode, needle: VNode): boolean {
   if (haystack === needle) return true
+  let checkSiblings = false
   const stack: VNode[] = [haystack]
   while (stack.length) {
     const n = stack.pop()!
     if (n === needle) return true
     n.child && stack.push(n.child)
-    checkImmediateSiblings && n.sibling && stack.push(n.sibling)
-    checkImmediateSiblings = true
+    checkSiblings && n.sibling && stack.push(n.sibling)
+    checkSiblings = true
   }
   return false
 }
 
-function traverseApply(node: VNode, func: (node: VNode) => void): void {
+function traverseApply(vNode: VNode, func: (node: VNode) => void): void {
   let applyToSiblings = false
-  const nodes: VNode[] = [node]
+  const nodes: VNode[] = [vNode]
   const apply = (node: VNode) => {
     func(node)
     node.child && nodes.push(node.child)
@@ -109,11 +106,11 @@ function postOrderApply(
   tree: VNode,
   callbacks: {
     /** called upon traversing to the next parent, and on the root */
-    onAscent: (node: VNode) => void
+    onAscent: (vNode: VNode) => void
     /** called before traversing to the next parent */
-    onBeforeAscent?: (node: VNode) => void
+    onBeforeAscent?: (vNode: VNode) => void
     /** called before traversing to the next child */
-    onDescent?: (node: VNode) => void
+    onDescent?: (vNode: VNode) => void
   }
 ): void {
   const root = tree

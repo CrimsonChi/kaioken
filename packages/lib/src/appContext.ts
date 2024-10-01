@@ -107,24 +107,24 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     })
   }
 
-  requestUpdate(node: VNode) {
-    if (bitmapOps.isFlagSet(node, FLAG.DELETION)) return
+  requestUpdate(vNode: VNode) {
+    if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        !bitmapOps.isFlagSet(node, FLAG.DELETION) && s.queueUpdate(node)
+        !bitmapOps.isFlagSet(vNode, FLAG.DELETION) && s.queueUpdate(vNode)
       })
     }
-    this.scheduler?.queueUpdate(node)
+    this.scheduler?.queueUpdate(vNode)
   }
 
-  requestDelete(node: VNode) {
-    if (bitmapOps.isFlagSet(node, FLAG.DELETION)) return
+  requestDelete(vNode: VNode) {
+    if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        !bitmapOps.isFlagSet(node, FLAG.DELETION) && s.queueDelete(node)
+        !bitmapOps.isFlagSet(vNode, FLAG.DELETION) && s.queueDelete(vNode)
       })
     }
-    this.scheduler?.queueDelete(node)
+    this.scheduler?.queueDelete(vNode)
   }
 
   queueEffect(vNode: VNode, effect: Function) {

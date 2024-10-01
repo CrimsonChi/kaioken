@@ -400,8 +400,8 @@ export class Scheduler {
 
 function fireEffects(tree: VNode, immediate?: boolean) {
   postOrderApply(tree, {
-    onAscent(node) {
-      const arr = immediate ? node.immediateEffects : node.effects
+    onAscent(vNode) {
+      const arr = immediate ? vNode.immediateEffects : vNode.effects
       while (arr?.length) arr.shift()!()
     },
   })

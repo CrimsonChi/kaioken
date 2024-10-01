@@ -22,18 +22,18 @@ type RequestState = {
 }
 
 export function renderToReadableStream<T extends Record<string, unknown>>(
-  el: (props: T) => JSX.Element,
-  elProps = {} as T
+  appFunc: (props: T) => JSX.Element,
+  appProps = {} as T
 ): Readable {
   const prev = renderMode.current
   renderMode.current = "stream"
   const state: RequestState = {
     stream: new Readable(),
-    ctx: new AppContext<any>(el, elProps),
+    ctx: new AppContext<any>(appFunc, appProps),
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
-  const appNode = createElement(el, elProps)
+  const appNode = createElement(appFunc, appProps)
   state.ctx.rootNode = Fragment({ children: [appNode] })
   state.ctx.rootNode.depth = 0
   appNode.depth = 1

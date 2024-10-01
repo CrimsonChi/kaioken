@@ -16,14 +16,14 @@ import {
 import { assertValidElementProps } from "./props.js"
 
 export function renderToString<T extends Record<string, unknown>>(
-  el: (props: T) => JSX.Element,
-  elProps = {} as T
+  appFunc: (props: T) => JSX.Element,
+  appProps = {} as T
 ) {
   const prev = renderMode.current
   renderMode.current = "string"
   const prevCtx = ctx.current
-  const c = (ctx.current = new AppContext(el, elProps))
-  const appNode = createElement(el, elProps)
+  const c = (ctx.current = new AppContext(appFunc, appProps))
+  const appNode = createElement(appFunc, appProps)
   c.rootNode = Fragment({ children: [appNode] })
   c.rootNode.depth = 0
   appNode.depth = 1

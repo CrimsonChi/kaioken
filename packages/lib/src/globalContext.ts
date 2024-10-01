@@ -50,13 +50,13 @@ class KaiokenGlobalContext {
           if (!oldFn) continue
           this.#contexts.forEach((ctx) => {
             if (!ctx.mounted || !ctx.rootNode) return
-            traverseApply(ctx.rootNode, (node) => {
-              if (node.type === oldFn) {
-                node.type = newFn
-                if (node.prev) {
-                  node.prev.type = newFn
+            traverseApply(ctx.rootNode, (vNode) => {
+              if (vNode.type === oldFn) {
+                vNode.type = newFn
+                if (vNode.prev) {
+                  vNode.prev.type = newFn
                 }
-                ctx.requestUpdate(node)
+                ctx.requestUpdate(vNode)
               }
             })
           })

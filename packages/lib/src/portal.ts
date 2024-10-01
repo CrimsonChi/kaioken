@@ -12,23 +12,23 @@ type PortalProps = {
 }
 
 function Portal({ children, container }: PortalProps) {
-  const node = useVNode()
+  const vNode = useVNode()
   switch (renderMode.current) {
     case "dom":
-      node.dom = typeof container === "function" ? container() : container
-      if (!(node.dom instanceof HTMLElement)) {
+      vNode.dom = typeof container === "function" ? container() : container
+      if (!(vNode.dom instanceof HTMLElement)) {
         if (__DEV__) {
           throw new KaiokenError({
-            message: `Invalid portal container, expected HTMLElement, got ${node.dom}`,
-            vNode: node,
+            message: `Invalid portal container, expected HTMLElement, got ${vNode.dom}`,
+            vNode: vNode,
           })
         }
         return null
       }
       return children
     case "hydrate":
-      const ctx = getVNodeAppContext(node)
-      ctx.scheduler?.nextIdle(() => ctx.requestUpdate(node))
+      const ctx = getVNodeAppContext(vNode)
+      ctx.scheduler?.nextIdle(() => ctx.requestUpdate(vNode))
       return null
     case "stream":
     case "string":
