@@ -57,13 +57,12 @@ function createDom(vNode: VNode): SomeDom {
 }
 function createTextNode(vNode: VNode): Text {
   const prop = vNode.props.nodeValue
-  const isSig = Signal.isSignal(prop)
   const value = unwrap(prop)
-  const el = document.createTextNode(value)
-  if (isSig) {
-    subTextNode(vNode, el, prop)
+  const textNode = document.createTextNode(value)
+  if (Signal.isSignal(prop)) {
+    subTextNode(vNode, textNode, prop)
   }
-  return el
+  return textNode
 }
 
 function updateDom(vNode: VNode) {
