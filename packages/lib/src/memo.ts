@@ -15,15 +15,12 @@ function _arePropsEqual<T extends Record<string, unknown>>(
   return true
 }
 
-export function memo<T extends Kaioken.FC<any>>(
-  fn: T,
-  arePropsEqual: (
-    prevProps: Kaioken.InferProps<T>,
-    nextProps: Kaioken.InferProps<T>
-  ) => boolean = _arePropsEqual
-): (props: Kaioken.InferProps<T>) => JSX.Element {
-  const memo = function (props: Kaioken.InferProps<T>) {
-    const prevProps = useRef<Kaioken.InferProps<T> | null>(null)
+export function memo<T extends Record<string, unknown> = {}>(
+  fn: Kaioken.FC<T>,
+  arePropsEqual: (prevProps: T, nextProps: T) => boolean = _arePropsEqual
+): (props: T) => JSX.Element {
+  const memo = function (props: T) {
+    const prevProps = useRef<T | null>(null)
     const node = useRef<Kaioken.VNode | null>(null)
     const thisNode = useVNode()
     thisNode.props = props
