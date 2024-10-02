@@ -12,7 +12,7 @@ import { ELEMENT_TYPE, FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signal.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
-import { MaybeDom, SomeDom, SomeElement, StyleObject } from "./types.dom.js"
+import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
@@ -21,8 +21,6 @@ import { bitmapOps } from "./bitmap.js"
 export { commitWork, createDom, updateDom, hydrateDom }
 
 type VNode = Kaioken.VNode
-type ElementVNode = VNode & { dom: SomeElement }
-type DomVNode = VNode & { dom: SomeDom }
 type HostNode = {
   node: ElementVNode
   lastChild?: DomVNode

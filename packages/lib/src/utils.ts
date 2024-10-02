@@ -12,6 +12,7 @@ export {
   isVNode,
   isFragment,
   isContextProvider,
+  isExoticVNode,
   vNodeContains,
   getCurrentVNode,
   getVNodeAppContext,
@@ -43,6 +44,13 @@ function sideEffectsEnabled(): boolean {
 
 function isVNode(thing: unknown): thing is VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
+}
+
+function isExoticVNode(thing: unknown): thing is ExoticVNode {
+  return (
+    isVNode(thing) &&
+    (thing.type === fragmentSymbol || thing.type === contextProviderSymbol)
+  )
 }
 
 function isFragment(

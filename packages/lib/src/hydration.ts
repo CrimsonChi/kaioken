@@ -1,5 +1,4 @@
 import type { Scheduler } from "./scheduler"
-import type { MaybeDom, SomeDom } from "./types.dom"
 
 export const hydrationStack = {
   parentStack: [] as Array<SomeDom>,

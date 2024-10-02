@@ -1,5 +1,3 @@
-import { type Prettify } from "./types"
-
 export type {
   HtmlElementAttributes,
   SvgElementAttributes,
@@ -7,15 +5,9 @@ export type {
   GlobalAttributes,
   GlobalEventAttributes,
   EventAttributes,
-  SomeDom,
-  SomeElement,
-  MaybeDom,
   StyleObject,
 }
 
-type SomeElement = HTMLElement | SVGElement
-type SomeDom = HTMLElement | SVGElement | Text
-type MaybeDom = SomeDom | undefined
 type StyleObject = Prettify<
   Partial<
     Omit<

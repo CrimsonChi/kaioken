@@ -10,17 +10,12 @@ import type {
   GlobalAttributes,
   GlobalEventAttributes,
   HtmlElementAttributes,
-  SomeDom,
   SvgElementAttributes,
   SvgGlobalAttributes,
   StyleObject,
 } from "./types.dom"
 
-export type { ElementProps, StyleObject, Prettify }
-
-type Prettify<T> = {
-  [K in keyof T]: T[K]
-} & {}
+export type { ElementProps, StyleObject }
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
