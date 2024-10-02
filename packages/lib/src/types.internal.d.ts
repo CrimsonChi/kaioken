@@ -5,9 +5,7 @@ type MaybeDom = SomeDom | undefined
 type VNode = Kaioken.VNode
 
 type FunctionVNode = VNode & { type: (...args: any) => any }
-type ExoticVNode = VNode & {
-  type: typeof fragmentSymbol | typeof contextProviderSymbol
-}
+type ExoticVNode = VNode & { type: Symbol }
 type ElementVNode = VNode & { dom: SomeElement }
 type DomVNode = VNode & { dom: SomeDom }
 
