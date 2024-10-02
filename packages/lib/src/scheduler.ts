@@ -1,4 +1,5 @@
 import type { AppContext } from "./appContext"
+import type { FunctionVNode } from "./types.utils"
 import { bitmapOps } from "./bitmap.js"
 import { CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"

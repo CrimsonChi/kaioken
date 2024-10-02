@@ -14,6 +14,7 @@ import type {
   SvgGlobalAttributes,
   StyleObject,
 } from "./types.dom"
+import { SomeDom } from "./types.utils"
 
 export type { ElementProps, StyleObject }
 

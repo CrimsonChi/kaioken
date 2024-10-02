@@ -17,6 +17,13 @@ import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { bitmapOps } from "./bitmap.js"
+import type {
+  DomVNode,
+  ElementVNode,
+  MaybeDom,
+  SomeDom,
+  SomeElement,
+} from "./types.utils"
 
 export { commitWork, createDom, updateDom, hydrateDom }
 

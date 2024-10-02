@@ -1,3 +1,4 @@
+import type { Prettify } from "./types.utils.js"
 import { __DEV__ } from "./env.js"
 import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
 import { getVNodeAppContext, shallowCompare } from "./utils.js"

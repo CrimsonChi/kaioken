@@ -7,7 +7,7 @@ type AppRoute = {
 }
 
 const Home: Kaioken.FC = () => {
-  return <h1>Home</h1>
+  return <h1 style={{ color: 123 }}>Home</h1>
 }
 
 const ROUTES: Record<string, AppRoute> = {

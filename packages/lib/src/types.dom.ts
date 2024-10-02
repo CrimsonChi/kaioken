@@ -1,3 +1,5 @@
+import type { Prettify } from "./types.utils"
+
 export type {
   HtmlElementAttributes,
   SvgElementAttributes,

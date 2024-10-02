@@ -6,7 +6,8 @@ import {
 } from "./constants.js"
 import { unwrap } from "./signal.js"
 import { KaiokenError } from "./error.js"
-import type { AppContext } from "./appContext.js"
+import type { AppContext } from "./appContext"
+import type { ExoticVNode } from "./types.utils"
 
 export {
   isVNode,
