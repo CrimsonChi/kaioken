@@ -111,7 +111,12 @@ export function useAsync<T>(
         loading: hook.task?.loading || false,
         error: hook.task?.error || null,
         invalidate: () => {
-          hook.load([], func, false)
+          if (hook.task) {
+            hook.task.invalidated = true
+            hook.task = null
+          }
+          hook.load(deps, func, isInit)
+          //hook.load([], func, false)
         },
       } as UseAsyncResult<T>
     }
