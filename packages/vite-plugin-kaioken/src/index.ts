@@ -35,6 +35,7 @@ export default function kaioken(
   }
 ): Plugin {
   const tsxOrJsxRegex = /\.(tsx|jsx)$/
+  const tsOrJsRegex = /\.(ts|js)$/
   let isProduction = false
   let isBuild = false
 
@@ -82,7 +83,7 @@ export default function kaioken(
     },
     handleHotUpdate(ctx) {
       if (isProduction || isBuild) return
-      if (!tsxOrJsxRegex.test(ctx.file)) return
+      if (!tsxOrJsxRegex.test(ctx.file) && !tsOrJsRegex.test(ctx.file)) return
       const module = ctx.modules.find((m) => m.file === ctx.file)
       if (!module) return []
 
@@ -103,11 +104,11 @@ export default function kaioken(
     },
     transform(code, id) {
       if (isProduction || isBuild) return
-      if (!tsxOrJsxRegex.test(id)) return { code }
+      if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
       const ast = this.parse(code)
       try {
-        const componentNames = findComponentNames(ast.body as AstNode[])
-        if (componentNames.length === 0) return { code }
+        const hotVars = findHotVars(ast.body as AstNode[], id)
+        if (hotVars.length === 0) return { code }
         code = transformIncludeFilePath(
           fileLinkFormatter,
           ast.body as AstNode[],
@@ -118,7 +119,7 @@ export default function kaioken(
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
   window.__kaioken.HMRContext?.register("${id}", {
-    ${componentNames.map((name) => `"${name}": ${name}`).join(",\n")}
+    ${hotVars.map((name) => `"${name}": ${name}`).join(",\n")}
   });
 }`
       } catch (error) {
@@ -150,11 +151,13 @@ interface AstNode {
   arguments?: AstNode[]
   specifiers?: AstNode[]
   cases?: AstNode[]
-  callee?: AstNode
+  callee?: AstNode & { name: string }
   exported?: AstNode & { name: string }
   consequent?: AstNode | AstNode[]
   alternate?: AstNode
   local?: AstNode & { name: string }
+  imported?: AstNode & { name: string }
+  source?: AstNode & { value: string }
   value?: unknown
 }
 
@@ -164,54 +167,78 @@ const createFilePathComment = (
   line = 0
 ) => `// [kaioken_devtools]:${formatter(filePath, line)}`
 
-function findComponentNames(nodes: AstNode[]): string[] {
-  const components: string[] = []
-  for (const node of nodes) {
-    if (
-      node.type === "ExportNamedDeclaration" ||
-      node.type === "ExportDefaultDeclaration"
-    ) {
-      const dec = node.declaration as AstNode
-      if (!dec) {
-        if (node.specifiers && node.specifiers.length) {
-          for (const spec of node.specifiers) {
-            if (spec.local?.name) {
-              components.push(spec.local.name)
-            }
-          }
-        }
-        continue
-      }
-      if (!dec.id) {
-        // handle 'export const MyComponent = () => {}'
-        const declarations = dec.declarations
-        if (!declarations) continue
-        for (const dec of declarations) {
-          const name = dec.id?.name
-          if (!name) continue
-          if (components.find((c) => c === name)) continue
-          if (dec.init && nodeContainsCreateElement(dec.init)) {
-            components.push(name)
-          }
-        }
-      }
+function createAliasBuilder(source: string, name: string) {
+  const aliases = new Set<string>()
 
-      const name = dec.id?.name // handle 'export function MyComponent() {}'
-      if (!name) continue
+  const nodeContainsAliasCall = (n: AstNode) =>
+    isNodeCallExpressionOfFunctionAlias(n, aliases)
 
-      if (nodeContainsCreateElement(dec)) {
-        components.push(name)
-      }
-    } else {
-      if (nodeContainsCreateElement(node)) {
-        const name = node.id?.name
-        if (!name) continue
-        if (components.find((c) => c === name)) continue
-        components.push(name)
+  const addAliases = (node: AstNode) => {
+    if (!node.source || node.source.value !== source) return
+    const specifiers = node.specifiers || []
+    for (let i = 0; i < specifiers.length; i++) {
+      const specifier = specifiers[i]
+      if (
+        specifier.imported &&
+        specifier.imported.name === name &&
+        !!specifier.local
+      ) {
+        aliases.add(specifier.local.name)
       }
     }
   }
-  return components
+  return {
+    addAliases,
+    getAliases: () => aliases,
+    nodeContainsAliasCall,
+  }
+}
+
+function findHotVars(nodes: AstNode[], _id: string): string[] {
+  const hotVarNames = new Set<string>()
+
+  const { addAliases: addCreateStoreAliases, nodeContainsAliasCall: isStore } =
+    createAliasBuilder("kaioken", "createStore")
+
+  for (const node of nodes) {
+    if (node.type === "ImportDeclaration") {
+      addCreateStoreAliases(node)
+      continue
+    }
+
+    if (findNode(node, isStore)) {
+      addHotVarNames(node, hotVarNames)
+      continue
+    }
+
+    if (findNode(node, isNodeCreateElementExpression)) {
+      addHotVarNames(node, hotVarNames)
+      continue
+    }
+  }
+  return Array.from(hotVarNames)
+}
+
+function addHotVarNames(node: AstNode, names: Set<string>) {
+  if (node.id?.name) {
+    names.add(node.id.name)
+  } else if (node.declaration) {
+    if (node.declaration.id) {
+      names.add(node.declaration.id.name)
+    } else if (node.declaration.declarations) {
+      for (const dec of node.declaration.declarations) {
+        const name = dec.id?.name
+        if (!name) continue
+        names.add(name)
+      }
+    }
+  } else if (node.declarations) {
+    for (const dec of node.declarations) {
+      const name = dec.id?.name
+      if (!name) continue
+      names.add(name)
+    }
+  }
 }
 
 function transformIncludeFilePath(
@@ -237,7 +264,7 @@ function transformIncludeFilePath(
   // for each function that contains `kaioken.createElement`, inject the file path as a comment node inside of the function body
   for (const node of nodes) {
     if (
-      nodeContainsCreateElement(node) &&
+      findNode(node, isNodeCreateElementExpression) &&
       node.type === "FunctionDeclaration" &&
       node.body &&
       !Array.isArray(node.body)
@@ -251,14 +278,14 @@ function transformIncludeFilePath(
       const dec = node.declaration
       if (dec?.type === "FunctionDeclaration") {
         const body = dec.body as AstNode & { body: AstNode[] }
-        if (nodeContainsCreateElement(body)) {
+        if (findNode(body, isNodeCreateElementExpression)) {
           insertToFunctionDeclarationBody(body)
         }
       } else if (dec?.type === "VariableDeclaration") {
         const declarations = dec.declarations
         if (!declarations) continue
         for (const dec of declarations) {
-          if (dec.init && nodeContainsCreateElement(dec.init)) {
+          if (dec.init && findNode(dec.init, isNodeCreateElementExpression)) {
             const body = dec.init as AstNode & { body: AstNode[] }
             if (
               body.type === "ArrowFunctionExpression" ||
@@ -286,26 +313,49 @@ function isNodeCreateElementExpression(node: AstNode): boolean {
   )
 }
 
-function nodeContainsCreateElement(node: AstNode): boolean {
-  if (isNodeCreateElementExpression(node)) return true
+function isNodeCallExpressionOfFunctionAlias(
+  node: AstNode,
+  aliases: Set<string>
+): boolean {
+  return (
+    node.type === "CallExpression" &&
+    node.callee?.type === "Identifier" &&
+    aliases.has(node.callee.name)
+  )
+}
+
+function findNode(
+  node: AstNode,
+  predicate: (node: AstNode) => boolean
+): boolean {
+  if (predicate(node)) return true
+
   if (node.body && Array.isArray(node.body)) {
     for (const child of node.body) {
-      if (nodeContainsCreateElement(child)) return true
+      if (findNode(child, predicate)) return true
     }
-  } else if (
-    (node.consequent
-      ? Array.isArray(node.consequent)
-        ? node.consequent.some(nodeContainsCreateElement)
-        : nodeContainsCreateElement(node.consequent)
-      : false) ||
-    (node.body && nodeContainsCreateElement(node.body)) ||
-    (node.argument && nodeContainsCreateElement(node.argument)) ||
-    (node.alternate && nodeContainsCreateElement(node.alternate)) ||
-    (node.callee && nodeContainsCreateElement(node.callee)) ||
-    (node.declaration && nodeContainsCreateElement(node.declaration)) ||
-    (node.cases && node.cases.some(nodeContainsCreateElement)) ||
-    (node.arguments && node.arguments.some(nodeContainsCreateElement)) ||
-    (node.declarations && node.declarations.some(nodeContainsCreateElement))
+  } else if (node.body) {
+    if (findNode(node.body, predicate)) return true
+  }
+
+  if (node.consequent && Array.isArray(node.consequent)) {
+    for (const child of node.consequent) {
+      if (findNode(child, predicate)) return true
+    }
+  } else if (node.consequent) {
+    if (findNode(node.consequent, predicate)) return true
+  }
+
+  if (
+    (node.init && findNode(node.init, predicate)) ||
+    (node.argument && findNode(node.argument, predicate)) ||
+    (node.arguments && node.arguments.some((c) => findNode(c, predicate))) ||
+    (node.alternate && findNode(node.alternate, predicate)) ||
+    (node.callee && findNode(node.callee, predicate)) ||
+    (node.declaration && findNode(node.declaration, predicate)) ||
+    (node.declarations &&
+      node.declarations.some((c) => findNode(c, predicate))) ||
+    (node.cases && node.cases.some((c) => findNode(c, predicate)))
   ) {
     return true
   }
