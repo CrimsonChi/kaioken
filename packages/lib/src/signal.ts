@@ -1,4 +1,4 @@
-import { signalSymbol } from "./constants.js"
+import { $SIGNAL } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { node } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
@@ -91,7 +91,7 @@ export interface SignalLike<T> {
 type SignalSubscriber = Kaioken.VNode | Function
 
 export class Signal<T> {
-  [signalSymbol] = true
+  [$SIGNAL] = true
   #value: T
   #subscribers = new Set<SignalSubscriber>()
   displayName?: string
@@ -148,7 +148,7 @@ export class Signal<T> {
   }
 
   static isSignal(x: any): x is Signal<any> {
-    return typeof x === "object" && !!x && signalSymbol in x
+    return typeof x === "object" && !!x && $SIGNAL in x
   }
 
   static unsubscribe(sub: SignalSubscriber, signal: Signal<any>) {

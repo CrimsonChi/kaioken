@@ -1,5 +1,5 @@
 import type { AppContext } from "./appContext"
-import { ELEMENT_TYPE, FLAG, fragmentSymbol } from "./constants.js"
+import { ELEMENT_TYPE, FLAG, $FRAGMENT } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
 import { Signal } from "./signal.js"
@@ -211,7 +211,7 @@ function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
 
 function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   const nodeType = newNode.type
-  if (nodeType === fragmentSymbol) {
+  if (nodeType === $FRAGMENT) {
     return updateFragment(
       parent,
       oldNode,
@@ -239,8 +239,8 @@ function updateFragment(
   children: unknown[],
   newProps = {}
 ) {
-  if (oldNode === null || oldNode.type !== fragmentSymbol) {
-    const el = createElement(fragmentSymbol, { children, ...newProps })
+  if (oldNode === null || oldNode.type !== $FRAGMENT) {
+    const el = createElement($FRAGMENT, { children, ...newProps })
     el.parent = parent
     el.depth = parent.depth + 1
     return el

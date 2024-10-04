@@ -1,5 +1,8 @@
 import type { AppContext } from "./appContext"
+import type { Store } from "./store"
+import { $HMR_ACCEPTOR } from "./constants.js"
 import { __DEV__ } from "./env.js"
+import { isGenericHmrAcceptor } from "./hmr.js"
 import { traverseApply } from "./utils.js"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
@@ -24,6 +27,8 @@ type Evt =
 
 type GlobalKaiokenEvent = Evt["name"]
 
+type HotVar = Kaioken.FC | Store<any, any>
+
 class KaiokenGlobalContext {
   #contexts: Set<AppContext> = new Set()
   private listeners: Map<
@@ -37,24 +42,29 @@ class KaiokenGlobalContext {
   }
 
   HMRContext = {
-    register: (filePath: string, componentMap: Record<string, Kaioken.FC>) => {
+    register: (filePath: string, hotVars: Record<string, HotVar>) => {
       if (__DEV__) {
-        const components = this.moduleMap.get(filePath)
-        if (!components) {
-          this.moduleMap.set(filePath, new Map(Object.entries(componentMap)))
+        const mod = this.moduleMap.get(filePath)
+        if (!mod) {
+          this.moduleMap.set(filePath, new Map(Object.entries(hotVars)))
           return
         }
-        for (const [name, newFn] of Object.entries(componentMap)) {
-          const oldFn = components.get(name)
-          components.set(name, newFn)
-          if (!oldFn) continue
+        for (const [name, newVal] of Object.entries(hotVars)) {
+          const oldVal = mod.get(name)
+          mod.set(name, newVal)
+          if (!oldVal) continue
+          if (isGenericHmrAcceptor(oldVal) && isGenericHmrAcceptor(newVal)) {
+            newVal[$HMR_ACCEPTOR].inject(oldVal[$HMR_ACCEPTOR].provide())
+            oldVal[$HMR_ACCEPTOR].destroy()
+            continue
+          }
           this.#contexts.forEach((ctx) => {
             if (!ctx.mounted || !ctx.rootNode) return
             traverseApply(ctx.rootNode, (vNode) => {
-              if (vNode.type === oldFn) {
-                vNode.type = newFn
+              if (vNode.type === oldVal) {
+                vNode.type = newVal
                 if (vNode.prev) {
-                  vNode.prev.type = newFn
+                  vNode.prev.type = newVal
                 }
                 ctx.requestUpdate(vNode)
               }
@@ -90,5 +100,5 @@ class KaiokenGlobalContext {
     this.listeners.get(event)!.delete(callback)
   }
 
-  private moduleMap = new Map<string, Map<string, Kaioken.FC>>()
+  private moduleMap = new Map<string, Map<string, HotVar>>()
 }

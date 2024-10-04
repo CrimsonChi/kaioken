@@ -1,4 +1,4 @@
-import { kaiokenErrorSymbol } from "./constants.js"
+import { $KAIOKEN_ERROR } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { findParent, noop } from "./utils.js"
 
@@ -13,7 +13,7 @@ type KaiokenErrorOptions =
     }
 
 export class KaiokenError extends Error {
-  [kaiokenErrorSymbol] = true
+  [$KAIOKEN_ERROR] = true
   /** Indicates whether the error is fatal and should crash the application */
   fatal?: boolean
   /** Present if vNode is provided */
@@ -34,8 +34,7 @@ export class KaiokenError extends Error {
 
   static isKaiokenError(error: unknown): error is KaiokenError {
     return (
-      error instanceof Error &&
-      (error as KaiokenError)[kaiokenErrorSymbol] === true
+      error instanceof Error && (error as KaiokenError)[$KAIOKEN_ERROR] === true
     )
   }
 }

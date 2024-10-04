@@ -1,10 +1,9 @@
-export const signalSymbol = Symbol.for("kaioken.signal")
-export const componentSymbol = Symbol.for("kaioken.component")
-export const contextProviderSymbol = Symbol.for("kaioken.contextProvider")
-export const fragmentSymbol = Symbol.for("kaioken.fragment")
-export const kaiokenErrorSymbol = Symbol.for("kaioken.error")
+export const $SIGNAL = Symbol.for("kaioken.signal")
+export const $CONTEXT_PROVIDER = Symbol.for("kaioken.contextProvider")
+export const $FRAGMENT = Symbol.for("kaioken.fragment")
+export const $KAIOKEN_ERROR = Symbol.for("kaioken.error")
+export const $HMR_ACCEPTOR = Symbol.for("kaioken.hrmAcceptor")
 
-export const ELEMENT_ID_BASE = 16
 export const CONSECUTIVE_DIRTY_LIMIT = 50
 
 export const FLAG = {

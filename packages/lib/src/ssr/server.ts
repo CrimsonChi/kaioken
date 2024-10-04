@@ -9,11 +9,7 @@ import {
   selfClosingTags,
 } from "../utils.js"
 import { Signal } from "../signal.js"
-import {
-  contextProviderSymbol,
-  ELEMENT_TYPE,
-  fragmentSymbol,
-} from "../constants.js"
+import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
@@ -84,7 +80,7 @@ function renderToStream_internal(
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
-  if (type === fragmentSymbol || type === contextProviderSymbol) {
+  if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
     if (!Array.isArray(children))
       return renderToStream_internal(state, children, el, idx)
     return children.forEach((c, i) => renderToStream_internal(state, c, el, i))

@@ -1,9 +1,9 @@
 import { type HookCallbackState, useHook } from "./utils.js"
 import { __DEV__ } from "../env.js"
-import { contextProviderSymbol } from "../constants.js"
+import { $CONTEXT_PROVIDER } from "../constants.js"
 
 type ContextProviderNode<T> = Kaioken.VNode & {
-  type: typeof contextProviderSymbol
+  type: typeof $CONTEXT_PROVIDER
   props: { value: T; ctx: Kaioken.Context<T> }
 }
 
@@ -43,7 +43,7 @@ const useContextCallback = <T>({
 
     let n = vNode.parent
     while (n) {
-      if (n.type === contextProviderSymbol) {
+      if (n.type === $CONTEXT_PROVIDER) {
         const ctxNode = n as ContextProviderNode<T>
         if (ctxNode.props.ctx === hook.context) {
           hook.ctxNode = ctxNode

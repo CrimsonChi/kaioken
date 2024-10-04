@@ -1,9 +1,5 @@
 import { node, nodeToCtxMap, renderMode } from "./globals.js"
-import {
-  contextProviderSymbol,
-  fragmentSymbol,
-  REGEX_UNIT,
-} from "./constants.js"
+import { $CONTEXT_PROVIDER, $FRAGMENT, REGEX_UNIT } from "./constants.js"
 import { unwrap } from "./signal.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
@@ -50,20 +46,20 @@ function isVNode(thing: unknown): thing is VNode {
 function isExoticVNode(thing: unknown): thing is ExoticVNode {
   return (
     isVNode(thing) &&
-    (thing.type === fragmentSymbol || thing.type === contextProviderSymbol)
+    (thing.type === $FRAGMENT || thing.type === $CONTEXT_PROVIDER)
   )
 }
 
 function isFragment(
   thing: unknown
-): thing is VNode & { type: typeof fragmentSymbol } {
-  return isVNode(thing) && thing.type === fragmentSymbol
+): thing is VNode & { type: typeof $FRAGMENT } {
+  return isVNode(thing) && thing.type === $FRAGMENT
 }
 
 function isContextProvider(
   thing: unknown
-): thing is VNode & { type: typeof contextProviderSymbol } {
-  return isVNode(thing) && thing.type === contextProviderSymbol
+): thing is VNode & { type: typeof $CONTEXT_PROVIDER } {
+  return isVNode(thing) && thing.type === $CONTEXT_PROVIDER
 }
 
 function getCurrentVNode(): VNode | undefined {

@@ -3,7 +3,7 @@ import type {
   Signal as SignalClass,
   SignalLike,
 } from "./signal"
-import type { contextProviderSymbol, fragmentSymbol } from "./constants"
+import type { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
@@ -171,7 +171,7 @@ declare global {
 
     type Signal<T> = SignalClass<T> | ReadonlySignal<T>
 
-    type ExoticSymbol = typeof fragmentSymbol | typeof contextProviderSymbol
+    type ExoticSymbol = typeof $FRAGMENT | typeof $CONTEXT_PROVIDER
 
     type VNode = {
       type: string | Function | ExoticSymbol
