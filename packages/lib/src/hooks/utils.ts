@@ -79,8 +79,21 @@ let currentHookName: string | null = null
 const nestedHookWarnings = new Set<string>()
 
 function useHook<
+  T extends () => Record<string, unknown>,
+  U extends HookCallback<ReturnType<T>>,
+>(hookName: string, hookInitializer: T, callback: U): ReturnType<U>
+
+function useHook<T extends Record<string, unknown>, U extends HookCallback<T>>(
+  hookName: string,
+  hookData: T,
+  callback: U
+): ReturnType<U>
+
+function useHook<
   T,
-  U extends T extends () => any ? HookCallback<ReturnType<T>> : HookCallback<T>,
+  U extends T extends () => Record<string, unknown>
+    ? HookCallback<ReturnType<T>>
+    : HookCallback<T>,
 >(
   hookName: string,
   hookDataOrInitializer: Kaioken.Hook<T> | (() => Kaioken.Hook<T>),
