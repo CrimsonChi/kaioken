@@ -14,7 +14,7 @@ export * from "./portal.js"
 export * from "./renderToString.js"
 export * from "./router/index.js"
 export * from "./signal.js"
-export { createStore, type Store, type MethodFactory } from "./store.js"
+export * from "./store.js"
 export * from "./transition.js"
 
 if ("window" in globalThis) {

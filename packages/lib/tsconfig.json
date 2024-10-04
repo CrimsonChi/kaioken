@@ -24,12 +24,6 @@
     "jsxFactory": "kaioken.createElement",
     "jsxFragmentFactory": "kaioken.Fragment"
   },
-  "include": [
-    "./src/*",
-    "./src/tests",
-    "src/types.ts",
-    "./src/ssr/*",
-    "exotic-hooks.*"
-  ],
+  "include": ["./src/*", "./src/tests", "src/types.ts", "./src/ssr/*"],
   "exclude": ["dist"]
 }
