@@ -17,9 +17,10 @@ interface Product {
 }
 
 export function UseAsyncExample() {
+  const [count, setCount] = useState(0)
   const [productId, setProductId] = useState(1)
 
-  const { data, loading, error } = useAsync<Product>(async () => {
+  const { data, loading, error, invalidate } = useAsync<Product>(async () => {
     const res = await fetch(`https://dummyjson.com/products/${productId}`).then(
       (r) => r.json()
     )
@@ -31,9 +32,13 @@ export function UseAsyncExample() {
 
   return (
     <div>
+      <Button onclick={() => setCount((prev) => prev + 1)}>
+        Increment: {count}
+      </Button>
       <Button onclick={() => setProductId((prev) => prev + 1)}>
         Next ({productId})
       </Button>
+      <Button onclick={invalidate}>Reload</Button>
       {data ? (
         <ProductCard product={data} />
       ) : loading ? (

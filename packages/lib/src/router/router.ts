@@ -16,7 +16,7 @@ import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
 import { getVNodeAppContext, noop } from "../utils.js"
 import { node } from "../globals.js"
-import { ElementProps } from "../types"
+import type { ElementProps } from "../types"
 
 export interface LinkProps extends ElementProps<"a"> {
   to: string
@@ -71,13 +71,12 @@ export function useRouter() {
 }
 
 export function navigate(to: string, options?: { replace?: boolean }) {
-  let _node = node.current
   const doNav = () => {
     window.history[options?.replace ? "replaceState" : "pushState"]({}, "", to)
     window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
   }
   // not called during render, just do the navigation
-  if (!_node) return doNav(), null
+  if (!node.current) return doNav(), null
 
   const routerCtx = useContext(RouterContext, false)
   if (routerCtx.isDefault) {
@@ -85,7 +84,7 @@ export function navigate(to: string, options?: { replace?: boolean }) {
      * called from a non-router-decendant - postpone
      * until next tick to avoid race conditions
      */
-    const ctx = getVNodeAppContext(_node)
+    const ctx = getVNodeAppContext(node.current)
     return ctx.scheduler?.nextIdle(doNav), null
   }
   /**

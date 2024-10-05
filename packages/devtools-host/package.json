@@ -14,7 +14,7 @@
   "keywords": [],
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^22.7.2",
+    "@types/node": "^22.7.4",
     "autoprefixer": "^10.4.20",
     "esbuild": "^0.24.0",
     "esbuild-plugin-inline-import": "^1.1.0",

@@ -1,22 +1,22 @@
 import type { AppContext } from "./appContext"
+import type { FunctionVNode } from "./types.utils"
 import { bitmapOps } from "./bitmap.js"
-import {
-  CONSECUTIVE_DIRTY_LIMIT,
-  contextProviderSymbol,
-  FLAG,
-  fragmentSymbol,
-} from "./constants.js"
+import { CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
-import { ctx, node, renderMode } from "./globals.js"
+import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { postOrderApply, traverseApply, vNodeContains } from "./utils.js"
+import {
+  isExoticVNode,
+  postOrderApply,
+  traverseApply,
+  vNodeContains,
+} from "./utils.js"
 
 type VNode = Kaioken.VNode
-type FunctionNode = VNode & { type: (...args: any) => any }
 
 export class Scheduler {
   private nextUnitOfWork: VNode | undefined = undefined
@@ -270,11 +270,8 @@ export class Scheduler {
     if (!skip) {
       try {
         if (typeof vNode.type === "function") {
-          this.updateFunctionComponent(vNode as FunctionNode)
-        } else if (
-          vNode.type === fragmentSymbol ||
-          vNode.type === contextProviderSymbol
-        ) {
+          this.updateFunctionComponent(vNode as FunctionVNode)
+        } else if (isExoticVNode(vNode)) {
           vNode.child =
             reconcileChildren(
               this.appCtx,
@@ -329,9 +326,10 @@ export class Scheduler {
     }
   }
 
-  private updateFunctionComponent(vNode: FunctionNode) {
+  private updateFunctionComponent(vNode: FunctionVNode) {
     try {
       node.current = vNode
+      nodeToCtxMap.set(vNode, this.appCtx)
       let newChildren
       let renderTryCount = 0
       do {
@@ -399,8 +397,8 @@ export class Scheduler {
 
 function fireEffects(tree: VNode, immediate?: boolean) {
   postOrderApply(tree, {
-    onAscent(node) {
-      const arr = immediate ? node.immediateEffects : node.effects
+    onAscent(vNode) {
+      const arr = immediate ? vNode.immediateEffects : vNode.effects
       while (arr?.length) arr.shift()!()
     },
   })

@@ -1,7 +1,7 @@
 import { Readable } from "node:stream"
 import { createElement, Fragment } from "../index.js"
 import { AppContext } from "../appContext.js"
-import { renderMode, ctx, node } from "../globals.js"
+import { renderMode, ctx, node, nodeToCtxMap } from "../globals.js"
 import {
   isVNode,
   encodeHtmlEntities,
@@ -9,11 +9,7 @@ import {
   selfClosingTags,
 } from "../utils.js"
 import { Signal } from "../signal.js"
-import {
-  contextProviderSymbol,
-  ELEMENT_TYPE,
-  fragmentSymbol,
-} from "../constants.js"
+import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
@@ -22,18 +18,18 @@ type RequestState = {
 }
 
 export function renderToReadableStream<T extends Record<string, unknown>>(
-  el: (props: T) => JSX.Element,
-  elProps = {} as T
+  appFunc: (props: T) => JSX.Element,
+  appProps = {} as T
 ): Readable {
   const prev = renderMode.current
   renderMode.current = "stream"
   const state: RequestState = {
     stream: new Readable(),
-    ctx: new AppContext<any>(el, elProps),
+    ctx: new AppContext<any>(appFunc, appProps),
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
-  const appNode = createElement(el, elProps)
+  const appNode = createElement(appFunc, appProps)
   state.ctx.rootNode = Fragment({ children: [appNode] })
   state.ctx.rootNode.depth = 0
   appNode.depth = 1
@@ -84,13 +80,14 @@ function renderToStream_internal(
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
-  if (type === fragmentSymbol || type === contextProviderSymbol) {
+  if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
     if (!Array.isArray(children))
       return renderToStream_internal(state, children, el, idx)
     return children.forEach((c, i) => renderToStream_internal(state, c, el, i))
   }
 
   if (typeof type !== "string") {
+    nodeToCtxMap.set(el, state.ctx)
     node.current = el
     const res = type(props)
     node.current = undefined

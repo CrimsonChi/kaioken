@@ -1,7 +1,9 @@
+import type { Prettify } from "./types.utils.js"
 import { __DEV__ } from "./env.js"
 import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
-import { type Prettify } from "./types"
 import { getVNodeAppContext, shallowCompare } from "./utils.js"
+import { $HMR_ACCEPTOR } from "./constants.js"
+import { GenericHMRAcceptor } from "./hmr.js"
 
 export { createStore }
 export type { Store, MethodFactory }
@@ -45,7 +47,7 @@ function createStore<T, U extends MethodFactory<T>>(
   let state = initial
   let stateIteration = 0
   const subscribers = new Set<Kaioken.VNode | Function>()
-  const nodeToSliceComputeMap = new WeakMap<Kaioken.VNode, NodeSliceCompute[]>()
+  let nodeToSliceComputeMap = new WeakMap<Kaioken.VNode, NodeSliceCompute[]>()
 
   const getState = () => state
   const setState = (setter: Kaioken.StateSetter<T>) => {
@@ -126,7 +128,7 @@ function createStore<T, U extends MethodFactory<T>>(
     )
   }
 
-  return Object.assign(useStore, {
+  const store = Object.assign(useStore, {
     getState,
     setState,
     methods,
@@ -135,4 +137,27 @@ function createStore<T, U extends MethodFactory<T>>(
       return (() => (subscribers.delete(fn), void 0)) as () => void
     },
   })
+
+  if (__DEV__) {
+    return Object.assign(store, {
+      [$HMR_ACCEPTOR]: {
+        provide: () => ({ state, subscribers, nodeToSliceComputeMap }),
+        inject: (prev) => {
+          prev.subscribers.forEach((sub) => subscribers.add(sub))
+          nodeToSliceComputeMap = prev.nodeToSliceComputeMap
+          setState(prev.state)
+        },
+        destroy: () => {
+          subscribers.clear()
+          nodeToSliceComputeMap = new WeakMap()
+        },
+      },
+    } satisfies GenericHMRAcceptor<{
+      state: T
+      subscribers: Set<Kaioken.VNode | Function>
+      nodeToSliceComputeMap: WeakMap<Kaioken.VNode, NodeSliceCompute[]>
+    }>)
+  }
+
+  return store
 }

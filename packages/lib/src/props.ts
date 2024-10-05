@@ -11,17 +11,17 @@ export function assertValidElementProps(vNode: Kaioken.VNode) {
 }
 
 export function isValidElementKeyProp(
-  value: unknown
-): value is string | number {
-  return typeof value === "string" || typeof value === "number"
+  thing: unknown
+): thing is string | number {
+  return typeof thing === "string" || typeof thing === "number"
 }
 
 export function isValidElementRefProp(
-  value: unknown
-): value is Kaioken.Ref<any> {
+  thing: unknown
+): thing is Kaioken.Ref<any> {
   return (
-    typeof value === "function" ||
-    (typeof value === "object" && !!value && "current" in value) ||
-    Signal.isSignal(value)
+    typeof thing === "function" ||
+    (typeof thing === "object" && !!thing && "current" in thing) ||
+    Signal.isSignal(thing)
   )
 }

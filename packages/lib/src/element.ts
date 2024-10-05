@@ -1,5 +1,4 @@
-import { fragmentSymbol } from "./constants.js"
-import { ctx, nodeToCtxMap } from "./globals.js"
+import { $FRAGMENT } from "./constants.js"
 import { isValidElementKeyProp, isValidElementRefProp } from "./props.js"
 
 export function createElement<T extends Kaioken.VNode["type"]>(
@@ -31,7 +30,6 @@ export function createElement<T extends Kaioken.VNode["type"]>(
     node.props.children = _children
   }
 
-  nodeToCtxMap.set(node, ctx.current)
   return node
 }
 
@@ -42,5 +40,5 @@ export function Fragment({
   children: JSX.Children
   key?: JSX.ElementKey
 }): Kaioken.VNode {
-  return createElement(fragmentSymbol, key ? { key } : null, children)
+  return createElement($FRAGMENT, key ? { key } : null, children)
 }

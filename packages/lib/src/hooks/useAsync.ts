@@ -1,7 +1,7 @@
 import { noop } from "../utils.js"
 import { depsRequireChange, sideEffectsEnabled, useHook } from "./utils.js"
 
-type UseAsyncResult<T> = (
+export type UseAsyncResult<T> = (
   | /** loading*/ {
       data: null
       loading: true
@@ -29,6 +29,15 @@ export class UseAsyncError extends Error {
   }
 }
 
+type AsyncTaskState<T> = {
+  deps: unknown[]
+  promise: Promise<T>
+  result: T | null
+  loading: boolean
+  error: Error | null
+  invalidated?: boolean
+}
+
 export function useAsync<T>(
   func: () => Promise<T>,
   deps: unknown[]
@@ -43,10 +52,7 @@ export function useAsync<T>(
   return useHook(
     "useAsync",
     {
-      deps,
-      data: null as T | null,
-      error: null as Error | null,
-      loading: true as boolean,
+      task: null as AsyncTaskState<T> | null,
       load: noop as (
         deps: unknown[],
         func: () => Promise<T>,
@@ -56,41 +62,61 @@ export function useAsync<T>(
     ({ hook, isInit, update }) => {
       if (isInit) {
         hook.load = (deps, func, isInit) => {
-          hook.data = null
-          hook.loading = true
-          hook.error = null
-          hook.deps = deps
+          if (hook.task) {
+            hook.task.invalidated = true
+          }
+          const task: AsyncTaskState<T> = {
+            deps,
+            promise: func(),
+            result: null,
+            loading: true,
+            error: null,
+          }
           if (!isInit) update()
-          func()
-            .then((data: T) => {
-              if (!depsRequireChange(deps, hook.deps)) {
-                hook.data = data
-                hook.loading = false
-                hook.error = null
-                update()
+          task.promise
+            .then((result: T) => {
+              if (task.invalidated) return
+              if (depsRequireChange(deps, task.deps)) {
+                task.invalidated = true
+                return
               }
+
+              task.result = result
+              task.loading = false
+              task.error = null
+              update()
             })
             .catch((error) => {
-              if (!depsRequireChange(deps, hook.deps)) {
-                hook.data = null
-                hook.loading = false
-                hook.error = new UseAsyncError(error)
-                update()
+              if (task.invalidated) return
+              if (depsRequireChange(deps, task.deps)) {
+                task.invalidated = true
+                return
               }
+
+              task.result = null
+              task.loading = false
+              task.error = new UseAsyncError(error)
+              update()
             })
+          hook.task = task
         }
       }
 
-      if (isInit || depsRequireChange(deps, hook.deps)) {
+      if (isInit || depsRequireChange(deps, hook.task?.deps)) {
         hook.load(deps, func, isInit)
       }
 
       return {
-        data: hook.data,
-        loading: hook.loading,
-        error: hook.error,
+        data: hook.task?.result || null,
+        loading: hook.task?.loading || false,
+        error: hook.task?.error || null,
         invalidate: () => {
-          hook.load([], func, false)
+          if (hook.task) {
+            hook.task.invalidated = true
+            hook.task = null
+          }
+          hook.load(deps, func, isInit)
+          //hook.load([], func, false)
         },
       } as UseAsyncResult<T>
     }

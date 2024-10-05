@@ -1,6 +1,6 @@
 {
   "name": "create-kaioken",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "description": "A command-line tool for quickly creating Kaioken applications from a template.",
   "scripts": {
@@ -13,7 +13,7 @@
   "dependencies": {
     "commander": "^12.1.0",
     "execa": "^9.4.0",
-    "inquirer": "^11.0.2",
+    "inquirer": "^11.1.0",
     "simple-git": "^3.27.0"
   },
   "license": "ISC"

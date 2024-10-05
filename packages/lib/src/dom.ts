@@ -12,17 +12,22 @@ import { ELEMENT_TYPE, FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signal.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
-import { MaybeDom, SomeDom, SomeElement, StyleObject } from "./types.dom.js"
+import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { bitmapOps } from "./bitmap.js"
+import type {
+  DomVNode,
+  ElementVNode,
+  MaybeDom,
+  SomeDom,
+  SomeElement,
+} from "./types.utils"
 
 export { commitWork, createDom, updateDom, hydrateDom }
 
 type VNode = Kaioken.VNode
-type ElementVNode = VNode & { dom: SomeElement }
-type DomVNode = VNode & { dom: SomeDom }
 type HostNode = {
   node: ElementVNode
   lastChild?: DomVNode
@@ -57,26 +62,25 @@ function createDom(vNode: VNode): SomeDom {
 }
 function createTextNode(vNode: VNode): Text {
   const prop = vNode.props.nodeValue
-  const isSig = Signal.isSignal(prop)
   const value = unwrap(prop)
-  const el = document.createTextNode(value)
-  if (isSig) {
-    subTextNode(vNode, el, prop)
+  const textNode = document.createTextNode(value)
+  if (Signal.isSignal(prop)) {
+    subTextNode(vNode, textNode, prop)
   }
-  return el
+  return textNode
 }
 
-function updateDom(node: VNode) {
-  if (isPortal(node)) return
-  const dom = node.dom as SomeDom
-  const prevProps: Record<string, any> = node.prev?.props ?? {}
-  const nextProps: Record<string, any> = node.props ?? {}
+function updateDom(vNode: VNode) {
+  if (isPortal(vNode)) return
+  const dom = vNode.dom as SomeDom
+  const prevProps: Record<string, any> = vNode.prev?.props ?? {}
+  const nextProps: Record<string, any> = vNode.props ?? {}
 
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
     if (key === "innerHTML") {
-      return setInnerHTML(node.dom as any, nextProps[key], prevProps[key])
+      return setInnerHTML(vNode.dom as any, nextProps[key], prevProps[key])
     }
 
     if (propFilters.internalProps.includes(key)) return
@@ -95,24 +99,25 @@ function updateDom(node: VNode) {
 
     if (!(dom instanceof Text)) {
       if (prevProps[key] === nextProps[key]) return
-      if (Signal.isSignal(prevProps[key]) && node.cleanups) {
-        node.cleanups[key] && (node.cleanups[key](), delete node.cleanups[key])
+      if (Signal.isSignal(prevProps[key]) && vNode.cleanups) {
+        vNode.cleanups[key] &&
+          (vNode.cleanups[key](), delete vNode.cleanups[key])
       }
       if (Signal.isSignal(nextProps[key])) {
         const unsub = nextProps[key].subscribe((v) => {
-          setProp(node, dom, key, v, unwrap(node.prev?.props[key]))
+          setProp(vNode, dom, key, v, unwrap(vNode.prev?.props[key]))
           emitGranularSignalChange(nextProps[key])
         })
-        ;(node.cleanups ??= {})[key] = unsub
+        ;(vNode.cleanups ??= {})[key] = unsub
         return setProp(
-          node,
+          vNode,
           dom,
           key,
           nextProps[key].peek(),
           unwrap(prevProps[key])
         )
       }
-      setProp(node, dom, key, nextProps[key], prevProps[key])
+      setProp(vNode, dom, key, nextProps[key], prevProps[key])
       return
     }
     const nodeVal = unwrap(nextProps[key])
@@ -130,12 +135,12 @@ function emitGranularSignalChange(signal: Signal<any>) {
   }
 }
 
-function subTextNode(node: Kaioken.VNode, dom: Text, sig: Signal<string>) {
-  const unsub = sig.subscribe((v) => {
-    dom.nodeValue = v
-    emitGranularSignalChange(sig)
+function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
+  const unsub = signal.subscribe((v) => {
+    textNode.nodeValue = v
+    emitGranularSignalChange(signal)
   })
-  ;(node.cleanups ??= {})["nodeValue"] = unsub
+  ;(vNode.cleanups ??= {})["nodeValue"] = unsub
 }
 
 function hydrateDom(vNode: VNode) {
@@ -179,25 +184,25 @@ function hydrateDom(vNode: VNode) {
 }
 
 function handleAttributeRemoval(
-  dom: Element,
+  element: Element,
   key: string,
   value: unknown,
   isBoolAttr = false
 ) {
   if (value === null) {
-    dom.removeAttribute(key)
+    element.removeAttribute(key)
     return true
   }
   switch (typeof value) {
     case "undefined":
     case "function":
     case "symbol": {
-      dom.removeAttribute(key)
+      element.removeAttribute(key)
       return true
     }
     case "boolean": {
       if (isBoolAttr && !value) {
-        dom.removeAttribute(key)
+        element.removeAttribute(key)
         return true
       }
     }
@@ -206,12 +211,12 @@ function handleAttributeRemoval(
   return false
 }
 
-export function setDomAttribute(dom: Element, key: string, value: unknown) {
+export function setDomAttribute(element: Element, key: string, value: unknown) {
   const isBoolAttr = booleanAttributes.includes(key)
 
-  if (handleAttributeRemoval(dom, key, value, isBoolAttr)) return
+  if (handleAttributeRemoval(element, key, value, isBoolAttr)) return
 
-  dom.setAttribute(
+  element.setAttribute(
     key,
     isBoolAttr && typeof value === "boolean" ? "" : String(value)
   )
@@ -220,82 +225,82 @@ export function setDomAttribute(dom: Element, key: string, value: unknown) {
 const explicitValueElementTags = ["INPUT", "TEXTAREA", "SELECT"]
 
 const needsExplicitValueSet = (
-  dom: SomeElement
-): dom is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
-  return explicitValueElementTags.indexOf(dom.nodeName) > -1
+  element: SomeElement
+): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
+  return explicitValueElementTags.indexOf(element.nodeName) > -1
 }
 
 function setProp(
-  node: VNode,
-  dom: SomeElement,
+  vNode: VNode,
+  element: SomeElement,
   key: string,
   value: unknown,
   prev: unknown
 ) {
-  if (key === "style") return setStyleProp(node, dom, value, prev)
-  if (key === "value" && needsExplicitValueSet(dom)) {
-    dom.value = String(value)
+  if (key === "style") return setStyleProp(vNode, element, value, prev)
+  if (key === "value" && needsExplicitValueSet(element)) {
+    element.value = String(value)
     return
   }
 
-  setDomAttribute(dom, propToHtmlAttr(key), value)
+  setDomAttribute(element, propToHtmlAttr(key), value)
 }
 
-function setInnerHTML(dom: SomeElement, value: unknown, prev: unknown) {
+function setInnerHTML(element: SomeElement, value: unknown, prev: unknown) {
   if (Signal.isSignal(value)) {
-    dom.innerHTML = value.toString()
+    element.innerHTML = value.toString()
   }
   if (value === prev) return
   if (value === null) {
-    dom.innerHTML = ""
+    element.innerHTML = ""
     return
   }
-  dom.innerHTML = String(value)
+  element.innerHTML = String(value)
 }
 
 function setStyleProp(
-  node: VNode,
-  dom: SomeElement,
+  vNode: VNode,
+  element: SomeElement,
   value: unknown,
   prev: unknown
 ) {
   if (typeof value !== typeof prev) {
     if (typeof prev === "object" && prev !== null) {
-      delete node.prevStyleObj
+      delete vNode.prevStyleObj
     } else if (typeof prev === "string") {
-      delete node.prevStyleStr
+      delete vNode.prevStyleStr
     }
   }
-  if (handleAttributeRemoval(dom, "style", value)) return
+  if (handleAttributeRemoval(element, "style", value)) return
   switch (typeof value) {
     case "string":
-      if (value === node.prevStyleStr) return
-      dom.setAttribute("style", value)
-      node.prevStyleStr = value
+      if (value === vNode.prevStyleStr) return
+      element.setAttribute("style", value)
+      vNode.prevStyleStr = value
       break
     case "object":
-      const style = node.prevStyleObj ?? {}
+      const style = vNode.prevStyleObj ?? {}
       Object.entries(value as object).forEach(([k, v]) => {
         if (style[k as keyof typeof style] !== v) {
           style[k as keyof typeof style] = v
-          dom.style[k as any] = v
+          element.style[k as any] = v
         }
       })
       Object.keys(style).forEach((k) => {
         if (!(k in (value as object))) {
           delete style[k as keyof StyleObject]
-          dom.style[k as any] = ""
+          element.style[k as any] = ""
         }
       })
-      node.prevStyleObj = style
+      vNode.prevStyleObj = style
       break
     default:
       break
   }
 }
 
-function getDomParent(node: VNode): ElementVNode {
-  let parentNode: VNode | undefined = node.parent ?? node.prev?.parent
+function getDomParent(vNode: VNode): ElementVNode {
+  let parentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
   let parentNodeElement = parentNode?.dom
   while (parentNode && !parentNodeElement) {
     parentNode = parentNode.parent
@@ -303,14 +308,14 @@ function getDomParent(node: VNode): ElementVNode {
   }
 
   if (!parentNodeElement || !parentNode) {
-    if (!node.parent) {
+    if (!vNode.parent) {
       // handle app entry
-      if (node.dom) return node as ElementVNode
+      if (vNode.dom) return vNode as ElementVNode
     }
 
     throw new KaiokenError({
       message: "No DOM parent found while attempting to place node.",
-      vNode: node,
+      vNode: vNode,
     })
   }
   return parentNode as ElementVNode
@@ -399,18 +404,18 @@ function commitWork(vNode: VNode) {
   })
 }
 
-function commitDom(node: DomVNode, hostNodes: HostNode[]) {
-  if (isPortal(node)) return
+function commitDom(vNode: DomVNode, hostNodes: HostNode[]) {
+  if (isPortal(vNode)) return
   const host = hostNodes[hostNodes.length - 1]
-  if (!node.dom.isConnected || bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
-    const parent = host?.node ?? getDomParent(node)
-    placeDom(node.dom, parent, host?.lastChild?.dom)
+  if (!vNode.dom.isConnected || bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)) {
+    const parent = host?.node ?? getDomParent(vNode)
+    placeDom(vNode.dom, parent, host?.lastChild?.dom)
   }
-  if (!node.prev || bitmapOps.isFlagSet(node, FLAG.UPDATE)) {
-    updateDom(node)
+  if (!vNode.prev || bitmapOps.isFlagSet(vNode, FLAG.UPDATE)) {
+    updateDom(vNode)
   }
   if (host) {
-    host.lastChild = node
+    host.lastChild = vNode
   }
 }
 

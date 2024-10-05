@@ -1,4 +1,5 @@
 import { Router, Route, Link, lazy } from "kaioken"
+import { countStore } from "./countStore"
 
 type AppRoute = {
   title: string
@@ -7,7 +8,17 @@ type AppRoute = {
 }
 
 const Home: Kaioken.FC = () => {
-  return <h1>Home</h1>
+  const { value: count, increment, decrement, double, triple } = countStore()
+  return (
+    <div>
+      <h1 style={{ color: "red" }}>Home</h1>
+      <p>Count: {count}</p>
+      <p>Double: {double()}</p>
+      <p>Triple: {triple()}</p>
+      <button onclick={() => increment()}>Increment</button>
+      <button onclick={() => decrement()}>Decrement</button>
+    </div>
+  )
 }
 
 const ROUTES: Record<string, AppRoute> = {
@@ -44,7 +55,7 @@ const ROUTES: Record<string, AppRoute> = {
   "/use-model-example": {
     title: "useModel",
     component: lazy(() =>
-      import("./components/useModelExample").then((m) => m.UseModelExample)
+      import("./components/UseModelExample").then((m) => m.UseModelExample)
     ),
   },
   "/memo-example": {
@@ -89,11 +100,7 @@ const ROUTES: Record<string, AppRoute> = {
   },
   "/use-sync-external-store-example": {
     title: "useSyncExternalStore",
-    component: lazy(() =>
-      import("./components/UseSyncExternalStoreExample").then(
-        (m) => m.UseSyncExternalStoreExample
-      )
-    ),
+    component: lazy(() => import("./components/UseSyncExternalStoreExample")),
   },
 }
 

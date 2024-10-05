@@ -1,4 +1,4 @@
-import { ctx, node, renderMode } from "./globals.js"
+import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
 import { createElement, Fragment } from "./element.js"
 import {
@@ -8,22 +8,18 @@ import {
   selfClosingTags,
 } from "./utils.js"
 import { Signal } from "./signal.js"
-import {
-  contextProviderSymbol,
-  ELEMENT_TYPE,
-  fragmentSymbol,
-} from "./constants.js"
+import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
 
 export function renderToString<T extends Record<string, unknown>>(
-  el: (props: T) => JSX.Element,
-  elProps = {} as T
+  appFunc: (props: T) => JSX.Element,
+  appProps = {} as T
 ) {
   const prev = renderMode.current
   renderMode.current = "string"
   const prevCtx = ctx.current
-  const c = (ctx.current = new AppContext(el, elProps))
-  const appNode = createElement(el, elProps)
+  const c = (ctx.current = new AppContext(appFunc, appProps))
+  const appNode = createElement(appFunc, appProps)
   c.rootNode = Fragment({ children: [appNode] })
   c.rootNode.depth = 0
   appNode.depth = 1
@@ -56,13 +52,14 @@ function renderToString_internal(
   const type = el.type
   if (type === ELEMENT_TYPE.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
-  if (type === fragmentSymbol || type === contextProviderSymbol) {
+  if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
     if (!Array.isArray(children))
       return renderToString_internal(children, el, idx)
     return children.map((c, i) => renderToString_internal(c, el, i)).join("")
   }
 
   if (typeof type !== "string") {
+    nodeToCtxMap.set(el, ctx.current)
     node.current = el
     const res = type(props)
     node.current = undefined

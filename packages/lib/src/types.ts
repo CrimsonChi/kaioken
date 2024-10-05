@@ -3,24 +3,20 @@ import type {
   Signal as SignalClass,
   SignalLike,
 } from "./signal"
-import type { contextProviderSymbol, fragmentSymbol } from "./constants"
+import type { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
   GlobalAttributes,
   GlobalEventAttributes,
   HtmlElementAttributes,
-  SomeDom,
   SvgElementAttributes,
   SvgGlobalAttributes,
   StyleObject,
 } from "./types.dom"
+import { SomeDom } from "./types.utils"
 
-export type { ElementProps, StyleObject, Prettify }
-
-type Prettify<T> = {
-  [K in keyof T]: T[K]
-} & {}
+export type { ElementProps, StyleObject }
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
@@ -175,7 +171,7 @@ declare global {
 
     type Signal<T> = SignalClass<T> | ReadonlySignal<T>
 
-    type ExoticSymbol = typeof fragmentSymbol | typeof contextProviderSymbol
+    type ExoticSymbol = typeof $FRAGMENT | typeof $CONTEXT_PROVIDER
 
     type VNode = {
       type: string | Function | ExoticSymbol

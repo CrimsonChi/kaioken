@@ -19,7 +19,7 @@ const myStore = new (class<T> {
   }
 })(0)
 
-export function UseSyncExternalStoreExample() {
+export default function UseSyncExternalStoreExample() {
   const value = useSyncExternalStore(
     (cb) => myStore.subscribe(cb),
     () => myStore.get()
