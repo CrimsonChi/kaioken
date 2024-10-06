@@ -1,17 +1,34 @@
-import { signal, computed, watch, Route, Router, Link } from "kaioken"
+import {
+  signal,
+  computed,
+  watch,
+  Route,
+  Router,
+  Link,
+  useRef,
+  tick,
+} from "kaioken"
 
 const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
+    console.log("boop")
     return count.value * 2
   }
+
   return 0
 }, "double")
 
-watch(() => {
+{
+  /* watch(() => {
   console.log("outer watch", count.value)
-})
+
+  return () => {
+    console.log('outer cleanup')
+  }
+}) */
+}
 
 export function SignalsExample() {
   return (
@@ -34,23 +51,32 @@ export function SignalsExample() {
 
 const GlobalComputedExample = () => {
   console.log("GlobalComputedExample")
-  const divId = signal("test")
-  const onInc = () => {
-    count.value += 1
-    divId.value += "|test"
+  const refTest = signal(null)
+  const onInc = async () => {
+    let limit = 0
+    while (limit < 5000) {
+      count.value += 1
+      limit += 1
+    }
   }
 
   const onSwitch = () => {
     isTracking.value = !isTracking.value
-    console.log("calling on switch metohd")
+    console.log("calling on switch method")
   }
 
   watch(() => {
-    console.log("inner watch", count.value)
+    count.value
+    console.log("first")
+  })
+
+  watch(() => {
+    count.value
+    console.log("second")
   })
 
   return (
-    <div id={divId} className="flex flex-col">
+    <div ref={refTest} className="flex flex-col">
       <h1>Count: {count}</h1>
       <h1>Double: {double}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
