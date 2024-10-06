@@ -1,5 +1,6 @@
 import { Router, Route, Link, lazy } from "kaioken"
 import { countStore } from "./countStore"
+import { SignalsExample } from "./components/SignalsExample"
 
 type AppRoute = {
   title: string
@@ -73,9 +74,10 @@ const ROUTES: Record<string, AppRoute> = {
   },
   "/signals-example": {
     title: "Signals",
-    component: lazy(() =>
-      import("./components/SignalsExample").then((m) => m.SignalsExample)
-    ),
+    component: SignalsExample,
+    // component: lazy(() =>
+    //   import("./components/SignalsExample").then((m) => m.SignalsExample)
+    // ),
     fallthrough: true,
   },
   "/store-example": {

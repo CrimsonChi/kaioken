@@ -1,8 +1,21 @@
-import { $SIGNAL } from "./constants.js"
+import type { HMRAccept } from "./hmr"
+import { $HMR_ACCEPT, $SIGNAL } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { node } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
-import { getVNodeAppContext, sideEffectsEnabled } from "./utils.js"
+import {
+  getVNodeAppContext,
+  sideEffectsEnabled,
+  traverseApply,
+} from "./utils.js"
+
+let signalToTrackingMap:
+  | Map<Signal<any>, Map<Signal<any>, Function>>
+  | undefined
+
+if (__DEV__) {
+  signalToTrackingMap = new Map()
+}
 
 export const signal = <T>(initial: T, displayName?: string) => {
   return !node.current || !sideEffectsEnabled()
@@ -38,9 +51,13 @@ export const computed = <T>(
   displayName?: string
 ): ReadonlySignal<T> => {
   if (!node.current) {
-    const computed = Signal.makeReadonly(new Signal(null as T, displayName))
+    const computed = Signal.makeReadonly(
+      new Signal(null as T, displayName),
+      getter
+    )
     const subs = new Map<Signal<any>, Function>()
-    appliedTrackedSignals(getter, computed, subs)
+    appliedTrackedSignals(computed, subs)
+    signalToTrackingMap?.set(computed, subs)
 
     return computed
   } else {
@@ -66,8 +83,12 @@ export const computed = <T>(
             }
           }
           hook.subs = new Map()
-          hook.signal = Signal.makeReadonly(new Signal(null as T, displayName))
-          appliedTrackedSignals(getter, hook.signal, hook.subs)
+          hook.signal = Signal.makeReadonly(
+            new Signal(null as T, displayName),
+            getter
+          )
+          appliedTrackedSignals(hook.signal, hook.subs)
+          signalToTrackingMap?.set(hook.signal, hook.subs)
         }
 
         return hook.signal
@@ -94,10 +115,54 @@ export class Signal<T> {
   [$SIGNAL] = true
   #value: T
   #subscribers = new Set<SignalSubscriber>()
-  displayName?: string
+  #getter?: () => T
+  displayName?: string;
+  [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
   constructor(initial: T, displayName?: string) {
     this.#value = initial
     if (displayName) this.displayName = displayName
+    if (__DEV__) {
+      this[$HMR_ACCEPT] = {
+        provide: () => {
+          return this as Signal<any>
+        },
+        inject: (prev) => {
+          this.sneak(prev.value)
+          Signal.subscribers(prev).forEach((sub) =>
+            Signal.subscribers(this).add(sub)
+          )
+          if (signalToTrackingMap!.get(prev)) {
+            const subs = new Map<Signal<any>, Function>()
+            appliedTrackedSignals(this, subs)
+            signalToTrackingMap!.set(this, subs)
+          }
+          window.__kaioken?.apps.forEach((app) => {
+            traverseApply(app.rootNode!, (vNode) => {
+              if (typeof vNode.type !== "function") return
+              if (vNode.subs === undefined) return
+              const idx = vNode.subs.findIndex((sub) => sub === prev)
+              if (idx === -1) return
+              vNode.subs[idx] = this
+            })
+          })
+        },
+        destroy: () => {
+          signalToTrackingMap!.forEach((subs, sig) => {
+            if (sig === this) {
+              signalToTrackingMap!.delete(sig)
+              return
+            }
+            const unsub = subs.get(this)
+            if (unsub) {
+              unsub()
+              subs.delete(this)
+            }
+          })
+
+          Signal.subscribers(this).clear()
+        },
+      } satisfies HMRAccept<Signal<any>>
+    }
   }
 
   get value() {
@@ -159,8 +224,12 @@ export class Signal<T> {
     return signal.#subscribers
   }
 
-  static makeReadonly<T>(signal: Signal<T>): ReadonlySignal<T> {
+  static makeReadonly<T>(
+    signal: Signal<T>,
+    getter?: () => T
+  ): ReadonlySignal<T> {
     const desc = Object.getOwnPropertyDescriptor(signal, "value")
+    signal.#getter = getter
     if (desc && !desc.writable) return signal
     return Object.defineProperty(signal, "value", {
       get: function (this: Signal<T>) {
@@ -185,16 +254,21 @@ export class Signal<T> {
       configurable: true,
     })
   }
+  static getComputedGetter<T>(signal: Signal<T>) {
+    if (!signal.#getter)
+      throw new Error("attempted to get computed getter on non-computed signal")
+    return signal.#getter
+  }
 }
 
 let isTracking = false
 let trackedSignals: Signal<any>[] = []
 
-const appliedTrackedSignals = <T>(
-  getter: () => T,
-  computedSignal: Signal<any>,
+const appliedTrackedSignals = (
+  computedSignal: ReadonlySignal<any>,
   subs: Map<Signal<any>, Function>
 ) => {
+  const getter = Signal.getComputedGetter(computedSignal)
   // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   isTracking = true
   computedSignal.sneak(getter())
@@ -210,7 +284,7 @@ const appliedTrackedSignals = <T>(
   trackedSignals.forEach((dependencySignal) => {
     if (subs.get(dependencySignal)) return
     const unsub = dependencySignal.subscribe(() => {
-      appliedTrackedSignals(getter, computedSignal, subs)
+      appliedTrackedSignals(computedSignal, subs)
     })
     subs.set(dependencySignal, unsub)
   })
