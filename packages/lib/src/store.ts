@@ -2,8 +2,8 @@ import type { Prettify } from "./types.utils.js"
 import { __DEV__ } from "./env.js"
 import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
 import { getVNodeAppContext, shallowCompare } from "./utils.js"
-import { $HMR_ACCEPTOR } from "./constants.js"
-import { GenericHMRAcceptor } from "./hmr.js"
+import { $HMR_ACCEPT } from "./constants.js"
+import { HMRAccept } from "./hmr.js"
 
 export { createStore }
 export type { Store, MethodFactory }
@@ -140,7 +140,7 @@ function createStore<T, U extends MethodFactory<T>>(
 
   if (__DEV__) {
     return Object.assign(store, {
-      [$HMR_ACCEPTOR]: {
+      [$HMR_ACCEPT]: {
         provide: () => ({ state, subscribers, nodeToSliceComputeMap }),
         inject: (prev) => {
           prev.subscribers.forEach((sub) => subscribers.add(sub))
@@ -151,12 +151,12 @@ function createStore<T, U extends MethodFactory<T>>(
           subscribers.clear()
           nodeToSliceComputeMap = new WeakMap()
         },
-      },
-    } satisfies GenericHMRAcceptor<{
-      state: T
-      subscribers: Set<Kaioken.VNode | Function>
-      nodeToSliceComputeMap: WeakMap<Kaioken.VNode, NodeSliceCompute[]>
-    }>)
+      } satisfies HMRAccept<{
+        state: T
+        subscribers: Set<Kaioken.VNode | Function>
+        nodeToSliceComputeMap: WeakMap<Kaioken.VNode, NodeSliceCompute[]>
+      }>,
+    })
   }
 
   return store

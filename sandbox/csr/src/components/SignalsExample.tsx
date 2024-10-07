@@ -4,8 +4,8 @@ const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
-    console.log("boop")
-    return count.value * 2
+    console.log("boop 96935496934959")
+    return count.value * 10000
   }
 
   return 0
