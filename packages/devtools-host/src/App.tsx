@@ -3,14 +3,7 @@ import { twMerge } from "tailwind-merge"
 import { Flame } from "./icon/Flame"
 import { useAnchorPos } from "./hooks/useAnchorPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
-import {
-  signal,
-  Transition,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-} from "kaioken"
+import { signal, Transition, useEffect, useLayoutEffect, useRef } from "kaioken"
 import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"

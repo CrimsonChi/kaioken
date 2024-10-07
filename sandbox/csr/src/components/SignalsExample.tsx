@@ -4,8 +4,8 @@ const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
-    console.log("boop 96935496934959")
-    return count.value * 10000
+    console.log("boop 123123123")
+    return count.value * 10
   }
 
   return 0
@@ -42,13 +42,9 @@ const GlobalComputedExample = () => {
     console.log("calling on switch method")
   }
 
-  watch(() => {
-    console.log(count.value)
-  })
-
   return (
     <div ref={refTest} className="flex flex-col">
-      <h1>Count: {count}</h1>
+      <h1>count: {count}</h1>
       <h1>Double: {double}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
 
@@ -67,7 +63,7 @@ const LocalComputedExample = () => {
   const localIsTracking = signal(false, "local is tracking")
   const localDouble = computed(() => {
     if (localIsTracking.value) {
-      return localCount.value * 2
+      return localCount.value * 100
     }
 
     return 0

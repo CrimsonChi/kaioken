@@ -11,13 +11,16 @@ import {
 
 type SignalDependency = {
   effectId: string
-  subs: Map<Signal<any>, Function>
+  unsubs: Map<Signal<any>, Function>
+  subs: Function[]
 }
 
 let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
+let subsCb: Function[] | undefined
 
 if (__DEV__) {
   computedToDependenciesMap = new Map()
+  subsCb = []
 }
 
 export const signal = <T>(initial: T, displayName?: string) => {
@@ -61,10 +64,6 @@ export const computed = <T>(
     const subs = new Map<Signal<any>, Function>()
     const id = crypto.randomUUID()
     appliedTrackedSignals(computed, subs, id)
-    computedToDependenciesMap?.set(computed, {
-      effectId: id,
-      subs,
-    })
 
     return computed
   } else {
@@ -97,10 +96,6 @@ export const computed = <T>(
             getter
           )
           appliedTrackedSignals(hook.signal, hook.subs, hook.id)
-          computedToDependenciesMap?.set(hook.signal, {
-            effectId: hook.id,
-            subs: hook.subs,
-          })
         }
 
         return hook.signal
@@ -167,18 +162,36 @@ export class Signal<T> {
           return this as Signal<any>
         },
         inject: (prev) => {
-          this.sneak(prev.value)
-          Signal.subscribers(prev).forEach((sub) =>
-            Signal.subscribers(this).add(sub)
+          console.log("prev", [...Signal.subscribers(prev)], this.displayName)
+          console.log(
+            "new before",
+            [...Signal.subscribers(this)],
+            this.displayName
           )
+          console.log(
+            Signal.subscribers(prev) === Signal.subscribers(this),
+            this.displayName
+          )
+          this.#subscribers
+          this.sneak(prev.value)
+          Signal.subscribers(prev).forEach((sub) => {
+            // if computed don't push in old sub here
+            console.log(subsCb, subsCb?.includes(sub as Function))
+            if (subsCb?.includes(sub as Function)) {
+              return
+            }
+
+            return Signal.subscribers(this).add(sub)
+          })
+
+          console.log("new", [...Signal.subscribers(this)], this.displayName)
+
           if (computedToDependenciesMap!.get(prev)) {
-            const subs = new Map<Signal<any>, Function>()
+            const unsubs =
+              computedToDependenciesMap?.get(this)?.unsubs ??
+              new Map<Signal<any>, Function>()
             const { effectId } = computedToDependenciesMap!.get(prev)!
-            appliedTrackedSignals(this, subs, effectId)
-            computedToDependenciesMap!.set(this, {
-              effectId,
-              subs,
-            })
+            appliedTrackedSignals(this, unsubs, effectId)
           }
           window.__kaioken?.apps.forEach((app) => {
             traverseApply(app.rootNode!, (vNode) => {
@@ -189,15 +202,20 @@ export class Signal<T> {
               vNode.subs[idx] = this
             })
           })
-          this.notify()
         },
         destroy: () => {
-          computedToDependenciesMap!.forEach(({ subs }) => {
-            const unsub = subs.get(this)
+          // cleanups and delete everything that is dependent on this signal
+          computedToDependenciesMap!.forEach(({ unsubs }) => {
+            const unsub = unsubs.get(this)
             if (unsub) {
               unsub()
-              subs.delete(this)
+              unsubs.delete(this)
             }
+          })
+
+          // cleans up all the signals own deps
+          computedToDependenciesMap!.get(this)?.unsubs.forEach((unsub) => {
+            unsub()
           })
           computedToDependenciesMap!.delete(this)
           Signal.subscribers(this).clear()
@@ -322,9 +340,10 @@ const appliedTrackedSignals = (
     subs.delete(sig)
   }
 
+  const subCb: Function[] = []
   trackedSignals.forEach((dependencySignal) => {
     if (subs.get(dependencySignal)) return
-    const unsub = dependencySignal.subscribe(() => {
+    const cb = () => {
       if (!effectQueue.has(effectId)) {
         queueMicrotask(() => {
           if (effectQueue.has(effectId)) {
@@ -336,13 +355,24 @@ const appliedTrackedSignals = (
 
       effectQueue.set(effectId, () => {
         appliedTrackedSignals(computedSignal, subs, effectId)
+        computedSignal.notify()
       })
-    })
+    }
+    const unsub = dependencySignal.subscribe(cb)
     subs.set(dependencySignal, unsub)
+    subsCb?.push(cb)
+    subCb.push(cb)
   })
 
+  if (computedToDependenciesMap) {
+    computedToDependenciesMap.set(computedSignal, {
+      effectId,
+      unsubs: subs,
+      subs: subCb,
+    })
+  }
+
   trackedSignals = []
-  computedSignal.notify()
 }
 
 type CleanupInstance = {
@@ -356,7 +386,6 @@ const appliedTrackedEffects = (
   cleanupInstance?: CleanupInstance
 ) => {
   const cleanup = cleanupInstance ?? ({} as CleanupInstance)
-
   if (effectQueue.has(effectId)) {
     effectQueue.delete(effectId)
   }
