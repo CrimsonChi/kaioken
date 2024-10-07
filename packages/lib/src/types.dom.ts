@@ -855,13 +855,13 @@ interface SvgElementAttributes {
     y?: string | number
   }
   text: SvgStrokeAttributes & {
-    x: string
-    y: string
-    dx: string
-    dy: string
-    rotate: "none" | (string & {})
-    textLength: string
-    lengthAdjust: "spacing" | "spacingAndGlyphs"
+    x?: string | number
+    y?: string | number
+    dx?: string | number
+    dy?: string | number
+    rotate?: "none" | (string & {})
+    textLength?: string | number
+    lengthAdjust?: "spacing" | "spacingAndGlyphs"
     mask?: string
     opacity?: string | number
   }
