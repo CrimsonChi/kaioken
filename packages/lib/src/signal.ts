@@ -145,20 +145,17 @@ export class Signal<T> {
               vNode.subs[idx] = this
             })
           })
+          this.notify()
         },
         destroy: () => {
-          signalToTrackingMap!.forEach((subs, sig) => {
-            if (sig === this) {
-              signalToTrackingMap!.delete(sig)
-              return
-            }
+          signalToTrackingMap!.forEach((subs) => {
             const unsub = subs.get(this)
             if (unsub) {
               unsub()
               subs.delete(this)
             }
           })
-
+          signalToTrackingMap!.delete(this)
           Signal.subscribers(this).clear()
         },
       } satisfies HMRAccept<Signal<any>>
@@ -181,15 +178,6 @@ export class Signal<T> {
 
   sneak(newValue: T) {
     this.#value = newValue
-  }
-
-  map<U>(fn: (value: T) => U, displayName?: string): ReadonlySignal<U> {
-    const initialVal = fn(this.#value)
-    const sig = Signal.makeReadonly(signal(initialVal, displayName))
-    if (node.current && !sideEffectsEnabled()) return sig
-
-    this.subscribe((value) => (sig.sneak(fn(value)), sig.notify()))
-    return sig
   }
 
   toString() {
