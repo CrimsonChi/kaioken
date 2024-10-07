@@ -1,13 +1,4 @@
-import {
-  signal,
-  computed,
-  watch,
-  Route,
-  Router,
-  Link,
-  useRef,
-  tick,
-} from "kaioken"
+import { signal, computed, Route, Router, Link, watch } from "kaioken"
 
 const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
@@ -19,16 +10,6 @@ const double = computed(() => {
 
   return 0
 }, "double")
-
-{
-  /* watch(() => {
-  console.log("outer watch", count.value)
-
-  return () => {
-    console.log('outer cleanup')
-  }
-}) */
-}
 
 export function SignalsExample() {
   return (
@@ -53,11 +34,7 @@ const GlobalComputedExample = () => {
   console.log("GlobalComputedExample")
   const refTest = signal(null)
   const onInc = async () => {
-    let limit = 0
-    while (limit < 5000) {
-      count.value += 1
-      limit += 1
-    }
+    count.value += 1
   }
 
   const onSwitch = () => {
@@ -66,13 +43,7 @@ const GlobalComputedExample = () => {
   }
 
   watch(() => {
-    count.value
-    console.log("first")
-  })
-
-  watch(() => {
-    count.value
-    console.log("second")
+    console.log(count.value)
   })
 
   return (
