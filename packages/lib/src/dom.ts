@@ -322,36 +322,70 @@ function getDomParent(vNode: VNode): ElementVNode {
 }
 
 function placeDom(
-  dom: SomeDom,
+  vNode: DomVNode,
   mntParent: ElementVNode,
   prevSiblingDom?: SomeDom
 ) {
+  const dom = vNode.dom
   if (prevSiblingDom) {
     prevSiblingDom.after(dom)
-    return
-  }
-  if (isPortal(mntParent) && !dom.isConnected) {
-    mntParent.dom.appendChild(dom)
     return
   }
   if (mntParent.dom.childNodes.length === 0) {
     mntParent.dom.appendChild(dom)
   } else {
     /**
-     * scan depth-first through the tree from the mount parent
-     * and find the previous dom node (if any)
+     * scan from vNode, up, down, then right to find previous dom
      */
-    const stack = [mntParent.child]
     let prevDom: MaybeDom
+    let parent = vNode.parent!
+    let child = parent.child
+    const seenParents = new Set<VNode>([parent])
+    while (child && parent.depth >= mntParent.depth) {
+      if (child === vNode) {
+        if (prevDom) break
+        seenParents.add(parent)
+        parent = parent.parent!
+        child = parent?.child
+        continue
+      }
 
-    while (stack.length) {
-      const n = stack.pop()!
-      const _isPortal = isPortal(n)
-      if (n.dom === dom) break // once we meet the dom we're placing, stop
-      if (!_isPortal && n.dom?.isConnected) prevDom = n.dom
-      if (n.sibling) stack.push(n.sibling)
-      if (!_isPortal && !n.dom && n.child) stack.push(n.child)
+      const isPortalRoot = isPortal(child)
+
+      const dom = child.dom
+      if (dom?.isConnected && !isPortalRoot) prevDom = child.dom
+
+      if (
+        !dom &&
+        child.child &&
+        // prevent re-traversing our 'frontier'
+        !seenParents.has(child) &&
+        // prevent traversing downward through portals
+        !isPortalRoot
+      ) {
+        parent = child
+        child = parent.child
+        continue
+      }
+
+      if (
+        child.sibling &&
+        // prevent traversing forward through siblings of our upward crawl
+        !seenParents.has(child)
+      ) {
+        child = child.sibling
+        continue
+      }
+
+      if (prevDom && parent === vNode.parent) {
+        break
+      }
+
+      seenParents.add(parent)
+      parent = parent.parent!
+      child = parent?.child
     }
+
     if (!prevDom) {
       mntParent.dom.insertBefore(dom, mntParent.dom.firstChild)
     } else {
@@ -409,7 +443,7 @@ function commitDom(vNode: DomVNode, hostNodes: HostNode[]) {
   const host = hostNodes[hostNodes.length - 1]
   if (!vNode.dom.isConnected || bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)) {
     const parent = host?.node ?? getDomParent(vNode)
-    placeDom(vNode.dom, parent, host?.lastChild?.dom)
+    placeDom(vNode, parent, host?.lastChild?.dom)
   }
   if (!vNode.prev || bitmapOps.isFlagSet(vNode, FLAG.UPDATE)) {
     updateDom(vNode)
