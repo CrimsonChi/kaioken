@@ -125,6 +125,7 @@ function postOrderApply(
     return
   }
 
+  callbacks.onDescent?.(root)
   let branch = rootChild
   while (branch) {
     let c = branch
