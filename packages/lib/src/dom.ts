@@ -32,6 +32,11 @@ type HostNode = {
   node: ElementVNode
   lastChild?: DomVNode
 }
+type PlacementScope = {
+  parent: VNode
+  active: boolean
+  child?: VNode
+}
 
 function setDomRef(vNode: VNode, value: SomeDom | null) {
   if (!vNode.props.ref) return
@@ -403,53 +408,73 @@ function commitWork(vNode: VNode) {
   }
 
   const hostNodes: HostNode[] = []
+  let currentHostNode: HostNode | undefined
+  const placementScopes: PlacementScope[] = []
+  let currentPlacementScope: PlacementScope | undefined
   postOrderApply(vNode, {
     onDescent: (node) => {
       if (!node.child) return
       if (node.dom) {
         // collect host nodes as we go
-        hostNodes.push({ node: node as ElementVNode })
-      } else if (bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
-        // no dom node, propagate the flag down the tree.
-        // we shouldn't need to do this if we were to instead
-        // treat the placement flag as a modifier that affects
-        // operations on children during this iteration
-        let child: VNode | undefined = node.child
-        while (child) {
-          bitmapOps.setFlag(child, FLAG.PLACEMENT)
-          child = child.sibling
+        currentHostNode = { node: node as ElementVNode }
+        hostNodes.push(currentHostNode)
+
+        if (currentPlacementScope?.active) {
+          currentPlacementScope.child = node
+          // prevent scope applying to descendants of this element node
+          currentPlacementScope.active = false
         }
+      } else if (bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
+        currentPlacementScope = { parent: node, active: true }
+        placementScopes.push(currentPlacementScope)
       }
     },
     onAscent: (node) => {
+      let inheritsPlacement = false
+      if (currentPlacementScope?.child === node) {
+        currentPlacementScope.active = true
+        inheritsPlacement = true
+      }
       if (bitmapOps.isFlagSet(node, FLAG.DELETION)) {
         return commitDeletion(node)
       }
       if (node.dom) {
-        commitDom(node as DomVNode, hostNodes)
+        commitDom(node as DomVNode, currentHostNode, inheritsPlacement)
       }
       commitSnapshot(node)
     },
     onBeforeAscent(node) {
-      if (hostNodes[hostNodes.length - 1]?.node === node.parent) {
+      if (currentPlacementScope?.parent === node) {
+        placementScopes.pop()
+        currentPlacementScope = placementScopes[placementScopes.length - 1]
+      }
+      if (currentHostNode?.node === node.parent) {
         hostNodes.pop()
+        currentHostNode = hostNodes[hostNodes.length - 1]
       }
     },
   })
 }
 
-function commitDom(vNode: DomVNode, hostNodes: HostNode[]) {
+function commitDom(
+  vNode: DomVNode,
+  hostNode: HostNode | undefined,
+  inheritsPlacement: boolean
+) {
   if (isPortal(vNode)) return
-  const host = hostNodes[hostNodes.length - 1]
-  if (!vNode.dom.isConnected || bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)) {
-    const parent = host?.node ?? getDomParent(vNode)
-    placeDom(vNode, parent, host?.lastChild?.dom)
+  if (
+    inheritsPlacement ||
+    !vNode.dom.isConnected ||
+    bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)
+  ) {
+    const parent = hostNode?.node ?? getDomParent(vNode)
+    placeDom(vNode, parent, hostNode?.lastChild?.dom)
   }
   if (!vNode.prev || bitmapOps.isFlagSet(vNode, FLAG.UPDATE)) {
     updateDom(vNode)
   }
-  if (host) {
-    host.lastChild = vNode
+  if (hostNode) {
+    hostNode.lastChild = vNode
   }
 }
 
