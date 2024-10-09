@@ -75,6 +75,63 @@ function createTextNode(vNode: VNode): Text {
   return textNode
 }
 
+/**
+ * toggled when we fire a focus event on an element
+ * persist focus when the currently focused element is moved.
+ */
+let persistingFocus = false
+
+// gets set prior to dom commits
+let currentActiveElement: Element | null = null
+
+let didBlurActiveElement = false
+const placementBlurHandler = (event: Event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  didBlurActiveElement = true
+}
+
+function handlePrePlacementFocusPersistence() {
+  persistingFocus = true
+  currentActiveElement = document.activeElement
+  if (currentActiveElement && currentActiveElement !== document.body) {
+    currentActiveElement.addEventListener("blur", placementBlurHandler)
+  }
+}
+
+function handlePostPlacementFocusPersistence() {
+  if (!didBlurActiveElement) {
+    persistingFocus = false
+    return
+  }
+  currentActiveElement?.removeEventListener("blur", placementBlurHandler)
+  if (currentActiveElement?.isConnected) {
+    if ("focus" in currentActiveElement) (currentActiveElement as any).focus()
+  }
+  persistingFocus = false
+}
+
+function wrapFocusEventHandler(callback: (event: FocusEvent) => void) {
+  return (event: FocusEvent) => {
+    if (persistingFocus) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+    callback(event)
+  }
+}
+
+type WrappedFocusEventMap = {
+  onfocus?: (event: FocusEvent) => void
+  onblur?: (event: FocusEvent) => void
+}
+
+const vNodeToWrappedFocusEventHandlersMap = new WeakMap<
+  VNode,
+  WrappedFocusEventMap
+>()
+
 function updateDom(vNode: VNode) {
   if (isPortal(vNode)) return
   const dom = vNode.dom as SomeDom
@@ -96,8 +153,24 @@ function updateDom(vNode: VNode) {
         renderMode.current === "hydrate"
       ) {
         const eventType = key.toLowerCase().substring(2)
-        if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
-        if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
+        if (key in prevProps) {
+          let cb = prevProps[key]
+          if (key === "onfocus" || key === "onblur") {
+            cb = vNodeToWrappedFocusEventHandlersMap.get(vNode)?.[key]
+          }
+          dom.removeEventListener(eventType, cb)
+        }
+        if (key in nextProps) {
+          let cb = nextProps[key]
+          if (key === "onfocus" || key === "onblur") {
+            cb = wrapFocusEventHandler(cb)
+            const wrappedHandlers =
+              vNodeToWrappedFocusEventHandlersMap.get(vNode) ?? {}
+            wrappedHandlers[key] = cb
+            vNodeToWrappedFocusEventHandlersMap.set(vNode, wrappedHandlers)
+          }
+          dom.addEventListener(eventType, cb)
+        }
       }
       return
     }
@@ -392,6 +465,7 @@ function placeDom(
     }
 
     if (!prevDom) {
+      //mntParent.dom.prepend(dom) ?
       mntParent.dom.insertBefore(dom, mntParent.dom.firstChild)
     } else {
       prevDom.after(dom)
@@ -406,11 +480,13 @@ function commitWork(vNode: VNode) {
   if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) {
     return commitDeletion(vNode)
   }
+  handlePrePlacementFocusPersistence()
 
   const hostNodes: HostNode[] = []
   let currentHostNode: HostNode | undefined
   const placementScopes: PlacementScope[] = []
   let currentPlacementScope: PlacementScope | undefined
+
   postOrderApply(vNode, {
     onDescent: (node) => {
       if (!node.child) return
@@ -454,6 +530,8 @@ function commitWork(vNode: VNode) {
       }
     },
   })
+
+  handlePostPlacementFocusPersistence()
 }
 
 function commitDom(
