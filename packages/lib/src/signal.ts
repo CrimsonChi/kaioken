@@ -9,12 +9,18 @@ import {
   traverseApply,
 } from "./utils.js"
 
-let signalToTrackingMap:
-  | Map<Signal<any>, Map<Signal<any>, Function>>
-  | undefined
+type SignalDependency = {
+  effectId: string
+  unsubs: Map<Signal<any>, Function>
+  subs: Function[]
+}
+
+let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
+let subsCb: Function[] | undefined
 
 if (__DEV__) {
-  signalToTrackingMap = new Map()
+  computedToDependenciesMap = new Map()
+  subsCb = []
 }
 
 export const signal = <T>(initial: T, displayName?: string) => {
@@ -56,8 +62,8 @@ export const computed = <T>(
       getter
     )
     const subs = new Map<Signal<any>, Function>()
-    appliedTrackedSignals(computed, subs)
-    signalToTrackingMap?.set(computed, subs)
+    const id = crypto.randomUUID()
+    appliedTrackedSignals(computed, subs, id)
 
     return computed
   } else {
@@ -66,6 +72,7 @@ export const computed = <T>(
       {
         signal: undefined as any as Signal<T>,
         subs: null as any as Map<Signal<any>, Function>,
+        id: null as any as ReturnType<typeof crypto.randomUUID>,
       },
       ({ hook, isInit }) => {
         if (isInit) {
@@ -82,16 +89,44 @@ export const computed = <T>(
               }),
             }
           }
+          hook.id = crypto.randomUUID()
           hook.subs = new Map()
           hook.signal = Signal.makeReadonly(
             new Signal(null as T, displayName),
             getter
           )
-          appliedTrackedSignals(hook.signal, hook.subs)
-          signalToTrackingMap?.set(hook.signal, hook.subs)
+          appliedTrackedSignals(hook.signal, hook.subs, hook.id)
         }
 
         return hook.signal
+      }
+    )
+  }
+}
+
+export const watch = (getter: () => (() => void) | void) => {
+  if (!node.current) {
+    const subs = new Map<Signal<any>, Function>()
+    const id = crypto.randomUUID()
+    appliedTrackedEffects(getter, subs, id)
+  } else {
+    return useHook(
+      "useWatch",
+      {
+        subs: null as any as Map<Signal<any>, Function>,
+        id: null as any as string,
+      },
+      ({ hook, isInit }) => {
+        if (isInit) {
+          hook.id = crypto.randomUUID()
+          hook.subs = new Map()
+          const cleanup = appliedTrackedEffects(getter, hook.subs, hook.id)
+          hook.cleanup = () => {
+            hook.subs.forEach((fn) => fn())
+            hook.subs.clear()
+            cleanup?.call?.()
+          }
+        }
       }
     )
   }
@@ -127,14 +162,36 @@ export class Signal<T> {
           return this as Signal<any>
         },
         inject: (prev) => {
-          this.sneak(prev.value)
-          Signal.subscribers(prev).forEach((sub) =>
-            Signal.subscribers(this).add(sub)
+          console.log("prev", [...Signal.subscribers(prev)], this.displayName)
+          console.log(
+            "new before",
+            [...Signal.subscribers(this)],
+            this.displayName
           )
-          if (signalToTrackingMap!.get(prev)) {
-            const subs = new Map<Signal<any>, Function>()
-            appliedTrackedSignals(this, subs)
-            signalToTrackingMap!.set(this, subs)
+          console.log(
+            Signal.subscribers(prev) === Signal.subscribers(this),
+            this.displayName
+          )
+          this.#subscribers
+          this.sneak(prev.value)
+          Signal.subscribers(prev).forEach((sub) => {
+            // if computed don't push in old sub here
+            console.log(subsCb, subsCb?.includes(sub as Function))
+            if (subsCb?.includes(sub as Function)) {
+              return
+            }
+
+            return Signal.subscribers(this).add(sub)
+          })
+
+          console.log("new", [...Signal.subscribers(this)], this.displayName)
+
+          if (computedToDependenciesMap!.get(prev)) {
+            const unsubs =
+              computedToDependenciesMap?.get(this)?.unsubs ??
+              new Map<Signal<any>, Function>()
+            const { effectId } = computedToDependenciesMap!.get(prev)!
+            appliedTrackedSignals(this, unsubs, effectId)
           }
           window.__kaioken?.apps.forEach((app) => {
             traverseApply(app.rootNode!, (vNode) => {
@@ -145,17 +202,22 @@ export class Signal<T> {
               vNode.subs[idx] = this
             })
           })
-          this.notify()
         },
         destroy: () => {
-          signalToTrackingMap!.forEach((subs) => {
-            const unsub = subs.get(this)
+          // cleanups and delete everything that is dependent on this signal
+          computedToDependenciesMap!.forEach(({ unsubs }) => {
+            const unsub = unsubs.get(this)
             if (unsub) {
               unsub()
-              subs.delete(this)
+              unsubs.delete(this)
             }
           })
-          signalToTrackingMap!.delete(this)
+
+          // cleans up all the signals own deps
+          computedToDependenciesMap!.get(this)?.unsubs.forEach((unsub) => {
+            unsub()
+          })
+          computedToDependenciesMap!.delete(this)
           Signal.subscribers(this).clear()
         },
       } satisfies HMRAccept<Signal<any>>
@@ -251,17 +313,91 @@ export class Signal<T> {
 
 let isTracking = false
 let trackedSignals: Signal<any>[] = []
+const effectQueue = new Map<string, Function>()
 
 const appliedTrackedSignals = (
   computedSignal: ReadonlySignal<any>,
-  subs: Map<Signal<any>, Function>
+  subs: Map<Signal<any>, Function>,
+  effectId: string
 ) => {
+  if (effectQueue.has(effectId)) {
+    effectQueue.delete(effectId)
+  }
   const getter = Signal.getComputedGetter(computedSignal)
   // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   isTracking = true
   computedSignal.sneak(getter())
   isTracking = false
-  if (node.current && !sideEffectsEnabled()) return
+
+  if (node.current && !sideEffectsEnabled()) {
+    trackedSignals = []
+    return
+  }
+
+  for (const [sig, unsub] of subs) {
+    if (trackedSignals.includes(sig)) continue
+    unsub()
+    subs.delete(sig)
+  }
+
+  const subCb: Function[] = []
+  trackedSignals.forEach((dependencySignal) => {
+    if (subs.get(dependencySignal)) return
+    const cb = () => {
+      if (!effectQueue.has(effectId)) {
+        queueMicrotask(() => {
+          if (effectQueue.has(effectId)) {
+            const func = effectQueue.get(effectId)!
+            func()
+          }
+        })
+      }
+
+      effectQueue.set(effectId, () => {
+        appliedTrackedSignals(computedSignal, subs, effectId)
+        computedSignal.notify()
+      })
+    }
+    const unsub = dependencySignal.subscribe(cb)
+    subs.set(dependencySignal, unsub)
+    subsCb?.push(cb)
+    subCb.push(cb)
+  })
+
+  if (computedToDependenciesMap) {
+    computedToDependenciesMap.set(computedSignal, {
+      effectId,
+      unsubs: subs,
+      subs: subCb,
+    })
+  }
+
+  trackedSignals = []
+}
+
+type CleanupInstance = {
+  call?(): void
+}
+
+const appliedTrackedEffects = (
+  getter: () => (() => void) | void,
+  subs: Map<Signal<any>, Function>,
+  effectId: string,
+  cleanupInstance?: CleanupInstance
+) => {
+  const cleanup = cleanupInstance ?? ({} as CleanupInstance)
+  if (effectQueue.has(effectId)) {
+    effectQueue.delete(effectId)
+  }
+  isTracking = true
+  const func = getter()
+  if (func) cleanup.call = func
+  isTracking = false
+
+  if (node.current && !sideEffectsEnabled()) {
+    trackedSignals = []
+    return cleanup
+  }
 
   for (const [sig, unsub] of subs) {
     if (trackedSignals.includes(sig)) continue
@@ -272,13 +408,36 @@ const appliedTrackedSignals = (
   trackedSignals.forEach((dependencySignal) => {
     if (subs.get(dependencySignal)) return
     const unsub = dependencySignal.subscribe(() => {
-      appliedTrackedSignals(computedSignal, subs)
+      if (!effectQueue.has(effectId)) {
+        queueMicrotask(() => {
+          if (effectQueue.has(effectId)) {
+            const func = effectQueue.get(effectId)!
+            func()
+          }
+        })
+      }
+
+      effectQueue.set(effectId, () => {
+        cleanup.call?.()
+        appliedTrackedEffects(getter, subs, effectId, cleanup)
+      })
     })
     subs.set(dependencySignal, unsub)
   })
 
   trackedSignals = []
-  computedSignal.notify()
+  return cleanup
+}
+
+export const tick = () => {
+  const keys = [...effectQueue.keys()]
+  keys.forEach((id) => {
+    const func = effectQueue.get(id)
+    if (func) {
+      func()
+      effectQueue.delete(id)
+    }
+  })
 }
 
 const onSignalValueObserved = (signal: Signal<any>) => {
