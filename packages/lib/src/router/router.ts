@@ -22,20 +22,27 @@ export interface LinkProps extends ElementProps<"a"> {
   to: string
   onclick?: (e: Event) => void
   replace?: boolean
-  explicit?: boolean
+  inherit?: boolean
 }
-export function Link(props: LinkProps) {
+export function Link({ to, onclick, replace, inherit, ...props }: LinkProps) {
   const router = useContext(RouterContext, false)
-  const parentPath = router.isDefault ? "" : router.routePath
-  const href = props.explicit ? props.to : parentPath + props.to
+
+  const href = useMemo(() => {
+    if (!inherit || router.isDefault) return to
+    const parentPath = Object.entries(router.params).reduce(
+      (acc, [k, v]) => acc.replace(`:${k}`, v),
+      router.routePath
+    )
+    return (parentPath + to).replaceAll(/\/+/g, "/")
+  }, [router.params, to, inherit])
 
   return createElement("a", {
     ...props,
     href,
     onclick: (e: Event) => {
       e.preventDefault()
-      navigate(href, { replace: props.replace })
-      props.onclick?.(e)
+      navigate(href, { replace })
+      onclick?.(e)
     },
   })
 }
