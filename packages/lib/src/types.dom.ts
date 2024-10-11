@@ -590,7 +590,46 @@ interface HtmlElementAttributes {
     rowSpan?: string | number
     headers?: string
   }
-  template: {}
+  /**
+   * This serves as a mechanism for holding HTML fragments, which can either be used
+   * later via JavaScript or generated immediately into shadow DOM.
+   * @link [MDN example](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template#examples)
+   *
+   * This element includes the [global attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes).
+   */
+  template: {
+    /**
+     * Creates a **shadow root** for the parent element. It is a declarative version of the `Element.attachShadow()`
+     * method and accepts the same enumerated values.
+     * @link [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template#shadowrootmode)
+     */
+    shadowrootmode?: "open" | "closed"
+    /**
+     * Sets the value of the **clonable** property of a **ShadowRoot** created using this element to `true`. If set, a clone
+     * of the shadow host (the parent element of this `<template>`) created with `Node.cloneNode()` or `Document.importNode()`
+     * will include a shadow root in the copy.
+     * @link [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template#shadowrootclonable)
+     */
+    shadowrootclonable?: boolean
+    /**
+     * Sets the value of the **delegatesFocus** property of a **ShadowRoot** created using this element to `true`. If this
+     * is set and a non-focusable element in the shadow tree is selected, then focus is delegated to the first
+     * focusable element in the tree.
+     * @defaultvalue false
+     * @link [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template#shadowrootdelegatesfocus)
+     */
+    shadowrootdelegatesfocus?: boolean
+    /**
+     * Sets the value of the serializable property of a ShadowRoot created using this element to true. If set, the
+     * shadow root may be serialized by calling the Element.getHTML() or ShadowRoot.getHTML() methods with the
+     * options.serializableShadowRoots parameter set true.
+     * @defaultvalue false
+     * @link [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template#shadowrootserializable)
+     * @deprecated This is an experimental property - your mileage may vary
+     *
+     */
+    shadowrootserializable?: boolean
+  }
   textarea: {
     autocomplete?: AutoComplete
     autocorrect?: "on" | "off"
