@@ -15,7 +15,6 @@ type SignalDependency = {
   unsubs: Map<Signal<any>, Function>
 }
 
-// TODO: ensure we can stop a watcher
 let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
 if (__DEV__) {
   computedToDependenciesMap = new Map()
@@ -102,31 +101,81 @@ export const computed = <T>(
   }
 }
 
+class WatchEffect {
+  protected id: string
+  protected getter: () => (() => void) | void
+  protected subs: Map<Signal<any>, Function>
+  protected cleanup?: CleanupInstance
+  protected isRunning?: boolean
+  protected [$HMR_ACCEPT]?: HMRAccept<WatchEffect>
+
+  constructor(getter: () => (() => void) | void) {
+    this.id = crypto.randomUUID()
+    this.getter = getter
+    this.subs = new Map()
+    this.isRunning = false
+
+    this[$HMR_ACCEPT] = {
+      provide: () => this,
+      inject: (prev) => {
+        if (prev.isRunning) return
+        this.stop()
+      },
+      destroy: () => {
+        this.stop()
+      },
+    }
+  }
+
+  start() {
+    if (this.isRunning) {
+      return
+    }
+
+    this.isRunning = true
+    queueMicrotask(() => {
+      if (this.isRunning) {
+        this.cleanup = appliedTrackedEffects(this.getter, this.subs, this.id)
+      }
+    })
+  }
+
+  stop() {
+    if (!this.isRunning) {
+      return
+    }
+
+    effectQueue.delete(this.id)
+    this.subs.forEach((fn) => fn())
+    this.subs.clear()
+    this.cleanup?.call?.()
+    this.isRunning = false
+  }
+}
+
 export const watch = (getter: () => (() => void) | void) => {
   if (!node.current) {
-    const subs = new Map<Signal<any>, Function>()
-    const id = crypto.randomUUID()
-    queueMicrotask(() => {
-      appliedTrackedEffects(getter, subs, id)
-    })
+    const watcher = new WatchEffect(getter)
+    watcher.start()
+
+    return watcher
   } else {
     return useHook(
       "useWatch",
       {
-        subs: null as any as Map<Signal<any>, Function>,
-        id: null as any as string,
+        watcher: null as any as WatchEffect,
       },
       ({ hook, isInit }) => {
         if (isInit) {
-          hook.id = crypto.randomUUID()
-          hook.subs = new Map()
-          const cleanup = appliedTrackedEffects(getter, hook.subs, hook.id)
+          hook.watcher = new WatchEffect(getter)
+          hook.watcher.start()
+
           hook.cleanup = () => {
-            hook.subs.forEach((fn) => fn())
-            hook.subs.clear()
-            cleanup?.call?.()
+            hook.watcher.stop()
           }
         }
+
+        return hook.watcher
       }
     )
   }
@@ -380,6 +429,7 @@ const appliedTrackedEffects = (
 
   if (node.current && !sideEffectsEnabled()) {
     trackedSignals = []
+
     return cleanup
   }
 

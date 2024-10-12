@@ -10,8 +10,8 @@ const double = computed(() => {
   return 0
 }, "double")
 
-watch(() => {
-  console.log("double", count.value)
+const watcher = watch(() => {
+  console.log("double 123", double.value)
 })
 
 export function SignalsExample() {
@@ -56,6 +56,12 @@ const GlobalComputedExample = () => {
       </button>
       <button className="text-left" onclick={onSwitch}>
         Switch tracking
+      </button>
+      <button className="text-left" onclick={() => watcher.start()}>
+        start watcher
+      </button>
+      <button className="text-left" onclick={() => watcher.stop()}>
+        stop watcher
       </button>
     </div>
   )

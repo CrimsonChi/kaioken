@@ -203,12 +203,15 @@ function findHotVars(nodes: AstNode[], _id: string): string[] {
     createAliasBuilder("kaioken", "signal")
   const { addAliases: addComputedAliases, nodeContainsAliasCall: isComputed } =
     createAliasBuilder("kaioken", "computed")
+  const { addAliases: addWatchAliases, nodeContainsAliasCall: isWatch } =
+    createAliasBuilder("kaioken", "watch")
 
   for (const node of nodes) {
     if (node.type === "ImportDeclaration") {
       addCreateStoreAliases(node)
       addSignalAliases(node)
       addComputedAliases(node)
+      addWatchAliases(node)
       continue
     }
 
@@ -229,6 +232,10 @@ function findHotVars(nodes: AstNode[], _id: string): string[] {
     if (findNode(node, isComputed)) {
       addHotVarNames(node, hotVarNames)
       continue
+    }
+
+    if (findNode(node, isWatch)) {
+      addHotVarNames(node, hotVarNames)
     }
   }
   return Array.from(hotVarNames)
