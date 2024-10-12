@@ -1,15 +1,18 @@
-import { signal, computed, Route, Router, Link } from "kaioken"
+import { signal, computed, Route, Router, Link, watch } from "kaioken"
 
 const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
-    console.log("boop hell world")
-    return count.value * 1
+    return count.value * 4
   }
 
   return 0
 }, "double")
+
+watch(() => {
+  console.log("double", double.value)
+})
 
 export function SignalsExample() {
   return (

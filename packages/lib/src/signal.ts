@@ -14,6 +14,8 @@ type SignalDependency = {
   unsubs: Map<Signal<any>, Function>
 }
 
+// TODO: ensure we can stop a watcher
+
 let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
 let effectsSubCb: Map<Signal<any>, Set<SignalSubscriber>> | undefined
 
@@ -79,6 +81,7 @@ export const computed = <T>(
             hook.subs.forEach((fn) => fn())
             hook.subs.clear()
             Signal.subscribers(hook.signal).clear()
+            effectsSubCb?.delete(hook.signal)
           }
           if (__DEV__) {
             hook.debug = {
@@ -107,7 +110,9 @@ export const watch = (getter: () => (() => void) | void) => {
   if (!node.current) {
     const subs = new Map<Signal<any>, Function>()
     const id = crypto.randomUUID()
-    appliedTrackedEffects(getter, subs, id)
+    queueMicrotask(() => {
+      appliedTrackedEffects(getter, subs, id)
+    })
   } else {
     return useHook(
       "useWatch",
@@ -163,6 +168,7 @@ export class Signal<T> {
         inject: (prev) => {
           this.#subscribers
           this.sneak(prev.value)
+          console.log(prev.displayName, [...Signal.subscribers(this)])
 
           const effectSubs = effectsSubCb?.get(prev)
           Signal.subscribers(prev).forEach((sub) => {
@@ -193,6 +199,7 @@ export class Signal<T> {
           })
         },
         destroy: () => {
+          effectsSubCb?.delete(this)
           // cleanups and delete everything that is dependent on this signal
           computedToDependenciesMap!.forEach(({ unsubs }) => {
             const unsub = unsubs.get(this)
@@ -328,24 +335,25 @@ const appliedTrackedSignals = (
     unsub()
     subs.delete(sig)
   }
+  const cb = () => {
+    if (!effectQueue.has(effectId)) {
+      queueMicrotask(() => {
+        if (effectQueue.has(effectId)) {
+          const func = effectQueue.get(effectId)!
+          func()
+        }
+      })
+    }
+
+    effectQueue.set(effectId, () => {
+      appliedTrackedSignals(computedSignal, subs, effectId)
+      computedSignal.notify()
+    })
+  }
 
   trackedSignals.forEach((dependencySignal) => {
     if (subs.get(dependencySignal)) return
-    const cb = () => {
-      if (!effectQueue.has(effectId)) {
-        queueMicrotask(() => {
-          if (effectQueue.has(effectId)) {
-            const func = effectQueue.get(effectId)!
-            func()
-          }
-        })
-      }
 
-      effectQueue.set(effectId, () => {
-        appliedTrackedSignals(computedSignal, subs, effectId)
-        computedSignal.notify()
-      })
-    }
     const unsub = dependencySignal.subscribe(cb)
     subs.set(dependencySignal, unsub)
 
@@ -398,24 +406,34 @@ const appliedTrackedEffects = (
     subs.delete(sig)
   }
 
+  const cb = () => {
+    if (!effectQueue.has(effectId)) {
+      queueMicrotask(() => {
+        if (effectQueue.has(effectId)) {
+          const func = effectQueue.get(effectId)!
+          func()
+        }
+      })
+    }
+
+    effectQueue.set(effectId, () => {
+      cleanup.call?.()
+      appliedTrackedEffects(getter, subs, effectId, cleanup)
+    })
+  }
+
   trackedSignals.forEach((dependencySignal) => {
     if (subs.get(dependencySignal)) return
-    const unsub = dependencySignal.subscribe(() => {
-      if (!effectQueue.has(effectId)) {
-        queueMicrotask(() => {
-          if (effectQueue.has(effectId)) {
-            const func = effectQueue.get(effectId)!
-            func()
-          }
-        })
-      }
-
-      effectQueue.set(effectId, () => {
-        cleanup.call?.()
-        appliedTrackedEffects(getter, subs, effectId, cleanup)
-      })
-    })
+    const unsub = dependencySignal.subscribe(cb)
     subs.set(dependencySignal, unsub)
+
+    if (effectsSubCb && !effectsSubCb.has(dependencySignal)) {
+      effectsSubCb.set(dependencySignal, new Set<Function>())
+    }
+    const depEffectSet = effectsSubCb?.get(dependencySignal)
+    if (depEffectSet) {
+      depEffectSet.add(cb)
+    }
   })
 
   trackedSignals = []

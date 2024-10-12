@@ -104,10 +104,14 @@ function updateDom(vNode: VNode) {
           (vNode.cleanups[key](), delete vNode.cleanups[key])
       }
       if (Signal.isSignal(nextProps[key])) {
-        const unsub = nextProps[key].subscribe((v) => {
+        const cb: ((v: any) => void) & { vNodeFunc?: boolean } = (v: any) => {
           setProp(vNode, dom, key, v, unwrap(vNode.prev?.props[key]))
           emitGranularSignalChange(nextProps[key])
-        })
+        }
+        if (__DEV__) {
+          cb.vNodeFunc = true
+        }
+        const unsub = nextProps[key].subscribe(cb)
         ;(vNode.cleanups ??= {})[key] = unsub
         return setProp(
           vNode,
@@ -136,10 +140,14 @@ function emitGranularSignalChange(signal: Signal<any>) {
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
-  const unsub = signal.subscribe((v) => {
+  const cb: ((v: any) => void) & { vNodeFunc?: boolean } = (v) => {
     textNode.nodeValue = v
     emitGranularSignalChange(signal)
-  })
+  }
+  if (__DEV__) {
+    cb.vNodeFunc = true
+  }
+  const unsub = signal.subscribe(cb)
   ;(vNode.cleanups ??= {})["nodeValue"] = unsub
 }
 
