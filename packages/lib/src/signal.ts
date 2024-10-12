@@ -5,6 +5,7 @@ import { node } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
 import {
   getVNodeAppContext,
+  isVNode,
   sideEffectsEnabled,
   traverseApply,
 } from "./utils.js"
@@ -15,13 +16,9 @@ type SignalDependency = {
 }
 
 // TODO: ensure we can stop a watcher
-
 let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
-let effectsSubCb: Map<Signal<any>, Set<SignalSubscriber>> | undefined
-
 if (__DEV__) {
   computedToDependenciesMap = new Map()
-  effectsSubCb = new Map()
 }
 
 export const signal = <T>(initial: T, displayName?: string) => {
@@ -81,7 +78,6 @@ export const computed = <T>(
             hook.subs.forEach((fn) => fn())
             hook.subs.clear()
             Signal.subscribers(hook.signal).clear()
-            effectsSubCb?.delete(hook.signal)
           }
           if (__DEV__) {
             hook.debug = {
@@ -148,7 +144,9 @@ export interface SignalLike<T> {
   peek(): T
   subscribe(callback: (value: T) => void): () => void
 }
-type SignalSubscriber = Kaioken.VNode | Function
+export type SignalSubscriber =
+  | Kaioken.VNode
+  | (Function & { vNodeFunc?: boolean })
 
 export class Signal<T> {
   [$SIGNAL] = true
@@ -168,17 +166,11 @@ export class Signal<T> {
         inject: (prev) => {
           this.#subscribers
           this.sneak(prev.value)
-          console.log(prev.displayName, [...Signal.subscribers(this)])
 
-          const effectSubs = effectsSubCb?.get(prev)
           Signal.subscribers(prev).forEach((sub) => {
-            // if sub is from an effect don't push old sub into the new
-            if (effectSubs?.has(sub)) {
-              effectSubs.delete(sub)
-              return
+            if (isVNode(sub) || sub.vNodeFunc) {
+              Signal.subscribers(this).add(sub)
             }
-
-            return Signal.subscribers(this).add(sub)
           })
 
           if (computedToDependenciesMap!.get(prev)) {
@@ -199,7 +191,6 @@ export class Signal<T> {
           })
         },
         destroy: () => {
-          effectsSubCb?.delete(this)
           // cleanups and delete everything that is dependent on this signal
           computedToDependenciesMap!.forEach(({ unsubs }) => {
             const unsub = unsubs.get(this)
@@ -356,14 +347,6 @@ const appliedTrackedSignals = (
 
     const unsub = dependencySignal.subscribe(cb)
     subs.set(dependencySignal, unsub)
-
-    if (effectsSubCb && !effectsSubCb.has(dependencySignal)) {
-      effectsSubCb.set(dependencySignal, new Set<Function>())
-    }
-    const depEffectSet = effectsSubCb?.get(dependencySignal)
-    if (depEffectSet) {
-      depEffectSet.add(cb)
-    }
   })
 
   if (computedToDependenciesMap) {
@@ -426,14 +409,6 @@ const appliedTrackedEffects = (
     if (subs.get(dependencySignal)) return
     const unsub = dependencySignal.subscribe(cb)
     subs.set(dependencySignal, unsub)
-
-    if (effectsSubCb && !effectsSubCb.has(dependencySignal)) {
-      effectsSubCb.set(dependencySignal, new Set<Function>())
-    }
-    const depEffectSet = effectsSubCb?.get(dependencySignal)
-    if (depEffectSet) {
-      depEffectSet.add(cb)
-    }
   })
 
   trackedSignals = []

@@ -4,14 +4,14 @@ const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
-    return count.value * 4
+    return count.value * 2
   }
 
   return 0
 }, "double")
 
 watch(() => {
-  console.log("double", double.value)
+  console.log("double", count.value)
 })
 
 export function SignalsExample() {
