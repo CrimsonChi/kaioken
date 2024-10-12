@@ -12,15 +12,14 @@ import {
 type SignalDependency = {
   effectId: string
   unsubs: Map<Signal<any>, Function>
-  subs: Function[]
 }
 
 let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
-let subsCb: Function[] | undefined
+let effectsSubCb: Map<Signal<any>, Set<SignalSubscriber>> | undefined
 
 if (__DEV__) {
   computedToDependenciesMap = new Map()
-  subsCb = []
+  effectsSubCb = new Map()
 }
 
 export const signal = <T>(initial: T, displayName?: string) => {
@@ -162,29 +161,19 @@ export class Signal<T> {
           return this as Signal<any>
         },
         inject: (prev) => {
-          console.log("prev", [...Signal.subscribers(prev)], this.displayName)
-          console.log(
-            "new before",
-            [...Signal.subscribers(this)],
-            this.displayName
-          )
-          console.log(
-            Signal.subscribers(prev) === Signal.subscribers(this),
-            this.displayName
-          )
           this.#subscribers
           this.sneak(prev.value)
+
+          const effectSubs = effectsSubCb?.get(prev)
           Signal.subscribers(prev).forEach((sub) => {
-            // if computed don't push in old sub here
-            console.log(subsCb, subsCb?.includes(sub as Function))
-            if (subsCb?.includes(sub as Function)) {
+            // if sub is from an effect don't push old sub into the new
+            if (effectSubs?.has(sub)) {
+              effectSubs.delete(sub)
               return
             }
 
             return Signal.subscribers(this).add(sub)
           })
-
-          console.log("new", [...Signal.subscribers(this)], this.displayName)
 
           if (computedToDependenciesMap!.get(prev)) {
             const unsubs =
@@ -340,7 +329,6 @@ const appliedTrackedSignals = (
     subs.delete(sig)
   }
 
-  const subCb: Function[] = []
   trackedSignals.forEach((dependencySignal) => {
     if (subs.get(dependencySignal)) return
     const cb = () => {
@@ -360,15 +348,20 @@ const appliedTrackedSignals = (
     }
     const unsub = dependencySignal.subscribe(cb)
     subs.set(dependencySignal, unsub)
-    subsCb?.push(cb)
-    subCb.push(cb)
+
+    if (effectsSubCb && !effectsSubCb.has(dependencySignal)) {
+      effectsSubCb.set(dependencySignal, new Set<Function>())
+    }
+    const depEffectSet = effectsSubCb?.get(dependencySignal)
+    if (depEffectSet) {
+      depEffectSet.add(cb)
+    }
   })
 
   if (computedToDependenciesMap) {
     computedToDependenciesMap.set(computedSignal, {
       effectId,
       unsubs: subs,
-      subs: subCb,
     })
   }
 
