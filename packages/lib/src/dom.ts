@@ -418,7 +418,8 @@ function placeDom(
     let prevDom: MaybeDom
     let parent = vNode.parent!
     let child = parent.child
-    const seenParents = new Set<VNode>([parent])
+    const seenParents = new Set<VNode>()
+    const branchStack: VNode[] = []
     while (child && parent.depth >= mntParent.depth) {
       if (child === vNode) {
         if (prevDom) break
@@ -433,6 +434,12 @@ function placeDom(
       const dom = child.dom
       if (dom?.isConnected && !isPortalRoot) prevDom = child.dom
 
+      if (prevDom && branchStack.length) {
+        child = branchStack.pop()!
+        parent = child.parent!
+        continue
+      }
+
       if (
         !dom &&
         child.child &&
@@ -441,6 +448,10 @@ function placeDom(
         // prevent traversing downward through portals
         !isPortalRoot
       ) {
+        // if there's a sibling, add a 'checkpoint' that we can return to
+        if (child.sibling) {
+          branchStack.push(child.sibling)
+        }
         parent = child
         child = parent.child
         continue
