@@ -114,7 +114,7 @@ class WatchEffect {
     this.getter = getter
     this.subs = new Map()
     this.isRunning = false
-
+    if (__DEV__) {
     this[$HMR_ACCEPT] = {
       provide: () => this,
       inject: (prev) => {
@@ -124,6 +124,7 @@ class WatchEffect {
       destroy: () => {
         this.stop()
       },
+      }
     }
   }
 
