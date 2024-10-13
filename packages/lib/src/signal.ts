@@ -114,16 +114,17 @@ class WatchEffect {
     this.getter = getter
     this.subs = new Map()
     this.isRunning = false
-
-    this[$HMR_ACCEPT] = {
-      provide: () => this,
-      inject: (prev) => {
-        if (prev.isRunning) return
-        this.stop()
-      },
-      destroy: () => {
-        this.stop()
-      },
+    if (__DEV__) {
+      this[$HMR_ACCEPT] = {
+        provide: () => this,
+        inject: (prev) => {
+          if (prev.isRunning) return
+          this.stop()
+        },
+        destroy: () => {
+          this.stop()
+        },
+      }
     }
   }
 
@@ -133,6 +134,13 @@ class WatchEffect {
     }
 
     this.isRunning = true
+    /**
+     * A tighter integration with HMR could see us
+     * only needing to delay this during an HMR update.
+     *
+     * We postpone the callback until the next tick so that HMR
+     * can persist any referenced signals.
+     */
     queueMicrotask(() => {
       if (this.isRunning) {
         this.cleanup = appliedTrackedEffects(this.getter, this.subs, this.id)
@@ -191,7 +199,9 @@ export const watch = (getter: () => (() => void) | void) => {
   }
 }
 
-export function unwrap(value: unknown) {
+export function unwrap<T extends Signal<any> | unknown>(
+  value: T
+): T extends Signal<infer U> ? U : T {
   return Signal.isSignal(value) ? value.peek() : value
 }
 
@@ -209,13 +219,13 @@ export type SignalSubscriber =
 
 export class Signal<T> {
   [$SIGNAL] = true
-  #value: T
-  #subscribers = new Set<SignalSubscriber>()
-  #getter?: () => T
+  protected $value: T
+  protected $subscribers = new Set<SignalSubscriber>()
+  protected $getter?: () => T
   displayName?: string;
   [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
   constructor(initial: T, displayName?: string) {
-    this.#value = initial
+    this.$value = initial
     if (displayName) this.displayName = displayName
     if (__DEV__) {
       this[$HMR_ACCEPT] = {
@@ -272,37 +282,37 @@ export class Signal<T> {
 
   get value() {
     Signal.entangle(this)
-    return this.#value
+    return this.$value
   }
 
   set value(next: T) {
-    this.#value = next
+    this.$value = next
     this.notify()
   }
 
   peek() {
-    return this.#value
+    return this.$value
   }
 
   sneak(newValue: T) {
-    this.#value = newValue
+    this.$value = newValue
   }
 
   toString() {
     Signal.entangle(this)
-    return `${this.#value}`
+    return `${this.$value}`
   }
 
   subscribe(cb: (state: T) => void): () => void {
-    this.#subscribers.add(cb)
-    return () => (this.#subscribers.delete(cb), void 0)
+    this.$subscribers.add(cb)
+    return () => (this.$subscribers.delete(cb), void 0)
   }
 
   notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
-    this.#subscribers.forEach((sub) => {
+    this.$subscribers.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
       if (sub instanceof Function) {
-        return sub(this.#value)
+        return sub(this.$value)
       }
       getVNodeAppContext(sub).requestUpdate(sub)
     })
@@ -313,11 +323,11 @@ export class Signal<T> {
   }
 
   static unsubscribe(sub: SignalSubscriber, signal: Signal<any>) {
-    signal.#subscribers.delete(sub)
+    signal.$subscribers.delete(sub)
   }
 
   static subscribers(signal: Signal<any>) {
-    return signal.#subscribers
+    return signal.$subscribers
   }
 
   static makeReadonly<T>(
@@ -325,12 +335,12 @@ export class Signal<T> {
     getter?: () => T
   ): ReadonlySignal<T> {
     const desc = Object.getOwnPropertyDescriptor(signal, "value")
-    signal.#getter = getter
+    signal.$getter = getter
     if (desc && !desc.writable) return signal
     return Object.defineProperty(signal, "value", {
       get: function (this: Signal<T>) {
         Signal.entangle(this)
-        return this.#value
+        return this.$value
       },
       configurable: true,
     })
@@ -341,19 +351,19 @@ export class Signal<T> {
     return Object.defineProperty(signal, "value", {
       get: function (this: Signal<T>) {
         Signal.entangle(this)
-        return this.#value
+        return this.$value
       },
       set: function (this: Signal<T>, value) {
-        this.#value = value
+        this.$value = value
         this.notify()
       },
       configurable: true,
     })
   }
   static getComputedGetter<T>(signal: Signal<T>) {
-    if (!signal.#getter)
+    if (!signal.$getter)
       throw new Error("attempted to get computed getter on non-computed signal")
-    return signal.#getter
+    return signal.$getter
   }
 
   static entangle<T>(signal: Signal<T>) {
