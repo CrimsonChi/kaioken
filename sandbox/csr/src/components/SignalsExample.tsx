@@ -1,4 +1,4 @@
-import { signal, computed, Route, Router, Link } from "kaioken"
+import { signal, computed, Route, Router, Link, watch } from "kaioken"
 
 const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
@@ -6,8 +6,13 @@ const double = computed(() => {
   if (isTracking.value) {
     return count.value * 2
   }
+
   return 0
 }, "double")
+
+const watcher = watch(() => {
+  console.log("double 123", double.value)
+})
 
 export function SignalsExample() {
   return (
@@ -30,20 +35,19 @@ export function SignalsExample() {
 
 const GlobalComputedExample = () => {
   console.log("GlobalComputedExample")
-  const divId = signal("test")
-  const onInc = () => {
+  const refTest = signal(null)
+  const onInc = async () => {
     count.value += 1
-    divId.value += "|test"
   }
 
   const onSwitch = () => {
     isTracking.value = !isTracking.value
-    console.log("calling on switch metohd")
+    console.log("calling on switch method")
   }
 
   return (
-    <div id={divId} className="flex flex-col">
-      <h1>Count: {count}</h1>
+    <div ref={refTest} className="flex flex-col">
+      <h1>count: {count}</h1>
       <h1>Double: {double}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
 
@@ -52,6 +56,12 @@ const GlobalComputedExample = () => {
       </button>
       <button className="text-left" onclick={onSwitch}>
         Switch tracking
+      </button>
+      <button className="text-left" onclick={() => watcher.start()}>
+        start watcher
+      </button>
+      <button className="text-left" onclick={() => watcher.stop()}>
+        stop watcher
       </button>
     </div>
   )
@@ -62,7 +72,7 @@ const LocalComputedExample = () => {
   const localIsTracking = signal(false, "local is tracking")
   const localDouble = computed(() => {
     if (localIsTracking.value) {
-      return localCount.value * 2
+      return localCount.value * 100
     }
 
     return 0
