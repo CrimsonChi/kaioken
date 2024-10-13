@@ -213,7 +213,6 @@ export class Signal<T> {
           return this as Signal<any>
         },
         inject: (prev) => {
-          this.#subscribers
           this.sneak(prev.value)
 
           Signal.subscribers(prev).forEach((sub) => {
@@ -229,6 +228,7 @@ export class Signal<T> {
             const { effectId } = computedToDependenciesMap!.get(prev)!
             appliedTrackedSignals(this, unsubs, effectId)
           }
+
           window.__kaioken?.apps.forEach((app) => {
             traverseApply(app.rootNode!, (vNode) => {
               if (typeof vNode.type !== "function") return
