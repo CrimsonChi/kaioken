@@ -226,7 +226,9 @@ function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
     cb.vNodeFunc = true
   }
   const unsub = signal.subscribe(cb)
-  ;(vNode.cleanups ??= {})["nodeValue"] = unsub
+  ;(vNode.cleanups ??= {})["nodeValue"] = () => {
+    unsub()
+  }
 }
 
 function hydrateDom(vNode: VNode) {
@@ -581,7 +583,9 @@ function commitDeletion(vNode: VNode) {
   }
   traverseApply(vNode, (n) => {
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
-    while (n.subs?.length) Signal.unsubscribe(n, n.subs.pop()!)
+    while (n.subs?.length) {
+      Signal.unsubscribe(n, n.subs.pop()!)
+    }
     n.cleanups && Object.values(n.cleanups).forEach((c) => c())
     delete n.cleanups
 

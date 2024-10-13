@@ -185,7 +185,7 @@ declare global {
       index: number
       depth: number
       hooks?: Hook<unknown>[]
-      subs?: Signal<any>[]
+      subs?: string[]
       cleanups?: Record<string, Function>
       parent?: VNode
       child?: VNode

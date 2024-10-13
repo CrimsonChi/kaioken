@@ -2,20 +2,18 @@ import type { HMRAccept } from "./hmr"
 import { $HMR_ACCEPT, $SIGNAL } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { node } from "./globals.js"
-import { cleanupHook, useHook } from "./hooks/utils.js"
-import {
-  getVNodeAppContext,
-  isVNode,
-  sideEffectsEnabled,
-  traverseApply,
-} from "./utils.js"
+import { useHook } from "./hooks/utils.js"
+import { getVNodeAppContext, sideEffectsEnabled } from "./utils.js"
 
 type SignalDependency = {
   effectId: string
-  unsubs: Map<Signal<any>, Function>
+  unsubs: Map<string, Function>
 }
 
-let computedToDependenciesMap: Map<Signal<any>, SignalDependency> | undefined
+const signalSubsMap: Map<string, Set<SignalSubscriber>> = new Map()
+const computedGetterMap: Map<string, Function> = new Map()
+
+let computedToDependenciesMap: Map<string, SignalDependency> | undefined
 if (__DEV__) {
   computedToDependenciesMap = new Map()
 }
@@ -54,12 +52,10 @@ export const computed = <T>(
   displayName?: string
 ): ReadonlySignal<T> => {
   if (!node.current) {
-    const computed = Signal.makeReadonly(
-      new Signal(null as T, displayName),
-      getter
-    )
-    const subs = new Map<Signal<any>, Function>()
-    const id = crypto.randomUUID()
+    const computed = Signal.makeReadonly(new Signal(null as T, displayName))
+    const subs = new Map<string, Function>()
+    const id = Signal.getId(computed)
+    computedGetterMap.set(id, getter)
     appliedTrackedSignals(computed, subs, id)
 
     return computed
@@ -68,8 +64,8 @@ export const computed = <T>(
       "useComputedSignal",
       {
         signal: undefined as any as Signal<T>,
-        subs: null as any as Map<Signal<any>, Function>,
-        id: null as any as ReturnType<typeof crypto.randomUUID>,
+        subs: null as any as Map<string, Function>,
+        id: null as any as string,
       },
       ({ hook, isInit }) => {
         if (isInit) {
@@ -86,12 +82,10 @@ export const computed = <T>(
               }),
             }
           }
-          hook.id = crypto.randomUUID()
+          hook.signal = Signal.makeReadonly(new Signal(null as T, displayName))
+          hook.id = Signal.getId(hook.signal)
+          computedGetterMap.set(hook.id, getter)
           hook.subs = new Map()
-          hook.signal = Signal.makeReadonly(
-            new Signal(null as T, displayName),
-            getter
-          )
           appliedTrackedSignals(hook.signal, hook.subs, hook.id)
         }
 
@@ -143,7 +137,11 @@ class WatchEffect {
      */
     queueMicrotask(() => {
       if (this.isRunning) {
-        this.cleanup = appliedTrackedEffects(this.getter, this.subs, this.id)
+        this.cleanup = appliedTrackedEffects(
+          () => this.getter(),
+          this.subs,
+          this.id
+        )
       }
     })
   }
@@ -160,8 +158,8 @@ class WatchEffect {
     this.isRunning = false
   }
 
-  static getter(watcher: WatchEffect) {
-    return watcher.getter
+  static setGetter(watcher: WatchEffect, getter: () => (() => void) | void) {
+    watcher.getter = getter
   }
 }
 
@@ -178,19 +176,15 @@ export const watch = (getter: () => (() => void) | void) => {
         watcher: null as any as WatchEffect,
       },
       ({ hook, isInit }) => {
-        let hasGetterChanged =
-          !!hook.watcher && WatchEffect.getter(hook.watcher) !== getter
-        if (hasGetterChanged) {
-          cleanupHook(hook)
-        }
-
-        if (isInit || hasGetterChanged) {
+        if (isInit) {
           hook.watcher = new WatchEffect(getter)
           hook.watcher.start()
 
           hook.cleanup = () => {
             hook.watcher.stop()
           }
+        } else if (hook.watcher) {
+          WatchEffect.setGetter(hook.watcher, getter)
         }
 
         return hook.watcher
@@ -219,12 +213,14 @@ export type SignalSubscriber =
 
 export class Signal<T> {
   [$SIGNAL] = true
+  protected $id: string
   protected $value: T
-  protected $subscribers = new Set<SignalSubscriber>()
-  protected $getter?: () => T
   displayName?: string;
   [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
   constructor(initial: T, displayName?: string) {
+    this.$id = crypto.randomUUID()
+    signalSubsMap.set(this.$id, new Set())
+
     this.$value = initial
     if (displayName) this.displayName = displayName
     if (__DEV__) {
@@ -235,47 +231,29 @@ export class Signal<T> {
         inject: (prev) => {
           this.sneak(prev.value)
 
-          Signal.subscribers(prev).forEach((sub) => {
-            if (isVNode(sub) || sub.vNodeFunc) {
-              Signal.subscribers(this).add(sub)
-            }
-          })
+          const newId = this.$id
+          signalSubsMap.get(this.$id)?.clear?.()
+          signalSubsMap.delete(this.$id)
+          this.$id = prev.$id
 
-          if (computedToDependenciesMap!.get(prev)) {
+          if (computedToDependenciesMap!.has(this.$id)) {
+            const newGetter = computedGetterMap.get(newId)!
+            computedGetterMap.delete(newId)
+
             const unsubs =
-              computedToDependenciesMap?.get(this)?.unsubs ??
-              new Map<Signal<any>, Function>()
-            const { effectId } = computedToDependenciesMap!.get(prev)!
-            appliedTrackedSignals(this, unsubs, effectId)
-          }
+              computedToDependenciesMap?.get(this.$id)?.unsubs ??
+              new Map<string, Function>()
 
-          window.__kaioken?.apps.forEach((app) => {
-            traverseApply(app.rootNode!, (vNode) => {
-              if (typeof vNode.type !== "function") return
-              if (vNode.subs === undefined) return
-              const idx = vNode.subs.findIndex((sub) => sub === prev)
-              if (idx === -1) return
-              vNode.subs[idx] = this
-            })
-          })
-        },
-        destroy: () => {
-          // cleanups and delete everything that is dependent on this signal
-          computedToDependenciesMap!.forEach(({ unsubs }) => {
-            const unsub = unsubs.get(this)
-            if (unsub) {
+            for (let [id, unsub] of unsubs.entries()) {
               unsub()
-              unsubs.delete(this)
+              unsubs.delete(id)
             }
-          })
 
-          // cleans up all the signals own deps
-          computedToDependenciesMap!.get(this)?.unsubs.forEach((unsub) => {
-            unsub()
-          })
-          computedToDependenciesMap!.delete(this)
-          Signal.subscribers(this).clear()
+            computedGetterMap.set(this.$id, newGetter)
+            appliedTrackedSignals(this, unsubs, this.$id)
+          }
         },
+        destroy: () => {},
       } satisfies HMRAccept<Signal<any>>
     }
   }
@@ -304,12 +282,17 @@ export class Signal<T> {
   }
 
   subscribe(cb: (state: T) => void): () => void {
-    this.$subscribers.add(cb)
-    return () => (this.$subscribers.delete(cb), void 0)
+    const subs = signalSubsMap.get(this.$id)!
+    subs!.add(cb)
+    return () => {
+      const subs = signalSubsMap.get(this.$id)!
+      subs!.delete(cb)
+    }
   }
 
   notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
-    this.$subscribers.forEach((sub) => {
+    const subs = signalSubsMap.get(this.$id)!
+    subs.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
       if (sub instanceof Function) {
         return sub(this.$value)
@@ -322,20 +305,17 @@ export class Signal<T> {
     return typeof x === "object" && !!x && $SIGNAL in x
   }
 
-  static unsubscribe(sub: SignalSubscriber, signal: Signal<any>) {
-    signal.$subscribers.delete(sub)
+  static unsubscribe(sub: SignalSubscriber, id: string) {
+    const subs = signalSubsMap.get(id)!
+    subs.delete(sub)
   }
 
   static subscribers(signal: Signal<any>) {
-    return signal.$subscribers
+    return signalSubsMap.get(signal.$id)!
   }
 
-  static makeReadonly<T>(
-    signal: Signal<T>,
-    getter?: () => T
-  ): ReadonlySignal<T> {
+  static makeReadonly<T>(signal: Signal<T>): ReadonlySignal<T> {
     const desc = Object.getOwnPropertyDescriptor(signal, "value")
-    signal.$getter = getter
     if (desc && !desc.writable) return signal
     return Object.defineProperty(signal, "value", {
       get: function (this: Signal<T>) {
@@ -345,6 +325,7 @@ export class Signal<T> {
       configurable: true,
     })
   }
+
   static makeWritable<T>(signal: Signal<T>): Signal<T> {
     const desc = Object.getOwnPropertyDescriptor(signal, "value")
     if (desc && desc.writable) return signal
@@ -360,10 +341,17 @@ export class Signal<T> {
       configurable: true,
     })
   }
+
   static getComputedGetter<T>(signal: Signal<T>) {
-    if (!signal.$getter)
-      throw new Error("attempted to get computed getter on non-computed signal")
-    return signal.$getter
+    if (!computedGetterMap.has(signal.$id)) {
+      throw new Error("Some computed error message here")
+    }
+
+    return computedGetterMap.get(signal.$id)!
+  }
+
+  static getId<T>(signal: Signal<T>) {
+    return signal.$id
   }
 
   static entangle<T>(signal: Signal<T>) {
@@ -375,9 +363,9 @@ export class Signal<T> {
     }
     if (node.current) {
       if (!sideEffectsEnabled()) return
-      if (!node.current.subs) node.current.subs = [signal]
-      else if (node.current.subs.indexOf(signal) === -1)
-        node.current.subs.push(signal)
+      if (!node.current.subs) node.current.subs = [signal.$id]
+      else if (node.current.subs.indexOf(signal.$id) === -1)
+        node.current.subs.push(signal.$id)
       Signal.subscribers(signal).add(node.current)
     }
   }
@@ -389,7 +377,7 @@ const effectQueue = new Map<string, Function>()
 
 const appliedTrackedSignals = (
   computedSignal: ReadonlySignal<any>,
-  subs: Map<Signal<any>, Function>,
+  unsubs: Map<string, Function>,
   effectId: string
 ) => {
   if (effectQueue.has(effectId)) {
@@ -406,11 +394,14 @@ const appliedTrackedSignals = (
     return
   }
 
-  for (const [sig, unsub] of subs) {
-    if (trackedSignals.includes(sig)) continue
+  const trackedSignalsIds = trackedSignals.map((sig) => Signal.getId(sig))
+
+  for (const [id, unsub] of unsubs) {
+    if (trackedSignalsIds.includes(id)) continue
     unsub()
-    subs.delete(sig)
+    unsubs.delete(id)
   }
+
   const cb = () => {
     if (!effectQueue.has(effectId)) {
       queueMicrotask(() => {
@@ -422,22 +413,23 @@ const appliedTrackedSignals = (
     }
 
     effectQueue.set(effectId, () => {
-      appliedTrackedSignals(computedSignal, subs, effectId)
+      appliedTrackedSignals(computedSignal, unsubs, effectId)
       computedSignal.notify()
     })
   }
 
   trackedSignals.forEach((dependencySignal) => {
-    if (subs.get(dependencySignal)) return
+    const id = Signal.getId(dependencySignal)
+    if (unsubs.get(id)) return
 
     const unsub = dependencySignal.subscribe(cb)
-    subs.set(dependencySignal, unsub)
+    unsubs.set(id, unsub)
   })
 
   if (computedToDependenciesMap) {
-    computedToDependenciesMap.set(computedSignal, {
+    computedToDependenciesMap.set(Signal.getId(computedSignal), {
       effectId,
-      unsubs: subs,
+      unsubs: unsubs,
     })
   }
 

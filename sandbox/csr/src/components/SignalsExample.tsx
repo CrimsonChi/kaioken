@@ -4,15 +4,11 @@ const count = signal(0, "count")
 const isTracking = signal(false, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
-    return count.value * 2
+    return count.value * 100
   }
 
   return 0
 }, "double")
-
-const watcher = watch(() => {
-  console.log("double 123", double.value)
-})
 
 export function SignalsExample() {
   return (
@@ -40,6 +36,10 @@ const GlobalComputedExample = () => {
     count.value += 1
   }
 
+  const watcher = watch(() => {
+    console.log("count 123", count.value)
+  })
+
   const onSwitch = () => {
     isTracking.value = !isTracking.value
     console.log("calling on switch method")
@@ -47,7 +47,7 @@ const GlobalComputedExample = () => {
 
   return (
     <div ref={refTest} className="flex flex-col">
-      <h1>count: {count}</h1>
+      <h1>count: {count.value}</h1>
       <h1>Double: {double}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
 
