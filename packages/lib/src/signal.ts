@@ -189,7 +189,9 @@ export const watch = (getter: () => (() => void) | void) => {
   }
 }
 
-export function unwrap(value: unknown) {
+export function unwrap<T extends Signal<any> | unknown>(
+  value: T
+): T extends Signal<infer U> ? U : T {
   return Signal.isSignal(value) ? value.peek() : value
 }
 
