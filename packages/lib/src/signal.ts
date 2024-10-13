@@ -2,7 +2,7 @@ import type { HMRAccept } from "./hmr"
 import { $HMR_ACCEPT, $SIGNAL } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { node } from "./globals.js"
-import { useHook } from "./hooks/utils.js"
+import { cleanupHook, useHook } from "./hooks/utils.js"
 import {
   getVNodeAppContext,
   isVNode,
@@ -159,6 +159,10 @@ class WatchEffect {
     this.cleanup?.call?.()
     this.isRunning = false
   }
+
+  static getter(watcher: WatchEffect) {
+    return watcher.getter
+  }
 }
 
 export const watch = (getter: () => (() => void) | void) => {
@@ -174,7 +178,13 @@ export const watch = (getter: () => (() => void) | void) => {
         watcher: null as any as WatchEffect,
       },
       ({ hook, isInit }) => {
-        if (isInit) {
+        let hasGetterChanged =
+          !!hook.watcher && WatchEffect.getter(hook.watcher) !== getter
+        if (hasGetterChanged) {
+          cleanupHook(hook)
+        }
+
+        if (isInit || hasGetterChanged) {
           hook.watcher = new WatchEffect(getter)
           hook.watcher.start()
 
@@ -271,7 +281,7 @@ export class Signal<T> {
   }
 
   get value() {
-    onSignalValueObserved(this)
+    Signal.entangle(this)
     return this.$value
   }
 
@@ -289,7 +299,7 @@ export class Signal<T> {
   }
 
   toString() {
-    onSignalValueObserved(this)
+    Signal.entangle(this)
     return `${this.$value}`
   }
 
@@ -329,7 +339,7 @@ export class Signal<T> {
     if (desc && !desc.writable) return signal
     return Object.defineProperty(signal, "value", {
       get: function (this: Signal<T>) {
-        onSignalValueObserved(this)
+        Signal.entangle(this)
         return this.$value
       },
       configurable: true,
@@ -340,7 +350,7 @@ export class Signal<T> {
     if (desc && desc.writable) return signal
     return Object.defineProperty(signal, "value", {
       get: function (this: Signal<T>) {
-        onSignalValueObserved(this)
+        Signal.entangle(this)
         return this.$value
       },
       set: function (this: Signal<T>, value) {
@@ -354,6 +364,22 @@ export class Signal<T> {
     if (!signal.$getter)
       throw new Error("attempted to get computed getter on non-computed signal")
     return signal.$getter
+  }
+
+  static entangle<T>(signal: Signal<T>) {
+    if (isTracking) {
+      if (!node.current || (node.current && sideEffectsEnabled())) {
+        trackedSignals.push(signal)
+      }
+      return
+    }
+    if (node.current) {
+      if (!sideEffectsEnabled()) return
+      if (!node.current.subs) node.current.subs = [signal]
+      else if (node.current.subs.indexOf(signal) === -1)
+        node.current.subs.push(signal)
+      Signal.subscribers(signal).add(node.current)
+    }
   }
 }
 
@@ -484,20 +510,4 @@ export const tick = () => {
       effectQueue.delete(id)
     }
   })
-}
-
-const onSignalValueObserved = (signal: Signal<any>) => {
-  if (isTracking) {
-    if (!node.current || (node.current && sideEffectsEnabled())) {
-      trackedSignals.push(signal)
-    }
-    return
-  }
-  if (node.current) {
-    if (!sideEffectsEnabled()) return
-    if (!node.current.subs) node.current.subs = [signal]
-    else if (node.current.subs.indexOf(signal) === -1)
-      node.current.subs.push(signal)
-    Signal.subscribers(signal).add(node.current)
-  }
 }
