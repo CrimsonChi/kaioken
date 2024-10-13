@@ -2,16 +2,23 @@ import { useState, useRouter, Link, Router, Route } from "kaioken"
 
 export function RouterExample() {
   const [count, setCount] = useState(0)
-  const { params, query } = useRouter()
-  console.log("RouterTest", params, query)
+  const {
+    params,
+    query: { sort = "desc" },
+  } = useRouter()
+  console.log("RouterTest", params, sort)
   return (
     <div>
-      <p>query: {query.sort}</p>
+      <p>query: {sort}</p>
       <p>params: {JSON.stringify(params, null, 2)}</p>
       <p>count: {count}</p>
       <button onclick={() => setCount((c) => c + 1)}>+</button>
-      <Link to="/?sort=desc">Home</Link>
-      <Link to="/child-route/420?sort=desc">Child Route</Link>
+      <Link to={`/?sort=${sort}`} inherit>
+        Home
+      </Link>
+      <Link to={`/child-route/69?sort=${sort}`} inherit>
+        Child Route
+      </Link>
       <Router>
         <Route path="/" element={<h2>Home</h2>} />
         <Route path="/child-route/:funny-number" element={<ChildRoute />} />
