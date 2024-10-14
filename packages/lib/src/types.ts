@@ -2,7 +2,7 @@ import type {
   ReadonlySignal,
   Signal as SignalClass,
   SignalLike,
-} from "./signal"
+} from "./signals"
 import type { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {

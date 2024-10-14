@@ -1,7 +1,7 @@
 import type { Store } from "./store"
 import { $HMR_ACCEPT } from "./constants.js"
 import { __DEV__ } from "./env.js"
-import { Signal } from "./signal.js"
+import { Signal } from "./signals"
 import { traverseApply } from "./utils.js"
 
 export type HMRAccept<T = {}> = {

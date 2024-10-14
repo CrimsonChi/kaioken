@@ -1,6 +1,6 @@
 import { node, nodeToCtxMap, renderMode } from "./globals.js"
 import { $CONTEXT_PROVIDER, $FRAGMENT, REGEX_UNIT } from "./constants.js"
-import { unwrap } from "./signal.js"
+import { unwrap } from "./signals"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
 import type { ExoticVNode } from "./types.utils"

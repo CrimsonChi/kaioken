@@ -1,5 +1,5 @@
 import { KaiokenError } from "./error.js"
-import { Signal } from "./signal.js"
+import { Signal } from "./signals"
 
 export function assertValidElementProps(vNode: Kaioken.VNode) {
   if ("children" in vNode.props && vNode.props.innerHTML) {
