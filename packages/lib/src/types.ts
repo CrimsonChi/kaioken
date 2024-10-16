@@ -105,16 +105,15 @@ declare global {
 
     type Children = JSX.Element | JSX.Element[]
 
+    type PrimitiveChild = string | number | bigint | boolean | undefined | null
+
     type ElementKey = string | number | null | undefined
+
     type Element =
       | Element[]
       | Kaioken.VNode
-      | string
-      | number
-      | null
-      | boolean
-      | undefined
-      | Kaioken.Signal<string | number | null | undefined>
+      | PrimitiveChild
+      | Kaioken.Signal<PrimitiveChild>
 
     type ElementAttributes = {
       key?: JSX.ElementKey

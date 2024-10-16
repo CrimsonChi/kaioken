@@ -13,8 +13,8 @@ const double = computed(() => {
 
 const quadruple = computed(() => {
   console.log("quad 123", count.value)
-  return count.value * 2
-}, "double")
+  return count.value * 4
+}, "quadruple")
 
 const watcher = watch(() => {
   console.log("count 123", count.value)
@@ -55,6 +55,7 @@ const GlobalComputedExample = () => {
     <div ref={refTest} className="flex flex-col">
       <h1>count: {count}</h1>
       <h1>Double: {double}</h1>
+      <h1>Quadruple: {quadruple}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
 
       <button className="mt-4 text-left" onclick={onInc}>
