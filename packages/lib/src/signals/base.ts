@@ -1,18 +1,23 @@
 import { $HMR_ACCEPT, $SIGNAL } from "../constants.js"
 import { __DEV__ } from "../env.js"
 import type { HMRAccept } from "../hmr.js"
-import { getVNodeAppContext, sideEffectsEnabled } from "../utils.js"
+import {
+  getVNodeAppContext,
+  safeStringify,
+  sideEffectsEnabled,
+} from "../utils.js"
 import { tracking, signalSubsMap } from "./globals.js"
 import { type SignalSubscriber, ReadonlySignal } from "./types.js"
 import { node } from "../globals.js"
 import { useHook } from "../hooks/utils.js"
 
 export class Signal<T> {
-  [$SIGNAL] = true
+  [$SIGNAL] = true;
+  [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
+  displayName?: string
   protected $id: string
   protected $value: T
-  displayName?: string;
-  [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
+  protected $initialValue?: string
   constructor(initial: T, displayName?: string) {
     this.$id = crypto.randomUUID()
     signalSubsMap.set(this.$id, new Set())
@@ -20,12 +25,15 @@ export class Signal<T> {
     this.$value = initial
     if (displayName) this.displayName = displayName
     if (__DEV__) {
+      this.$initialValue = safeStringify(initial)
       this[$HMR_ACCEPT] = {
         provide: () => {
           return this as Signal<any>
         },
         inject: (prev) => {
-          this.sneak(prev.value)
+          if (this.$initialValue === prev.$initialValue) {
+            this.$value = prev.$value
+          }
 
           signalSubsMap.get(this.$id)?.clear?.()
           signalSubsMap.delete(this.$id)
