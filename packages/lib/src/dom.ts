@@ -199,7 +199,11 @@ function updateDom(vNode: VNode) {
       setProp(vNode, dom, key, nextProps[key], prevProps[key])
       return
     }
-    const nodeVal = unwrap(nextProps[key])
+    if (Signal.isSignal(nextProps[key])) {
+      // signal textNodes are handled via 'subTextNode'.
+      return
+    }
+    const nodeVal = nextProps[key]
     if (dom.nodeValue !== nodeVal) {
       dom.nodeValue = nodeVal
     }
