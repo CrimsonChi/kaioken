@@ -196,6 +196,7 @@ declare global {
       immediateEffects?: Array<Function>
       prevStyleStr?: string
       prevStyleObj?: StyleObject
+      hmrUpdated?: boolean
     }
   }
 

@@ -485,3 +485,19 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
   }
   return attrs.join(" ")
 }
+
+export function safeStringify(value: unknown): string {
+  const seen = new WeakSet()
+  return JSON.stringify(value, (_, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return "[CIRCULAR]"
+      }
+      seen.add(value)
+    }
+    if (typeof value === "function") {
+      return value.toString()
+    }
+    return value
+  })
+}

@@ -55,6 +55,7 @@ export function createHMRContext() {
             traverseApply(ctx.rootNode, (vNode) => {
               if (vNode.type === oldVal) {
                 vNode.type = newVal
+                vNode.hmrUpdated = true
                 if (vNode.prev) {
                   vNode.prev.type = newVal
                 }

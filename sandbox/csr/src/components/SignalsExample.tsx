@@ -1,7 +1,7 @@
 import { signal, computed, Route, Router, Link, watch } from "kaioken"
 
-const count = signal(0, "count")
-const isTracking = signal(false, "isTracking")
+const count = signal(0, "coussdsdnt")
+const isTracking = signal(true, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
     console.log("hello world 123", count.value)

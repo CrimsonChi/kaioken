@@ -69,6 +69,7 @@ type Hook<T> = Kaioken.Hook<T>
 type HookCallbackState<T> = {
   hook: Hook<T>
   isInit: boolean
+  isHMR?: boolean
   update: () => void
   queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
   vNode: Kaioken.VNode
@@ -140,6 +141,7 @@ function useHook<
     const res = (callback as HookCallback<T>)({
       hook: hook,
       isInit: !oldHook,
+      isHMR: vNode.hmrUpdated,
       update: () => ctx.requestUpdate(vNode),
       queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
         if (opts?.immediate) {
