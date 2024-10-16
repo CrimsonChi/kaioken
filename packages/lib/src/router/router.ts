@@ -33,6 +33,7 @@ export function Link({ to, onclick, replace, inherit, ...props }: LinkProps) {
       (acc, [k, v]) => acc.replace(`:${k}`, v),
       router.routePath
     )
+    if (to === "/") return parentPath
     return (parentPath + to).replaceAll(/\/+/g, "/")
   }, [router.params, to, inherit])
 
