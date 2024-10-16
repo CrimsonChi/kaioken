@@ -1,4 +1,4 @@
-import { Router, Route, Link, lazy } from "kaioken"
+import { Router, Route, Link, lazy, useState, useEffect } from "kaioken"
 import { countStore } from "./countStore"
 import { SignalsExample } from "./components/SignalsExample"
 
@@ -9,15 +9,39 @@ type AppRoute = {
 }
 
 const Home: Kaioken.FC = () => {
-  const { value: count, increment, decrement, double, triple } = countStore()
+  useEffect(() => {
+    console.log("Home")
+  }, [])
+  const [isAlive, setIsAlive] = useState({
+    some: {
+      nested: {
+        value: true,
+        fn: () => 123,
+      },
+    },
+  })
+  useEffect(() => {
+    console.log(`isAlive ${isAlive}`)
+  }, [isAlive])
   return (
     <div>
-      <h1 style={{ color: "red" }}>Home</h1>
-      <p>Count: {count}</p>
-      <p>Double: {double()}</p>
-      <p>Triple: {triple()}</p>
-      <button onclick={() => increment()}>Increment</button>
-      <button onclick={() => decrement()}>Decrement</button>
+      <h1>Home {isAlive.some.nested.fn()}</h1>
+      <button
+        onclick={() => {
+          setIsAlive((prev) => ({
+            ...prev,
+            some: {
+              ...prev.some,
+              nested: {
+                ...prev.some.nested,
+                value: !prev.some.nested.value,
+              },
+            },
+          }))
+        }}
+      >
+        Unmount
+      </button>
     </div>
   )
 }

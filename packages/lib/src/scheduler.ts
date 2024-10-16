@@ -336,6 +336,9 @@ export class Scheduler {
         this.isRenderDirtied = false
         this.appCtx.hookIndex = 0
         newChildren = vNode.type(vNode.props)
+        if (__DEV__) {
+          delete vNode.hmrUpdated
+        }
         if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
           throw new KaiokenError({
             message:
