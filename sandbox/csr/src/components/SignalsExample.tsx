@@ -12,7 +12,7 @@ const double = computed(() => {
 }, "double")
 
 const quadruple = computed(() => {
-  console.log("quad 123", count.value)
+  console.log("quad 12345", count.value)
   return count.value * 4
 }, "quadruple")
 
@@ -24,10 +24,10 @@ export function SignalsExample() {
   return (
     <div>
       <nav className="flex gap-2 bg-transparent">
-        <Link to="/" className="underline">
+        <Link to="/" inherit className="underline">
           Global
         </Link>
-        <Link to="/local" className="underline">
+        <Link to="/local" inherit className="underline">
           Local
         </Link>
       </nav>
