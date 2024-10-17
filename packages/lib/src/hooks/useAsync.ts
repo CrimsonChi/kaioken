@@ -44,6 +44,12 @@ type AsyncTaskState<T> = {
   invalidated?: boolean
 }
 
+function invalidateTask<T>(task: AsyncTaskState<T> | null) {
+  if (task) {
+    task.invalidated = true
+  }
+}
+
 export function useAsync<T>(
   func: () => Promise<T>,
   deps: unknown[]
@@ -73,22 +79,16 @@ export function useAsync<T>(
         if (__DEV__) {
           hook.debug = { get: () => ({ value: hook.task }) }
         }
-        hook.cleanup = () => {
-          if (hook.task) {
-            hook.task.invalidated = true
-          }
-        }
+        hook.cleanup = () => invalidateTask(hook.task)
         hook.load = (deps, func, isInit) => {
-          if (hook.task) {
-            hook.task.invalidated = true
-          }
-          const task: AsyncTaskState<T> = {
+          invalidateTask(hook.task)
+          const task: AsyncTaskState<T> = (hook.task = {
             deps,
             promise: func(),
             result: null,
             loading: true,
             error: null,
-          }
+          })
           if (!isInit) update()
           task.promise
             .then((result: T) => {
@@ -115,7 +115,6 @@ export function useAsync<T>(
               task.error = new UseAsyncError(error)
               update()
             })
-          hook.task = task
         }
       }
 
