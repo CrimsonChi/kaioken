@@ -219,15 +219,10 @@ function emitGranularSignalChange(signal: Signal<any>) {
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
-  const cb: (v: any) => void = (v) => {
+  ;(vNode.cleanups ??= {})["nodeValue"] = signal.subscribe((v) => {
     textNode.nodeValue = v
     emitGranularSignalChange(signal)
-  }
-  const unsub = signal.subscribe(cb)
-  ;(vNode.cleanups ??= {})["nodeValue"] = () => {
-    console.log(signal.displayName, "is text node unsubbing")
-    unsub()
-  }
+  })
 }
 
 function hydrateDom(vNode: VNode) {
@@ -582,10 +577,7 @@ function commitDeletion(vNode: VNode) {
   }
   traverseApply(vNode, (n) => {
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
-    while (n.subs?.length) {
-      console.log("unsubbing node", n, [...n.subs])
-      Signal.unsubscribe(n, n.subs.pop()!)
-    }
+    while (n.subs?.length) Signal.unsubscribe(n, n.subs.pop()!)
     n.cleanups && Object.values(n.cleanups).forEach((c) => c())
     delete n.cleanups
 

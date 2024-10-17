@@ -1,4 +1,13 @@
-import { Router, Route, Link, lazy, useState, useEffect, useId } from "kaioken"
+import {
+  Router,
+  Route,
+  Link,
+  lazy,
+  useState,
+  useEffect,
+  useId,
+  signal,
+} from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 
@@ -8,40 +17,21 @@ type AppRoute = {
   fallthrough?: boolean
 }
 
+const count = signal(123)
+
 const Home: Kaioken.FC = () => {
-  const id = useId()
   useEffect(() => {
-    console.log("Home")
+    console.log("Home 123")
   }, [])
-  const [isAlive, setIsAlive] = useState({
-    some: {
-      nested: {
-        value: true,
-        fn: () => 345,
-      },
-    },
-  })
-  useEffect(() => {
-    console.log(`isAlive ${isAlive}`)
-  }, [isAlive])
+
   return (
     <div>
-      <h1>Home {isAlive.some.nested.fn()}</h1>
+      <h1>Home </h1>
       <button
-        onclick={() => {
-          setIsAlive((prev) => ({
-            ...prev,
-            some: {
-              ...prev.some,
-              nested: {
-                ...prev.some.nested,
-                value: !prev.some.nested.value,
-              },
-            },
-          }))
-        }}
+        className="bg-primary hover:bg-primary-light text-white font-bold text-sm py-2 px-4 rounded"
+        onclick={() => count.value++}
       >
-        Unmount
+        Count: {count}
       </button>
     </div>
   )
