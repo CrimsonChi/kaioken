@@ -9,7 +9,7 @@ import {
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
-import { Signal, unwrap } from "./signals"
+import { Signal, unwrap } from "./signals/index.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"

@@ -7,7 +7,7 @@ import {
   propsToElementAttributes,
   selfClosingTags,
 } from "./utils.js"
-import { Signal } from "./signals"
+import { Signal } from "./signals/base.js"
 import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
 

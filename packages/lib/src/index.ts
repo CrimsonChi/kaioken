@@ -13,7 +13,7 @@ export * from "./memo.js"
 export * from "./portal.js"
 export * from "./renderToString.js"
 export * from "./router/index.js"
-export * from "./signals"
+export * from "./signals/index.js"
 export * from "./store.js"
 export * from "./transition.js"
 

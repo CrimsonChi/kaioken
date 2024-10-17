@@ -24,12 +24,6 @@
     "jsxFactory": "kaioken.createElement",
     "jsxFragmentFactory": "kaioken.Fragment"
   },
-  "include": [
-    "./src/*",
-    "./src/tests",
-    "./src/signals",
-    "src/types.ts",
-    "./src/ssr/*"
-  ],
+  "include": ["./src/**/*"],
   "exclude": ["dist"]
 }
