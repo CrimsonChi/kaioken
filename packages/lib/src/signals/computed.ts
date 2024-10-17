@@ -86,7 +86,11 @@ export const computed = <T>(
             value: hook.signal.peek(),
           }),
         }
-        if (vNode.hmrUpdated) {
+        if (!isInit && vNode.hmrUpdated) {
+          // isInit would be true if this is our initial render or if  the
+          // getter was changed. In the case that our vNode was the subject
+          // of an HMR update but the getter did not change, we're ensuring a
+          // new signal is created to handle global signals being replaced.
           hook.cleanup?.()
           isInit = true
         }

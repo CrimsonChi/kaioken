@@ -7,10 +7,10 @@ type AppRoute = {
   component: Kaioken.FC<any>
   fallthrough?: boolean
 }
-const count = signal(12)
+const count = signal(0)
 
 const Home: Kaioken.FC = () => {
-  const double = computed(() => count.value * 42)
+  const double = computed(() => count.value * 2)
   watch(() => console.log("count 12345", count.value))
 
   return (
