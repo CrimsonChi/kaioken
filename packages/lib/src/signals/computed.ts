@@ -78,19 +78,23 @@ export const computed = <T>(
     {
       signal: undefined as any as ComputedSignal<T>,
     },
-    ({ hook, isInit }) => {
+    ({ hook, isInit, vNode }) => {
+      if (__DEV__) {
+        hook.debug = {
+          get: () => ({
+            displayName: hook.signal.displayName,
+            value: hook.signal.peek(),
+          }),
+        }
+        if (vNode.hmrUpdated) {
+          hook.cleanup?.()
+          isInit = true
+        }
+      }
       if (isInit) {
         hook.cleanup = () => {
           ComputedSignal.stop(hook.signal)
           Signal.subscribers(hook.signal).clear()
-        }
-        if (__DEV__) {
-          hook.debug = {
-            get: () => ({
-              displayName: hook.signal.displayName,
-              value: hook.signal.peek(),
-            }),
-          }
         }
         hook.signal = new ComputedSignal(getter, displayName)
         ComputedSignal.start(hook.signal)
