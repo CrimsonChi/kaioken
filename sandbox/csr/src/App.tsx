@@ -1,13 +1,4 @@
-import {
-  Router,
-  Route,
-  Link,
-  lazy,
-  useState,
-  useEffect,
-  useId,
-  signal,
-} from "kaioken"
+import { Router, Route, Link, lazy, useEffect, signal } from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 
@@ -17,9 +8,8 @@ type AppRoute = {
   fallthrough?: boolean
 }
 
-const count = signal(123)
-
 const Home: Kaioken.FC = () => {
+  const count = signal(1)
   useEffect(() => {
     console.log("Home 123")
   }, [])

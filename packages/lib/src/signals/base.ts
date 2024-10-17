@@ -9,7 +9,7 @@ import {
 import { tracking, signalSubsMap } from "./globals.js"
 import { type SignalSubscriber, ReadonlySignal } from "./types.js"
 import { node } from "../globals.js"
-import { useHook } from "../hooks/utils.js"
+import { useHook, useHookHMRInvalidation } from "../hooks/utils.js"
 
 export class Signal<T> {
   [$SIGNAL] = true;
@@ -150,30 +150,34 @@ export class Signal<T> {
 }
 
 export const signal = <T>(initial: T, displayName?: string) => {
-  return !node.current || !sideEffectsEnabled()
-    ? new Signal(initial, displayName)
-    : useHook(
-        "useSignal",
-        { signal: undefined as any as Signal<T> },
-        ({ hook, isInit }) => {
-          if (isInit) {
-            hook.signal = new Signal(initial, displayName)
-            hook.cleanup = () => {
-              Signal.subscribers(hook.signal).clear()
-            }
-            if (__DEV__) {
-              hook.debug = {
-                get: () => ({
-                  displayName: hook.signal.displayName,
-                  value: hook.signal.peek(),
-                }),
-                set: ({ value }) => {
-                  hook.signal.sneak(value)
-                },
-              }
-            }
+  if (!node.current || !sideEffectsEnabled())
+    return new Signal(initial, displayName)
+
+  if (__DEV__) {
+    useHookHMRInvalidation(initial, displayName)
+  }
+  return useHook(
+    "useSignal",
+    { signal: undefined as any as Signal<T> },
+    ({ hook, isInit }) => {
+      if (isInit) {
+        if (__DEV__) {
+          hook.debug = {
+            get: () => ({
+              displayName: hook.signal.displayName,
+              value: hook.signal.peek(),
+            }),
+            set: ({ value }) => {
+              hook.signal.sneak(value)
+            },
           }
-          return hook.signal
         }
-      )
+        hook.signal = new Signal(initial, displayName)
+        hook.cleanup = () => {
+          Signal.subscribers(hook.signal).clear()
+        }
+      }
+      return hook.signal
+    }
+  )
 }
