@@ -15,6 +15,9 @@ export function useCallback<T extends Function>(
     useHookHMRInvalidation(...arguments)
   }
   return useHook("useCallback", { callback, deps }, ({ hook, isInit }) => {
+    if (__DEV__) {
+      hook.debug = { get: () => ({ dependencies: hook.deps }) }
+    }
     if (!isInit && depsRequireChange(deps, hook.deps)) {
       hook.deps = deps
       hook.callback = callback

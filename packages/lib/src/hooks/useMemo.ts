@@ -15,6 +15,11 @@ export function useMemo<T>(factory: () => T, deps: unknown[]): T {
     "useMemo",
     { deps, value: undefined as T },
     ({ hook, isInit }) => {
+      if (__DEV__) {
+        hook.debug = {
+          get: () => ({ value: hook.value, dependencies: hook.deps }),
+        }
+      }
       if (isInit || depsRequireChange(deps, hook.deps)) {
         hook.deps = deps
         hook.value = factory()

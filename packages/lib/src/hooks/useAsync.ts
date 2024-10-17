@@ -70,6 +70,14 @@ export function useAsync<T>(
     },
     ({ hook, isInit, update }) => {
       if (isInit) {
+        if (__DEV__) {
+          hook.debug = { get: () => ({ value: hook.task }) }
+        }
+        hook.cleanup = () => {
+          if (hook.task) {
+            hook.task.invalidated = true
+          }
+        }
         hook.load = (deps, func, isInit) => {
           if (hook.task) {
             hook.task.invalidated = true

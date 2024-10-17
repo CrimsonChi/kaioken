@@ -19,6 +19,9 @@ export function useLayoutEffect(
     "useLayoutEffect",
     { deps },
     ({ hook, isInit, queueEffect }) => {
+      if (__DEV__) {
+        hook.debug = { get: () => ({ callback, dependencies: hook.deps }) }
+      }
       if (isInit || depsRequireChange(deps, hook.deps)) {
         hook.deps = deps
         cleanupHook(hook)

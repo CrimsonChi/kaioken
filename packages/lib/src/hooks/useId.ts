@@ -1,3 +1,4 @@
+import { __DEV__ } from "../env.js"
 import { HookCallback, useHook } from "./utils.js"
 
 export function useId() {
@@ -15,6 +16,9 @@ const createUseIdState = (): UseIdState => ({
 })
 
 const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
+  if (__DEV__) {
+    hook.debug = { get: () => ({ id: hook.id }) }
+  }
   if (isInit || vNode.index !== hook.idx) {
     hook.idx = vNode.index
     const accumulator: number[] = []

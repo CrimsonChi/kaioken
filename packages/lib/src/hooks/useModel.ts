@@ -1,4 +1,4 @@
-import { ElementProps } from "src/types.js"
+import { ElementProps } from "../types"
 import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
@@ -52,6 +52,15 @@ export function useModel<
     createUseModelState,
     ({ hook, isInit, update, queueEffect }) => {
       if (isInit) {
+        if (__DEV__) {
+          hook.debug = {
+            get: () => ({ value: hook.value }),
+            set: ({ value }) => {
+              hook.value = value
+              if (hook.ref.current) setElementValue(hook.ref.current, value)
+            },
+          }
+        }
         hook.value = initial
         hook.cleanup = () => {
           hook.element &&
@@ -65,16 +74,6 @@ export function useModel<
           if (value !== hook.value) {
             hook.value = value
             update()
-          }
-        }
-
-        if (__DEV__) {
-          hook.debug = {
-            get: () => ({ value: hook.value }),
-            set: ({ value }) => {
-              hook.value = value
-              if (hook.ref.current) setElementValue(hook.ref.current, value)
-            },
           }
         }
       }

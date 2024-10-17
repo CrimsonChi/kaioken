@@ -22,6 +22,9 @@ export function useEffect(
     useHookHMRInvalidation(...arguments)
   }
   return useHook("useEffect", { deps }, ({ hook, isInit, queueEffect }) => {
+    if (__DEV__) {
+      hook.debug = { get: () => ({ callback, dependencies: hook.deps }) }
+    }
     if (isInit || depsRequireChange(deps, hook.deps)) {
       hook.deps = deps
       cleanupHook(hook)

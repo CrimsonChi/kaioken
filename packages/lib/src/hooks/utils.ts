@@ -81,12 +81,6 @@ type Hook<T> = Kaioken.Hook<T>
 type HookCallbackState<T> = {
   hook: Hook<T>
   isInit: boolean
-  /**
-   * ### dev-only
-   * indicates that the hook has been invalidated by
-   * a combination of HMR refresh + changed values provided to "useHookHMRInvalidation"
-   */
-  hmrInvalid?: boolean
   update: () => void
   queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
   vNode: Kaioken.VNode

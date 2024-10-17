@@ -19,6 +19,12 @@ export function useState<T>(
     },
     ({ hook, isInit, update }) => {
       if (isInit) {
+        if (__DEV__) {
+          hook.debug = {
+            get: () => ({ value: hook.state }),
+            set: ({ value }) => (hook.state = value),
+          } satisfies Kaioken.HookDebug<{ value: T }>
+        }
         hook.state = initial instanceof Function ? initial() : initial
         hook.dispatch = (setter: Kaioken.StateSetter<T>) => {
           const newState =

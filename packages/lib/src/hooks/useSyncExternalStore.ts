@@ -2,6 +2,7 @@ import { node } from "../globals.js"
 import { KaiokenError } from "../error.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
+import { __DEV__ } from "../env.js"
 
 export function useSyncExternalStore<T>(
   subscribe: (callback: () => void) => () => void,
@@ -27,6 +28,9 @@ export function useSyncExternalStore<T>(
     },
     ({ hook, isInit, update }) => {
       if (isInit) {
+        if (__DEV__) {
+          hook.debug = { get: () => ({ value: hook.state }) }
+        }
         hook.state = getState()
         hook.unsubscribe = subscribe(() => {
           const newState = getState()

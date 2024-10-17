@@ -1,4 +1,4 @@
-import { Router, Route, Link, lazy, useState, useEffect } from "kaioken"
+import { Router, Route, Link, lazy, useState, useEffect, useId } from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 
@@ -9,6 +9,7 @@ type AppRoute = {
 }
 
 const Home: Kaioken.FC = () => {
+  const id = useId()
   useEffect(() => {
     console.log("Home")
   }, [])
