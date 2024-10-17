@@ -29,6 +29,7 @@ export {
   selfClosingTags,
   svgTags,
   booleanAttributes,
+  safeStringify,
 }
 
 type VNode = Kaioken.VNode
@@ -486,7 +487,7 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
   return attrs.join(" ")
 }
 
-export function safeStringify(value: unknown): string {
+function safeStringify(value: unknown): string {
   const seen = new WeakSet()
   return JSON.stringify(value, (_, value) => {
     if (typeof value === "object" && value !== null) {

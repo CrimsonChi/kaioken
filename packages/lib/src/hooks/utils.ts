@@ -1,7 +1,7 @@
 import { KaiokenError } from "../error.js"
 import { __DEV__ } from "../env.js"
 import { node, nodeToCtxMap } from "../globals.js"
-import { getVNodeAppContext, noop } from "../utils.js"
+import { getVNodeAppContext, noop, safeStringify } from "../utils.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
@@ -10,11 +10,23 @@ export {
   useVNode,
   useAppContext,
   useHookDebugGroup,
+  useHookHMRInvalidation,
   useRequestUpdate,
   HookDebugGroupAction,
   type Hook,
   type HookCallback,
   type HookCallbackState,
+}
+
+type DevHook<T> = Hook<T> & {
+  devInvalidationValue?: string
+}
+
+let nextHookDevInvalidationValue: string | undefined
+const useHookHMRInvalidation = (...values: unknown[]) => {
+  if (__DEV__) {
+    nextHookDevInvalidationValue = safeStringify(values)
+  }
 }
 
 enum HookDebugGroupAction {
@@ -69,7 +81,12 @@ type Hook<T> = Kaioken.Hook<T>
 type HookCallbackState<T> = {
   hook: Hook<T>
   isInit: boolean
-  isHMR?: boolean
+  /**
+   * ### dev-only
+   * indicates that the hook has been invalidated by
+   * a combination of HMR refresh + changed values provided to "useHookHMRInvalidation"
+   */
+  hmrInvalid?: boolean
   update: () => void
   queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
   vNode: Kaioken.VNode
@@ -132,16 +149,52 @@ function useHook<
       `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
     )
   }
-
   currentHookName = hookName
-
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
+
+  if (__DEV__) {
+    const oldAsDevHook = oldHook as DevHook<T> | undefined
+    const asDevHook = hook as DevHook<T>
+    let hmrInvalid = false
+    if (nextHookDevInvalidationValue !== undefined) {
+      if (!oldAsDevHook) {
+        asDevHook.devInvalidationValue = nextHookDevInvalidationValue // store our initial 'devInvalidationValue'
+      } else if (
+        vNode.hmrUpdated &&
+        oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue
+      ) {
+        hmrInvalid = true
+        asDevHook.devInvalidationValue = nextHookDevInvalidationValue
+      }
+    }
+
+    try {
+      const res = (callback as HookCallback<T>)({
+        hook: hook,
+        isInit: !oldHook || hmrInvalid,
+        update: () => ctx.requestUpdate(vNode),
+        queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
+          if (opts?.immediate) {
+            return ctx.queueImmediateEffect(vNode, callback)
+          }
+          ctx.queueEffect(vNode, callback)
+        },
+        vNode,
+      })
+      return res
+    } catch (error) {
+      throw error
+    } finally {
+      currentHookName = null
+      nextHookDevInvalidationValue = undefined
+    }
+  }
+
   try {
     const res = (callback as HookCallback<T>)({
       hook: hook,
       isInit: !oldHook,
-      isHMR: vNode.hmrUpdated,
       update: () => ctx.requestUpdate(vNode),
       queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
         if (opts?.immediate) {

@@ -1,6 +1,6 @@
 import { Router, Route, Link, lazy, useState, useEffect } from "kaioken"
-import { countStore } from "./countStore"
 import { SignalsExample } from "./components/SignalsExample"
+import { UseAsyncExample } from "./components/UseAsyncExample"
 
 type AppRoute = {
   title: string
@@ -16,7 +16,7 @@ const Home: Kaioken.FC = () => {
     some: {
       nested: {
         value: true,
-        fn: () => 123,
+        fn: () => 345,
       },
     },
   })
@@ -120,9 +120,10 @@ const ROUTES: Record<string, AppRoute> = {
   },
   "/use-async-example": {
     title: "useAsync",
-    component: lazy(() =>
-      import("./components/UseAsyncExample").then((m) => m.UseAsyncExample)
-    ),
+    component: UseAsyncExample,
+    // component: lazy(() =>
+    //   import("./components/UseAsyncExample").then((m) => m.UseAsyncExample)
+    // ),
   },
   "/use-sync-external-store-example": {
     title: "useSyncExternalStore",
