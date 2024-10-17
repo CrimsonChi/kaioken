@@ -4,24 +4,30 @@ const count = signal(0, "coussdsdnt")
 const isTracking = signal(true, "isTracking")
 const double = computed(() => {
   if (isTracking.value) {
+    console.log("hello world 123", count.value)
     return count.value * 2
   }
 
   return 0
 }, "double")
 
+const quadruple = computed(() => {
+  console.log("quad 12345", count.value)
+  return count.value * 4
+}, "quadruple")
+
 const watcher = watch(() => {
-  console.log("double 123", double.value)
+  console.log("count 123", count.value)
 })
 
 export function SignalsExample() {
   return (
     <div>
       <nav className="flex gap-2 bg-transparent">
-        <Link to="/" className="underline">
+        <Link to="/" inherit className="underline">
           Global
         </Link>
-        <Link to="/local" className="underline">
+        <Link to="/local" inherit className="underline">
           Local
         </Link>
       </nav>
@@ -49,6 +55,7 @@ const GlobalComputedExample = () => {
     <div ref={refTest} className="flex flex-col">
       <h1>count: {count}</h1>
       <h1>Double: {double}</h1>
+      <h1>Quadruple: {quadruple}</h1>
       <h1>is tracking: {`${isTracking}`}</h1>
 
       <button className="mt-4 text-left" onclick={onInc}>

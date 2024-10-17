@@ -2,7 +2,7 @@ import type { AppContext } from "./appContext"
 import { ELEMENT_TYPE, FLAG, $FRAGMENT } from "./constants.js"
 import { ctx } from "./globals.js"
 import { isVNode } from "./utils.js"
-import { Signal } from "./signal.js"
+import { Signal } from "./signals"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
 import { bitmapOps } from "./bitmap.js"
@@ -170,7 +170,7 @@ function reconcileChildrenArray(
 }
 
 function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
-  // Update the node if the keys match, otherwise return undefined.
+  // Update the node if the keys match, otherwise return null.
   const key = oldNode !== null ? oldNode.props.key : undefined
   if (
     (typeof child === "string" && child !== "") ||
@@ -180,6 +180,10 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
     if (key !== undefined) return null
     return updateTextNode(parent, oldNode, "" + child)
   }
+  if (Signal.isSignal(child)) {
+    if (!!oldNode && oldNode.props.nodeValue !== child) return null
+    return updateTextNode(parent, oldNode, child)
+  }
   if (isVNode(child)) {
     if (child.props.key !== key) return null
     return updateNode(parent, oldNode, child)
@@ -188,13 +192,14 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
     if (key !== undefined) return null
     return updateFragment(parent, oldNode, child /*, { array: true }*/)
   }
-  if (Signal.isSignal(child)) {
-    return updateSlot(parent, oldNode, child.peek())
-  }
   return null
 }
 
-function updateTextNode(parent: VNode, oldNode: VNode | null, content: string) {
+function updateTextNode(
+  parent: VNode,
+  oldNode: VNode | null,
+  content: string | Signal<JSX.PrimitiveChild>
+) {
   if (oldNode === null || oldNode.type !== ELEMENT_TYPE.text) {
     const newNode = createElement(ELEMENT_TYPE.text, { nodeValue: content })
     newNode.parent = parent
@@ -251,44 +256,45 @@ function updateFragment(
   return oldNode
 }
 
-function createChild(
-  parent: VNode,
-  child: unknown,
-  sig: Signal<any> | null = null
-): VNode | null {
+function createChild(parent: VNode, child: unknown): VNode | null {
   if (
-    sig ||
     (typeof child === "string" && child !== "") ||
     typeof child === "number" ||
     typeof child === "bigint"
   ) {
     const el = createElement(ELEMENT_TYPE.text, {
-      nodeValue: sig ?? "" + child,
+      nodeValue: "" + child,
     })
     el.parent = parent
     el.depth = parent.depth + 1
     return el
   }
 
-  if (typeof child === "object" && child !== null) {
-    if (isVNode(child)) {
-      const newNode = createElement(child.type, child.props)
-      newNode.parent = parent
-      newNode.depth = parent.depth! + 1
-      bitmapOps.setFlag(newNode, FLAG.PLACEMENT)
-      if ("frozen" in child) newNode.frozen = child.frozen
-      return newNode
-    }
-    if (Array.isArray(child)) {
-      const el = Fragment({ children: child })
-      el.parent = parent
-      el.depth = parent.depth + 1
-      return el
-    }
-    if (Signal.isSignal(child)) {
-      return createChild(parent, child.peek(), child)
-    }
+  if (Signal.isSignal(child)) {
+    const el = createElement(ELEMENT_TYPE.text, {
+      nodeValue: child,
+    })
+    el.parent = parent
+    el.depth = parent.depth + 1
+    return el
   }
+
+  if (isVNode(child)) {
+    const newNode = createElement(child.type, child.props)
+    newNode.parent = parent
+    newNode.depth = parent.depth! + 1
+    bitmapOps.setFlag(newNode, FLAG.PLACEMENT)
+    if ("frozen" in child) newNode.frozen = child.frozen
+    return newNode
+  }
+
+  if (Array.isArray(child)) {
+    const el = Fragment({ children: child })
+    el.parent = parent
+    el.depth = parent.depth + 1
+    return el
+  }
+
   return null
 }
 
@@ -319,13 +325,15 @@ function updateFromMap(
   index: number,
   newChild: any
 ): VNode | null {
+  const isSig = Signal.isSignal(newChild)
   if (
+    isSig ||
     (typeof newChild === "string" && newChild !== "") ||
     typeof newChild === "number" ||
     typeof newChild === "bigint"
   ) {
     const oldChild = existingChildren.get(index)
-    if (oldChild) {
+    if (oldChild && (!isSig || oldChild.props.nodeValue === newChild)) {
       bitmapOps.setFlag(oldChild, FLAG.UPDATE)
       oldChild.props.nodeValue = newChild
       return oldChild
