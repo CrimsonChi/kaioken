@@ -5,7 +5,7 @@ import { $HMR_ACCEPT } from "../constants.js"
 import { node } from "../globals.js"
 import type { HMRAccept } from "../hmr.js"
 import { sideEffectsEnabled } from "../utils.js"
-import { useHook } from "../hooks/utils.js"
+import { useHook, useHookHMRInvalidation } from "../hooks/utils.js"
 
 class ComputedSignal<T> extends Signal<T> {
   protected $getter: () => T
@@ -68,34 +68,37 @@ export const computed = <T>(
     ComputedSignal.start(computed)
 
     return computed
-  } else {
-    return useHook(
-      "useComputedSignal",
-      {
-        signal: undefined as any as ComputedSignal<T>,
-      },
-      ({ hook, isInit }) => {
-        if (isInit) {
-          hook.cleanup = () => {
-            ComputedSignal.stop(hook.signal)
-            Signal.subscribers(hook.signal).clear()
-          }
-          if (__DEV__) {
-            hook.debug = {
-              get: () => ({
-                displayName: hook.signal.displayName,
-                value: hook.signal.peek(),
-              }),
-            }
-          }
-          hook.signal = new ComputedSignal(getter, displayName)
-          ComputedSignal.start(hook.signal)
-        }
-
-        return hook.signal
-      }
-    )
   }
+
+  if (__DEV__) {
+    useHookHMRInvalidation(getter, displayName)
+  }
+  return useHook(
+    "useComputedSignal",
+    {
+      signal: undefined as any as ComputedSignal<T>,
+    },
+    ({ hook, isInit }) => {
+      if (isInit) {
+        hook.cleanup = () => {
+          ComputedSignal.stop(hook.signal)
+          Signal.subscribers(hook.signal).clear()
+        }
+        if (__DEV__) {
+          hook.debug = {
+            get: () => ({
+              displayName: hook.signal.displayName,
+              value: hook.signal.peek(),
+            }),
+          }
+        }
+        hook.signal = new ComputedSignal(getter, displayName)
+        ComputedSignal.start(hook.signal)
+      }
+
+      return hook.signal
+    }
+  )
 }
 
 const appliedTrackedSignals = (computedSignal: ComputedSignal<any>) => {

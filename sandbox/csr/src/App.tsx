@@ -1,4 +1,4 @@
-import { Router, Route, Link, lazy, useEffect, signal } from "kaioken"
+import { Router, Route, Link, lazy, useEffect, signal, computed } from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 
@@ -10,6 +10,7 @@ type AppRoute = {
 
 const Home: Kaioken.FC = () => {
   const count = signal(1)
+  const double = computed(() => count.value * 2)
   useEffect(() => {
     console.log("Home 123")
   }, [])
@@ -22,6 +23,8 @@ const Home: Kaioken.FC = () => {
         onclick={() => count.value++}
       >
         Count: {count}
+        <br />
+        Double: {double}
       </button>
     </div>
   )
