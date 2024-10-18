@@ -11,7 +11,7 @@ const ctx = {
 }
 
 const renderMode = {
-  current: "dom" as "dom" | "hydrate" | "string" | "stream",
+  current: ("window" in globalThis ? "dom" : "string") as Kaioken.RenderMode,
 }
 
 const nodeToCtxMap = new WeakMap<Kaioken.VNode, AppContext<any>>()

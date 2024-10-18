@@ -166,6 +166,8 @@ declare global {
 
     type Ref<T> = RefCallback<T> | RefObject<T> | null | undefined
 
+    type RenderMode = "dom" | "hydrate" | "string" | "stream"
+
     type StateSetter<T> = T | ((prev: T) => T)
 
     type Signal<T> = SignalClass<T> | ReadonlySignal<T>

@@ -1,11 +1,7 @@
+import type { ContextProviderNode } from "../types.utils.js"
 import { type HookCallbackState, useHook } from "./utils.js"
 import { __DEV__ } from "../env.js"
 import { $CONTEXT_PROVIDER } from "../constants.js"
-
-type ContextProviderNode<T> = Kaioken.VNode & {
-  type: typeof $CONTEXT_PROVIDER
-  props: { value: T; ctx: Kaioken.Context<T> }
-}
 
 type UseContextHookState<T> = {
   ctxNode: ContextProviderNode<T> | undefined
