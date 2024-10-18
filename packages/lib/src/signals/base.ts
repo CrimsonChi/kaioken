@@ -97,10 +97,6 @@ export class Signal<T> {
     return signalSubsMap.get(signal.$id)!
   }
 
-  static dispose(signal: Signal<any>) {
-    signalSubsMap.delete(signal.$id)
-  }
-
   static makeReadonly<T>(signal: Signal<T>): ReadonlySignal<T> {
     const desc = Object.getOwnPropertyDescriptor(signal, "value")
     if (desc && !desc.writable) return signal
@@ -148,12 +144,17 @@ export class Signal<T> {
       Signal.subscribers(signal).add(node.current)
     }
   }
+
+  static dispose(signal: Signal<any>) {
+    signalSubsMap.delete(signal.$id)
+  }
 }
 
 export const signal = <T>(initial: T, displayName?: string) => {
-  if (!node.current || !sideEffectsEnabled())
-    return new Signal(initial, displayName)
+  return new Signal(initial, displayName)
+}
 
+export const useSignal = <T>(initial: T, displayName?: string) => {
   if (__DEV__) {
     useHookHMRInvalidation(initial, displayName)
   }

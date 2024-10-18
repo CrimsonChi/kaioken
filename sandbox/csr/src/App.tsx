@@ -3,11 +3,11 @@ import {
   Route,
   Link,
   lazy,
-  signal,
-  computed,
-  watch,
   useRef,
   useCallback,
+  useComputed,
+  useSignal,
+  useWatch,
 } from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
@@ -19,7 +19,7 @@ type AppRoute = {
 }
 
 function Counter() {
-  const count = signal(24)
+  const count = useSignal(42)
   const countRef = useRef<HTMLDivElement>(null)
   const animRef = useRef<Animation>()
 
@@ -49,9 +49,9 @@ function Counter() {
 }
 
 const Home: Kaioken.FC = () => {
-  const count = signal(46)
-  const double = computed(() => count.value * 2)
-  watch(() => console.log("count", count.value))
+  const count = useSignal(1)
+  const double = useComputed(() => count.value * 2)
+  useWatch(() => console.log("count", count.value))
 
   return (
     <div>

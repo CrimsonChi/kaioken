@@ -80,14 +80,16 @@ export class WatchEffect {
 }
 
 export const watch = (getter: () => (() => void) | void) => {
-  if (!node.current) {
-    const watcher = new WatchEffect(getter)
-    watcher.start()
+  const watcher = new WatchEffect(getter)
+  watcher.start()
+  return watcher
+}
 
-    return watcher
+export const useWatch = (getter: () => (() => void) | void) => {
+  if (!sideEffectsEnabled()) return
+  if (__DEV__) {
+    useHookHMRInvalidation()
   }
-  if (!sideEffectsEnabled()) return null
-  useHookHMRInvalidation()
   return useHook(
     "useWatch",
     {

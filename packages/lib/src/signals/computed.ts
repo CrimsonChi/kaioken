@@ -57,19 +57,23 @@ class ComputedSignal<T> extends Signal<T> {
   static getter<T>(computed: ComputedSignal<T>) {
     return computed.$getter
   }
+
+  static dispose(signal: ComputedSignal<any>): void {
+    ComputedSignal.stop(signal)
+    Signal.dispose(signal)
+  }
 }
 
 export const computed = <T>(
   getter: () => T,
   displayName?: string
 ): ComputedSignal<T> => {
-  if (!node.current) {
-    const computed = new ComputedSignal(getter, displayName)
-    ComputedSignal.start(computed)
+  const computed = new ComputedSignal(getter, displayName)
+  ComputedSignal.start(computed)
+  return computed
+}
 
-    return computed
-  }
-
+export const useComputed = <T>(getter: () => T, displayName?: string) => {
   if (__DEV__) {
     useHookHMRInvalidation(getter, displayName)
   }
@@ -96,10 +100,7 @@ export const computed = <T>(
         }
       }
       if (isInit) {
-        hook.cleanup = () => {
-          ComputedSignal.stop(hook.signal)
-          Signal.dispose(hook.signal)
-        }
+        hook.cleanup = () => ComputedSignal.dispose(hook.signal)
         hook.signal = new ComputedSignal(getter, displayName)
         ComputedSignal.start(hook.signal)
       }

@@ -1,4 +1,13 @@
-import { signal, computed, Route, Router, Link, watch } from "kaioken"
+import {
+  signal,
+  computed,
+  Route,
+  Router,
+  Link,
+  watch,
+  useComputed,
+  useSignal,
+} from "kaioken"
 
 const count = signal(0, "coussdsdnt")
 const isTracking = signal(true, "isTracking")
@@ -41,7 +50,6 @@ export function SignalsExample() {
 
 const GlobalComputedExample = () => {
   console.log("GlobalComputedExample")
-  const refTest = signal(null)
   const onInc = async () => {
     count.value += 1
   }
@@ -52,7 +60,7 @@ const GlobalComputedExample = () => {
   }
 
   return (
-    <div ref={refTest} className="flex flex-col">
+    <div className="flex flex-col">
       <h1>count: {count}</h1>
       <h1>Double: {double}</h1>
       <h1>Quadruple: {quadruple}</h1>
@@ -75,9 +83,9 @@ const GlobalComputedExample = () => {
 }
 
 const LocalComputedExample = () => {
-  const localCount = signal(0, "local count")
-  const localIsTracking = signal(false, "local is tracking")
-  const localDouble = computed(() => {
+  const localCount = useSignal(0, "local count")
+  const localIsTracking = useSignal(false, "local is tracking")
+  const localDouble = useComputed(() => {
     if (localIsTracking.value) {
       return localCount.value * 100
     }
