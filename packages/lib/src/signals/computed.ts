@@ -1,6 +1,6 @@
 import { __DEV__ } from "../env.js"
 import { Signal } from "./base.js"
-import { effectQueue, tracking } from "./globals.js"
+import { effectQueue, signalSubsMap, tracking } from "./globals.js"
 import { $HMR_ACCEPT } from "../constants.js"
 import { node } from "../globals.js"
 import type { HMRAccept } from "../hmr.js"
@@ -98,7 +98,8 @@ export const computed = <T>(
       if (isInit) {
         hook.cleanup = () => {
           ComputedSignal.stop(hook.signal)
-          Signal.subscribers(hook.signal).clear()
+          // @ts-expect-error - we must remove our sub map here to avoid memory leaks
+          signalSubsMap.delete(hook.signal.$id)
         }
         hook.signal = new ComputedSignal(getter, displayName)
         ComputedSignal.start(hook.signal)

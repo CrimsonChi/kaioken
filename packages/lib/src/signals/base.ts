@@ -70,10 +70,7 @@ export class Signal<T> {
   subscribe(cb: (state: T) => void): () => void {
     const subs = signalSubsMap.get(this.$id)!
     subs!.add(cb)
-    return () => {
-      const subs = signalSubsMap.get(this.$id)!
-      subs!.delete(cb)
-    }
+    return () => signalSubsMap.get(this.$id)?.delete(cb)
   }
 
   notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
