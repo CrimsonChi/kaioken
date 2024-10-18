@@ -172,8 +172,11 @@ export const signal = <T>(initial: T, displayName?: string) => {
               hook.signal.sneak(value)
             },
           }
+          if (hook.signal) {
+            hook.signal.value = initial
+          }
         }
-        hook.signal = new Signal(initial, displayName)
+        hook.signal ??= new Signal(initial, displayName)
         hook.cleanup = () => Signal.dispose(hook.signal)
       }
       return hook.signal

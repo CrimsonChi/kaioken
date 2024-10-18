@@ -1,4 +1,14 @@
-import { Router, Route, Link, lazy, signal, computed, watch } from "kaioken"
+import {
+  Router,
+  Route,
+  Link,
+  lazy,
+  signal,
+  computed,
+  watch,
+  useRef,
+  useCallback,
+} from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 
@@ -8,9 +18,39 @@ type AppRoute = {
   fallthrough?: boolean
 }
 
-const count = signal(23)
-const double = computed(() => count.value * 2)
+function Counter() {
+  const count = signal(24)
+  const countRef = useRef<HTMLDivElement>(null)
+  const animRef = useRef<Animation>()
+
+  const handleClick = useCallback(() => {
+    count.value++
+
+    animRef.current?.finish()
+    animRef.current = countRef.current?.animate(
+      [{ transform: "scale(2.5)" }, { transform: "scale(1)" }],
+      {
+        duration: 300,
+        iterations: 1,
+      }
+    )
+  }, [])
+
+  return (
+    <div className="flex flex-col gap-8 justify-center items-center">
+      <button type="button" onclick={handleClick} className="cursor-pointer ">
+        Increment
+      </button>
+      <span ref={countRef} className="text-4xl font-medium select-none">
+        {count}
+      </span>
+    </div>
+  )
+}
+
 const Home: Kaioken.FC = () => {
+  const count = signal(46)
+  const double = computed(() => count.value * 2)
   watch(() => console.log("count", count.value))
 
   return (
@@ -24,6 +64,7 @@ const Home: Kaioken.FC = () => {
         <br />
         Double: {double}
       </button>
+      <Counter />
     </div>
   )
 }
