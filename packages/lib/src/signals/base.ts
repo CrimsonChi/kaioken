@@ -97,6 +97,10 @@ export class Signal<T> {
     return signalSubsMap.get(signal.$id)!
   }
 
+  static dispose(signal: Signal<any>) {
+    signalSubsMap.delete(signal.$id)
+  }
+
   static makeReadonly<T>(signal: Signal<T>): ReadonlySignal<T> {
     const desc = Object.getOwnPropertyDescriptor(signal, "value")
     if (desc && !desc.writable) return signal
@@ -170,9 +174,7 @@ export const signal = <T>(initial: T, displayName?: string) => {
           }
         }
         hook.signal = new Signal(initial, displayName)
-        hook.cleanup = () => {
-          Signal.subscribers(hook.signal).clear()
-        }
+        hook.cleanup = () => Signal.dispose(hook.signal)
       }
       return hook.signal
     }
