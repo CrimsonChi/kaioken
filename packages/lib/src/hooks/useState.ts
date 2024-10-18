@@ -6,7 +6,10 @@ export function useState<T>(
   initial: T | (() => T)
 ): readonly [T, (value: Kaioken.StateSetter<T>) => void] {
   if (!sideEffectsEnabled()) {
-    return [initial instanceof Function ? initial() : initial, noop]
+    return [
+      typeof initial === "function" ? (initial as Function)() : initial,
+      noop,
+    ]
   }
   if (__DEV__) {
     useHookHMRInvalidation(...arguments)
@@ -25,10 +28,13 @@ export function useState<T>(
             set: ({ value }) => (hook.state = value),
           } satisfies Kaioken.HookDebug<{ value: T }>
         }
-        hook.state = initial instanceof Function ? initial() : initial
+        hook.state =
+          typeof initial === "function" ? (initial as Function)() : initial
         hook.dispatch = (setter: Kaioken.StateSetter<T>) => {
           const newState =
-            setter instanceof Function ? setter(hook.state) : setter
+            typeof setter === "function"
+              ? (setter as Function)(hook.state)
+              : setter
           if (Object.is(hook.state, newState)) return
           hook.state = newState
           update()

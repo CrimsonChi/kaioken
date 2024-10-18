@@ -51,9 +51,9 @@ function createStore<T, U extends MethodFactory<T>>(
 
   const getState = () => state
   const setState = (setter: Kaioken.StateSetter<T>) => {
-    state = setter instanceof Function ? setter(state) : setter
+    state = typeof setter === "function" ? (setter as Function)(state) : setter
     subscribers.forEach((n) => {
-      if (n instanceof Function) return n(state)
+      if (typeof n === "function") return n(state)
       const computes = nodeToSliceComputeMap.get(n)
       if (computes) {
         let computeChanged = false

@@ -77,7 +77,7 @@ export class Signal<T> {
     const subs = signalSubsMap.get(this.$id)!
     subs.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
-      if (sub instanceof Function) {
+      if (typeof sub === "function") {
         return sub(this.$value)
       }
       getVNodeAppContext(sub).requestUpdate(sub)
