@@ -4,7 +4,11 @@ import { type Signal } from "./base.js"
 import type { HMRAccept } from "../hmr.js"
 import { $HMR_ACCEPT } from "../constants.js"
 import { node } from "../globals.js"
-import { sideEffectsEnabled, useHook } from "../hooks/utils.js"
+import {
+  sideEffectsEnabled,
+  useHook,
+  useHookHMRInvalidation,
+} from "../hooks/utils.js"
 import { effectQueue, tracking } from "./globals.js"
 
 export class WatchEffect {
@@ -81,28 +85,25 @@ export const watch = (getter: () => (() => void) | void) => {
     watcher.start()
 
     return watcher
-  } else {
-    return useHook(
-      "useWatch",
-      {
-        watcher: null as any as WatchEffect,
-      },
-      ({ hook, isInit }) => {
-        if (isInit) {
-          hook.watcher = new WatchEffect(getter)
-          hook.watcher.start()
-
-          hook.cleanup = () => {
-            hook.watcher.stop()
-          }
-        } else if (hook.watcher) {
-          WatchEffect.setGetter(hook.watcher, getter)
-        }
-
-        return hook.watcher
-      }
-    )
   }
+  if (!sideEffectsEnabled()) return null
+  useHookHMRInvalidation()
+  return useHook(
+    "useWatch",
+    {
+      watcher: null as any as WatchEffect,
+    },
+    ({ hook, isInit }) => {
+      if (isInit) {
+        hook.cleanup?.()
+        hook.watcher = new WatchEffect(getter)
+        hook.watcher.start()
+        hook.cleanup = () => hook.watcher?.stop()
+      }
+
+      return hook.watcher
+    }
+  )
 }
 
 const appliedTrackedEffects = (

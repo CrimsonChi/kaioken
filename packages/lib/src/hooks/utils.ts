@@ -156,7 +156,10 @@ function useHook<
         asDevHook.devInvalidationValue = nextHookDevInvalidationValue // store our initial 'devInvalidationValue'
       } else if (
         vNode.hmrUpdated &&
-        oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue
+        (oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue ||
+          // handle cases where we just call 'useHookHMRInvalidation()', like `watch`
+          (oldAsDevHook.devInvalidationValue === "[]" &&
+            nextHookDevInvalidationValue === "[]"))
       ) {
         hmrInvalid = true
         asDevHook.devInvalidationValue = nextHookDevInvalidationValue
