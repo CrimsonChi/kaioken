@@ -36,6 +36,9 @@ type VNode = Kaioken.VNode
 
 const noop: () => void = Object.freeze(() => {})
 
+/**
+ * Returns true if called during DOM or hydration render mode.
+ */
 function sideEffectsEnabled(): boolean {
   return renderMode.current === "dom" || renderMode.current === "hydrate"
 }

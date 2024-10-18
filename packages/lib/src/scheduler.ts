@@ -183,14 +183,6 @@ export class Scheduler {
     this.deletions.push(vNode)
   }
 
-  queueEffect(vNode: VNode, effect: Function) {
-    ;(vNode.effects ??= []).push(effect)
-  }
-
-  queueImmediateEffect(vNode: VNode, effect: Function) {
-    ;(vNode.immediateEffects ??= []).push(effect)
-  }
-
   private isFlushReady() {
     return (
       !this.nextUnitOfWork &&

@@ -23,6 +23,13 @@ type DevHook<T> = Hook<T> & {
 }
 
 let nextHookDevInvalidationValue: string | undefined
+/**
+ * **dev only - this is a no-op in production.**
+ *
+ * Used to mark a hook as invalidated on HMR.
+ * Arguments passed to this function will be used to
+ * determine if the hook should be re-initialized.
+ */
 const useHookHMRInvalidation = (...values: unknown[]) => {
   if (__DEV__) {
     nextHookDevInvalidationValue = safeStringify(values)
@@ -34,6 +41,12 @@ enum HookDebugGroupAction {
   End = "end",
 }
 
+/**
+ * **dev only - this is a no-op in production.**
+ *
+ * Used to create 'groups' of hooks in the devtools.
+ * Useful for debugging and profiling.
+ */
 const useHookDebugGroup = (name: string, action: HookDebugGroupAction) => {
   if (__DEV__) {
     return useHook(
@@ -114,15 +127,17 @@ function useHook<
   const vNode = node.current
   if (!vNode) error_hookMustBeCalledTopLevel(hookName)
 
-  if (
-    currentHookName !== null &&
-    !nestedHookWarnings.has(hookName + currentHookName)
-  ) {
-    nestedHookWarnings.add(hookName + currentHookName)
-    throw new KaiokenError({
-      message: `Nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange will most certainly happen.`,
-      vNode: node.current,
-    })
+  if (__DEV__) {
+    if (
+      currentHookName !== null &&
+      !nestedHookWarnings.has(hookName + currentHookName)
+    ) {
+      nestedHookWarnings.add(hookName + currentHookName)
+      throw new KaiokenError({
+        message: `Nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange will most certainly happen.`,
+        vNode: node.current,
+      })
+    }
   }
 
   const ctx = getVNodeAppContext(vNode)
@@ -137,17 +152,25 @@ function useHook<
       ? hookDataOrInitializer()
       : { ...hookDataOrInitializer })
 
-  if (!oldHook) hook.name = hookName
-  else if (oldHook.name !== hookName) {
-    console.warn(
-      `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
-    )
-  }
-  currentHookName = hookName
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
 
+  const queueEffect = (callback: Function, opts?: { immediate?: boolean }) => {
+    if (opts?.immediate) {
+      ;(vNode.immediateEffects ??= []).push(callback)
+      return
+    }
+    ;(vNode.effects ??= []).push(callback)
+  }
+
   if (__DEV__) {
+    if (!oldHook) hook.name = hookName
+    currentHookName = hookName
+    if (oldHook && oldHook.name !== hookName) {
+      console.warn(
+        `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
+      )
+    }
     const oldAsDevHook = oldHook as DevHook<T> | undefined
     const asDevHook = hook as DevHook<T>
     let hmrInvalid = false
@@ -157,7 +180,7 @@ function useHook<
       } else if (
         vNode.hmrUpdated &&
         (oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue ||
-          // handle cases where we just call 'useHookHMRInvalidation()', like `watch`
+          // handle cases where we just call 'useHookHMRInvalidation()', like in `useWatch`
           (oldAsDevHook.devInvalidationValue === "[]" &&
             nextHookDevInvalidationValue === "[]"))
       ) {
@@ -171,12 +194,7 @@ function useHook<
         hook: hook,
         isInit: !oldHook || hmrInvalid,
         update: () => ctx.requestUpdate(vNode),
-        queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
-          if (opts?.immediate) {
-            return ctx.queueImmediateEffect(vNode, callback)
-          }
-          ctx.queueEffect(vNode, callback)
-        },
+        queueEffect,
         vNode,
       })
       return res
@@ -193,19 +211,12 @@ function useHook<
       hook: hook,
       isInit: !oldHook,
       update: () => ctx.requestUpdate(vNode),
-      queueEffect: (callback: Function, opts?: { immediate?: boolean }) => {
-        if (opts?.immediate) {
-          return ctx.queueImmediateEffect(vNode, callback)
-        }
-        ctx.queueEffect(vNode, callback)
-      },
+      queueEffect,
       vNode,
     })
     return res
   } catch (error) {
     throw error
-  } finally {
-    currentHookName = null
   }
 }
 
