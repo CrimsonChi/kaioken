@@ -11,6 +11,22 @@ export const defaultEsBuildOptions: ESBuildOptions = {
   include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
 }
 
+const UNNAMED_WATCH_PREAMBLE = `\n
+if (import.meta.hot && "window" in globalThis) {
+  window.__kaioken.HMRContext?.signals.registerNextWatch();
+}
+`
+
+type TransformInsert = {
+  content: string
+  start: number
+}
+type TransformContext = {
+  id: string
+  code: string
+  inserts: TransformInsert[]
+}
+
 type FilePathFormatter = (path: string, line: number) => string
 
 export interface KaiokenPluginOptions {
@@ -109,13 +125,21 @@ export default function kaioken(
       try {
         const hotVars = findHotVars(ast.body as AstNode[], id)
         if (hotVars.length === 0) return { code }
-        code = transformIncludeFilePath(
+        const transformCtx: TransformContext = {
+          id,
+          code,
+          inserts: [],
+        }
+        transformInsertUnnamedWatchPreambles(
+          ast.body as AstNode[],
+          transformCtx
+        )
+        transformInsertFilePathComments(
           fileLinkFormatter,
           ast.body as AstNode[],
-          code,
-          id
+          transformCtx
         )
-        code = transformIncludeWatchPreambles(ast.body as AstNode[], code)
+        code = transformInjectInserts(transformCtx)
         code =
           `
 if (import.meta.hot && "window" in globalThis) {
@@ -126,9 +150,7 @@ if (import.meta.hot && "window" in globalThis) {
           `
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
-  window.__kaioken.HMRContext?.register({
-    ${hotVars.map((name) => `"${name}": ${name}`).join(",\n")}
-  });
+  window.__kaioken.HMRContext?.register({${hotVars.map((name) => name).join(",\n")}});
 }`
       } catch (error) {
         console.error(error)
@@ -272,7 +294,25 @@ function addHotVarNames(node: AstNode, names: Set<string>) {
   }
 }
 
-function transformIncludeWatchPreambles(nodes: AstNode[], code: string) {
+function transformInjectInserts(ctx: TransformContext) {
+  let offset = 0
+  const sortedInserts = ctx.inserts.sort((a, b) => a.start - b.start)
+  for (let i = 0; i < sortedInserts.length; i++) {
+    const { content, start } = sortedInserts[i]
+    ctx.code =
+      ctx.code.slice(0, start + offset) +
+      content +
+      ctx.code.slice(start + offset)
+
+    offset += content.length
+  }
+  return ctx.code
+}
+
+function transformInsertUnnamedWatchPreambles(
+  nodes: AstNode[],
+  ctx: TransformContext
+) {
   const { addAliases: addWatchAliases, nodeContainsAliasCall: isWatch } =
     createAliasBuilder("kaioken", "watch")
 
@@ -285,41 +325,29 @@ function transformIncludeWatchPreambles(nodes: AstNode[], code: string) {
       const nameSet = new Set<string>()
       addHotVarNames(node, nameSet)
       if (nameSet.size === 0) {
-        // insert comment before this node
-        code =
-          code.slice(0, node.start) +
-          `
-if (import.meta.hot && "window" in globalThis) {
-  window.__kaioken.HMRContext?.signals.registerNextWatch();
-}
-` +
-          code.slice(node.start)
+        ctx.inserts.push({
+          content: UNNAMED_WATCH_PREAMBLE,
+          start: node.start,
+        })
       }
     }
   }
-
-  return code
 }
 
-function transformIncludeFilePath(
+function transformInsertFilePathComments(
   linkFormatter: FilePathFormatter,
   nodes: AstNode[],
-  code: string,
-  id: string
+  ctx: TransformContext
 ) {
-  let offset = 0
-
+  const commentText = createFilePathComment(linkFormatter, ctx.id)
   const insertToFunctionDeclarationBody = (
     body: AstNode & { body: AstNode[] }
   ) => {
-    const commentText = createFilePathComment(linkFormatter, id)
     const insertPosition = body.start + 1
-    code =
-      code.slice(0, insertPosition + offset) +
-      commentText +
-      code.slice(insertPosition + offset)
-
-    offset += commentText.length
+    ctx.inserts.push({
+      content: commentText,
+      start: insertPosition,
+    })
   }
   // for each function that contains `kaioken.createElement`, inject the file path as a comment node inside of the function body
   for (const node of nodes) {
@@ -374,7 +402,6 @@ function transformIncludeFilePath(
       }
     }
   }
-  return code
 }
 
 function isNodeCreateElementExpression(node: AstNode): boolean {
