@@ -118,7 +118,9 @@ export default function kaioken(
         code = transformIncludeWatchPreambles(ast.body as AstNode[], code)
         code =
           `
-window.__kaioken.HMRContext?.prepare("${id}");
+if (import.meta.hot && "window" in globalThis) {
+  window.__kaioken.HMRContext?.prepare("${id}");
+}
 ` +
           code +
           `
