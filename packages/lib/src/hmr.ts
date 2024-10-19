@@ -56,7 +56,6 @@ export function createHMRContext() {
       moduleMap.set(filePath, mod)
     }
     currentModuleMemory = mod!
-    console.log("prepared", filePath, isModuleReplacementExecution)
   }
 
   const register = (hotVars: Record<string, HotVar>) => {
@@ -108,8 +107,6 @@ export function createHMRContext() {
       currentModuleMemory.unnamedWatchers.length = tmpUnnamedWatchers.length
       tmpUnnamedWatchers.length = 0
     }
-
-    console.log("registered", currentModuleMemory)
   }
 
   const signals = {
