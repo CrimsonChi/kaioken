@@ -115,10 +115,16 @@ export default function kaioken(
           code,
           id
         )
-        code += `
+        code = transformIncludeWatchPreambles(ast.body as AstNode[], code)
+        code =
+          `
+window.__kaioken.HMRContext?.prepare("${id}");
+` +
+          code +
+          `
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
-  window.__kaioken.HMRContext?.register("${id}", {
+  window.__kaioken.HMRContext?.register({
     ${hotVars.map((name) => `"${name}": ${name}`).join(",\n")}
   });
 }`
@@ -142,6 +148,7 @@ interface AstNode {
   body?: AstNode | AstNode[]
   declaration?: AstNode
   declarations?: AstNode[]
+  expression?: AstNode
   id?: AstNodeId
   init?: AstNode
   object?: AstNodeId
@@ -263,6 +270,35 @@ function addHotVarNames(node: AstNode, names: Set<string>) {
   }
 }
 
+function transformIncludeWatchPreambles(nodes: AstNode[], code: string) {
+  const { addAliases: addWatchAliases, nodeContainsAliasCall: isWatch } =
+    createAliasBuilder("kaioken", "watch")
+
+  for (const node of nodes) {
+    if (node.type === "ImportDeclaration") {
+      addWatchAliases(node)
+      continue
+    }
+    if (findNode(node, isWatch)) {
+      const nameSet = new Set<string>()
+      addHotVarNames(node, nameSet)
+      if (nameSet.size === 0) {
+        // insert comment before this node
+        code =
+          code.slice(0, node.start) +
+          `
+if (import.meta.hot && "window" in globalThis) {
+  window.__kaioken.HMRContext?.signals.registerNextWatch();
+}
+` +
+          code.slice(node.start)
+      }
+    }
+  }
+
+  return code
+}
+
 function transformIncludeFilePath(
   linkFormatter: FilePathFormatter,
   nodes: AstNode[],
@@ -293,6 +329,20 @@ function transformIncludeFilePath(
     ) {
       const body = node.body as AstNode & { body: AstNode[] }
       insertToFunctionDeclarationBody(body)
+    } else if (node.type === "VariableDeclaration") {
+      const declarations = node.declarations
+      if (!declarations) continue
+
+      for (const dec of declarations) {
+        if (
+          dec.init &&
+          dec.init.body &&
+          findNode(dec.init, isNodeCreateElementExpression)
+        ) {
+          const body = dec.init.body as AstNode & { body: AstNode[] }
+          insertToFunctionDeclarationBody(body)
+        }
+      }
     } else if (
       node.type === "ExportNamedDeclaration" ||
       node.type === "ExportDefaultDeclaration"
@@ -377,6 +427,7 @@ function findNode(
     (node.declaration && findNode(node.declaration, predicate)) ||
     (node.declarations &&
       node.declarations.some((c) => findNode(c, predicate))) ||
+    (node.expression && findNode(node.expression, predicate)) ||
     (node.cases && node.cases.some((c) => findNode(c, predicate)))
   ) {
     return true

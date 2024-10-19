@@ -35,6 +35,12 @@ export class WatchEffect {
           this.stop()
         },
       }
+      if (
+        "window" in globalThis &&
+        window.__kaioken?.HMRContext?.signals.isWaitingForNextWatchCall
+      ) {
+        window.__kaioken?.HMRContext?.signals.pushWatch(this)
+      }
     }
   }
 
@@ -44,38 +50,36 @@ export class WatchEffect {
     }
 
     this.isRunning = true
-    /**
-     * A tighter integration with HMR could see us
-     * only needing to delay this during an HMR update.
-     *
-     * We postpone the callback until the next tick so that HMR
-     * can persist any referenced signals.
-     */
-    queueMicrotask(() => {
-      if (this.isRunning) {
-        this.cleanup = appliedTrackedEffects(
-          () => this.getter(),
-          this.unsubs,
-          this.id
-        )
+
+    if (__DEV__) {
+      // postpone execution during hot module replacement
+      if (
+        "window" in globalThis &&
+        window.__kaioken?.HMRContext?.isReplacement()
+      ) {
+        queueMicrotask(() => {
+          if (this.isRunning) {
+            this.cleanup = appliedTrackedEffects(
+              this.getter,
+              this.unsubs,
+              this.id
+            )
+          }
+        })
+        return
       }
-    })
+    }
+    this.cleanup = appliedTrackedEffects(this.getter, this.unsubs, this.id)
+    return
   }
 
   stop() {
-    if (!this.isRunning) {
-      return
-    }
-
     effectQueue.delete(this.id)
     this.unsubs.forEach((fn) => fn())
     this.unsubs.clear()
     this.cleanup?.call?.()
+    this.cleanup = undefined
     this.isRunning = false
-  }
-
-  static setGetter(watcher: WatchEffect, getter: () => (() => void) | void) {
-    watcher.getter = getter
   }
 }
 
