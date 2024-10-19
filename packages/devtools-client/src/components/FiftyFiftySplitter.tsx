@@ -5,19 +5,19 @@ import {
 } from "@kaioken-core/hooks"
 import {
   ElementProps,
-  signal,
   useCallback,
   useLayoutEffect,
   useRef,
+  useSignal,
 } from "kaioken"
 
 export const FiftyFiftySplitter = (props: {
   children: [JSX.Element, JSX.Element]
 }) => {
   const { mouse } = useMouse()
-  const startMouse = signal<{ x: number; y: number } | null>(null)
-  const prevFirstContainerWidth = signal(0)
-  const firstContainerWidth = signal(0)
+  const startMouse = useSignal<{ x: number; y: number } | null>(null)
+  const prevFirstContainerWidth = useSignal(0)
+  const firstContainerWidth = useSignal(0)
 
   const firstViewContainer = useRef<HTMLDivElement>(null)
   const firstViewContainerBounding = useElementBounding(firstViewContainer)

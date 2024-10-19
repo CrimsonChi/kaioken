@@ -4,24 +4,30 @@ import {
   useEventListener,
   useMouse,
 } from "@kaioken-core/hooks"
-import { signal, useCallback, useLayoutEffect, useMemo, useRef } from "kaioken"
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSignal,
+} from "kaioken"
 import { LOCAL_KEY, PADDING } from "../utils/constants"
 import { SnapSide, Storage } from "../utils/types"
 import { reinitializeAnchorPos } from "../utils"
 
 export const useAnchorPos = () => {
   const { mouse } = useMouse()
-  const startMouse = signal<null | { x: number; y: number }>(null)
+  const startMouse = useSignal<null | { x: number; y: number }>(null)
   const anchorRef = useRef<HTMLDivElement>(null)
   const viewPortRef = useRef<HTMLDivElement>(null)
   const elementBound = useElementBounding(anchorRef)
-  const lastDroppedCoord = signal({ x: -PADDING, y: -PADDING })
-  const anchorCoords = signal({ x: -PADDING, y: -PADDING })
-  const viewportSize = signal({
+  const lastDroppedCoord = useSignal({ x: -PADDING, y: -PADDING })
+  const anchorCoords = useSignal({ x: -PADDING, y: -PADDING })
+  const viewportSize = useSignal({
     width: window.innerWidth,
     height: window.innerHeight,
   })
-  const snapSide = signal<SnapSide>("bottom")
+  const snapSide = useSignal<SnapSide>("bottom")
   const timeoutRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {

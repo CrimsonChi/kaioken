@@ -93,34 +93,6 @@ export function SelectedNodeView({
         />
       </NodeDataSection>
       <HookTreeDisplay node={nodeHookTree} selectedApp={selectedApp} />
-      <NodeDataSection
-        title="signal subscriptions"
-        disabled={!selectedNode.subs || selectedNode.subs.length === 0}
-      >
-        <div className="text-sm">
-          {selectedNode.subs?.map((signal) => (
-            <div>
-              <b>{signal.displayName || "anonymous signal"}</b>
-              <div className="p-2">
-                <ValueEditor
-                  data={{
-                    value: signal.peek(),
-                  }}
-                  onChange={(keys, newVal) => {
-                    const _v = {
-                      value: signal.value,
-                    }
-                    applyObjectChangeFromKeys(_v, keys, newVal)
-                    signal.sneak(_v.value)
-                  }}
-                  mutable={true}
-                  objectRefAcc={[]}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </NodeDataSection>
     </div>
   )
 }

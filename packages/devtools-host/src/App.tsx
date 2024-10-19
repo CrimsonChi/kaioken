@@ -3,7 +3,13 @@ import { twMerge } from "tailwind-merge"
 import { Flame } from "./icon/Flame"
 import { useAnchorPos } from "./hooks/useAnchorPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
-import { signal, Transition, useEffect, useLayoutEffect, useRef } from "kaioken"
+import {
+  useSignal,
+  Transition,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "kaioken"
 import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
@@ -19,7 +25,7 @@ const handleToggleInspect = () => {
 }
 
 export default function App() {
-  const toggled = signal(false)
+  const toggled = useSignal(false)
   const handleOpen = useDevTools()
   const {
     anchorCoords,
