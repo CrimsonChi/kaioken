@@ -150,7 +150,9 @@ if (import.meta.hot && "window" in globalThis) {
           `
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
-  window.__kaioken.HMRContext?.register({${hotVars.map((name) => name).join(",\n")}});
+  window.__kaioken.HMRContext?.register({
+${hotVars.map((v) => `    ${v}`).join(",\n")}
+  });
 }`
       } catch (error) {
         console.error(error)
