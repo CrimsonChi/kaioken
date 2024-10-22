@@ -27,7 +27,7 @@ type TransformContext = {
   inserts: TransformInsert[]
 }
 
-type FilePathFormatter = (path: string, line: number) => string
+type FilePathFormatter = (path: string) => string
 
 export interface KaiokenPluginOptions {
   devtools?: boolean
@@ -36,13 +36,12 @@ export interface KaiokenPluginOptions {
    * @param path the path to the file that contains the component on disk
    * @param line the component's line number
    * @returns {string} the formatted link
-   * @default (path, line) => `vscode://file/${path}:${line}`
+   * @default (path) => `vscode://file/${path}`
    */
   formatFileLink?: FilePathFormatter
 }
 
-const vscodeFilePathFormatter = (path: string, line: number) =>
-  `vscode://file/${path}:${line}`
+const vscodeFilePathFormatter = (path: string) => `vscode://file/${path}`
 
 export default function kaioken(
   opts: KaiokenPluginOptions = {
@@ -134,16 +133,11 @@ export default function kaioken(
           ast.body as AstNode[],
           transformCtx
         )
-        transformInsertFilePathComments(
-          fileLinkFormatter,
-          ast.body as AstNode[],
-          transformCtx
-        )
         code = transformInjectInserts(transformCtx)
         code =
           `
 if (import.meta.hot && "window" in globalThis) {
-  window.__kaioken.HMRContext?.prepare("${id}");
+  window.__kaioken.HMRContext?.prepare("${id}", "${fileLinkFormatter(id)}");
 }
 ` +
           code +
@@ -193,12 +187,6 @@ interface AstNode {
   source?: AstNode & { value: string }
   value?: unknown
 }
-
-const createFilePathComment = (
-  formatter: FilePathFormatter,
-  filePath: string,
-  line = 0
-) => `// [kaioken_devtools]:${formatter(filePath, line)}`
 
 function createAliasBuilder(source: string, name: string) {
   const aliases = new Set<string>()
@@ -331,76 +319,6 @@ function transformInsertUnnamedWatchPreambles(
           content: UNNAMED_WATCH_PREAMBLE,
           start: node.start,
         })
-      }
-    }
-  }
-}
-
-function transformInsertFilePathComments(
-  linkFormatter: FilePathFormatter,
-  nodes: AstNode[],
-  ctx: TransformContext
-) {
-  const commentText = createFilePathComment(linkFormatter, ctx.id)
-  const insertToFunctionDeclarationBody = (
-    body: AstNode & { body: AstNode[] }
-  ) => {
-    const insertPosition = body.start + 1
-    ctx.inserts.push({
-      content: commentText,
-      start: insertPosition,
-    })
-  }
-  // for each function that contains `kaioken.createElement`, inject the file path as a comment node inside of the function body
-  for (const node of nodes) {
-    if (
-      findNode(node, isNodeCreateElementExpression) &&
-      node.type === "FunctionDeclaration" &&
-      node.body &&
-      !Array.isArray(node.body)
-    ) {
-      const body = node.body as AstNode & { body: AstNode[] }
-      insertToFunctionDeclarationBody(body)
-    } else if (node.type === "VariableDeclaration") {
-      const declarations = node.declarations
-      if (!declarations) continue
-
-      for (const dec of declarations) {
-        if (
-          dec.init &&
-          dec.init.body &&
-          findNode(dec.init, isNodeCreateElementExpression)
-        ) {
-          const body = dec.init.body as AstNode & { body: AstNode[] }
-          insertToFunctionDeclarationBody(body)
-        }
-      }
-    } else if (
-      node.type === "ExportNamedDeclaration" ||
-      node.type === "ExportDefaultDeclaration"
-    ) {
-      const dec = node.declaration
-      if (dec?.type === "FunctionDeclaration") {
-        const body = dec.body as AstNode & { body: AstNode[] }
-        if (findNode(body, isNodeCreateElementExpression)) {
-          insertToFunctionDeclarationBody(body)
-        }
-      } else if (dec?.type === "VariableDeclaration") {
-        const declarations = dec.declarations
-        if (!declarations) continue
-        for (const dec of declarations) {
-          if (dec.init && findNode(dec.init, isNodeCreateElementExpression)) {
-            const body = dec.init as AstNode & { body: AstNode[] }
-            if (
-              body.type === "ArrowFunctionExpression" ||
-              body.type === "FunctionExpression"
-            ) {
-              insertToFunctionDeclarationBody(
-                body.body! as AstNode & { body: AstNode[] }
-              )
-            }
-          }
-        }
       }
     }
   }

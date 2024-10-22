@@ -23,4 +23,6 @@ export function getNodeName(node: Kaioken.VNode) {
 
 export const getComponentFileLink = (
   node: Kaioken.VNode & { type: Function }
-) => node.type.toString().match(/\/\/ \[kaioken_devtools\]:(.*)/)?.[1] ?? null
+): string =>
+  // @ts-ignore
+  node.type.__devtoolsFileLink ?? null

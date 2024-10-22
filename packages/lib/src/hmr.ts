@@ -32,6 +32,7 @@ export function isGenericHmrAcceptor(
 type ModuleMemory = {
   hotVars: Map<string, HotVar>
   unnamedWatchers: Array<WatchEffect>
+  fileLink: string
 }
 
 export function createHMRContext() {
@@ -44,14 +45,14 @@ export function createHMRContext() {
   let isWaitingForNextWatchCall = false
   let tmpUnnamedWatchers: WatchEffect[] = []
 
-  const prepare = (filePath: string) => {
+  const prepare = (filePath: string, fileLink: string) => {
     let mod = moduleMap.get(filePath)
     isModuleReplacementExecution = !!mod
-
     if (!mod) {
       mod = {
         hotVars: new Map(),
         unnamedWatchers: [],
+        fileLink,
       }
       moduleMap.set(filePath, mod)
     }
@@ -64,6 +65,8 @@ export function createHMRContext() {
 
     for (const [name, newVar] of Object.entries(hotVars)) {
       const oldVar = currentModuleMemory.hotVars.get(name)
+      // @ts-ignore
+      newVar.__devtoolsFileLink = currentModuleMemory.fileLink + ":0"
       currentModuleMemory.hotVars.set(name, newVar)
       if (!oldVar) continue
       if (isGenericHmrAcceptor(oldVar) && isGenericHmrAcceptor(newVar)) {
