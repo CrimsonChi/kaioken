@@ -89,8 +89,7 @@ export class Signal<T> {
   }
 
   static unsubscribe(sub: SignalSubscriber, id: string) {
-    const subs = signalSubsMap.get(id)!
-    subs.delete(sub)
+    signalSubsMap.get(id)?.delete(sub)
   }
 
   static subscribers(signal: Signal<any>) {
