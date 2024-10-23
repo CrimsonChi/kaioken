@@ -18,8 +18,8 @@
     "outDir": "dist",
     "baseUrl": ".",
     "removeComments": false,
-    "sourceMap": true,
-    "declarationMap": true,
+    // "sourceMap": true,
+    // "declarationMap": true,
     "jsx": "react",
     "jsxFactory": "kaioken.createElement",
     "jsxFragmentFactory": "kaioken.Fragment"
