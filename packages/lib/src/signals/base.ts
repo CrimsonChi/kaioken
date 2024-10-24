@@ -161,7 +161,7 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
   return useHook(
     "useSignal",
     { signal: undefined as any as Signal<T> },
-    ({ hook, isInit }) => {
+    ({ hook, isInit, vNode }) => {
       if (isInit) {
         if (__DEV__) {
           hook.debug = {
@@ -173,7 +173,7 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
               hook.signal.sneak(value)
             },
           }
-          if (hook.signal) {
+          if (hook.signal && vNode.hmrUpdated) {
             hook.signal.value = initial
           }
         }
