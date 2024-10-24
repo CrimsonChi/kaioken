@@ -50,6 +50,7 @@ export class Signal<T> {
   }
 
   set value(next: T) {
+    if (Object.is(this.$value, next)) return
     this.$value = next
     this.notify()
   }
