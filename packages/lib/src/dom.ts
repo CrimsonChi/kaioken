@@ -333,7 +333,7 @@ function setInnerHTML(element: SomeElement, value: unknown, prev: unknown) {
     element.innerHTML = value.toString()
   }
   if (value === prev) return
-  if (value === null) {
+  if (value === null || value === undefined || typeof value === "boolean") {
     element.innerHTML = ""
     return
   }
