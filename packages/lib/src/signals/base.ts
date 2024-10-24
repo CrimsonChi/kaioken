@@ -75,8 +75,7 @@ export class Signal<T> {
   }
 
   notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
-    const subs = signalSubsMap.get(this.$id)!
-    subs.forEach((sub) => {
+    signalSubsMap.get(this.$id)?.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
       if (typeof sub === "function") {
         return sub(this.$value)
