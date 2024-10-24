@@ -59,7 +59,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
-    this.sleep(true)
+    this.sleep()
   }
 
   wake() {
@@ -68,8 +68,7 @@ export class Scheduler {
     this.requestIdleCallback(this.workLoop.bind(this))
   }
 
-  sleep(force = false) {
-    if (!this.isRunning && !force) return
+  sleep() {
     this.isRunning = false
     if (this.frameHandle !== null) {
       globalThis.cancelAnimationFrame(this.frameHandle)
@@ -102,7 +101,8 @@ export class Scheduler {
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
-      return this.wake()
+      this.isRunning = true
+      return this.workLoop()
     }
 
     const treeIdx = this.treesInProgress.indexOf(vNode)
