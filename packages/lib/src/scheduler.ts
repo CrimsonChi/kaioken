@@ -101,8 +101,7 @@ export class Scheduler {
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
-      this.isRunning = true
-      return this.workLoop()
+      return this.wake()
     }
 
     const treeIdx = this.treesInProgress.indexOf(vNode)
