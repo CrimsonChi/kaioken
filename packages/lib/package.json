@@ -1,6 +1,6 @@
 {
   "name": "kaioken",
-  "version": "0.34.6",
+  "version": "0.35.0",
   "description": "A powerful, easy-to-use rendering library with a tiny footprint",
   "main": "index.js",
   "type": "module",
