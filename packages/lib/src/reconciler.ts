@@ -1,7 +1,7 @@
 import type { AppContext } from "./appContext"
 import { ELEMENT_TYPE, FLAG, $FRAGMENT } from "./constants.js"
 import { ctx } from "./globals.js"
-import { isVNode } from "./utils.js"
+import { isVNode, latest } from "./utils.js"
 import { Signal } from "./signals/base.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
@@ -215,7 +215,10 @@ function updateTextNode(
 }
 
 function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
-  const nodeType = newNode.type
+  let nodeType = newNode.type
+  if (typeof nodeType === "function") {
+    nodeType = latest(nodeType)
+  }
   if (nodeType === $FRAGMENT) {
     return updateFragment(
       parent,

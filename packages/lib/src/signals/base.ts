@@ -3,6 +3,7 @@ import { __DEV__ } from "../env.js"
 import type { HMRAccept } from "../hmr.js"
 import {
   getVNodeAppContext,
+  latest,
   safeStringify,
   sideEffectsEnabled,
 } from "../utils.js"
@@ -18,6 +19,7 @@ export class Signal<T> {
   protected $id: string
   protected $value: T
   protected $initialValue?: string
+  protected __next?: Signal<T>
   constructor(initial: T, displayName?: string) {
     this.$id = crypto.randomUUID()
     signalSubsMap.set(this.$id, new Set())
@@ -38,6 +40,9 @@ export class Signal<T> {
           signalSubsMap.get(this.$id)?.clear?.()
           signalSubsMap.delete(this.$id)
           this.$id = prev.$id
+          // @ts-ignore - this handles scenarios where a reference to the prev has been encapsulated
+          // and we need to be able to refer to the latest version of the signal.
+          prev.__next = this
         },
         destroy: () => {},
       } satisfies HMRAccept<Signal<any>>
@@ -45,27 +50,32 @@ export class Signal<T> {
   }
 
   get value() {
-    Signal.entangle(this)
-    return this.$value
+    const tgt = latest(this)
+    Signal.entangle(tgt)
+    return tgt.$value
   }
 
   set value(next: T) {
-    if (Object.is(this.$value, next)) return
-    this.$value = next
-    this.notify()
+    const tgt = latest(this)
+    if (Object.is(tgt.$value, next)) return
+    tgt.$value = next
+    tgt.notify()
   }
 
   peek() {
-    return this.$value
+    const tgt = latest(this)
+    return tgt.$value
   }
 
   sneak(newValue: T) {
-    this.$value = newValue
+    const tgt = latest(this)
+    tgt.$value = newValue
   }
 
   toString() {
-    Signal.entangle(this)
-    return `${this.$value}`
+    const tgt = latest(this)
+    Signal.entangle(tgt)
+    return `${tgt.$value}`
   }
 
   subscribe(cb: (state: T) => void): () => void {
@@ -75,10 +85,11 @@ export class Signal<T> {
   }
 
   notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
+    const tgt = latest(this)
     signalSubsMap.get(this.$id)?.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
       if (typeof sub === "function") {
-        return sub(this.$value)
+        return sub(tgt.$value)
       }
       getVNodeAppContext(sub).requestUpdate(sub)
     })
@@ -173,6 +184,7 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
             },
           }
           if (hook.signal && vNode.hmrUpdated) {
+            console.log("signal hook hmr updated (initial changed)")
             hook.signal.value = initial
           }
         }

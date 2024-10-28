@@ -4,7 +4,7 @@ import type { ServerProps } from "./+data"
 export function Page({ products }: ServerProps) {
   return (
     <>
-      <PageTitle>Products</PageTitle>
+      <PageTitle>Product 123s</PageTitle>
       <div>
         {products.map((product) => (
           <ProductCard product={product} />

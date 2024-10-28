@@ -1,4 +1,5 @@
 export const $SIGNAL = Symbol.for("kaioken.signal")
+export const $CONTEXT = Symbol.for("kaioken.context")
 export const $CONTEXT_PROVIDER = Symbol.for("kaioken.contextProvider")
 export const $FRAGMENT = Symbol.for("kaioken.fragment")
 export const $KAIOKEN_ERROR = Symbol.for("kaioken.error")

@@ -4,6 +4,7 @@ import { unwrap } from "./signals/utils.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
 import type { ExoticVNode } from "./types.utils"
+import { __DEV__ } from "./env.js"
 
 export {
   isVNode,
@@ -25,6 +26,7 @@ export {
   sideEffectsEnabled,
   encodeHtmlEntities,
   noop,
+  latest,
   propFilters,
   selfClosingTags,
   svgTags,
@@ -35,6 +37,20 @@ export {
 type VNode = Kaioken.VNode
 
 const noop: () => void = Object.freeze(() => {})
+
+/**
+ * This is a no-op in production. It is used to get the latest
+ * iteration of a component or signal after HMR has happened.
+ */
+function latest<T>(thing: T): T {
+  let tgt: any = thing
+  if (__DEV__) {
+    while ("__next" in tgt) {
+      tgt = tgt.__next as typeof tgt
+    }
+  }
+  return tgt
+}
 
 /**
  * Returns true if called during DOM or hydration render mode.

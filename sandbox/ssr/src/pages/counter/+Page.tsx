@@ -1,14 +1,15 @@
 import Counter from "$/components/Counter"
 import { PageTitle } from "$/components/PageTitle"
-import { computed, signal, useEffect } from "kaioken"
+import { computed, signal, useComputed, useEffect, useSignal } from "kaioken"
 
 export { Page }
 
+const id = signal(23)
+
 function Page() {
-  const id = signal(0)
-  const divId = computed(() => id.value.toString(), "divId")
+  const divId = useComputed(() => `counter-${id}`, "divId")
   useEffect(() => {
-    const interval = setInterval(() => (id.value += 2), 1000)
+    const interval = setInterval(() => (id.value += 1), 1000)
     return () => clearInterval(interval)
   }, [])
 

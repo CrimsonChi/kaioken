@@ -3,7 +3,7 @@ import type {
   Signal as SignalClass,
   SignalLike,
 } from "./signals"
-import type { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
+import type { $CONTEXT, $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
@@ -130,6 +130,7 @@ declare global {
       children?: JSX.Children | ((value: T) => JSX.Element)
     }
     type Context<T> = {
+      [$CONTEXT]: true
       Provider: (({ value, children }: ProviderProps<T>) => JSX.Element) & {
         displayName?: string
       }

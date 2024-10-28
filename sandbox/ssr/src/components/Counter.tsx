@@ -1,8 +1,8 @@
-import { signal } from "kaioken"
+import { signal, useSignal } from "kaioken"
 
 export default function Counter() {
   console.log("Counter")
-  const count = signal(0)
+  const count = useSignal(0)
 
   return (
     <>

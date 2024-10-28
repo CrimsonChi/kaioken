@@ -15,7 +15,7 @@ export type GenericHMRAcceptor<T = {}> = {
   [$HMR_ACCEPT]: HMRAccept<T>
 }
 
-type HotVar = Kaioken.FC | Store<any, any> | Signal<any>
+type HotVar = Kaioken.FC | Store<any, any> | Signal<any> | Kaioken.Context<any>
 
 export function isGenericHmrAcceptor(
   thing: unknown
@@ -38,7 +38,6 @@ type ModuleMemory = {
 export function createHMRContext() {
   type FilePath = string
   const moduleMap = new Map<FilePath, ModuleMemory>()
-
   let currentModuleMemory: ModuleMemory | null = null
   let isModuleReplacementExecution = false
   const isReplacement = () => isModuleReplacementExecution
@@ -65,8 +64,18 @@ export function createHMRContext() {
 
     for (const [name, newVar] of Object.entries(hotVars)) {
       const oldVar = currentModuleMemory.hotVars.get(name)
-      // @ts-ignore
-      newVar.__devtoolsFileLink = currentModuleMemory.fileLink + ":0"
+      if (typeof newVar === "function") {
+        // @ts-ignore - this is how we tell devtools what file the component is from
+        newVar.__devtoolsFileLink = currentModuleMemory.fileLink + ":0"
+        if (oldVar) {
+          /**
+           * this is how, when the previous function has been stored somewhere else (eg. by Vike),
+           * we can trace it to its latest version
+           */
+          // @ts-ignore
+          oldVar.__next = newVar
+        }
+      }
       currentModuleMemory.hotVars.set(name, newVar)
       if (!oldVar) continue
       if (isGenericHmrAcceptor(oldVar) && isGenericHmrAcceptor(newVar)) {
