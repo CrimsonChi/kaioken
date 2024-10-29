@@ -510,6 +510,19 @@ function commitWork(vNode: VNode) {
         currentHostNode = { node: node as ElementVNode }
         hostNodes.push(currentHostNode)
 
+        if (node.prev && "innerHTML" in node.prev.props) {
+          /**
+           * We need to update innerHTML during descent in cases
+           * where we previously set innerHTML on this element but
+           * now we provide children. Setting innerHTML _after_
+           * appending children will yeet em into the abyss.
+           */
+          delete node.props.innerHTML
+          setInnerHTML(node.dom as SomeElement, "", node.prev.props.innerHTML)
+          // remove innerHTML from prev to prevent our ascension pass from doing this again
+          delete node.prev.props.innerHTML
+        }
+
         if (currentPlacementScope?.active) {
           currentPlacementScope.child = node
           // prevent scope applying to descendants of this element node
