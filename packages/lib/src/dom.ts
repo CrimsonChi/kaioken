@@ -321,7 +321,7 @@ function setProp(
 ) {
   if (key === "style") return setStyleProp(vNode, element, value, prev)
   if (key === "value" && needsExplicitValueSet(element)) {
-    element.value = String(value)
+    element.value = value === undefined || value === null ? "" : String(value)
     return
   }
 
