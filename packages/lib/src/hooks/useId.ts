@@ -28,7 +28,7 @@ const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
       accumulator.push(n.depth)
       n = n.parent
     }
-    hook.id = `k:${parseInt(accumulator.join(""), 10).toString(36)}`
+    hook.id = `k:${BigInt(accumulator.join("")).toString(36)}`
   }
   return hook.id
 }
