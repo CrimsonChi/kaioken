@@ -184,7 +184,6 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
             },
           }
           if (hook.signal && vNode.hmrUpdated) {
-            console.log("signal hook hmr updated (initial changed)")
             hook.signal.value = initial
           }
         }
