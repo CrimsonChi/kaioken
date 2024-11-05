@@ -234,8 +234,8 @@ type InputEvent<T extends "input" | "select" | "textarea"> = Omit<
   target: T extends "input"
     ? HTMLInputElement
     : T extends "select"
-      ? HTMLSelectElement
-      : HTMLTextAreaElement
+    ? HTMLSelectElement
+    : HTMLTextAreaElement
 }
 type InputEventAttributes<T extends "input" | "select" | "textarea"> = {
   onblur?: (e: InputEvent<T>) => void
@@ -685,6 +685,7 @@ interface HtmlElementAttributes {
 }
 
 interface SvgGlobalAttributes {
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill) */
   fill?: string
 
   /** [MDN Reference](https://developer.mozilla.org/docs/Web/CSS/display) */
@@ -695,6 +696,8 @@ interface SvgGlobalAttributes {
 }
 
 interface SvgStrokeAttributes {
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color) */
+  color?: string
   /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke) */
   stroke?: string
   /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke-dasharray) */
@@ -713,17 +716,15 @@ interface SvgStrokeAttributes {
   strokeWidth?: string | number
 }
 
-/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation-filters) */
 interface SvgColorInterpolationFilters {
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation-filters) */
   colorInterpolationFilters?: "auto" | "sRGB" | "linearRGB"
 }
 
-/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation) */
 interface SvgColorInterpolation {
+  /** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation) */
   colorInterpolation?: "auto" | "sRGB" | "linearRGB"
 }
-
-// colorInterpolationFilters
 
 interface SvgElementAttributes {
   animateTransform: {
