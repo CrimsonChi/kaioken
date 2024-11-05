@@ -2,6 +2,7 @@ import { Link, Route, Router } from "kaioken"
 import { Counter } from "./Counter"
 import { MemoTest } from "./memo"
 import { TodoList } from "./Todos"
+import { EffectsTest } from "./EffectsTest"
 
 export function App() {
   return (
@@ -35,6 +36,7 @@ export function App() {
           <Route path="/counter" element={<Counter />} />
           <Route path="/todos" element={<TodoList />} />
           <Route path="/memo" element={<MemoTest />} />
+          <Route path="/effects" element={<EffectsTest />} />
         </Router>
       </div>
     </main>

@@ -9,12 +9,7 @@ import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import {
-  isExoticVNode,
-  postOrderApply,
-  traverseApply,
-  vNodeContains,
-} from "./utils.js"
+import { isExoticVNode, traverseApply, vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 
@@ -33,6 +28,10 @@ export class Scheduler {
   private immediateEffectDirtiedRender = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
+  private effectCallbacks = {
+    pre: [] as Function[],
+    post: [] as Function[],
+  }
 
   constructor(
     private appCtx: AppContext<any>,
@@ -214,25 +213,19 @@ export class Scheduler {
       }
 
       this.isImmediateEffectsMode = true
-      for (const t of tip) {
-        fireEffects(t, true)
-      }
+      this.flushEffects(this.effectCallbacks.pre)
       this.isImmediateEffectsMode = false
 
       if (this.immediateEffectDirtiedRender) {
         this.checkForTooManyConsecutiveDirtyRenders()
-        while (tip.length) {
-          fireEffects(tip.shift()!)
-        }
+        this.flushEffects(this.effectCallbacks.post)
         this.immediateEffectDirtiedRender = false
         this.consecutiveDirtyCount++
         return this.workLoop()
       }
       this.consecutiveDirtyCount = 0
 
-      while (tip.length) {
-        fireEffects(tip.shift()!)
-      }
+      this.flushEffects(this.effectCallbacks.post)
       window.__kaioken!.emit("update", this.appCtx)
     }
 
@@ -305,6 +298,15 @@ export class Scheduler {
 
     let nextNode: VNode | undefined = vNode
     while (nextNode) {
+      // queue effects upon ascent
+      if (nextNode.immediateEffects) {
+        this.effectCallbacks.pre.push(...nextNode.immediateEffects)
+        nextNode.immediateEffects = undefined
+      }
+      if (nextNode.effects) {
+        this.effectCallbacks.post.push(...nextNode.effects)
+        nextNode.effects = undefined
+      }
       if (nextNode === this.treesInProgress[this.currentTreeIndex]) return
       if (nextNode.sibling) {
         return nextNode.sibling
@@ -387,13 +389,8 @@ export class Scheduler {
       )
     }
   }
-}
 
-function fireEffects(tree: VNode, immediate?: boolean) {
-  postOrderApply(tree, {
-    onAscent(vNode) {
-      const arr = immediate ? vNode.immediateEffects : vNode.effects
-      while (arr?.length) arr.shift()!()
-    },
-  })
+  private flushEffects(effectArr: Function[]) {
+    while (effectArr.length) effectArr.shift()!()
+  }
 }
