@@ -127,6 +127,8 @@ type LinkRel =
   | "tag"
   | "up"
 
+type Loading = "eager" | "lazy"
+
 type Target = "_blank" | "_self" | "_parent" | "_top"
 
 type EncType =
@@ -402,6 +404,7 @@ interface HtmlElementAttributes {
     sandbox?: IFrameSandbox
     width?: string | number
     height?: string | number
+    loading?: Loading
   }
   img: {
     alt?: string
@@ -410,6 +413,7 @@ interface HtmlElementAttributes {
     useMap?: string
     width?: string | number
     height?: string | number
+    loading?: Loading
   }
   input: {
     accept?: InputAccept
