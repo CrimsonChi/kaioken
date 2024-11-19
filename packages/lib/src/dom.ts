@@ -403,6 +403,13 @@ function getDomParent(vNode: VNode): ElementVNode {
   return parentNode as ElementVNode
 }
 
+const DIR = {
+  UP: 0,
+  DOWN: 1,
+} as const
+
+type Dir = (typeof DIR)[keyof typeof DIR]
+
 function placeDom(
   vNode: DomVNode,
   mntParent: ElementVNode,
@@ -420,63 +427,56 @@ function placeDom(
      * scan from vNode, up, down, then right to find previous dom
      */
     let prevDom: MaybeDom
-    let parent = vNode.parent!
-    let child = parent.child
-    const seenParents = new Set<VNode>()
-    const branchStack: VNode[] = []
-    while (child && parent.depth >= mntParent.depth) {
-      if (child === vNode) {
-        if (prevDom) break
-        seenParents.add(parent)
-        parent = parent.parent!
-        child = parent?.child
-        continue
-      }
-
+    let currentParent = vNode.parent!
+    let furthestParent = currentParent
+    let child = currentParent.child!
+    let dir: Dir = DIR.DOWN
+    const seenNodes = new Set<VNode>([vNode])
+    const siblingCheckpoints: VNode[] = []
+    while (child && currentParent.depth >= mntParent.depth) {
+      const dom = child.dom
       const isPortalRoot = isPortal(child)
 
-      const dom = child.dom
-      if (dom?.isConnected && !isPortalRoot) prevDom = child.dom
-
-      if (prevDom && branchStack.length) {
-        child = branchStack.pop()!
-        parent = child.parent!
-        continue
-      }
-
-      if (
-        !dom &&
-        child.child &&
-        // prevent re-traversing our 'frontier'
-        !seenParents.has(child) &&
-        // prevent traversing downward through portals
-        !isPortalRoot
-      ) {
-        // if there's a sibling, add a 'checkpoint' that we can return to
-        if (child.sibling) {
-          branchStack.push(child.sibling)
+      // traversal / checkpointing
+      if (child !== vNode && !isPortalRoot) {
+        if (dom?.isConnected) {
+          prevDom = dom
         }
-        parent = child
-        child = parent.child
+        /**
+         * We're going to try to traverse downwards first,
+         * but keep track of siblings we've skipped for later.
+         * To prevent traversing beyond the node that we're
+         * placing, we only allow traversal of siblings
+         * encountered during downwards traversal.
+         */
+        if (child.sibling && dir !== DIR.UP) {
+          siblingCheckpoints.push(child.sibling)
+        }
+
+        // traverse downwards if no dom
+        if (!dom && child.child && !seenNodes.has(child.child)) {
+          currentParent = child
+          child = currentParent.child!
+          seenNodes.add(child)
+          dir = DIR.DOWN
+          continue
+        }
+      }
+
+      // reverse and traverse through most recent checkpoint
+      if (siblingCheckpoints.length) {
+        child = siblingCheckpoints.pop()!
+        currentParent = child.parent!
         continue
       }
 
-      if (
-        child.sibling &&
-        // prevent traversing forward through siblings of our upward crawl
-        !seenParents.has(child)
-      ) {
-        child = child.sibling
-        continue
-      }
+      if (prevDom) break
 
-      if (prevDom && parent === vNode.parent) {
-        break
-      }
-
-      seenParents.add(parent)
-      parent = parent.parent!
-      child = parent?.child
+      // continue our upwards crawl from the furthest parent
+      currentParent = furthestParent.parent!
+      furthestParent = currentParent
+      child = currentParent.child!
+      dir = DIR.UP
     }
 
     if (!prevDom) {
@@ -506,6 +506,7 @@ function commitWork(vNode: VNode) {
     onDescent: (node) => {
       if (!node.child) return
       if (node.dom) {
+        // if (node.props["data-test"]) debugger
         // collect host nodes as we go
         currentHostNode = { node: node as ElementVNode }
         hostNodes.push(currentHostNode)
@@ -534,6 +535,7 @@ function commitWork(vNode: VNode) {
       }
     },
     onAscent: (node) => {
+      // if (node.props["data-test"]) debugger
       let inheritsPlacement = false
       if (currentPlacementScope?.child === node) {
         currentPlacementScope.active = true
