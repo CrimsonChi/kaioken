@@ -38,20 +38,19 @@ type PlacementScope = {
   child?: VNode
 }
 
-function setDomRef(vNode: VNode, value: SomeDom | null) {
-  if (!vNode.props.ref) return
-  if (typeof vNode.props.ref === "function") {
-    vNode.props.ref(value)
+function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
+  if (typeof ref === "function") {
+    ref(value)
     return
   }
-  if (Signal.isSignal(vNode.props.ref)) {
-    vNode.props.ref.sneak(value)
-    vNode.props.ref.notify({
+  if (Signal.isSignal(ref)) {
+    ref.sneak(value)
+    ref.notify({
       filter: (sub) => typeof sub === "function",
     })
     return
   }
-  ;(vNode.props.ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
+  ;(ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
 }
 
 function createDom(vNode: VNode): SomeDom {
@@ -62,7 +61,7 @@ function createDom(vNode: VNode): SomeDom {
       : svgTags.includes(t)
         ? document.createElementNS("http://www.w3.org/2000/svg", t)
         : document.createElement(t)
-  setDomRef(vNode, dom)
+  //setDomRef(vNode, dom)
   return dom
 }
 function createTextNode(vNode: VNode): Text {
@@ -145,7 +144,17 @@ function updateDom(vNode: VNode) {
       return setInnerHTML(vNode.dom as any, nextProps[key], prevProps[key])
     }
 
-    if (propFilters.internalProps.includes(key)) return
+    if (propFilters.internalProps.includes(key)) {
+      if (key === "ref" && prevProps[key] !== nextProps[key]) {
+        if (prevProps[key]) {
+          setDomRef(prevProps[key], null)
+        }
+        if (nextProps[key]) {
+          setDomRef(nextProps[key], dom)
+        }
+      }
+      return
+    }
 
     if (propFilters.isEvent(key)) {
       if (
@@ -240,7 +249,6 @@ function hydrateDom(vNode: VNode) {
     })
   }
   vNode.dom = dom
-  setDomRef(vNode, dom)
   if (vNode.type !== ELEMENT_TYPE.text) {
     updateDom(vNode)
     return
@@ -590,16 +598,22 @@ function commitDeletion(vNode: VNode) {
   if (vNode === vNode.parent?.child) {
     vNode.parent.child = vNode.sibling
   }
-  traverseApply(vNode, (n) => {
-    while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
-    while (n.subs?.length) Signal.unsubscribe(n, n.subs.pop()!)
-    n.cleanups && Object.values(n.cleanups).forEach((c) => c())
-    delete n.cleanups
+  traverseApply(vNode, (node) => {
+    const {
+      hooks,
+      subs,
+      cleanups,
+      dom,
+      props: { ref },
+    } = node
+    while (hooks?.length) cleanupHook(hooks.pop()!)
+    while (subs?.length) Signal.unsubscribe(node, subs.pop()!)
+    if (cleanups) Object.values(cleanups).forEach((c) => c())
 
-    if (n.dom) {
-      if (n.dom.isConnected && !isPortal(n)) n.dom.remove()
-      delete n.dom
-      setDomRef(n, null)
+    if (dom) {
+      if (ref) setDomRef(ref as Kaioken.Ref<SomeDom>, null)
+      if (dom.isConnected && !isPortal(node)) dom.remove()
+      delete node.dom
     }
   })
 }
