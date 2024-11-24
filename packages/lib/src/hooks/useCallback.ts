@@ -18,7 +18,7 @@ export function useCallback<T extends Function>(
     if (__DEV__) {
       hook.debug = { get: () => ({ dependencies: hook.deps }) }
     }
-    if (!isInit && depsRequireChange(deps, hook.deps)) {
+    if (isInit || depsRequireChange(deps, hook.deps)) {
       hook.deps = deps
       hook.callback = callback
     }
