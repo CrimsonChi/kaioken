@@ -7,7 +7,7 @@ dt:
 	pnpm --filter "./packages/vite-plugin-kaioken" run build
 
 test:
-	NODE_ENV=development pnpm --filter !"./sandbox/*" run -r --parallel test
+	NODE_ENV=development pnpm --filter !"./sandbox/*" run -r test
 
 test_lib:
 	NODE_ENV=development pnpm --filter "./packages/lib" run -r --parallel test
