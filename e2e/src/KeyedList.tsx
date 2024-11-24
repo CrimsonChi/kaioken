@@ -39,7 +39,7 @@ interface KeyedCounterProps {
 function KeyedCounterItem({ id, remove }: KeyedCounterProps) {
   const [count, setCount] = useState(0)
   return (
-    <>
+    <div>
       id : {id}
       <div className="flex gap-2 px-2 bg-black bg-opacity-30">
         <button
@@ -52,6 +52,6 @@ function KeyedCounterItem({ id, remove }: KeyedCounterProps) {
       <button className="remove btn btn-primary" onclick={remove}>
         Remove
       </button>
-    </>
+    </div>
   )
 }

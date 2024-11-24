@@ -3,14 +3,14 @@ import { useState } from "kaioken"
 export function Counter() {
   const [toggled, setToggled] = useState(false)
   return (
-    <>
+    <div>
       {/* used for checking that counter persists state after reordering these children */}
       {toggled && <p>Toggled</p>}
       <ActualCounter />
       <button id="toggle-btn" onclick={() => setToggled(!toggled)}>
         toggle
       </button>
-    </>
+    </div>
   )
 }
 

@@ -3,10 +3,10 @@ import kaioken from "vite-plugin-kaioken"
 
 export default defineConfig({
   ssr: {
-    external: ["kaioken"],
+    //external: ["kaioken"],
   },
   optimizeDeps: {
-    exclude: ["kaioken"],
+    //exclude: ["kaioken"],
   },
   esbuild: {
     sourcemap: false,
