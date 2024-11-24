@@ -331,6 +331,9 @@ function setProp(
   if (key === "value" && needsExplicitValueSet(element)) {
     element.value = value === undefined || value === null ? "" : String(value)
     return
+  } else if (key === "checked" && element.nodeName === "INPUT") {
+    ;(element as HTMLInputElement).checked = Boolean(value)
+    return
   }
 
   setDomAttribute(element, propToHtmlAttr(key), value)
