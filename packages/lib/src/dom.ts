@@ -435,7 +435,7 @@ function placeDom(
     mntParent.dom.appendChild(dom)
   } else {
     /**
-     * scan from vNode, up, down, then right to find previous dom
+     * scan from vNode, up, down, then right (repeating) to find previous dom
      */
     let prevDom: MaybeDom
     let currentParent = vNode.parent!
@@ -445,14 +445,7 @@ function placeDom(
     const seenNodes = new Set<VNode>([vNode])
     const siblingCheckpoints: VNode[] = []
     while (child && currentParent.depth >= mntParent.depth) {
-      const dom = child.dom
-      const isPortalRoot = isPortal(child)
-
-      // traversal / checkpointing
-      if (child !== vNode && !isPortalRoot) {
-        if (dom?.isConnected) {
-          prevDom = dom
-        }
+      if (child !== vNode) {
         /**
          * We're going to try to traverse downwards first,
          * but keep track of siblings we've skipped for later.
@@ -460,39 +453,47 @@ function placeDom(
          * placing, we only allow traversal of siblings
          * encountered during downwards traversal.
          */
-        if (child.sibling && dir !== DIR.UP) {
+        if (child.sibling && dir === DIR.DOWN) {
           siblingCheckpoints.push(child.sibling)
         }
 
-        // traverse downwards if no dom
-        if (!dom && child.child && !seenNodes.has(child.child)) {
-          currentParent = child
-          child = currentParent.child!
-          seenNodes.add(child)
-          dir = DIR.DOWN
-          continue
+        // prevent downwards traversal through portals
+        if (!isPortal(child)) {
+          const dom = child.dom
+          // traverse downwards if no dom for this child
+          if (!dom && child.child && !seenNodes.has(child.child)) {
+            currentParent = child
+            child = currentParent.child!
+            seenNodes.add(child)
+            dir = DIR.DOWN
+            continue
+          }
+          // dom found, we can continue upwards / right
+          if (dom?.isConnected) {
+            prevDom = dom
+          }
         }
       }
 
-      // reverse and traverse through most recent checkpoint
+      // reverse and traverse through most recent sibling checkpoint
       if (siblingCheckpoints.length) {
         child = siblingCheckpoints.pop()!
         currentParent = child.parent!
         continue
       }
 
-      if (prevDom) break
+      if (prevDom) break // no need to continue traversal
+      if (!furthestParent.parent) break // we've reached the root of the tree
 
       // continue our upwards crawl from the furthest parent
-      currentParent = furthestParent.parent!
+      currentParent = furthestParent.parent
       furthestParent = currentParent
       child = currentParent.child!
       dir = DIR.UP
     }
 
     if (!prevDom) {
-      //mntParent.dom.prepend(dom) ?
-      mntParent.dom.insertBefore(dom, mntParent.dom.firstChild)
+      mntParent.dom.prepend(dom)
     } else {
       prevDom.after(dom)
     }
