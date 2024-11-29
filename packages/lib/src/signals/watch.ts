@@ -10,6 +10,7 @@ import {
   useHookHMRInvalidation,
 } from "../hooks/utils.js"
 import { effectQueue, tracking } from "./globals.js"
+import { generateRandomID } from "../generateId.js"
 
 export class WatchEffect {
   protected id: string
@@ -20,7 +21,7 @@ export class WatchEffect {
   protected [$HMR_ACCEPT]?: HMRAccept<WatchEffect>
 
   constructor(getter: () => (() => void) | void) {
-    this.id = crypto.randomUUID()
+    this.id = generateRandomID()
     this.getter = getter
     this.unsubs = new Map()
     this.isRunning = false

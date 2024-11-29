@@ -11,6 +11,7 @@ import { tracking, signalSubsMap } from "./globals.js"
 import { type SignalSubscriber, ReadonlySignal } from "./types.js"
 import { node } from "../globals.js"
 import { useHook, useHookHMRInvalidation } from "../hooks/utils.js"
+import { generateRandomID } from "../generateId.js"
 
 export class Signal<T> {
   [$SIGNAL] = true;
@@ -21,7 +22,7 @@ export class Signal<T> {
   protected $initialValue?: string
   protected __next?: Signal<T>
   constructor(initial: T, displayName?: string) {
-    this.$id = crypto.randomUUID()
+    this.$id = generateRandomID()
     signalSubsMap.set(this.$id, new Set())
 
     this.$value = initial
