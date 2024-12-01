@@ -7,7 +7,7 @@ import type { HMRAccept } from "../hmr.js"
 import { sideEffectsEnabled } from "../utils.js"
 import { useHook, useHookHMRInvalidation } from "../hooks/utils.js"
 
-class ComputedSignal<T> extends Signal<T> {
+export class ComputedSignal<T> extends Signal<T> {
   protected $getter: () => T
   protected $unsubs: Map<string, Function>
   constructor(getter: () => T, displayName?: string) {
