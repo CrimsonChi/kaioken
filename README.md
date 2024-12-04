@@ -2,7 +2,7 @@
 
 Development monorepo for **Kaioken**.
 
-Kaioken is a lightweight rendering library that aims to provide a familier development experience for those with HTML and Javascript experience.
+Kaioken is a lightweight rendering library that aims to provide a familiar development experience for those with HTML and Javascript experience.
 
 ## Structure
 
