@@ -40,22 +40,22 @@ export default function App() {
     snapSide.value === "left" || snapSide.value === "right"
   const isMounted = useRef(false)
 
-  const [springBtnCoords, setSpringBtnCoords] = useSpring(anchorCoords.value, {
+  const springBtnCoords = useSpring(anchorCoords.value, {
     damping: 0.4,
   })
 
   useLayoutEffect(() => {
     if (isMounted.current === false) {
-      setSpringBtnCoords(anchorCoords.value, {
+      springBtnCoords.set(anchorCoords.value, {
         hard: true,
       })
     }
 
     isMounted.current = true
-  }, [Math.round(elementBound.width), Math.round(elementBound.height)])
+  }, [])
 
   useEffectDeep(() => {
-    setSpringBtnCoords(anchorCoords.value)
+    springBtnCoords.set(anchorCoords.value)
   }, [anchorCoords.value])
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function App() {
         ref={anchorRef}
         className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${toggled.value ? "rounded-3xl" : "rounded-full"} p-1 gap-1 items-center will-change-transform bg-crimson`}
         style={{
-          transform: `translate3d(${Math.round(springBtnCoords.x)}px, ${Math.round(springBtnCoords.y)}px, 0)`,
+          transform: `translate3d(${Math.round(springBtnCoords.value.x)}px, ${Math.round(springBtnCoords.value.y)}px, 0)`,
         }}
       >
         <Transition

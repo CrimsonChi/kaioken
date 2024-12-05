@@ -16,11 +16,11 @@ export const InspectComponent: Kaioken.FC = () => {
   const { mouse } = useMouse()
 
   const controls = useElementByPoint({
-    x: mouse.x,
-    y: mouse.y,
+    x: mouse.value.x,
+    y: mouse.value.y,
     immediate: false,
   })
-  const element = toggleElementToVnode.value ? controls.element : null
+  const element = toggleElementToVnode.value ? controls.element.value : null
 
   const elApp = useMemo(() => {
     if (element && window.__kaioken) {

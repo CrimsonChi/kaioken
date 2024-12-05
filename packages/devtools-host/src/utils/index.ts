@@ -17,13 +17,14 @@ export const reinitializeAnchorPos = (
   let forceY: number | null = null
   if (storage.snapSide === "left") {
     forceX =
-      (viewPortRef.current.offsetWidth - elementBound.width) * -1 + PADDING
+      (viewPortRef.current.offsetWidth - elementBound.width.value) * -1 +
+      PADDING
   } else if (storage.snapSide === "right") {
     forceX = -PADDING
   } else if (storage.snapSide === "bottom") {
     forceY = -PADDING
   } else if (storage.snapSide === "top") {
-    forceY = (window.innerHeight - elementBound.height) * -1 + PADDING
+    forceY = (window.innerHeight - elementBound.height.value) * -1 + PADDING
   }
 
   return {

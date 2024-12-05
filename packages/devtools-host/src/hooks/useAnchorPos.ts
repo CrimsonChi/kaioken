@@ -45,16 +45,19 @@ export const useAnchorPos = () => {
       viewPortRef,
       elementBound
     )
-  }, [Math.round(elementBound.width), Math.round(elementBound.height)])
+  }, [
+    Math.round(elementBound.width.value),
+    Math.round(elementBound.height.value),
+  ])
 
   const distanceCovered = useMemo(() => {
     if (startMouse.value === null) return null
-
+    const { x, y } = mouse.value
     return {
-      x: mouse.x - startMouse.value.x,
-      y: mouse.y - startMouse.value.y,
+      x: x - startMouse.value.x,
+      y: y - startMouse.value.y,
     }
-  }, [startMouse.value, mouse])
+  }, [startMouse.value, mouse.value])
 
   useEventListener(
     "mousedown",
@@ -100,30 +103,36 @@ export const useAnchorPos = () => {
         x: -PADDING,
         y: Math.max(
           min,
-          (window.innerHeight - elementBound.height) * -1 + PADDING
+          (window.innerHeight - elementBound.height.value) * -1 + PADDING
         ),
       }
     } else if (snapSide.value === "left") {
       const min = Math.min(0, anchorCoords.value.y)
       anchorCoords.value = {
-        x: (viewportWidth - elementBound.width) * -1 + PADDING,
+        x: (viewportWidth - elementBound.width.value) * -1 + PADDING,
         y: Math.max(
           min,
-          (window.innerHeight - elementBound.height) * -1 + PADDING
+          (window.innerHeight - elementBound.height.value) * -1 + PADDING
         ),
       }
     } else if (snapSide.value === "top") {
       const min = Math.min(-PADDING, anchorCoords.value.x)
       anchorCoords.value = {
-        x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
-        y: (window.innerHeight - elementBound.height) * -1 + PADDING,
+        x: Math.max(
+          min,
+          (viewportWidth - elementBound.width.value) * -1 + PADDING
+        ),
+        y: (window.innerHeight - elementBound.height.value) * -1 + PADDING,
       }
 
       return
     } else {
       const min = Math.min(-PADDING, anchorCoords.value.x)
       anchorCoords.value = {
-        x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
+        x: Math.max(
+          min,
+          (viewportWidth - elementBound.width.value) * -1 + PADDING
+        ),
         y: -PADDING,
       }
     }
@@ -132,13 +141,15 @@ export const useAnchorPos = () => {
   useEffectDeep(() => {
     if (distanceCovered === null || !viewPortRef.current) return
 
+    const { x, y } = mouse.value
+
     const viewportWidth = viewPortRef.current.offsetWidth
-    const isInBottomSeg = mouse.y >= window.innerHeight - 100
-    const isInTopSeg = mouse.y <= 100
+    const isInBottomSeg = y >= window.innerHeight - 100
+    const isInTopSeg = y <= 100
     const isInMidSeg = !isInTopSeg && !isInBottomSeg
 
     if (isInMidSeg) {
-      const isRight = mouse.x > window.innerWidth / 2
+      const isRight = x > window.innerWidth / 2
       snapSide.value = isRight ? "right" : "left"
     } else {
       snapSide.value = isInTopSeg ? "top" : "bottom"
@@ -153,17 +164,17 @@ export const useAnchorPos = () => {
         x: -PADDING,
         y: Math.max(
           min,
-          (window.innerHeight - elementBound.height) * -1 + PADDING
+          (window.innerHeight - elementBound.height.value) * -1 + PADDING
         ),
       }
       return
     } else if (snapSide.value === "left") {
       const min = Math.min(0, lastDroppedCoord.value.y + distanceCovered.y)
       anchorCoords.value = {
-        x: (viewportWidth - elementBound.width) * -1 + PADDING,
+        x: (viewportWidth - elementBound.width.value) * -1 + PADDING,
         y: Math.max(
           min,
-          (window.innerHeight - elementBound.height) * -1 + PADDING
+          (window.innerHeight - elementBound.height.value) * -1 + PADDING
         ),
       }
 
@@ -174,8 +185,11 @@ export const useAnchorPos = () => {
         lastDroppedCoord.value.x + distanceCovered.x
       )
       anchorCoords.value = {
-        x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
-        y: (window.innerHeight - elementBound.height) * -1 + PADDING,
+        x: Math.max(
+          min,
+          (viewportWidth - elementBound.width.value) * -1 + PADDING
+        ),
+        y: (window.innerHeight - elementBound.height.value) * -1 + PADDING,
       }
 
       return
@@ -184,7 +198,10 @@ export const useAnchorPos = () => {
     const min = Math.min(-PADDING, lastDroppedCoord.value.x + distanceCovered.x)
     anchorCoords.value = {
       y: -PADDING,
-      x: Math.max(min, (viewportWidth - elementBound.width) * -1 + PADDING),
+      x: Math.max(
+        min,
+        (viewportWidth - elementBound.width.value) * -1 + PADDING
+      ),
     }
   }, [distanceCovered])
 
@@ -214,7 +231,10 @@ export const useAnchorPos = () => {
         snapSide: snapSide.value,
       })
     )
-  }, [Math.round(elementBound.width), Math.round(elementBound.height)])
+  }, [
+    Math.round(elementBound.width.value),
+    Math.round(elementBound.height.value),
+  ])
   useEventListener("resize", onResize)
 
   return {
