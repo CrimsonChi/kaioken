@@ -73,13 +73,13 @@ export const FiftyFiftySplitter = (props: {
       <div ref={firstViewContainer} className="firstContainer w-full h-full">
         {firstView}
       </div>
-      {firstViewContainerBounding.width != 0 && (
+      {firstViewContainerBounding.width.value != 0 && (
         <div
           className="w-8 flex justify-center h-full absolute top-0 -translate-x-1/2 cursor-col-resize z-[9999]"
           style={{ left: `${firstViewContainerBounding.width}px` }}
           onmousedown={(e) => {
             e.preventDefault()
-            startMouse.value = mouse
+            startMouse.value = { ...mouse.value }
             prevFirstContainerWidth.value = firstContainerWidth.value
           }}
         >
