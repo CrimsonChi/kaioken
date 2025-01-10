@@ -414,13 +414,6 @@ function getDomParent(vNode: VNode): ElementVNode {
   return parentNode as ElementVNode
 }
 
-const DIR = {
-  UP: 0,
-  DOWN: 1,
-} as const
-
-type Dir = (typeof DIR)[keyof typeof DIR]
-
 function placeDom(
   vNode: DomVNode,
   mntParent: ElementVNode,
@@ -441,37 +434,41 @@ function placeDom(
     let currentParent = vNode.parent!
     let furthestParent = currentParent
     let child = currentParent.child!
-    let dir: Dir = DIR.DOWN
-    const seenNodes = new Set<VNode>([vNode])
+
+    /**
+     * to prevent sibling-traversal beyond the mount parent or the node
+     * we're placing, we're creating a 'bounds' for our traversal.
+     */
+    const dBounds: VNode[] = [vNode]
+    const rBounds: VNode[] = [vNode]
+    let parent = vNode.parent
+    while (parent && parent !== mntParent) {
+      rBounds.push(parent)
+      parent = parent.parent
+    }
+
     const siblingCheckpoints: VNode[] = []
     while (child && currentParent.depth >= mntParent.depth) {
-      if (child !== vNode) {
         /**
-         * We're going to try to traverse downwards first,
-         * but keep track of siblings we've skipped for later.
-         * To prevent traversing beyond the node that we're
-         * placing, we only allow traversal of siblings
-         * encountered during downwards traversal.
+       * keep track of siblings we've passed for later,
+       * as long as they're within bounds.
          */
-        if (child.sibling && dir === DIR.DOWN) {
+      if (child.sibling && rBounds.indexOf(child) === -1) {
           siblingCheckpoints.push(child.sibling)
         }
-
-        // prevent downwards traversal through portals
-        if (!isPortal(child)) {
+      // downwards traversal
+      if (!isPortal(child) && dBounds.indexOf(child) === -1) {
+        dBounds.push(child)
           const dom = child.dom
           // traverse downwards if no dom for this child
-          if (!dom && child.child && !seenNodes.has(child.child)) {
+        if (!dom && child.child) {
             currentParent = child
             child = currentParent.child!
-            seenNodes.add(child)
-            dir = DIR.DOWN
             continue
           }
-          // dom found, we can continue upwards / right
+        // dom found, we can continue up/right traversal
           if (dom?.isConnected) {
             prevDom = dom
-          }
         }
       }
 
@@ -489,7 +486,6 @@ function placeDom(
       currentParent = furthestParent.parent
       furthestParent = currentParent
       child = currentParent.child!
-      dir = DIR.UP
     }
 
     if (!prevDom) {
