@@ -1,6 +1,5 @@
 import type { AppContext } from "./appContext"
 import { ELEMENT_TYPE, FLAG, $FRAGMENT } from "./constants.js"
-import { ctx } from "./globals.js"
 import { isVNode, latest } from "./utils.js"
 import { Signal } from "./signals/base.js"
 import { __DEV__ } from "./env.js"
@@ -93,7 +92,7 @@ function reconcileChildrenArray(
     //   knownKeys = warnOnInvalidKey(vNode, children[newIdx], knownKeys)
     // }
     if (oldNode && !newNode.prev) {
-      ctx.current.requestDelete(oldNode)
+      appCtx.requestDelete(oldNode)
     }
     lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
     if (prevNewNode === null) {
@@ -108,7 +107,7 @@ function reconcileChildrenArray(
   // matched all children?
   if (newIdx === children.length) {
     while (oldNode !== null) {
-      ctx.current.requestDelete(oldNode)
+      appCtx.requestDelete(oldNode)
       oldNode = oldNode.sibling || null
     }
     return resultingChild
