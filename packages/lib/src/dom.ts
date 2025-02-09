@@ -241,7 +241,10 @@ function hydrateDom(vNode: VNode) {
       message: `Hydration mismatch - no node found`,
       vNode,
     })
-  const nodeName = dom.nodeName.toLowerCase()
+  let nodeName = dom.nodeName
+  if (svgTags.indexOf(nodeName) === -1) {
+    nodeName = nodeName.toLowerCase()
+  }
   if ((vNode.type as string) !== nodeName) {
     throw new KaiokenError({
       message: `Hydration mismatch - expected node of type ${vNode.type.toString()} but received ${nodeName}`,
@@ -449,26 +452,26 @@ function placeDom(
 
     const siblingCheckpoints: VNode[] = []
     while (child && currentParent.depth >= mntParent.depth) {
-        /**
+      /**
        * keep track of siblings we've passed for later,
        * as long as they're within bounds.
-         */
+       */
       if (child.sibling && rBounds.indexOf(child) === -1) {
-          siblingCheckpoints.push(child.sibling)
-        }
+        siblingCheckpoints.push(child.sibling)
+      }
       // downwards traversal
       if (!isPortal(child) && dBounds.indexOf(child) === -1) {
         dBounds.push(child)
-          const dom = child.dom
-          // traverse downwards if no dom for this child
+        const dom = child.dom
+        // traverse downwards if no dom for this child
         if (!dom && child.child) {
-            currentParent = child
-            child = currentParent.child!
-            continue
-          }
+          currentParent = child
+          child = currentParent.child!
+          continue
+        }
         // dom found, we can continue up/right traversal
-          if (dom?.isConnected) {
-            prevDom = dom
+        if (dom?.isConnected) {
+          prevDom = dom
         }
       }
 
