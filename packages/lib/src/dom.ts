@@ -429,74 +429,73 @@ function placeDom(
   }
   if (mntParent.dom.childNodes.length === 0) {
     mntParent.dom.appendChild(dom)
-  } else {
-    /**
-     * scan from vNode, up, down, then right (repeating) to find previous dom
-     */
-    let prevDom: MaybeDom
-    let currentParent = vNode.parent!
-    let furthestParent = currentParent
-    let child = currentParent.child!
+    return
+  }
+  /**
+   * scan from vNode, up, down, then right (repeating) to find previous dom
+   */
+  let prevDom: MaybeDom
+  let currentParent = vNode.parent!
+  let furthestParent = currentParent
+  let child = currentParent.child!
 
+  /**
+   * to prevent sibling-traversal beyond the mount parent or the node
+   * we're placing, we're creating a 'bounds' for our traversal.
+   */
+  const dBounds: VNode[] = [vNode]
+  const rBounds: VNode[] = [vNode]
+  let parent = vNode.parent
+  while (parent && parent !== mntParent) {
+    rBounds.push(parent)
+    parent = parent.parent
+  }
+
+  const siblingCheckpoints: VNode[] = []
+  while (child && currentParent.depth >= mntParent.depth) {
     /**
-     * to prevent sibling-traversal beyond the mount parent or the node
-     * we're placing, we're creating a 'bounds' for our traversal.
+     * keep track of siblings we've passed for later,
+     * as long as they're within bounds.
      */
-    const dBounds: VNode[] = [vNode]
-    const rBounds: VNode[] = [vNode]
-    let parent = vNode.parent
-    while (parent && parent !== mntParent) {
-      rBounds.push(parent)
-      parent = parent.parent
+    if (child.sibling && rBounds.indexOf(child) === -1) {
+      siblingCheckpoints.push(child.sibling)
     }
-
-    const siblingCheckpoints: VNode[] = []
-    while (child && currentParent.depth >= mntParent.depth) {
-      /**
-       * keep track of siblings we've passed for later,
-       * as long as they're within bounds.
-       */
-      if (child.sibling && rBounds.indexOf(child) === -1) {
-        siblingCheckpoints.push(child.sibling)
-      }
-      // downwards traversal
-      if (!isPortal(child) && dBounds.indexOf(child) === -1) {
-        dBounds.push(child)
-        const dom = child.dom
-        // traverse downwards if no dom for this child
-        if (!dom && child.child) {
-          currentParent = child
-          child = currentParent.child!
-          continue
-        }
-        // dom found, we can continue up/right traversal
-        if (dom?.isConnected) {
-          prevDom = dom
-        }
-      }
-
-      // reverse and traverse through most recent sibling checkpoint
-      if (siblingCheckpoints.length) {
-        child = siblingCheckpoints.pop()!
-        currentParent = child.parent!
+    // downwards traversal
+    if (!isPortal(child) && dBounds.indexOf(child) === -1) {
+      dBounds.push(child)
+      const dom = child.dom
+      // traverse downwards if no dom for this child
+      if (!dom && child.child) {
+        currentParent = child
+        child = currentParent.child!
         continue
       }
-
-      if (prevDom) break // no need to continue traversal
-      if (!furthestParent.parent) break // we've reached the root of the tree
-
-      // continue our upwards crawl from the furthest parent
-      currentParent = furthestParent.parent
-      furthestParent = currentParent
-      child = currentParent.child!
+      // dom found, we can continue up/right traversal
+      if (dom?.isConnected) {
+        prevDom = dom
+      }
     }
 
-    if (!prevDom) {
-      mntParent.dom.prepend(dom)
-    } else {
-      prevDom.after(dom)
+    // reverse and traverse through most recent sibling checkpoint
+    if (siblingCheckpoints.length) {
+      child = siblingCheckpoints.pop()!
+      currentParent = child.parent!
+      continue
     }
+
+    if (prevDom) break // no need to continue traversal
+    if (!furthestParent.parent) break // we've reached the root of the tree
+
+    // continue our upwards crawl from the furthest parent
+    currentParent = furthestParent.parent
+    furthestParent = currentParent
+    child = currentParent.child!
   }
+
+  if (!prevDom) {
+    return mntParent.dom.prepend(dom)
+  }
+  prevDom.after(dom)
 }
 
 function commitWork(vNode: VNode) {
