@@ -4,16 +4,12 @@ import { effectQueue } from "./globals.js"
 export function unwrap<T extends Signal<any> | unknown>(
   value: T
 ): T extends Signal<infer U> ? U : T {
-  return Signal.isSignal(value) ? value.peek() : value
+  return Signal.isSignal(value)
+    ? value.peek()
+    : (value as T extends Signal<infer U> ? U : T)
 }
 
 export const tick = () => {
-  const keys = [...effectQueue.keys()]
-  keys.forEach((id) => {
-    const func = effectQueue.get(id)
-    if (func) {
-      func()
-      effectQueue.delete(id)
-    }
-  })
+  effectQueue.forEach((fn) => fn())
+  effectQueue.clear()
 }
