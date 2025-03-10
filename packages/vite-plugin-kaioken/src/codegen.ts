@@ -31,7 +31,8 @@ interface AstNode {
   arguments?: AstNode[]
   specifiers?: AstNode[]
   cases?: AstNode[]
-  callee?: AstNode & { name: string }
+  name?: string
+  callee?: AstNode
   exported?: AstNode & { name: string }
   consequent?: AstNode | AstNode[]
   alternate?: AstNode
@@ -65,7 +66,8 @@ export function injectHMRContextPreamble(
     if (hotVars.size === 0) return code
     const componentNamesToHookArgs = getComponentHookArgs(
       ast.body as AstNode[],
-      code
+      code,
+      id
     )
     return `
   if (import.meta.hot && "window" in globalThis) {
@@ -119,7 +121,7 @@ function createAliasHandler(name: string) {
   const nodeContainsAliasCall = (node: AstNode) =>
     node.type === "CallExpression" &&
     node.callee?.type === "Identifier" &&
-    aliases.has(node.callee.name)
+    aliases.has(node.callee.name ?? "_not_found_")
 
   const addAliases = (node: AstNode) => {
     if (!node.source || node.source.value !== "kaioken") return
@@ -181,31 +183,22 @@ function isNodeCreateElementExpression(node: AstNode): boolean {
   )
 }
 
+function findNodeName(node: AstNode): string | void {
+  if (node.id?.name) return node.id.name
+  if (node.declaration?.id?.name) return node.declaration.id.name
+  if (node.declaration?.declarations?.[0]?.id?.name)
+    return node.declaration.declarations[0].id.name
+  if (node.declarations?.[0]?.id?.name) return node.declarations[0].id.name
+}
+
 function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
-  if (node.id?.name) {
-    names.add({
-      name: node.id.name,
-      type,
-    })
-  } else if (node.declaration) {
-    if (node.declaration.id) {
-      names.add({
-        name: node.declaration.id.name,
-        type,
-      })
-    } else if (node.declaration.declarations) {
-      for (const dec of node.declaration.declarations) {
-        const name = dec.id?.name
-        if (!name) continue
-        names.add({ name, type })
-      }
-    }
-  } else if (node.declarations) {
-    for (const dec of node.declarations) {
-      const name = dec.id?.name
-      if (!name) continue
-      names.add({ name, type })
-    }
+  const name = findNodeName(node)
+  if (!name && type === "component") {
+    console.error("VPK: failed to find component name", node)
+    throw new Error("Component name not found")
+  }
+  if (name) {
+    names.add({ type, name })
   }
 }
 
@@ -230,18 +223,18 @@ type HookToArgs = [HookName, string]
 
 function getComponentHookArgs(
   nodes: AstNode[],
-  code: string
+  code: string,
+  id: string
 ): Record<string, HookToArgs[]> {
   const res: Record<ComponentName, HookToArgs[]> = {}
   for (const node of nodes) {
     if (findNode(node, isNodeCreateElementExpression)) {
-      let name: string | null = null
-      if (node.id?.name) {
-        name = node.id.name
-      } else if (node.declaration?.id?.name) {
-        name = node.declaration.id.name
+      const name = findNodeName(node)
+      if (!name) {
+        console.error("VPK: failed to find component name", node)
+        continue
       }
-      if (name === null) throw new Error("VPK - failed to get component name")
+
       const hookArgsArr: HookToArgs[] = (res[name] = [])
 
       if (node.declaration) {
@@ -257,34 +250,44 @@ function getComponentHookArgs(
               case "VariableDeclaration":
                 if (!bodyNode.declarations) continue
                 for (const dec of bodyNode.declarations) {
-                  if (
-                    dec.init?.callee?.name.startsWith("use") &&
-                    dec.init.arguments
-                  ) {
-                    const args = argsToString(dec.init.arguments, code)
-                    // var calls fn
-                    // console.log(
-                    //   "var created from `use` fn call",
-                    //   dec.init.callee.name,
-                    //   args
-                    // )
-                    hookArgsArr.push([dec.init?.callee?.name, args])
+                  try {
+                    if (
+                      dec.init?.callee?.name?.startsWith("use") &&
+                      dec.init.arguments
+                    ) {
+                      const args = argsToString(dec.init.arguments, code)
+                      hookArgsArr.push([dec.init?.callee?.name, args])
+                    }
+                  } catch (error) {
+                    console.error(
+                      "err thrown when getting hook args (VariableDeclaration)",
+                      id,
+                      error,
+                      dec.init?.callee
+                    )
                   }
                 }
                 break
               case "ExpressionStatement":
-                if (
-                  bodyNode.expression?.type === "CallExpression" &&
-                  bodyNode.expression.callee?.name.startsWith("use") &&
-                  bodyNode.expression.arguments
-                ) {
-                  const args = argsToString(bodyNode.expression.arguments, code)
-                  // console.log(
-                  //   "top level `use` fn call",
-                  //   bodyNode.expression.callee.name,
-                  //   args
-                  // )
-                  hookArgsArr.push([bodyNode.expression.callee?.name, args])
+                try {
+                  if (
+                    bodyNode.expression?.type === "CallExpression" &&
+                    bodyNode.expression.callee?.name?.startsWith("use") &&
+                    bodyNode.expression.arguments
+                  ) {
+                    const args = argsToString(
+                      bodyNode.expression.arguments,
+                      code
+                    )
+                    hookArgsArr.push([bodyNode.expression.callee?.name, args])
+                  }
+                } catch (error) {
+                  console.error(
+                    "err thrown when getting hook args (ExpressionStatement)",
+                    id,
+                    error,
+                    bodyNode.expression?.callee
+                  )
                 }
                 break
             }
