@@ -140,11 +140,7 @@ function updateDom(vNode: VNode) {
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
-    if (key === "innerHTML") {
-      return setInnerHTML(vNode.dom as any, nextProps[key], prevProps[key])
-    }
-
-    if (propFilters.internalProps.includes(key)) {
+    if (propFilters.internalProps.includes(key) && key !== "innerHTML") {
       if (key === "ref" && prevProps[key] !== nextProps[key]) {
         if (prevProps[key]) {
           setDomRef(prevProps[key], null)
@@ -191,11 +187,10 @@ function updateDom(vNode: VNode) {
           (vNode.cleanups[key](), delete vNode.cleanups[key])
       }
       if (Signal.isSignal(nextProps[key])) {
-        const cb: (v: any) => void = (v: any) => {
-          setProp(vNode, dom, key, v, unwrap(vNode.prev?.props[key]))
+        const unsub = nextProps[key].subscribe((value) => {
+          setProp(vNode, dom, key, value, null)
           emitGranularSignalChange(nextProps[key])
-        }
-        const unsub = nextProps[key].subscribe(cb)
+        })
         ;(vNode.cleanups ??= {})[key] = unsub
         return setProp(
           vNode,
@@ -304,7 +299,7 @@ function handleAttributeRemoval(
   return false
 }
 
-export function setDomAttribute(element: Element, key: string, value: unknown) {
+function setDomAttribute(element: Element, key: string, value: unknown) {
   const isBoolAttr = booleanAttributes.includes(key)
 
   if (handleAttributeRemoval(element, key, value, isBoolAttr)) return
@@ -330,23 +325,34 @@ function setProp(
   value: unknown,
   prev: unknown
 ) {
-  if (key === "style") return setStyleProp(vNode, element, value, prev)
-  if (key === "value" && needsExplicitValueSet(element)) {
-    element.value = value === undefined || value === null ? "" : String(value)
-    return
-  } else if (key === "checked" && element.nodeName === "INPUT") {
-    ;(element as HTMLInputElement).checked = Boolean(value)
-    return
+  if (value === prev) return
+  switch (key) {
+    case "style":
+      return setStyleProp(vNode, element, value, prev)
+    case "innerHTML":
+      return setInnerHTML(element, value)
+    case "value":
+      if (needsExplicitValueSet(element)) {
+        element.value =
+          value === undefined || value === null ? "" : String(value)
+      } else {
+        element.setAttribute("value", value === undefined ? "" : String(value))
+      }
+      return
+    case "checked":
+      if (element.nodeName === "INPUT") {
+        ;(element as HTMLInputElement).checked = Boolean(value)
+      } else {
+        element.setAttribute("checked", String(value))
+      }
+      return
+    default:
+      setDomAttribute(element, propToHtmlAttr(key), value)
+      break
   }
-
-  setDomAttribute(element, propToHtmlAttr(key), value)
 }
 
-function setInnerHTML(element: SomeElement, value: unknown, prev: unknown) {
-  if (Signal.isSignal(value)) {
-    element.innerHTML = value.toString()
-  }
-  if (value === prev) return
+function setInnerHTML(element: SomeElement, value: unknown) {
   if (value === null || value === undefined || typeof value === "boolean") {
     element.innerHTML = ""
     return
@@ -529,7 +535,7 @@ function commitWork(vNode: VNode) {
            * appending children will yeet em into the abyss.
            */
           delete node.props.innerHTML
-          setInnerHTML(node.dom as SomeElement, "", node.prev.props.innerHTML)
+          setInnerHTML(node.dom as SomeElement, "")
           // remove innerHTML from prev to prevent our ascension pass from doing this again
           delete node.prev.props.innerHTML
         }
