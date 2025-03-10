@@ -54,16 +54,19 @@ export function injectHMRContextPreamble(
   id: string
 ) {
   try {
-    const hotVars = findHotVars(ast.body as AstNode[], id)
-    if (hotVars.length === 0) return code
-
     const transformCtx: TransformContext = {
       id,
       code,
       inserts: [],
     }
-    transformInsertUnnamedWatchPreambles(ast.body as AstNode[], transformCtx)
+    transformInsertUnnamedWatchPreambles(transformCtx, ast.body as AstNode[])
     code = transformInjectInserts(transformCtx)
+    const hotVars = findHotVars(ast.body as AstNode[], id)
+    if (hotVars.size === 0) return code
+    const componentNamesToHookArgs = getComponentHookArgs(
+      ast.body as AstNode[],
+      code
+    )
     return `
   if (import.meta.hot && "window" in globalThis) {
     window.__kaioken.HMRContext?.prepare("${id}", "${fileLinkFormatter(id)}");
@@ -71,14 +74,43 @@ export function injectHMRContextPreamble(
   ${code}
   if (import.meta.hot && "window" in globalThis) {
     import.meta.hot.accept();
-    window.__kaioken.HMRContext?.register({
-  ${hotVars.map((v) => `    ${v}`).join(",\n")}
-    });
+    ${createHMRRegistrationBlurb(hotVars, componentNamesToHookArgs)}
   }`
   } catch (error) {
     console.error(error)
     return code
   }
+}
+
+type HotVarDesc = {
+  type: string
+  name: string
+}
+
+function createHMRRegistrationBlurb(
+  hotVars: Set<HotVarDesc>,
+  componentHookArgs: Record<string, HookToArgs[]>
+) {
+  const entries = Array.from(hotVars).map(({ name, type }) => {
+    if (type !== "component") {
+      return `    ${name}: {
+          type: "${type}",
+          value: ${name}
+        }`
+    }
+    const args = componentHookArgs[name].map(([name, args]) => {
+      return `{ name: "${name}", args: "${args}" }`
+    })
+    return `    ${name}: {
+          type: "component",
+          value: ${name},
+          hooks: [${args.join(",")}]
+        }`
+  })
+  return `
+  window.__kaioken.HMRContext?.register({
+    ${entries.join(",\n")}
+});`
 }
 
 function createAliasHandler(name: string) {
@@ -103,11 +135,11 @@ function createAliasHandler(name: string) {
       }
     }
   }
-  return { addAliases, nodeContainsAliasCall }
+  return { name, addAliases, nodeContainsAliasCall }
 }
 
-function findHotVars(nodes: AstNode[], _id: string): string[] {
-  const hotVarNames = new Set<string>()
+function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
+  const hotVars = new Set<HotVarDesc>()
 
   const aliasHandlers = [
     "createStore",
@@ -126,17 +158,17 @@ function findHotVars(nodes: AstNode[], _id: string): string[] {
     }
 
     if (findNode(node, isNodeCreateElementExpression)) {
-      addHotVarNames(node, hotVarNames)
+      addHotVarDesc(node, hotVars, "component")
     }
 
     for (const aliasHandler of aliasHandlers) {
       if (findNode(node, aliasHandler.nodeContainsAliasCall)) {
-        addHotVarNames(node, hotVarNames)
+        addHotVarDesc(node, hotVars, aliasHandler.name)
       }
     }
   }
 
-  return Array.from(hotVarNames)
+  return hotVars
 }
 
 function isNodeCreateElementExpression(node: AstNode): boolean {
@@ -149,24 +181,30 @@ function isNodeCreateElementExpression(node: AstNode): boolean {
   )
 }
 
-function addHotVarNames(node: AstNode, names: Set<string>) {
+function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   if (node.id?.name) {
-    names.add(node.id.name)
+    names.add({
+      name: node.id.name,
+      type,
+    })
   } else if (node.declaration) {
     if (node.declaration.id) {
-      names.add(node.declaration.id.name)
+      names.add({
+        name: node.declaration.id.name,
+        type,
+      })
     } else if (node.declaration.declarations) {
       for (const dec of node.declaration.declarations) {
         const name = dec.id?.name
         if (!name) continue
-        names.add(name)
+        names.add({ name, type })
       }
     }
   } else if (node.declarations) {
     for (const dec of node.declarations) {
       const name = dec.id?.name
       if (!name) continue
-      names.add(name)
+      names.add({ name, type })
     }
   }
 }
@@ -186,9 +224,90 @@ function transformInjectInserts(ctx: TransformContext) {
   return ctx.code
 }
 
-function transformInsertUnnamedWatchPreambles(
+type ComponentName = string
+type HookName = string
+type HookToArgs = [HookName, string]
+
+function getComponentHookArgs(
   nodes: AstNode[],
-  ctx: TransformContext
+  code: string
+): Record<string, HookToArgs[]> {
+  const res: Record<ComponentName, HookToArgs[]> = {}
+  for (const node of nodes) {
+    if (findNode(node, isNodeCreateElementExpression)) {
+      let name: string | null = null
+      if (node.id?.name) {
+        name = node.id.name
+      } else if (node.declaration?.id?.name) {
+        name = node.declaration.id.name
+      }
+      if (name === null) throw new Error("VPK - failed to get component name")
+      const hookArgsArr: HookToArgs[] = (res[name] = [])
+
+      if (node.declaration) {
+        if (
+          node.declaration.type === "FunctionDeclaration" &&
+          node.declaration.body &&
+          !Array.isArray(node.declaration.body) &&
+          node.declaration.body.type === "BlockStatement"
+        ) {
+          if (!Array.isArray(node.declaration.body.body)) continue
+          for (const bodyNode of node.declaration.body.body) {
+            switch (bodyNode.type) {
+              case "VariableDeclaration":
+                if (!bodyNode.declarations) continue
+                for (const dec of bodyNode.declarations) {
+                  if (
+                    dec.init?.callee?.name.startsWith("use") &&
+                    dec.init.arguments
+                  ) {
+                    const args = argsToString(dec.init.arguments, code)
+                    // var calls fn
+                    // console.log(
+                    //   "var created from `use` fn call",
+                    //   dec.init.callee.name,
+                    //   args
+                    // )
+                    hookArgsArr.push([dec.init?.callee?.name, args])
+                  }
+                }
+                break
+              case "ExpressionStatement":
+                if (
+                  bodyNode.expression?.type === "CallExpression" &&
+                  bodyNode.expression.callee?.name.startsWith("use") &&
+                  bodyNode.expression.arguments
+                ) {
+                  const args = argsToString(bodyNode.expression.arguments, code)
+                  // console.log(
+                  //   "top level `use` fn call",
+                  //   bodyNode.expression.callee.name,
+                  //   args
+                  // )
+                  hookArgsArr.push([bodyNode.expression.callee?.name, args])
+                }
+                break
+            }
+          }
+        }
+      }
+    }
+  }
+  return res
+}
+
+function argsToString(args: AstNode[], code: string) {
+  return btoa(
+    args
+      .map((arg) => code.substring(arg.start, arg.end))
+      .join(",")
+      .replace(/\s/g, "")
+  )
+}
+
+function transformInsertUnnamedWatchPreambles(
+  ctx: TransformContext,
+  nodes: AstNode[]
 ) {
   const watchAliasHandler = createAliasHandler("watch")
 
@@ -198,8 +317,8 @@ function transformInsertUnnamedWatchPreambles(
       continue
     }
     if (findNode(node, watchAliasHandler.nodeContainsAliasCall)) {
-      const nameSet = new Set<string>()
-      addHotVarNames(node, nameSet)
+      const nameSet = new Set<any>()
+      addHotVarDesc(node, nameSet, "asdasdasd")
       if (nameSet.size === 0) {
         ctx.inserts.push({
           content: UNNAMED_WATCH_PREAMBLE,

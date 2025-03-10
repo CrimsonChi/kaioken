@@ -32,7 +32,10 @@ let nextHookDevInvalidationValue: string | undefined
  */
 const useHookHMRInvalidation = (...values: unknown[]) => {
   if (__DEV__) {
-    nextHookDevInvalidationValue = safeStringify(values)
+    const ctx = getVNodeAppContext(node.current!)
+    if (ctx.options?.useRuntimeHookInvalidation) {
+      nextHookDevInvalidationValue = safeStringify(values)
+    }
   }
 }
 
@@ -174,7 +177,10 @@ function useHook<
     const oldAsDevHook = oldHook as DevHook<T> | undefined
     const asDevHook = hook as DevHook<T>
     let hmrInvalid = false
-    if (nextHookDevInvalidationValue !== undefined) {
+    if (
+      ctx.options?.useRuntimeHookInvalidation &&
+      nextHookDevInvalidationValue !== undefined
+    ) {
       if (!oldAsDevHook) {
         asDevHook.devInvalidationValue = nextHookDevInvalidationValue // store our initial 'devInvalidationValue'
       } else if (
