@@ -194,8 +194,8 @@ function findNodeName(node: AstNode): string | void {
 function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   const name = findNodeName(node)
   if (!name && type === "component") {
-    console.error("VPK: failed to find component name", node)
-    throw new Error("Component name not found")
+    console.error("[vite-plugin-kaioken]: failed to find component name", node)
+    throw new Error("[vite-plugin-kaioken]: Component name not found")
   }
   if (name) {
     names.add({ type, name })
@@ -231,7 +231,10 @@ function getComponentHookArgs(
     if (findNode(node, isNodeCreateElementExpression)) {
       const name = findNodeName(node)
       if (!name) {
-        console.error("VPK: failed to find component name", node)
+        console.error(
+          "[vite-plugin-kaioken]: failed to find component name",
+          node
+        )
         continue
       }
 
@@ -260,7 +263,7 @@ function getComponentHookArgs(
                     }
                   } catch (error) {
                     console.error(
-                      "err thrown when getting hook args (VariableDeclaration)",
+                      "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
                       id,
                       error,
                       dec.init?.callee
@@ -283,7 +286,7 @@ function getComponentHookArgs(
                   }
                 } catch (error) {
                   console.error(
-                    "err thrown when getting hook args (ExpressionStatement)",
+                    "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
                     id,
                     error,
                     bodyNode.expression?.callee
@@ -321,7 +324,7 @@ function transformInsertUnnamedWatchPreambles(
     }
     if (findNode(node, watchAliasHandler.nodeContainsAliasCall)) {
       const nameSet = new Set<any>()
-      addHotVarDesc(node, nameSet, "asdasdasd")
+      addHotVarDesc(node, nameSet, "unnamedWatch")
       if (nameSet.size === 0) {
         ctx.inserts.push({
           content: UNNAMED_WATCH_PREAMBLE,
