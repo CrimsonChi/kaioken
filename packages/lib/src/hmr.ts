@@ -4,6 +4,7 @@ import { __DEV__ } from "./env.js"
 import { Signal } from "./signals/base.js"
 import { traverseApply } from "./utils.js"
 import type { WatchEffect } from "./signals/watch"
+import { cleanupHook } from "./hooks"
 
 export type HMRAccept<T = {}> = {
   provide: () => T
@@ -133,6 +134,7 @@ export function createHMRContext() {
                 if (!vNode.hooks) return
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hookIndex = hooksToReset[i]
+                  cleanupHook(vNode.hooks[hookIndex])
                   // @ts-ignore
                   vNode.hooks[hookIndex] = undefined
                 }
