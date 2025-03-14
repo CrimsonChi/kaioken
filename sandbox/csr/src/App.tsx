@@ -2,7 +2,6 @@ import {
   Router,
   Route,
   Link,
-  lazy,
   useRef,
   useCallback,
   useComputed,
@@ -12,14 +11,7 @@ import {
   useWatch,
   computed,
 } from "kaioken"
-import { SignalsExample } from "./components/SignalsExample"
-import { UseAsyncExample } from "./components/UseAsyncExample"
-
-type AppRoute = {
-  title: string
-  component: Kaioken.FC<any>
-  fallthrough?: boolean
-}
+import { ROUTES } from "./routes"
 
 function Counter() {
   const count = useSignal(1)
@@ -75,97 +67,11 @@ const Home: Kaioken.FC = () => {
   )
 }
 
-const ROUTES: Record<string, AppRoute> = {
-  "/": {
-    title: "Home",
-    component: Home,
-  },
-  "/keyed-list-example": {
-    title: "Keyed list",
-    component: lazy(() =>
-      import("./components/KeyedListExample").then((m) => m.KeyedListExample)
-    ),
-  },
-  "/filtered-list-example": {
-    title: "Filtered list",
-    component: lazy(() =>
-      import("./components/FilteredListExample").then(
-        (m) => m.FilteredListExample
-      )
-    ),
-  },
-  "/big-list-example": {
-    title: "Big list",
-    component: lazy(() =>
-      import("./components/BigListExample").then((m) => m.BigListExample)
-    ),
-  },
-  "/context-example": {
-    title: "Context",
-    component: lazy(() =>
-      import("./components/ContextExample").then((m) => m.ContextExample)
-    ),
-  },
-  "/use-model-example": {
-    title: "useModel",
-    component: lazy(() =>
-      import("./components/UseModelExample").then((m) => m.UseModelExample)
-    ),
-  },
-  "/memo-example": {
-    title: "Memo",
-    component: lazy(() =>
-      import("./components/MemoExample").then((m) => m.MemoExample)
-    ),
-  },
-  "/router-example": {
-    title: "Router",
-    component: lazy(() =>
-      import("./components/RouterExample").then((m) => m.RouterExample)
-    ),
-    fallthrough: true,
-  },
-  "/signals-example": {
-    title: "Signals",
-    component: SignalsExample,
-    // component: lazy(() =>
-    //   import("./components/SignalsExample").then((m) => m.SignalsExample)
-    // ),
-    fallthrough: true,
-  },
-  "/store-example": {
-    title: "Store",
-    component: lazy(() =>
-      import("./components/StoreExample").then((m) => m.StoreExample)
-    ),
-  },
-  "/transitions-example": {
-    title: "Transitions",
-    component: lazy(() =>
-      import("./components/TransitionsExample").then(
-        (m) => m.TransitionsExample
-      )
-    ),
-  },
-  "/use-async-example": {
-    title: "useAsync",
-    component: UseAsyncExample,
-    // component: lazy(() =>
-    //   import("./components/UseAsyncExample").then((m) => m.UseAsyncExample)
-    // ),
-  },
-  "/use-sync-external-store-example": {
-    title: "useSyncExternalStore",
-    component: lazy(() => import("./components/UseSyncExternalStoreExample")),
-  },
-}
-
-console.log("ROUTES", ROUTES)
-
 function Nav() {
   return (
     <nav className=" min-h-screen p-2  mb-5 h-full">
       <div className="sticky top-0 flex flex-col gap-2">
+        <Link to={"/"}>Home</Link>
         {Object.entries(ROUTES).map(([path, route]) => (
           <Link key={route.title} to={path}>
             {route.title}
@@ -183,6 +89,7 @@ export function App() {
       <Nav />
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
+          <Route path="/" element={<Home />} />
           {Object.entries(ROUTES).map(([path, route]) => (
             <Route
               key={path}

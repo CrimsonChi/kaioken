@@ -16,7 +16,7 @@ interface Product {
   images: string[]
 }
 
-export function UseAsyncExample() {
+export default function UseAsyncExample() {
   const [count, setCount] = useState(0)
   const [productId, setProductId] = useState(1)
   const { data, loading, error, invalidate } = useAsync<Product>(

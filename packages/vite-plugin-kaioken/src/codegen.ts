@@ -52,7 +52,6 @@ if (import.meta.hot && "window" in globalThis) {
   window.__kaioken.HMRContext?.signals.registerNextWatch();
 }
 `
-
 export function injectHMRContextPreamble(
   code: string,
   ast: ProgramNode,
@@ -126,10 +125,11 @@ function createAliasHandler(name: string) {
   const nodeContainsAliasCall = (node: AstNode) =>
     node.type === "CallExpression" &&
     node.callee?.type === "Identifier" &&
-    aliases.has(node.callee.name ?? "_not_found_")
+    typeof node.callee.name === "string" &&
+    aliases.has(node.callee.name)
 
   const addAliases = (node: AstNode) => {
-    if (!node.source || node.source.value !== "kaioken") return
+    if (node.source?.value !== "kaioken") return
     const specifiers = node.specifiers || []
     for (let i = 0; i < specifiers.length; i++) {
       const specifier = specifiers[i]
@@ -145,7 +145,7 @@ function createAliasHandler(name: string) {
   return { name, addAliases, nodeContainsAliasCall }
 }
 
-function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
+function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
   const hotVars = new Set<HotVarDesc>()
 
   const aliasHandlers = [
@@ -154,9 +154,10 @@ function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
     "computed",
     "watch",
     "createContext",
+    "lazy",
   ].map((name) => createAliasHandler(name))
 
-  for (const node of nodes) {
+  for (const node of bodyNodes) {
     if (node.type === "ImportDeclaration") {
       for (const aliasHandler of aliasHandlers) {
         aliasHandler.addAliases(node)
@@ -164,8 +165,9 @@ function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
       continue
     }
 
-    if (findNode(node, isNodeCreateElementExpression)) {
+    if (findComponent(node, bodyNodes)) {
       addHotVarDesc(node, hotVars, "component")
+      continue
     }
 
     for (const aliasHandler of aliasHandlers) {
@@ -176,6 +178,48 @@ function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
   }
 
   return hotVars
+}
+
+const isFuncDecOrExpr = (node: AstNode | undefined) => {
+  return (
+    (node &&
+      [
+        "FunctionDeclaration",
+        "FunctionExpression",
+        "ArrowFunctionExpression",
+      ].includes(node.type)) ??
+    false
+  )
+}
+
+function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
+  if (isFuncDecOrExpr(node)) {
+    return true
+  }
+  switch (node.type) {
+    case "VariableDeclaration":
+    case "ExportNamedDeclaration":
+      if (node.declaration) {
+        return isFuncDecOrExpr(node.declaration)
+      } else if (node.declarations) {
+        return findNode(node, isFuncDecOrExpr)
+        //return isFuncDecOrExpr(node.declarations[0])
+      }
+      const name = findNodeName(node)
+      if (!name) return false
+      const dec = findVariableDeclaration(node, name, bodyNodes)
+      if (!dec) return false
+      return isFuncDecOrExpr(dec[0])
+  }
+
+  return false
+}
+
+function findComponent(node: AstNode, bodyNodes: AstNode[]): boolean {
+  return (
+    isTopLevelFunction(node, bodyNodes) &&
+    findNode(node, isNodeCreateElementExpression)
+  )
 }
 
 function isNodeCreateElementExpression(node: AstNode): boolean {
@@ -233,7 +277,7 @@ function getComponentHookArgs(
 ): Record<string, HookToArgs[]> {
   const res: Record<ComponentName, HookToArgs[]> = {}
   for (const node of bodyNodes) {
-    if (findNode(node, isNodeCreateElementExpression)) {
+    if (findComponent(node, bodyNodes)) {
       const name = findNodeName(node)
       if (!name) {
         console.error(
@@ -243,7 +287,7 @@ function getComponentHookArgs(
         continue
       }
 
-      const body = getComponentBody(node, name, bodyNodes)
+      const body = findVariableDeclaration(node, name, bodyNodes)
       if (!body) continue
       const hookArgsArr: HookToArgs[] = (res[name] = [])
 
@@ -296,7 +340,7 @@ function getComponentHookArgs(
   return res
 }
 
-function getComponentBody(
+function findVariableDeclaration(
   node: AstNode,
   name: string,
   bodyNodes: AstNode[]
