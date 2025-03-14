@@ -29,7 +29,7 @@ const watcher = watch(() => {
   console.log("count 123", count.value)
 })
 
-export function SignalsExample() {
+export default function SignalsExample() {
   return (
     <div>
       <nav className="flex gap-2 bg-transparent">

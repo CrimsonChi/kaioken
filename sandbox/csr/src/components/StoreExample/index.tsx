@@ -1,6 +1,6 @@
 import { useTodosStore, TodoItem as TodoItemType } from "./store"
 
-export function StoreExample() {
+export default function StoreExample() {
   const { value: todos } = useTodosStore(
     (store) => store,
     (prev, next) => prev.length === next.length
