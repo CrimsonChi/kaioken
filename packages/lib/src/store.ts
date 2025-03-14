@@ -1,7 +1,7 @@
 import type { Prettify } from "./types.utils.js"
 import { __DEV__ } from "./env.js"
 import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
-import { getVNodeAppContext, shallowCompare } from "./utils.js"
+import { getVNodeAppContext, safeStringify, shallowCompare } from "./utils.js"
 import { $HMR_ACCEPT } from "./constants.js"
 import { HMRAccept } from "./hmr.js"
 
@@ -44,6 +44,8 @@ function createStore<T, U extends MethodFactory<T>>(
   initial: T,
   methodFactory: U
 ): Store<T, ReturnType<U>> {
+  // todo: instead of stringifying the initial state, we should use raw code comparison
+  const $initial = safeStringify(initial)
   let state = initial
   let stateIteration = 0
   const subscribers = new Set<Kaioken.VNode | Function>()
@@ -141,17 +143,25 @@ function createStore<T, U extends MethodFactory<T>>(
   if (__DEV__) {
     return Object.assign(store, {
       [$HMR_ACCEPT]: {
-        provide: () => ({ state, subscribers, nodeToSliceComputeMap }),
+        provide: () => ({
+          $initial,
+          state,
+          subscribers,
+          nodeToSliceComputeMap,
+        }),
         inject: (prev) => {
           prev.subscribers.forEach((sub) => subscribers.add(sub))
           nodeToSliceComputeMap = prev.nodeToSliceComputeMap
-          setState(prev.state)
+          if ($initial === prev.$initial) {
+            setState(prev.state)
+          }
         },
         destroy: () => {
           subscribers.clear()
           nodeToSliceComputeMap = new WeakMap()
         },
       } satisfies HMRAccept<{
+        $initial: string
         state: T
         subscribers: Set<Kaioken.VNode | Function>
         nodeToSliceComputeMap: WeakMap<Kaioken.VNode, NodeSliceCompute[]>
