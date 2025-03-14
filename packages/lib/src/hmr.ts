@@ -135,7 +135,6 @@ export function createHMRContext() {
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hook = vNode.hooks[hooksToReset[i]]
                   if (!hook.debug?.handleRawArgsChanged) {
-                    console.log("yeeting hook", hook)
                     cleanupHook(hook)
                     // @ts-ignore this is fine and will cause the hook to be recreated
                     vNode.hooks[hooksToReset[i]] = undefined
