@@ -15,17 +15,13 @@ export type HMRAccept<T = {}> = {
 export type GenericHMRAcceptor<T = {}> = {
   [$HMR_ACCEPT]: HMRAccept<T>
 }
+type HotVar = Kaioken.FC | Store<any, any> | Signal<any> | Kaioken.Context<any>
 
-type HotVarDesc =
-  | {
-      type: "component"
-      value: Kaioken.FC
-      hooks: Array<{ name: string; args: string }>
-    }
-  | {
-      type: string
-      value: Store<any, any> | Signal<any> | Kaioken.Context<any>
-    }
+type HotVarDesc = {
+  type: string
+  value: HotVar
+  hooks?: Array<{ name: string; args: string }>
+}
 
 export function isGenericHmrAcceptor(
   thing: unknown
@@ -47,7 +43,7 @@ type ModuleMemory = {
 
 type HotVarRegistrationEntry = {
   type: string
-  value: HotVarDesc
+  value: HotVar
   hooks?: Array<{ name: string; args: string }>
 }
 
@@ -94,7 +90,7 @@ export function createHMRContext() {
           oldEntry.value.__next = newEntry.value
         }
       }
-      currentModuleMemory.hotVars.set(name, newEntry as any)
+      currentModuleMemory.hotVars.set(name, newEntry)
       if (!oldEntry) continue
       if (
         isGenericHmrAcceptor(oldEntry.value) &&
@@ -112,7 +108,7 @@ export function createHMRContext() {
           const hooks = newEntry.hooks!
           for (let i = 0; i < hooks.length; i++) {
             const hook = hooks[i]
-            const oldHook = oldEntry.hooks[i]
+            const oldHook = oldEntry.hooks?.[i]
             if (oldHook && hook.args === oldHook.args) {
               continue
             }
@@ -134,7 +130,10 @@ export function createHMRContext() {
                 if (!vNode.hooks) return
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hook = vNode.hooks[hooksToReset[i]]
-                  if (!hook.debug?.handleRawArgsChanged) {
+                  if (hook.debug?.reinitUponRawArgsChanged) {
+                    // @ts-ignore
+                    hook.rawArgsChanged = true
+                  } else {
                     cleanupHook(hook)
                     // @ts-ignore this is fine and will cause the hook to be recreated
                     vNode.hooks[hooksToReset[i]] = undefined

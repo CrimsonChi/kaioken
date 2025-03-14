@@ -1,7 +1,7 @@
 import type { AppContext } from "./appContext"
 import type { FunctionVNode } from "./types.utils"
 import { bitmapOps } from "./bitmap.js"
-import { CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
+import { $MEMO, CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
@@ -10,6 +10,7 @@ import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { isExoticVNode, traverseApply, vNodeContains } from "./utils.js"
+import { isMemoFn } from "./memo.js"
 
 type VNode = Kaioken.VNode
 
@@ -81,8 +82,8 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
-    if ("frozen" in vNode) {
-      vNode.frozen = false
+    if (vNode.prev?.memoizedProps) {
+      delete vNode.prev.memoizedProps
     }
     if (this.isImmediateEffectsMode) {
       this.immediateEffectDirtiedRender = true
@@ -249,51 +250,62 @@ export class Scheduler {
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
-    const frozen = "frozen" in vNode && vNode.frozen === true
-    const skip = frozen && !bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)
-    if (!skip) {
-      try {
-        if (typeof vNode.type === "function") {
-          this.updateFunctionComponent(vNode as FunctionVNode)
-        } else if (isExoticVNode(vNode)) {
-          vNode.child =
-            reconcileChildren(
-              this.appCtx,
-              vNode,
-              vNode.child || null,
-              vNode.props.children
-            ) || undefined
-        } else {
-          this.updateHostComponent(vNode)
-        }
-      } catch (error) {
-        window.__kaioken?.emit(
-          "error",
-          this.appCtx,
-          error instanceof Error ? error : new Error(String(error))
-        )
-        if (KaiokenError.isKaiokenError(error)) {
-          if (error.customNodeStack) {
-            setTimeout(() => {
-              throw new Error(error.customNodeStack)
-            })
+    let preventRenderFurther = false
+    doWork: try {
+      const { type, props } = vNode
+      if (typeof type === "function") {
+        if (isMemoFn(type)) {
+          vNode.memoizedProps = props
+          if (vNode.prev?.memoizedProps) {
+            const arePropsEqual = type[$MEMO].arePropsEqual(
+              vNode.prev.memoizedProps,
+              props
+            )
+            if (arePropsEqual) {
+              preventRenderFurther = true
+              break doWork
+            }
           }
-          if (error.fatal) {
-            throw error
-          }
-          console.error(error)
-          return
         }
-        setTimeout(() => {
+        this.updateFunctionComponent(vNode as FunctionVNode)
+      } else if (isExoticVNode(vNode)) {
+        vNode.child =
+          reconcileChildren(
+            this.appCtx,
+            vNode,
+            vNode.child || null,
+            props.children
+          ) || undefined
+      } else {
+        this.updateHostComponent(vNode)
+      }
+    } catch (error) {
+      window.__kaioken?.emit(
+        "error",
+        this.appCtx,
+        error instanceof Error ? error : new Error(String(error))
+      )
+      if (KaiokenError.isKaiokenError(error)) {
+        if (error.customNodeStack) {
+          setTimeout(() => {
+            throw new Error(error.customNodeStack)
+          })
+        }
+        if (error.fatal) {
           throw error
-        })
-      }
-      if (vNode.child) {
-        if (renderMode.current === "hydrate" && vNode.dom) {
-          hydrationStack.push(vNode.dom)
         }
-        return vNode.child
+        console.error(error)
+        return
       }
+      setTimeout(() => {
+        throw error
+      })
+    }
+    if (vNode.child && !preventRenderFurther) {
+      if (renderMode.current === "hydrate" && vNode.dom) {
+        hydrationStack.push(vNode.dom)
+      }
+      return vNode.child
     }
 
     let nextNode: VNode | undefined = vNode
@@ -320,6 +332,7 @@ export class Scheduler {
   }
 
   private updateFunctionComponent(vNode: FunctionVNode) {
+    const { type, props } = vNode
     try {
       node.current = vNode
       nodeToCtxMap.set(vNode, this.appCtx)
@@ -328,7 +341,7 @@ export class Scheduler {
       do {
         this.isRenderDirtied = false
         this.appCtx.hookIndex = 0
-        newChildren = vNode.type(vNode.props)
+        newChildren = type(props)
         if (__DEV__) {
           delete vNode.hmrUpdated
         }

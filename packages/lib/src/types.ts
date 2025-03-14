@@ -150,16 +150,18 @@ declare global {
       get: () => T
       set?: (value: ReturnType<this["get"]>) => void
       /**
-       * If provided, during development, when the raw arguments of the hook change,
-       * the hook will persist instead of being recreated. This function will be called
-       * during the next render, before the hook is called.
+       * If true, during development, when the raw arguments of the hook change,
+       * the hook will persist instead of being recreated.
+       * During the next render, `isInit` will be set to `true`, indicating
+       * that the hook should be reinitialized.
        */
-      handleRawArgsChanged?: () => void
+      reinitUponRawArgsChanged?: boolean
     }
     type Hook<T> = T & {
       cleanup?: () => void
       debug?: HookDebug<any>
       name?: string
+      readonly rawArgsChanged?: boolean
     }
     type RefObject<T> = {
       readonly current: T | null
@@ -200,12 +202,12 @@ declare global {
       sibling?: VNode
       prev?: VNode
       flags: number
-      frozen?: boolean
       effects?: Array<Function>
       immediateEffects?: Array<Function>
       prevStyleStr?: string
       prevStyleObj?: StyleObject
       hmrUpdated?: boolean
+      memoizedProps?: Record<string, any>
     }
   }
 

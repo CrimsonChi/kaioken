@@ -104,6 +104,12 @@ function createHMRRegistrationBlurb(
           value: ${name}
         }`
     }
+    if (!componentHookArgs[name]) {
+      console.log(
+        "[vite-plugin-kaioken]: failed to parse component hooks",
+        name
+      )
+    }
     const args = componentHookArgs[name].map(([name, args]) => {
       return `{ name: "${name}", args: "${args}" }`
     })
@@ -181,15 +187,15 @@ function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
 }
 
 const isFuncDecOrExpr = (node: AstNode | undefined) => {
-  return (
-    (node &&
-      [
-        "FunctionDeclaration",
-        "FunctionExpression",
-        "ArrowFunctionExpression",
-      ].includes(node.type)) ??
-    false
-  )
+  if (!node) return false
+  if (node.type === "VariableDeclaration") {
+    return isFuncDecOrExpr(node.declarations?.[0]?.init)
+  }
+  return [
+    "FunctionDeclaration",
+    "FunctionExpression",
+    "ArrowFunctionExpression",
+  ].includes(node.type)
 }
 
 function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
@@ -203,7 +209,6 @@ function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
         return isFuncDecOrExpr(node.declaration)
       } else if (node.declarations) {
         return findNode(node, isFuncDecOrExpr)
-        //return isFuncDecOrExpr(node.declarations[0])
       }
       const name = findNodeName(node)
       if (!name) return false
@@ -288,7 +293,14 @@ function getComponentHookArgs(
       }
 
       const body = findVariableDeclaration(node, name, bodyNodes)
-      if (!body) continue
+      if (!body) {
+        console.error(
+          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component body)",
+          name,
+          node
+        )
+        continue
+      }
       const hookArgsArr: HookToArgs[] = (res[name] = [])
 
       for (const bodyNode of body) {
@@ -385,6 +397,15 @@ function findVariableDeclaration(
         _dec.init?.type === "FunctionExpression"
       ) {
         return (_dec.init.body as AstNode).body as AstNode[]
+      } else if (_dec.init?.type === "CallExpression" && _dec.init.arguments) {
+        // accumulate argNodes that are functions and return JSX
+        const nodes: AstNode[] = []
+        for (const arg of _dec.init.arguments) {
+          if (isFuncDecOrExpr(arg)) {
+            nodes.push(...((arg.body as AstNode).body as AstNode[]))
+          }
+        }
+        return nodes
       }
     }
   }

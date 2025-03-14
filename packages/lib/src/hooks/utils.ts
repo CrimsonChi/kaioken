@@ -1,4 +1,3 @@
-import type { AppContext } from "../appContext"
 import { KaiokenError } from "../error.js"
 import { __DEV__ } from "../env.js"
 import { node, nodeToCtxMap } from "../globals.js"
@@ -175,12 +174,17 @@ function useHook<
         `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
       )
     }
-    const hmrInvalid = doRuntimeHookInvalidation(ctx, vNode, hook, oldHook)
+    const hmrRuntimeInvalidated =
+      ctx.options?.useRuntimeHookInvalidation &&
+      doRuntimeHookInvalidation(vNode, hook, oldHook)
     try {
-      hook.debug?.handleRawArgsChanged?.()
       const res = (callback as HookCallback<T>)({
         hook: hook,
-        isInit: !oldHook || hmrInvalid,
+        isInit: Boolean(
+          !oldHook ||
+            hmrRuntimeInvalidated ||
+            (hook.rawArgsChanged && hook.debug?.reinitUponRawArgsChanged)
+        ),
         update: () => ctx.requestUpdate(vNode),
         queueEffect,
         vNode,
@@ -209,12 +213,10 @@ function useHook<
 }
 
 function doRuntimeHookInvalidation<T>(
-  ctx: AppContext,
   vNode: Kaioken.VNode,
   hook: Hook<T>,
   oldHook: Hook<T> | undefined
 ): boolean {
-  if (!ctx.options?.useRuntimeHookInvalidation) return false
   if (nextHookDevInvalidationValue === undefined) return false
 
   let hmrInvalid = false

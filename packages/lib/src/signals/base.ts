@@ -174,6 +174,12 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
     { signal: undefined as any as Signal<T> },
     ({ hook, isInit }) => {
       if (isInit) {
+        if (__DEV__) {
+          if (hook.signal) {
+            hook.signal.value = initial
+            return hook.signal
+          }
+        }
         hook.signal = new Signal(initial, displayName)
         hook.cleanup = () => Signal.dispose(hook.signal)
         if (__DEV__) {
@@ -185,9 +191,7 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
             set: ({ value }) => {
               hook.signal.sneak(value)
             },
-            handleRawArgsChanged: () => {
-              hook.signal.value = initial
-            },
+            reinitUponRawArgsChanged: true,
           }
         }
       }

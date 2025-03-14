@@ -1,6 +1,6 @@
 import { Link, Route, Router } from "kaioken"
 import { Counter } from "./Counter"
-import { MemoTest } from "./memo"
+import { MemoTest } from "./MemoTest"
 import { TodoList } from "./Todos"
 import { EffectsTest } from "./EffectsTest"
 

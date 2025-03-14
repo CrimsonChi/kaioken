@@ -231,7 +231,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.props = newNode.props
     oldNode.sibling = undefined
     bitmapOps.setFlag(oldNode, FLAG.UPDATE)
-    oldNode.frozen = newNode.frozen
+    oldNode.memoizedProps = newNode.memoizedProps
     return oldNode
   }
   const created = createElement(nodeType, newNode.props)
@@ -286,7 +286,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     newNode.parent = parent
     newNode.depth = parent.depth! + 1
     bitmapOps.setFlag(newNode, FLAG.PLACEMENT)
-    if ("frozen" in child) newNode.frozen = child.frozen
+    if ("memoizedProps" in child) newNode.memoizedProps = child.memoizedProps
     return newNode
   }
 
@@ -358,7 +358,8 @@ function updateFromMap(
     if (oldChild) {
       bitmapOps.setFlag(oldChild, FLAG.UPDATE)
       oldChild.props = newChild.props
-      if ("frozen" in newChild) oldChild.frozen = newChild.frozen
+      if ("memoizedProps" in newChild)
+        oldChild.memoizedProps = newChild.memoizedProps
       oldChild.sibling = undefined
       oldChild.index = index
       return oldChild
