@@ -126,10 +126,11 @@ function createAliasHandler(name: string) {
   const nodeContainsAliasCall = (node: AstNode) =>
     node.type === "CallExpression" &&
     node.callee?.type === "Identifier" &&
-    aliases.has(node.callee.name ?? "_not_found_")
+    typeof node.callee.name === "string" &&
+    aliases.has(node.callee.name)
 
   const addAliases = (node: AstNode) => {
-    if (!node.source || node.source.value !== "kaioken") return
+    if (node.source?.value !== "kaioken") return
     const specifiers = node.specifiers || []
     for (let i = 0; i < specifiers.length; i++) {
       const specifier = specifiers[i]
@@ -154,6 +155,7 @@ function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
     "computed",
     "watch",
     "createContext",
+    "lazy",
   ].map((name) => createAliasHandler(name))
 
   for (const node of nodes) {
