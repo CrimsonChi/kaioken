@@ -17,7 +17,12 @@ interface AstNodeId {
 interface AstNode {
   start: number
   end: number
-  type: "FunctionDeclaration" | "BlockStatement" | (string & {})
+  type:
+    | "FunctionDeclaration"
+    | "ArrowFunctionExpression"
+    | "BlockStatement"
+    | "VariableDeclaration"
+    | (string & {})
   body?: AstNode | AstNode[]
   declaration?: AstNode
   declarations?: AstNode[]
@@ -222,79 +227,68 @@ type HookName = string
 type HookToArgs = [HookName, string]
 
 function getComponentHookArgs(
-  nodes: AstNode[],
+  bodyNodes: AstNode[],
   code: string,
   id: string
 ): Record<string, HookToArgs[]> {
   const res: Record<ComponentName, HookToArgs[]> = {}
-  for (const node of nodes) {
+  for (const node of bodyNodes) {
     if (findNode(node, isNodeCreateElementExpression)) {
       const name = findNodeName(node)
       if (!name) {
         console.error(
-          "[vite-plugin-kaioken]: failed to find component name",
+          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component name)",
           node
         )
         continue
       }
 
+      const body = getComponentBody(node, name, bodyNodes)
+      if (!body) continue
       const hookArgsArr: HookToArgs[] = (res[name] = [])
 
-      if (node.declaration) {
-        if (
-          node.declaration.type === "FunctionDeclaration" &&
-          node.declaration.body &&
-          !Array.isArray(node.declaration.body) &&
-          node.declaration.body.type === "BlockStatement"
-        ) {
-          if (!Array.isArray(node.declaration.body.body)) continue
-          for (const bodyNode of node.declaration.body.body) {
-            switch (bodyNode.type) {
-              case "VariableDeclaration":
-                if (!bodyNode.declarations) continue
-                for (const dec of bodyNode.declarations) {
-                  try {
-                    if (
-                      dec.init?.callee?.name?.startsWith("use") &&
-                      dec.init.arguments
-                    ) {
-                      const args = argsToString(dec.init.arguments, code)
-                      hookArgsArr.push([dec.init?.callee?.name, args])
-                    }
-                  } catch (error) {
-                    console.error(
-                      "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
-                      id,
-                      error,
-                      dec.init?.callee
-                    )
-                  }
+      for (const bodyNode of body) {
+        switch (bodyNode.type) {
+          case "VariableDeclaration":
+            if (!bodyNode.declarations) continue
+            for (const dec of bodyNode.declarations) {
+              try {
+                if (
+                  dec.init?.callee?.name?.startsWith("use") &&
+                  dec.init.arguments
+                ) {
+                  const args = argsToString(dec.init.arguments, code)
+                  hookArgsArr.push([dec.init?.callee?.name, args])
                 }
-                break
-              case "ExpressionStatement":
-                try {
-                  if (
-                    bodyNode.expression?.type === "CallExpression" &&
-                    bodyNode.expression.callee?.name?.startsWith("use") &&
-                    bodyNode.expression.arguments
-                  ) {
-                    const args = argsToString(
-                      bodyNode.expression.arguments,
-                      code
-                    )
-                    hookArgsArr.push([bodyNode.expression.callee?.name, args])
-                  }
-                } catch (error) {
-                  console.error(
-                    "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
-                    id,
-                    error,
-                    bodyNode.expression?.callee
-                  )
-                }
-                break
+              } catch (error) {
+                console.error(
+                  "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
+                  id,
+                  error,
+                  dec.init?.callee
+                )
+              }
             }
-          }
+            break
+          case "ExpressionStatement":
+            try {
+              if (
+                bodyNode.expression?.type === "CallExpression" &&
+                bodyNode.expression.callee?.name?.startsWith("use") &&
+                bodyNode.expression.arguments
+              ) {
+                const args = argsToString(bodyNode.expression.arguments, code)
+                hookArgsArr.push([bodyNode.expression.callee?.name, args])
+              }
+            } catch (error) {
+              console.error(
+                "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
+                id,
+                error,
+                bodyNode.expression?.callee
+              )
+            }
+            break
         }
       }
     }
@@ -302,13 +296,63 @@ function getComponentHookArgs(
   return res
 }
 
+function getComponentBody(
+  node: AstNode,
+  name: string,
+  bodyNodes: AstNode[]
+): null | AstNode[] {
+  let dec = node.declaration
+  if (!dec) {
+    for (const _node of bodyNodes) {
+      if (_node.type === "VariableDeclaration") {
+        if (_node.declarations?.[0]?.id?.name === name) {
+          dec = _node
+          break
+        }
+      } else if (_node.type === "FunctionDeclaration") {
+        if (_node.id?.name === name) {
+          dec = _node
+          break
+        }
+      }
+    }
+  }
+  if (!dec) {
+    throw new Error(
+      "[vite-plugin-kaioken]: failed to find declaration for component"
+    )
+  }
+
+  if (
+    dec.type === "FunctionDeclaration" &&
+    dec.body &&
+    !Array.isArray(dec.body) &&
+    dec.body.type === "BlockStatement"
+  ) {
+    return dec.body.body as AstNode[]
+  } else if (dec.type === "VariableDeclaration") {
+    if (!Array.isArray(dec.declarations)) {
+      return null
+    }
+    for (const _dec of dec.declarations) {
+      if (_dec.id?.name !== name) continue
+      if (
+        _dec.init?.type === "ArrowFunctionExpression" ||
+        _dec.init?.type === "FunctionExpression"
+      ) {
+        return (_dec.init.body as AstNode).body as AstNode[]
+      }
+    }
+  }
+  return null
+}
+
+function getArgValues(args: AstNode[], code: string) {
+  return args.map((arg) => code.substring(arg.start, arg.end))
+}
+
 function argsToString(args: AstNode[], code: string) {
-  return btoa(
-    args
-      .map((arg) => code.substring(arg.start, arg.end))
-      .join(",")
-      .replace(/\s/g, "")
-  )
+  return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
 }
 
 function transformInsertUnnamedWatchPreambles(
