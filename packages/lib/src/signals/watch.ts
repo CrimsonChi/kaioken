@@ -97,12 +97,15 @@ export const useWatch = (getter: () => (() => void) | void) => {
   }
   return useHook(
     "useWatch",
-    {
-      watcher: null as any as WatchEffect,
-    },
-    ({ hook, isInit }) => {
+    { watcher: null as any as WatchEffect },
+    ({ hook, isInit, vNode }) => {
+      if (__DEV__) {
+        if (vNode.hmrUpdated) {
+          hook.cleanup?.()
+          isInit = true
+        }
+      }
       if (isInit) {
-        hook.cleanup?.()
         hook.watcher = new WatchEffect(getter)
         hook.watcher.start()
         hook.cleanup = () => hook.watcher?.stop()

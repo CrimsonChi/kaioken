@@ -16,6 +16,11 @@ export interface AppContextOptions {
    * @default 50
    */
   maxFrameMs?: number
+  /**
+   * Enables runtime hook invalidation
+   * @default false
+   */
+  useRuntimeHookInvalidation?: boolean
   name?: string
 }
 
@@ -32,7 +37,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   constructor(
     private appFunc: (props: T) => JSX.Element,
     private appProps = {},
-    private options?: AppContextOptions
+    public options?: AppContextOptions
   ) {
     this.id = appCounter++
     this.name = options?.name ?? "App-" + this.id

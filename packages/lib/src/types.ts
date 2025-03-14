@@ -149,6 +149,12 @@ declare global {
     interface HookDebug<T extends Record<string, any>> {
       get: () => T
       set?: (value: ReturnType<this["get"]>) => void
+      /**
+       * If provided, during development, when the raw arguments of the hook change,
+       * the hook will persist instead of being recreated. This function will be called
+       * during the next render, before the hook is called.
+       */
+      handleRawArgsChanged?: () => void
     }
     type Hook<T> = T & {
       cleanup?: () => void

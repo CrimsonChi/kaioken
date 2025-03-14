@@ -17,7 +17,12 @@ interface AstNodeId {
 interface AstNode {
   start: number
   end: number
-  type: "FunctionDeclaration" | "BlockStatement" | (string & {})
+  type:
+    | "FunctionDeclaration"
+    | "ArrowFunctionExpression"
+    | "BlockStatement"
+    | "VariableDeclaration"
+    | (string & {})
   body?: AstNode | AstNode[]
   declaration?: AstNode
   declarations?: AstNode[]
@@ -31,7 +36,8 @@ interface AstNode {
   arguments?: AstNode[]
   specifiers?: AstNode[]
   cases?: AstNode[]
-  callee?: AstNode & { name: string }
+  name?: string
+  callee?: AstNode
   exported?: AstNode & { name: string }
   consequent?: AstNode | AstNode[]
   alternate?: AstNode
@@ -54,16 +60,20 @@ export function injectHMRContextPreamble(
   id: string
 ) {
   try {
-    const hotVars = findHotVars(ast.body as AstNode[], id)
-    if (hotVars.length === 0) return code
-
     const transformCtx: TransformContext = {
       id,
       code,
       inserts: [],
     }
-    transformInsertUnnamedWatchPreambles(ast.body as AstNode[], transformCtx)
+    transformInsertUnnamedWatchPreambles(transformCtx, ast.body as AstNode[])
     code = transformInjectInserts(transformCtx)
+    const hotVars = findHotVars(ast.body as AstNode[], id)
+    if (hotVars.size === 0) return code
+    const componentNamesToHookArgs = getComponentHookArgs(
+      ast.body as AstNode[],
+      code,
+      id
+    )
     return `
   if (import.meta.hot && "window" in globalThis) {
     window.__kaioken.HMRContext?.prepare("${id}", "${fileLinkFormatter(id)}");
@@ -71,14 +81,43 @@ export function injectHMRContextPreamble(
   ${code}
   if (import.meta.hot && "window" in globalThis) {
     import.meta.hot.accept();
-    window.__kaioken.HMRContext?.register({
-  ${hotVars.map((v) => `    ${v}`).join(",\n")}
-    });
+    ${createHMRRegistrationBlurb(hotVars, componentNamesToHookArgs)}
   }`
   } catch (error) {
     console.error(error)
     return code
   }
+}
+
+type HotVarDesc = {
+  type: string
+  name: string
+}
+
+function createHMRRegistrationBlurb(
+  hotVars: Set<HotVarDesc>,
+  componentHookArgs: Record<string, HookToArgs[]>
+) {
+  const entries = Array.from(hotVars).map(({ name, type }) => {
+    if (type !== "component") {
+      return `    ${name}: {
+          type: "${type}",
+          value: ${name}
+        }`
+    }
+    const args = componentHookArgs[name].map(([name, args]) => {
+      return `{ name: "${name}", args: "${args}" }`
+    })
+    return `    ${name}: {
+          type: "component",
+          value: ${name},
+          hooks: [${args.join(",")}]
+        }`
+  })
+  return `
+  window.__kaioken.HMRContext?.register({
+    ${entries.join(",\n")}
+});`
 }
 
 function createAliasHandler(name: string) {
@@ -87,7 +126,7 @@ function createAliasHandler(name: string) {
   const nodeContainsAliasCall = (node: AstNode) =>
     node.type === "CallExpression" &&
     node.callee?.type === "Identifier" &&
-    aliases.has(node.callee.name)
+    aliases.has(node.callee.name ?? "_not_found_")
 
   const addAliases = (node: AstNode) => {
     if (!node.source || node.source.value !== "kaioken") return
@@ -103,11 +142,11 @@ function createAliasHandler(name: string) {
       }
     }
   }
-  return { addAliases, nodeContainsAliasCall }
+  return { name, addAliases, nodeContainsAliasCall }
 }
 
-function findHotVars(nodes: AstNode[], _id: string): string[] {
-  const hotVarNames = new Set<string>()
+function findHotVars(nodes: AstNode[], _id: string): Set<HotVarDesc> {
+  const hotVars = new Set<HotVarDesc>()
 
   const aliasHandlers = [
     "createStore",
@@ -126,17 +165,17 @@ function findHotVars(nodes: AstNode[], _id: string): string[] {
     }
 
     if (findNode(node, isNodeCreateElementExpression)) {
-      addHotVarNames(node, hotVarNames)
+      addHotVarDesc(node, hotVars, "component")
     }
 
     for (const aliasHandler of aliasHandlers) {
       if (findNode(node, aliasHandler.nodeContainsAliasCall)) {
-        addHotVarNames(node, hotVarNames)
+        addHotVarDesc(node, hotVars, aliasHandler.name)
       }
     }
   }
 
-  return Array.from(hotVarNames)
+  return hotVars
 }
 
 function isNodeCreateElementExpression(node: AstNode): boolean {
@@ -149,25 +188,22 @@ function isNodeCreateElementExpression(node: AstNode): boolean {
   )
 }
 
-function addHotVarNames(node: AstNode, names: Set<string>) {
-  if (node.id?.name) {
-    names.add(node.id.name)
-  } else if (node.declaration) {
-    if (node.declaration.id) {
-      names.add(node.declaration.id.name)
-    } else if (node.declaration.declarations) {
-      for (const dec of node.declaration.declarations) {
-        const name = dec.id?.name
-        if (!name) continue
-        names.add(name)
-      }
-    }
-  } else if (node.declarations) {
-    for (const dec of node.declarations) {
-      const name = dec.id?.name
-      if (!name) continue
-      names.add(name)
-    }
+function findNodeName(node: AstNode): string | void {
+  if (node.id?.name) return node.id.name
+  if (node.declaration?.id?.name) return node.declaration.id.name
+  if (node.declaration?.declarations?.[0]?.id?.name)
+    return node.declaration.declarations[0].id.name
+  if (node.declarations?.[0]?.id?.name) return node.declarations[0].id.name
+}
+
+function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
+  const name = findNodeName(node)
+  if (!name && type === "component") {
+    console.error("[vite-plugin-kaioken]: failed to find component name", node)
+    throw new Error("[vite-plugin-kaioken]: Component name not found")
+  }
+  if (name) {
+    names.add({ type, name })
   }
 }
 
@@ -186,9 +222,142 @@ function transformInjectInserts(ctx: TransformContext) {
   return ctx.code
 }
 
+type ComponentName = string
+type HookName = string
+type HookToArgs = [HookName, string]
+
+function getComponentHookArgs(
+  bodyNodes: AstNode[],
+  code: string,
+  id: string
+): Record<string, HookToArgs[]> {
+  const res: Record<ComponentName, HookToArgs[]> = {}
+  for (const node of bodyNodes) {
+    if (findNode(node, isNodeCreateElementExpression)) {
+      const name = findNodeName(node)
+      if (!name) {
+        console.error(
+          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component name)",
+          node
+        )
+        continue
+      }
+
+      const body = getComponentBody(node, name, bodyNodes)
+      if (!body) continue
+      const hookArgsArr: HookToArgs[] = (res[name] = [])
+
+      for (const bodyNode of body) {
+        switch (bodyNode.type) {
+          case "VariableDeclaration":
+            if (!bodyNode.declarations) continue
+            for (const dec of bodyNode.declarations) {
+              try {
+                if (
+                  dec.init?.callee?.name?.startsWith("use") &&
+                  dec.init.arguments
+                ) {
+                  const args = argsToString(dec.init.arguments, code)
+                  hookArgsArr.push([dec.init?.callee?.name, args])
+                }
+              } catch (error) {
+                console.error(
+                  "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
+                  id,
+                  error,
+                  dec.init?.callee
+                )
+              }
+            }
+            break
+          case "ExpressionStatement":
+            try {
+              if (
+                bodyNode.expression?.type === "CallExpression" &&
+                bodyNode.expression.callee?.name?.startsWith("use") &&
+                bodyNode.expression.arguments
+              ) {
+                const args = argsToString(bodyNode.expression.arguments, code)
+                hookArgsArr.push([bodyNode.expression.callee?.name, args])
+              }
+            } catch (error) {
+              console.error(
+                "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
+                id,
+                error,
+                bodyNode.expression?.callee
+              )
+            }
+            break
+        }
+      }
+    }
+  }
+  return res
+}
+
+function getComponentBody(
+  node: AstNode,
+  name: string,
+  bodyNodes: AstNode[]
+): null | AstNode[] {
+  let dec = node.declaration
+  if (!dec) {
+    for (const _node of bodyNodes) {
+      if (_node.type === "VariableDeclaration") {
+        if (_node.declarations?.[0]?.id?.name === name) {
+          dec = _node
+          break
+        }
+      } else if (_node.type === "FunctionDeclaration") {
+        if (_node.id?.name === name) {
+          dec = _node
+          break
+        }
+      }
+    }
+  }
+  if (!dec) {
+    throw new Error(
+      "[vite-plugin-kaioken]: failed to find declaration for component"
+    )
+  }
+
+  if (
+    dec.type === "FunctionDeclaration" &&
+    dec.body &&
+    !Array.isArray(dec.body) &&
+    dec.body.type === "BlockStatement"
+  ) {
+    return dec.body.body as AstNode[]
+  } else if (dec.type === "VariableDeclaration") {
+    if (!Array.isArray(dec.declarations)) {
+      return null
+    }
+    for (const _dec of dec.declarations) {
+      if (_dec.id?.name !== name) continue
+      if (
+        _dec.init?.type === "ArrowFunctionExpression" ||
+        _dec.init?.type === "FunctionExpression"
+      ) {
+        return (_dec.init.body as AstNode).body as AstNode[]
+      }
+    }
+  }
+  return null
+}
+
+function getArgValues(args: AstNode[], code: string) {
+  return args.map((arg) => code.substring(arg.start, arg.end))
+}
+
+function argsToString(args: AstNode[], code: string) {
+  return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
+}
+
 function transformInsertUnnamedWatchPreambles(
-  nodes: AstNode[],
-  ctx: TransformContext
+  ctx: TransformContext,
+  nodes: AstNode[]
 ) {
   const watchAliasHandler = createAliasHandler("watch")
 
@@ -198,8 +367,8 @@ function transformInsertUnnamedWatchPreambles(
       continue
     }
     if (findNode(node, watchAliasHandler.nodeContainsAliasCall)) {
-      const nameSet = new Set<string>()
-      addHotVarNames(node, nameSet)
+      const nameSet = new Set<any>()
+      addHotVarDesc(node, nameSet, "unnamedWatch")
       if (nameSet.size === 0) {
         ctx.inserts.push({
           content: UNNAMED_WATCH_PREAMBLE,

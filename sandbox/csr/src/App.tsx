@@ -9,6 +9,8 @@ import {
   useSignal,
   signal,
   watch,
+  useWatch,
+  computed,
 } from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
@@ -20,7 +22,7 @@ type AppRoute = {
 }
 
 function Counter() {
-  const count = useSignal(41)
+  const count = useSignal(1)
   const countRef = useRef<HTMLDivElement>(null)
   const animRef = useRef<Animation>()
 
@@ -49,10 +51,13 @@ function Counter() {
   )
 }
 const count = signal(1)
-watch(() => console.log("count asd", count.value))
+const triple = computed(() => count.value * 3)
+watch(() => console.log("count", count.value))
+watch(() => console.log("triple", triple.value))
 
 const Home: Kaioken.FC = () => {
-  const double = useComputed(() => count.value * 2)
+  const double = useComputed(() => count.value * 32)
+  useWatch(() => console.log("inner triple b", triple.value))
 
   return (
     <div>
