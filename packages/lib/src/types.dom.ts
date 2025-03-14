@@ -33,6 +33,22 @@ type ValidUrlOrPath = ValidUrl | ValidPath | string
 type ListOfUrlsOrPaths = string
 type FileName = string
 
+type MediaPreload = "none" | "metadata" | "auto" | ""
+type HTMLMediaElementAttrs = {
+  autoplay?: boolean
+  controls?: boolean
+  crossOrigin?: string
+  currentTime?: number
+  loop?: boolean
+  muted?: boolean
+  playbackRate?: number
+  preload?: MediaPreload
+  preservesPitch?: boolean
+  src?: string
+  srcObject?: MediaProvider | null
+  volume?: number
+}
+
 type FormAction = ValidUrlOrPath
 type InputType =
   | "button"
@@ -236,8 +252,8 @@ type InputEvent<T extends "input" | "select" | "textarea"> = Omit<
   target: T extends "input"
     ? HTMLInputElement
     : T extends "select"
-    ? HTMLSelectElement
-    : HTMLTextAreaElement
+      ? HTMLSelectElement
+      : HTMLTextAreaElement
 }
 type InputEventAttributes<T extends "input" | "select" | "textarea"> = {
   onblur?: (e: InputEvent<T>) => void
@@ -295,13 +311,7 @@ interface HtmlElementAttributes {
   }
   article: {}
   aside: {}
-  audio: {
-    src?: ValidUrlOrPath
-    controls?: boolean
-    autoplay?: boolean
-    loop?: boolean
-    muted?: boolean
-  }
+  audio: HTMLMediaElementAttrs
   b: {}
   base: {
     href?: ValidUrlOrPath
@@ -676,15 +686,20 @@ interface HtmlElementAttributes {
   u: {}
   ul: {}
   var: {}
-  video: {
-    src?: ValidUrlOrPath
+  video: HTMLMediaElementAttrs & {
+    disablePictureInPicture?: boolean
+    playsInline?: boolean
     poster?: ValidUrlOrPath
     width?: string | number
     height?: string | number
-    autoplay?: boolean
-    controls?: boolean
-    loop?: boolean
-    muted?: boolean
+    onenterpictureinpicture?: (
+      this: HTMLVideoElement,
+      ev: PictureInPictureEvent
+    ) => void
+    onleavepictureinpicture?: (
+      this: HTMLVideoElement,
+      ev: PictureInPictureEvent
+    ) => void
   }
 }
 

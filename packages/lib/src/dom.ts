@@ -331,6 +331,9 @@ function setProp(
       return setStyleProp(vNode, element, value, prev)
     case "innerHTML":
       return setInnerHTML(element, value)
+    case "muted":
+      ;(element as HTMLMediaElement).muted = Boolean(value)
+      return
     case "value":
       if (needsExplicitValueSet(element)) {
         element.value =
