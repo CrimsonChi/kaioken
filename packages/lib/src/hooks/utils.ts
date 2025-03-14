@@ -1,3 +1,4 @@
+import type { AppContext } from "../appContext"
 import { KaiokenError } from "../error.js"
 import { __DEV__ } from "../env.js"
 import { node, nodeToCtxMap } from "../globals.js"
@@ -174,28 +175,9 @@ function useHook<
         `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
       )
     }
-    const oldAsDevHook = oldHook as DevHook<T> | undefined
-    const asDevHook = hook as DevHook<T>
-    let hmrInvalid = false
-    if (
-      ctx.options?.useRuntimeHookInvalidation &&
-      nextHookDevInvalidationValue !== undefined
-    ) {
-      if (!oldAsDevHook) {
-        asDevHook.devInvalidationValue = nextHookDevInvalidationValue // store our initial 'devInvalidationValue'
-      } else if (
-        vNode.hmrUpdated &&
-        (oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue ||
-          // handle cases where we just call 'useHookHMRInvalidation()', like in `useWatch`
-          (oldAsDevHook.devInvalidationValue === "[]" &&
-            nextHookDevInvalidationValue === "[]"))
-      ) {
-        hmrInvalid = true
-        asDevHook.devInvalidationValue = nextHookDevInvalidationValue
-      }
-    }
-
+    const hmrInvalid = doRuntimeHookInvalidation(ctx, vNode, hook, oldHook)
     try {
+      hook.debug?.handleRawArgsChanged?.()
       const res = (callback as HookCallback<T>)({
         hook: hook,
         isInit: !oldHook || hmrInvalid,
@@ -224,6 +206,34 @@ function useHook<
   } catch (error) {
     throw error
   }
+}
+
+function doRuntimeHookInvalidation<T>(
+  ctx: AppContext,
+  vNode: Kaioken.VNode,
+  hook: Hook<T>,
+  oldHook: Hook<T> | undefined
+): boolean {
+  if (!ctx.options?.useRuntimeHookInvalidation) return false
+  if (nextHookDevInvalidationValue === undefined) return false
+
+  let hmrInvalid = false
+  const oldAsDevHook = oldHook as DevHook<T> | undefined
+  const asDevHook = hook as DevHook<T>
+
+  if (!oldAsDevHook) {
+    asDevHook.devInvalidationValue = nextHookDevInvalidationValue // store our initial 'devInvalidationValue'
+  } else if (
+    vNode.hmrUpdated &&
+    (oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue ||
+      // handle cases where we just call 'useHookHMRInvalidation()', like in `useWatch`
+      (oldAsDevHook.devInvalidationValue === "[]" &&
+        nextHookDevInvalidationValue === "[]"))
+  ) {
+    asDevHook.devInvalidationValue = nextHookDevInvalidationValue
+    hmrInvalid = true
+  }
+  return hmrInvalid
 }
 
 function error_hookMustBeCalledTopLevel(hookName: string): never {

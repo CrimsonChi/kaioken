@@ -133,10 +133,13 @@ export function createHMRContext() {
               if (!ctx.options?.useRuntimeHookInvalidation) {
                 if (!vNode.hooks) return
                 for (let i = 0; i < hooksToReset.length; i++) {
-                  const hookIndex = hooksToReset[i]
-                  cleanupHook(vNode.hooks[hookIndex])
-                  // @ts-ignore
-                  vNode.hooks[hookIndex] = undefined
+                  const hook = vNode.hooks[hooksToReset[i]]
+                  if (!hook.debug?.handleRawArgsChanged) {
+                    console.log("yeeting hook", hook)
+                    cleanupHook(hook)
+                    // @ts-ignore this is fine and will cause the hook to be recreated
+                    vNode.hooks[hooksToReset[i]] = undefined
+                  }
                 }
               }
             }
