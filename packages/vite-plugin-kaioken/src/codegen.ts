@@ -215,6 +215,8 @@ function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
       const dec = findVariableDeclaration(node, name, bodyNodes)
       if (!dec) return false
       return isFuncDecOrExpr(dec[0])
+    case "ExportDefaultDeclaration":
+      return isFuncDecOrExpr(node.declaration)
   }
 
   return false
