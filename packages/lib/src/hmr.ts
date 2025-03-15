@@ -125,6 +125,10 @@ export function createHMRContext() {
               if (vNode.prev) {
                 vNode.prev.type = newEntry.value as any
               }
+              if (vNode.subs) {
+                vNode.subs.forEach((id) => Signal.unsubscribe(vNode, id))
+                delete vNode.subs
+              }
               ctx.requestUpdate(vNode)
               if (!ctx.options?.useRuntimeHookInvalidation) {
                 if (!vNode.hooks) return
