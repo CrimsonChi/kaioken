@@ -1,8 +1,4 @@
-import type {
-  ReadonlySignal,
-  Signal as SignalClass,
-  SignalLike,
-} from "./signals"
+import type { ReadonlySignal, Signal, Signal as SignalClass } from "./signals"
 import type { $CONTEXT, $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
@@ -36,26 +32,26 @@ type WebComponentTag = `${string}-${string}`
 type SignalableHtmlElementAttributes<Tag extends keyof HtmlElementAttributes> =
   {
     [K in keyof HtmlElementAttributes[Tag]]:
-      | SignalLike<HtmlElementAttributes[Tag][K]>
+      | Signal<HtmlElementAttributes[Tag][K]>
       | HtmlElementAttributes[Tag][K]
   }
 type SignalableSvgElementAttributes<Tag extends keyof SvgElementAttributes> = {
   [K in keyof SvgElementAttributes[Tag]]:
     | SvgElementAttributes[Tag][K]
-    | SignalLike<SvgElementAttributes[Tag][K]>
+    | Signal<SvgElementAttributes[Tag][K]>
 }
 type SignalableAriaProps = {
-  [K in keyof ARIAMixin]?: ARIAMixin[K] | SignalLike<ARIAMixin[K]>
+  [K in keyof ARIAMixin]?: ARIAMixin[K] | Signal<ARIAMixin[K]>
 }
 type SignalableGlobalAttributes = {
   [K in keyof GlobalAttributes]:
     | GlobalAttributes[K]
-    | SignalLike<GlobalAttributes[K]>
+    | Signal<GlobalAttributes[K]>
 }
 type SignalableSvgGlobalAttributes = {
   [K in keyof SvgGlobalAttributes]:
     | SvgGlobalAttributes[K]
-    | SignalLike<SvgGlobalAttributes[K]>
+    | Signal<SvgGlobalAttributes[K]>
 }
 
 type ElementMap = {
