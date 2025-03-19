@@ -64,7 +64,7 @@ export function useAsync<T>(
     "useAsync",
     {
       deps,
-      iter: 0,
+      id: 0,
       task: null as any as AsyncTaskState<T>,
       load: noop as (
         func: (ctx: UseAsyncCallbackContext) => Promise<T>
@@ -77,13 +77,12 @@ export function useAsync<T>(
         }
         hook.cleanup = () => abortTask(hook.task)
         hook.load = (func) => {
-          hook.iter++
           let invalidated = false
           const abortController = new AbortController()
           abortController.signal.addEventListener("abort", () => {
             invalidated = true
           })
-          const id = hook.iter
+          const id = hook.id++
           const task: AsyncTaskState<T> = (hook.task = {
             abortController,
             data: null,
@@ -92,7 +91,7 @@ export function useAsync<T>(
           })
           func({ abortSignal: abortController.signal })
             .then((result: T) => {
-              if (id !== hook.iter) abortTask(task)
+              if (id !== hook.id) abortTask(task)
               if (invalidated) return
 
               task.data = result
@@ -101,7 +100,7 @@ export function useAsync<T>(
               update()
             })
             .catch((error) => {
-              if (id !== hook.iter) abortTask(task)
+              if (id !== hook.id) abortTask(task)
               if (invalidated) return
 
               task.data = null
