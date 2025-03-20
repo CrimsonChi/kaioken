@@ -223,20 +223,12 @@ function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
 }
 
 function findComponent(node: AstNode, bodyNodes: AstNode[]): boolean {
-  return (
-    isTopLevelFunction(node, bodyNodes) &&
-    findNode(node, isNodeCreateElementExpression)
-  )
-}
-
-function isNodeCreateElementExpression(node: AstNode): boolean {
-  return (
-    node.type === "MemberExpression" &&
-    node.object?.type === "Identifier" &&
-    node.object.name === "kaioken" &&
-    node.property?.type === "Identifier" &&
-    node.property.name === "createElement"
-  )
+  const isTlf = isTopLevelFunction(node, bodyNodes)
+  if (!isTlf) return false
+  const name = findNodeName(node)
+  if (!name) return false
+  const charCode = name.charCodeAt(0)
+  return charCode >= 65 && charCode <= 90
 }
 
 function findNodeName(node: AstNode): string | void {
@@ -403,8 +395,13 @@ function findVariableDeclaration(
         // accumulate argNodes that are functions and return JSX
         const nodes: AstNode[] = []
         for (const arg of _dec.init.arguments) {
-          if (isFuncDecOrExpr(arg)) {
-            nodes.push(...((arg.body as AstNode).body as AstNode[]))
+          if (
+            isFuncDecOrExpr(arg) &&
+            arg.body &&
+            !Array.isArray(arg.body) &&
+            Array.isArray(arg.body.body)
+          ) {
+            nodes.push(...arg.body.body)
           }
         }
         return nodes
