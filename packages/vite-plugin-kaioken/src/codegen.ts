@@ -1,14 +1,15 @@
 import type { ProgramNode } from "rollup"
 import { FilePathFormatter } from "./types"
+import MagicString from "magic-string"
 
-type TransformInsert = {
+type SrcInsertion = {
   content: string
-  start: number
+  offset: number
 }
-type TransformContext = {
+type SrcInsertionContext = {
   id: string
-  code: string
-  inserts: TransformInsert[]
+  code: MagicString
+  inserts: SrcInsertion[]
 }
 interface AstNodeId {
   type: string
@@ -53,38 +54,49 @@ if (import.meta.hot && "window" in globalThis) {
 }
 `
 export function injectHMRContextPreamble(
-  code: string,
+  code: MagicString,
   ast: ProgramNode,
   fileLinkFormatter: FilePathFormatter,
   id: string
-) {
+): MagicString | null {
   try {
-    const transformCtx: TransformContext = {
+    const srcInsertCtx: SrcInsertionContext = {
       id,
       code,
       inserts: [],
     }
-    transformInsertUnnamedWatchPreambles(transformCtx, ast.body as AstNode[])
-    code = transformInjectInserts(transformCtx)
+    createUnnamedWatchInserts(srcInsertCtx, ast.body as AstNode[])
+
     const hotVars = findHotVars(ast.body as AstNode[], id)
-    if (hotVars.size === 0) return code
+
+    if (hotVars.size === 0 && srcInsertCtx.inserts.length === 0) return null
+
+    code.prepend(`
+if (import.meta.hot && "window" in globalThis) {
+  window.__kaioken.HMRContext?.prepare("${id}", "${fileLinkFormatter(id)}");
+}
+`)
+    for (const insert of srcInsertCtx.inserts) {
+      code.appendRight(insert.offset, insert.content)
+    }
+
     const componentNamesToHookArgs = getComponentHookArgs(
       ast.body as AstNode[],
-      code,
+      code.original,
       id
     )
-    return `
-  if (import.meta.hot && "window" in globalThis) {
-    window.__kaioken.HMRContext?.prepare("${id}", "${fileLinkFormatter(id)}");
-  }
-  ${code}
-  if (import.meta.hot && "window" in globalThis) {
+
+    code.append(`
+if (import.meta.hot && "window" in globalThis) {
     import.meta.hot.accept();
     ${createHMRRegistrationBlurb(hotVars, componentNamesToHookArgs)}
-  }`
+  }
+`)
+
+    return code
   } catch (error) {
     console.error(error)
-    return code
+    return null
   }
 }
 
@@ -250,21 +262,6 @@ function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   }
 }
 
-function transformInjectInserts(ctx: TransformContext) {
-  let offset = 0
-  const sortedInserts = ctx.inserts.sort((a, b) => a.start - b.start)
-  for (let i = 0; i < sortedInserts.length; i++) {
-    const { content, start } = sortedInserts[i]
-    ctx.code =
-      ctx.code.slice(0, start + offset) +
-      content +
-      ctx.code.slice(start + offset)
-
-    offset += content.length
-  }
-  return ctx.code
-}
-
 type ComponentName = string
 type HookName = string
 type HookToArgs = [HookName, string]
@@ -419,10 +416,7 @@ function argsToString(args: AstNode[], code: string) {
   return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
 }
 
-function transformInsertUnnamedWatchPreambles(
-  ctx: TransformContext,
-  nodes: AstNode[]
-) {
+function createUnnamedWatchInserts(ctx: SrcInsertionContext, nodes: AstNode[]) {
   const watchAliasHandler = createAliasHandler("watch")
 
   for (const node of nodes) {
@@ -436,7 +430,7 @@ function transformInsertUnnamedWatchPreambles(
       if (nameSet.size === 0) {
         ctx.inserts.push({
           content: UNNAMED_WATCH_PREAMBLE,
-          start: node.start,
+          offset: node.start,
         })
       }
     }

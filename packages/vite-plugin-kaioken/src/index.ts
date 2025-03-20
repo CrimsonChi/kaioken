@@ -3,6 +3,7 @@ import devtoolsLinkScript from "kaioken-devtools-host"
 import devtoolsUiScript from "kaioken-devtools-client"
 import { FilePathFormatter } from "./types"
 import { injectHMRContextPreamble } from "./codegen.js"
+import MagicString from "magic-string"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -84,8 +85,23 @@ export default function kaioken(
       if (isProduction || isBuild) return
       if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
       const ast = this.parse(code)
+      const transformed: MagicString | null = injectHMRContextPreamble(
+        new MagicString(code),
+        ast,
+        fileLinkFormatter,
+        id
+      )
+      if (transformed === null) return { code }
+
+      const map = transformed.generateMap({
+        source: id,
+        file: `${id}.map`,
+        includeContent: true,
+      })
+
       return {
-        code: injectHMRContextPreamble(code, ast, fileLinkFormatter, id),
+        code: transformed.toString(),
+        map: map.toString(),
       }
     },
   }
