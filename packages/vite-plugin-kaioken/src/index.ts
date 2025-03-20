@@ -4,6 +4,7 @@ import devtoolsUiScript from "kaioken-devtools-client"
 import { FilePathFormatter } from "./types"
 import { injectHMRContextPreamble } from "./codegen.js"
 import MagicString from "magic-string"
+import path from "node:path"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -40,17 +41,18 @@ export default function kaioken(
   let isBuild = false
 
   const fileLinkFormatter = opts.formatFileLink || vscodeFilePathFormatter
+  let _config: UserConfig | null = null
 
   return {
     name: "vite-plugin-kaioken",
     config(config) {
-      return {
+      return (_config = {
         ...config,
         esbuild: {
           ...defaultEsBuildOptions,
           ...config.esbuild,
         },
-      } as UserConfig
+      } as UserConfig)
     },
     transformIndexHtml(html) {
       if (isProduction || isBuild || !opts.devtools) return
@@ -84,6 +86,11 @@ export default function kaioken(
     transform(code, id) {
       if (isProduction || isBuild) return
       if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
+      const projectRoot = path.resolve(_config?.root ?? process.cwd())
+      const filePath = path.resolve(id)
+      if (!filePath.startsWith(projectRoot)) {
+        return { code }
+      }
       const ast = this.parse(code)
       const transformed: MagicString | null = injectHMRContextPreamble(
         new MagicString(code),
