@@ -88,9 +88,9 @@ if (import.meta.hot && "window" in globalThis) {
 
     code.append(`
 if (import.meta.hot && "window" in globalThis) {
-    import.meta.hot.accept();
-    ${createHMRRegistrationBlurb(hotVars, componentNamesToHookArgs)}
-  }
+  import.meta.hot.accept();
+  ${createHMRRegistrationBlurb(hotVars, componentNamesToHookArgs)}
+}
 `)
 
     return code
@@ -112,9 +112,9 @@ function createHMRRegistrationBlurb(
   const entries = Array.from(hotVars).map(({ name, type }) => {
     if (type !== "component") {
       return `    ${name}: {
-          type: "${type}",
-          value: ${name}
-        }`
+      type: "${type}",
+      value: ${name}
+    }`
     }
     if (!componentHookArgs[name]) {
       console.log(
@@ -126,15 +126,15 @@ function createHMRRegistrationBlurb(
       return `{ name: "${name}", args: "${args}" }`
     })
     return `    ${name}: {
-          type: "component",
-          value: ${name},
-          hooks: [${args.join(",")}]
-        }`
+      type: "component",
+      value: ${name},
+      hooks: [${args.join(",")}]
+    }`
   })
   return `
   window.__kaioken.HMRContext?.register({
-    ${entries.join(",\n")}
-});`
+${entries.join(",\n")}
+  });`
 }
 
 function createAliasHandler(name: string) {
@@ -283,16 +283,16 @@ function getComponentHookArgs(
         continue
       }
 
+      const hookArgsArr: HookToArgs[] = (res[name] = [])
       const body = findVariableDeclaration(node, name, bodyNodes)
       if (!body) {
-        console.error(
-          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component body)",
-          name,
-          node
-        )
+        /**
+         * todo: ensure that if we didn't find a body, it's because
+         * the function _actually_ doesn't have a body, eg.
+         * const App = () => (<div>Hello World</div>)
+         */
         continue
       }
-      const hookArgsArr: HookToArgs[] = (res[name] = [])
 
       for (const bodyNode of body) {
         switch (bodyNode.type) {
