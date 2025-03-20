@@ -112,7 +112,11 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     })
   }
 
-  requestUpdate(vNode: VNode) {
+  requestUpdate(vNode?: VNode) {
+    if (!vNode) {
+      if (!this.mounted || !this.rootNode) return
+      vNode = this.rootNode
+    }
     if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {

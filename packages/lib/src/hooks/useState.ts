@@ -1,6 +1,6 @@
 import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
-import { sideEffectsEnabled, useHook, useHookHMRInvalidation } from "./utils.js"
+import { sideEffectsEnabled, useHook } from "./utils.js"
 
 export function useState<T>(
   initial: T | (() => T)
@@ -10,9 +10,6 @@ export function useState<T>(
       typeof initial === "function" ? (initial as Function)() : initial,
       noop,
     ]
-  }
-  if (__DEV__) {
-    useHookHMRInvalidation(...arguments)
   }
   return useHook(
     "useState",

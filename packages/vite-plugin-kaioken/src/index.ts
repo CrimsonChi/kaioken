@@ -1,4 +1,4 @@
-import type { ESBuildOptions, ModuleNode, Plugin, UserConfig } from "vite"
+import type { ESBuildOptions, Plugin, UserConfig } from "vite"
 import devtoolsLinkScript from "kaioken-devtools-host"
 import devtoolsUiScript from "kaioken-devtools-client"
 import { FilePathFormatter } from "./types"
@@ -79,27 +79,6 @@ export default function kaioken(
       server.middlewares.use("/__devtools__", (_, res) => {
         res.end(devtoolsUiScript)
       })
-    },
-    handleHotUpdate(ctx) {
-      if (isProduction || isBuild) return
-      if (!tsxOrJsxRegex.test(ctx.file) && !tsOrJsRegex.test(ctx.file)) return
-      const module = ctx.modules.find((m) => m.file === ctx.file)
-      if (!module) return []
-
-      const importers: ModuleNode[] = []
-      const addImporters = (module: ModuleNode) => {
-        if (
-          module.file &&
-          tsxOrJsxRegex.test(module.file) &&
-          !importers.includes(module) &&
-          module.isSelfAccepting
-        ) {
-          importers.push(module)
-          module.importers.forEach(addImporters)
-        }
-      }
-      module.importers.forEach(addImporters)
-      return [module, ...importers]
     },
     transform(code, id) {
       if (isProduction || isBuild) return

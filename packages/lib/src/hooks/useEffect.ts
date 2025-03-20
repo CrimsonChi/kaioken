@@ -4,7 +4,6 @@ import {
   depsRequireChange,
   sideEffectsEnabled,
   useHook,
-  useHookHMRInvalidation,
 } from "./utils.js"
 
 /**
@@ -18,9 +17,6 @@ export function useEffect(
   deps?: unknown[]
 ): void {
   if (!sideEffectsEnabled()) return
-  if (__DEV__) {
-    useHookHMRInvalidation(...arguments)
-  }
   return useHook("useEffect", { deps }, ({ hook, isInit, queueEffect }) => {
     if (__DEV__) {
       hook.debug = { get: () => ({ callback, dependencies: hook.deps }) }

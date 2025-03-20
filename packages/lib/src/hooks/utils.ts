@@ -13,9 +13,15 @@ export {
   useHookHMRInvalidation,
   useRequestUpdate,
   HookDebugGroupAction,
+  HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
   type Hook,
   type HookCallback,
   type HookCallbackState,
+}
+
+const $HOOK_INVALIDATED = Symbol.for("kaioken.hookInvalidated")
+const HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY: Hook<any> = {
+  [$HOOK_INVALIDATED]: true,
 }
 
 type DevHook<T> = Hook<T> & {
@@ -144,20 +150,6 @@ function useHook<
   }
 
   const ctx = getVNodeAppContext(vNode)
-  const oldHook = (
-    vNode.prev
-      ? vNode.prev.hooks?.at(ctx.hookIndex)
-      : vNode.hooks?.at(ctx.hookIndex)
-  ) as Hook<T> | undefined
-  const hook =
-    oldHook ??
-    (typeof hookDataOrInitializer === "function"
-      ? hookDataOrInitializer()
-      : { ...hookDataOrInitializer })
-
-  if (!vNode.hooks) vNode.hooks = []
-  vNode.hooks[ctx.hookIndex++] = hook
-
   const queueEffect = (callback: Function, opts?: { immediate?: boolean }) => {
     if (opts?.immediate) {
       ;(vNode.immediateEffects ??= []).push(callback)
@@ -167,6 +159,22 @@ function useHook<
   }
 
   if (__DEV__) {
+    let oldHook = (
+      vNode.prev
+        ? vNode.prev.hooks?.at(ctx.hookIndex)
+        : vNode.hooks?.at(ctx.hookIndex)
+    ) as Hook<T> | undefined
+    if (oldHook && $HOOK_INVALIDATED in oldHook) {
+      oldHook = undefined
+    }
+    const hook =
+      oldHook ??
+      (typeof hookDataOrInitializer === "function"
+        ? hookDataOrInitializer()
+        : { ...hookDataOrInitializer })
+
+    if (!vNode.hooks) vNode.hooks = []
+    vNode.hooks[ctx.hookIndex++] = hook
     if (!oldHook) hook.name = hookName
     currentHookName = hookName
     if (oldHook && oldHook.name !== hookName) {
@@ -199,6 +207,19 @@ function useHook<
   }
 
   try {
+    const oldHook = (
+      vNode.prev
+        ? vNode.prev.hooks?.at(ctx.hookIndex)
+        : vNode.hooks?.at(ctx.hookIndex)
+    ) as Hook<T> | undefined
+    const hook =
+      oldHook ??
+      (typeof hookDataOrInitializer === "function"
+        ? hookDataOrInitializer()
+        : { ...hookDataOrInitializer })
+
+    if (!vNode.hooks) vNode.hooks = []
+    vNode.hooks[ctx.hookIndex++] = hook
     const res = (callback as HookCallback<T>)({
       hook: hook,
       isInit: !oldHook,

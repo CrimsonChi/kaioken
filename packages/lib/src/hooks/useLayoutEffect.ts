@@ -4,7 +4,6 @@ import {
   depsRequireChange,
   sideEffectsEnabled,
   useHook,
-  useHookHMRInvalidation,
 } from "./utils.js"
 
 export function useLayoutEffect(
@@ -12,9 +11,6 @@ export function useLayoutEffect(
   deps?: unknown[]
 ): void {
   if (!sideEffectsEnabled()) return
-  if (__DEV__) {
-    useHookHMRInvalidation(...arguments)
-  }
   return useHook(
     "useLayoutEffect",
     { deps },

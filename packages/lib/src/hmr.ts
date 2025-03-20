@@ -4,7 +4,11 @@ import { $HMR_ACCEPT } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { Signal } from "./signals/base.js"
 import { traverseApply } from "./utils.js"
-import { cleanupHook } from "./hooks/utils.js"
+import {
+  cleanupHook,
+  HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
+} from "./hooks/utils.js"
+import type { AppContext } from "./appContext"
 
 export type HMRAccept<T = {}> = {
   provide: () => T
@@ -76,6 +80,7 @@ export function createHMRContext() {
     if (currentModuleMemory === null)
       throw new Error("[kaioken]: HMR could not register: No active module")
 
+    let dirtiedApps: Set<AppContext> = new Set()
     for (const [name, newEntry] of Object.entries(hotVarRegistrationEntries)) {
       const oldEntry = currentModuleMemory.hotVars.get(name)
       if (typeof newEntry.value === "function") {
@@ -121,6 +126,7 @@ export function createHMRContext() {
           traverseApply(ctx.rootNode, (vNode) => {
             if (vNode.type === oldEntry.value) {
               vNode.type = newEntry.value as any
+              dirtiedApps.add(ctx)
               vNode.hmrUpdated = true
               if (vNode.prev) {
                 vNode.prev.type = newEntry.value as any
@@ -129,9 +135,7 @@ export function createHMRContext() {
                 vNode.subs.forEach((id) => Signal.unsubscribe(vNode, id))
                 delete vNode.subs
               }
-              ctx.requestUpdate(vNode)
-              if (!ctx.options?.useRuntimeHookInvalidation) {
-                if (!vNode.hooks) return
+              if (!ctx.options?.useRuntimeHookInvalidation && vNode.hooks) {
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hook = vNode.hooks[hooksToReset[i]]
                   if (hook.debug?.reinitUponRawArgsChanged) {
@@ -139,8 +143,8 @@ export function createHMRContext() {
                     hook.rawArgsChanged = true
                   } else {
                     cleanupHook(hook)
-                    // @ts-ignore this is fine and will cause the hook to be recreated
-                    vNode.hooks[hooksToReset[i]] = undefined
+                    vNode.hooks[hooksToReset[i]] =
+                      HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY
                   }
                 }
               }
@@ -149,6 +153,7 @@ export function createHMRContext() {
         })
       }
     }
+    dirtiedApps.forEach((ctx) => ctx.requestUpdate())
     isModuleReplacementExecution = false
 
     if (tmpUnnamedWatchers.length) {

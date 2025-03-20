@@ -9,7 +9,7 @@ import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { isExoticVNode, traverseApply, vNodeContains } from "./utils.js"
+import { isExoticVNode, latest, traverseApply, vNodeContains } from "./utils.js"
 import { isMemoFn } from "./memo.js"
 
 type VNode = Kaioken.VNode
@@ -341,7 +341,7 @@ export class Scheduler {
       do {
         this.isRenderDirtied = false
         this.appCtx.hookIndex = 0
-        newChildren = type(props)
+        newChildren = latest(type)(props)
         if (__DEV__) {
           delete vNode.hmrUpdated
         }

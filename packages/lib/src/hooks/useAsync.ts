@@ -1,11 +1,6 @@
 import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
-import {
-  depsRequireChange,
-  sideEffectsEnabled,
-  useHook,
-  useHookHMRInvalidation,
-} from "./utils.js"
+import { depsRequireChange, sideEffectsEnabled, useHook } from "./utils.js"
 
 export type UseAsyncState<T> = (
   | /** loading*/ {
@@ -57,9 +52,6 @@ export function useAsync<T>(
       error: null,
       invalidate: noop,
     }
-  if (__DEV__) {
-    useHookHMRInvalidation(...arguments)
-  }
   return useHook(
     "useAsync",
     {
