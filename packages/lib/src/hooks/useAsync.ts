@@ -82,7 +82,7 @@ export function useAsync<T>(
           abortController.signal.addEventListener("abort", () => {
             invalidated = true
           })
-          const id = hook.id++
+          const id = ++hook.id
           const task: AsyncTaskState<T> = (hook.task = {
             abortController,
             data: null,
