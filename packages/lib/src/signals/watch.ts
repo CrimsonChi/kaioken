@@ -4,11 +4,7 @@ import { type Signal } from "./base.js"
 import type { HMRAccept } from "../hmr.js"
 import { $HMR_ACCEPT } from "../constants.js"
 import { node } from "../globals.js"
-import {
-  sideEffectsEnabled,
-  useHook,
-  useHookHMRInvalidation,
-} from "../hooks/utils.js"
+import { sideEffectsEnabled, useHook } from "../hooks/utils.js"
 import { effectQueue, tracking } from "./globals.js"
 import { generateRandomID } from "../generateId.js"
 
@@ -92,9 +88,6 @@ export const watch = (getter: () => (() => void) | void) => {
 
 export const useWatch = (getter: () => (() => void) | void) => {
   if (!sideEffectsEnabled()) return
-  if (__DEV__) {
-    useHookHMRInvalidation()
-  }
   return useHook(
     "useWatch",
     { watcher: null as any as WatchEffect },

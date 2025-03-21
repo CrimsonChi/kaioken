@@ -10,7 +10,7 @@ import {
 import { tracking, signalSubsMap } from "./globals.js"
 import { type SignalSubscriber, ReadonlySignal } from "./types.js"
 import { node } from "../globals.js"
-import { useHook, useHookHMRInvalidation } from "../hooks/utils.js"
+import { useHook } from "../hooks/utils.js"
 import { generateRandomID } from "../generateId.js"
 
 export class Signal<T> {
@@ -166,9 +166,6 @@ export const signal = <T>(initial: T, displayName?: string) => {
 }
 
 export const useSignal = <T>(initial: T, displayName?: string) => {
-  if (__DEV__) {
-    useHookHMRInvalidation(initial, displayName)
-  }
   return useHook(
     "useSignal",
     { signal: undefined as any as Signal<T> },
@@ -184,8 +181,9 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
           },
           reinitUponRawArgsChanged: true,
         }
-        if (isInit && hook.signal) {
-          hook.cleanup?.()
+        if (isInit && hook.rawArgsChanged) {
+          hook.signal.value = initial
+          return hook.signal
         }
       }
       if (isInit) {

@@ -35,9 +35,20 @@ let nextHookDevInvalidationValue: string | undefined
  * Used to mark a hook as invalidated on HMR.
  * Arguments passed to this function will be used to
  * determine if the hook should be re-initialized.
+ * @deprecated - Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the `hook.debug.reinitUponRawArgsChanged` option.
+If reinitialized in this way, the `hook.rawArgsChanged` property will be set to true.
+
+To continue using this behavior, enable the `useRuntimeHookInvalidation` option when initializing your app context.
+ *
  */
 const useHookHMRInvalidation = (...values: unknown[]) => {
   if (__DEV__) {
+    console.warn(
+      `[kaioken]: useHookHMRInvalidation is deprecated and will be removed in a future release.
+Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the \`hook.debug.reinitUponRawArgsChanged\` option.
+If reinitialized in this way, the \`hook.rawArgsChanged\` property will be set to true.
+      `
+    )
     const ctx = getVNodeAppContext(node.current!)
     if (ctx.options?.useRuntimeHookInvalidation) {
       nextHookDevInvalidationValue = safeStringify(values)
@@ -203,6 +214,8 @@ function useHook<
     } finally {
       currentHookName = null
       nextHookDevInvalidationValue = undefined
+      // @ts-ignore - Reset the rawArgsChanged flag
+      hook.rawArgsChanged = false
     }
   }
 

@@ -5,7 +5,7 @@ import { $HMR_ACCEPT } from "../constants.js"
 import { node } from "../globals.js"
 import type { HMRAccept } from "../hmr.js"
 import { sideEffectsEnabled } from "../utils.js"
-import { useHook, useHookHMRInvalidation } from "../hooks/utils.js"
+import { useHook } from "../hooks/utils.js"
 
 export class ComputedSignal<T> extends Signal<T> {
   protected $getter: () => T
@@ -74,9 +74,6 @@ export const computed = <T>(
 }
 
 export const useComputed = <T>(getter: () => T, displayName?: string) => {
-  if (__DEV__) {
-    useHookHMRInvalidation(getter, displayName)
-  }
   return useHook(
     "useComputedSignal",
     {

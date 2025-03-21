@@ -177,6 +177,12 @@ function updateSlot(parent: VNode, oldNode: VNode | null, child: unknown) {
     typeof child === "bigint"
   ) {
     if (key !== undefined) return null
+    if (
+      oldNode?.type === ELEMENT_TYPE.text &&
+      Signal.isSignal(oldNode.props.nodeValue)
+    ) {
+      return null
+    }
     return updateTextNode(parent, oldNode, "" + child)
   }
   if (Signal.isSignal(child)) {
@@ -335,20 +341,28 @@ function updateFromMap(
     typeof newChild === "bigint"
   ) {
     const oldChild = existingChildren.get(index)
-    if (oldChild && (!isSig || oldChild.props.nodeValue === newChild)) {
-      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
-      oldChild.props.nodeValue = newChild
-      return oldChild
-    } else {
-      const n = createElement(ELEMENT_TYPE.text, {
-        nodeValue: newChild,
-      })
-      n.parent = parent
-      n.depth = parent.depth + 1
-      n.flags = flags.set(n.flags, FLAG.PLACEMENT)
-      n.index = index
-      return n
+    if (oldChild) {
+      if (oldChild.props.nodeValue === newChild) {
+        oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+        oldChild.props.nodeValue = newChild
+        return oldChild
+      }
+      if (
+        oldChild.type === ELEMENT_TYPE.text &&
+        Signal.isSignal(oldChild.props.nodeValue)
+      ) {
+        oldChild.cleanups?.["nodeValue"]?.()
+      }
     }
+
+    const n = createElement(ELEMENT_TYPE.text, {
+      nodeValue: newChild,
+    })
+    n.parent = parent
+    n.depth = parent.depth + 1
+    n.flags = flags.set(n.flags, FLAG.PLACEMENT)
+    n.index = index
+    return n
   }
 
   if (isVNode(newChild)) {
