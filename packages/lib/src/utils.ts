@@ -1,16 +1,18 @@
 import { node, nodeToCtxMap, renderMode } from "./globals.js"
-import { $CONTEXT_PROVIDER, $FRAGMENT, REGEX_UNIT } from "./constants.js"
+import { $CONTEXT_PROVIDER, $FRAGMENT, FLAG, REGEX_UNIT } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
 import type { ExoticVNode } from "./types.utils"
 import { __DEV__ } from "./env.js"
+import { flags } from "./flags.js"
 
 export {
   isVNode,
   isFragment,
   isContextProvider,
   isExoticVNode,
+  isVNodeDeleted,
   vNodeContains,
   getCurrentVNode,
   getVNodeAppContext,
@@ -57,6 +59,10 @@ function latest<T>(thing: T): T {
  */
 function sideEffectsEnabled(): boolean {
   return renderMode.current === "dom" || renderMode.current === "hydrate"
+}
+
+function isVNodeDeleted(vNode: VNode): boolean {
+  return flags.get(vNode.flags, FLAG.DELETION)
 }
 
 function isVNode(thing: unknown): thing is VNode {

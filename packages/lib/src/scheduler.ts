@@ -1,6 +1,6 @@
 import type { AppContext } from "./appContext"
 import type { FunctionVNode } from "./types.utils"
-import { bitmapOps } from "./bitmap.js"
+import { flags } from "./flags.js"
 import { $MEMO, CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
@@ -181,7 +181,7 @@ export class Scheduler {
   }
 
   queueDelete(vNode: VNode) {
-    traverseApply(vNode, (n) => bitmapOps.setFlag(n, FLAG.DELETION))
+    traverseApply(vNode, (n) => (n.flags = flags.set(n.flags, FLAG.DELETION)))
     this.deletions.push(vNode)
   }
 

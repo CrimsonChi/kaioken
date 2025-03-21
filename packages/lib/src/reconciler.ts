@@ -4,7 +4,7 @@ import { isVNode, latest } from "./utils.js"
 import { Signal } from "./signals/base.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
-import { bitmapOps } from "./bitmap.js"
+import { flags } from "./flags.js"
 
 type VNode = Kaioken.VNode
 
@@ -207,7 +207,7 @@ function updateTextNode(
   } else {
     const newNode = oldNode
     newNode.props.nodeValue = content
-    bitmapOps.setFlag(newNode, FLAG.UPDATE)
+    newNode.flags = flags.set(newNode.flags, FLAG.UPDATE)
     newNode.sibling = undefined
     return oldNode
   }
@@ -230,7 +230,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.index = 0
     oldNode.props = newNode.props
     oldNode.sibling = undefined
-    bitmapOps.setFlag(oldNode, FLAG.UPDATE)
+    oldNode.flags = flags.set(oldNode.flags, FLAG.UPDATE)
     oldNode.memoizedProps = newNode.memoizedProps
     return oldNode
   }
@@ -253,7 +253,7 @@ function updateFragment(
     return el
   }
   oldNode.props = { ...oldNode.props, ...newProps, children }
-  bitmapOps.setFlag(oldNode, FLAG.UPDATE)
+  oldNode.flags = flags.set(oldNode.flags, FLAG.UPDATE)
   oldNode.sibling = undefined
   return oldNode
 }
@@ -285,7 +285,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     const newNode = createElement(child.type, child.props)
     newNode.parent = parent
     newNode.depth = parent.depth! + 1
-    bitmapOps.setFlag(newNode, FLAG.PLACEMENT)
+    newNode.flags = flags.set(newNode.flags, FLAG.PLACEMENT)
     if ("memoizedProps" in child) newNode.memoizedProps = child.memoizedProps
     return newNode
   }
@@ -310,13 +310,13 @@ function placeChild(
   if (vNode.prev !== undefined) {
     const oldIndex = vNode.prev.index
     if (oldIndex < lastPlacedIndex) {
-      bitmapOps.setFlag(vNode, FLAG.PLACEMENT)
+      vNode.flags = flags.set(vNode.flags, FLAG.PLACEMENT)
       return lastPlacedIndex
     } else {
       return oldIndex
     }
   } else {
-    bitmapOps.setFlag(vNode, FLAG.PLACEMENT)
+    vNode.flags = flags.set(vNode.flags, FLAG.PLACEMENT)
     return lastPlacedIndex
   }
 }
@@ -336,7 +336,7 @@ function updateFromMap(
   ) {
     const oldChild = existingChildren.get(index)
     if (oldChild && (!isSig || oldChild.props.nodeValue === newChild)) {
-      bitmapOps.setFlag(oldChild, FLAG.UPDATE)
+      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props.nodeValue = newChild
       return oldChild
     } else {
@@ -345,7 +345,7 @@ function updateFromMap(
       })
       n.parent = parent
       n.depth = parent.depth + 1
-      bitmapOps.setFlag(n, FLAG.PLACEMENT)
+      n.flags = flags.set(n.flags, FLAG.PLACEMENT)
       n.index = index
       return n
     }
@@ -356,7 +356,7 @@ function updateFromMap(
       newChild.props.key === undefined ? index : newChild.props.key
     )
     if (oldChild) {
-      bitmapOps.setFlag(oldChild, FLAG.UPDATE)
+      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props = newChild.props
       if ("memoizedProps" in newChild)
         oldChild.memoizedProps = newChild.memoizedProps
@@ -367,7 +367,7 @@ function updateFromMap(
       const n = createElement(newChild.type, newChild.props)
       n.parent = parent
       n.depth = parent.depth + 1
-      bitmapOps.setFlag(n, FLAG.PLACEMENT)
+      n.flags = flags.set(n.flags, FLAG.PLACEMENT)
       n.index = index
       return n
     }
@@ -376,14 +376,14 @@ function updateFromMap(
   if (Array.isArray(newChild)) {
     const oldChild = existingChildren.get(index)
     if (oldChild) {
-      bitmapOps.setFlag(oldChild, FLAG.UPDATE)
+      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props.children = newChild
       return oldChild
     } else {
       const n = Fragment({ children: newChild })
       n.parent = parent
       n.depth = parent.depth + 1
-      bitmapOps.setFlag(n, FLAG.PLACEMENT)
+      n.flags = flags.set(n.flags, FLAG.PLACEMENT)
       n.index = index
       return n
     }

@@ -1,4 +1,4 @@
-import { bitmapOps } from "./bitmap.js"
+import { flags } from "./flags.js"
 import { FLAG } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
@@ -120,20 +120,20 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       if (!this.mounted || !this.rootNode) return
       vNode = this.rootNode
     }
-    if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) return
+    if (flags.get(vNode.flags, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        !bitmapOps.isFlagSet(vNode, FLAG.DELETION) && s.queueUpdate(vNode)
+        !flags.get(vNode.flags, FLAG.DELETION) && s.queueUpdate(vNode)
       })
     }
     this.scheduler?.queueUpdate(vNode)
   }
 
   requestDelete(vNode: VNode) {
-    if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) return
+    if (flags.get(vNode.flags, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
-        !bitmapOps.isFlagSet(vNode, FLAG.DELETION) && s.queueDelete(vNode)
+        !flags.get(vNode.flags, FLAG.DELETION) && s.queueDelete(vNode)
       })
     }
     this.scheduler?.queueDelete(vNode)

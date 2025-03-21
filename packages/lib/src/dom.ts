@@ -16,7 +16,7 @@ import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
-import { bitmapOps } from "./bitmap.js"
+import { flags } from "./flags.js"
 import type {
   DomVNode,
   ElementVNode,
@@ -511,7 +511,7 @@ function commitWork(vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
   }
-  if (bitmapOps.isFlagSet(vNode, FLAG.DELETION)) {
+  if (flags.get(vNode.flags, FLAG.DELETION)) {
     return commitDeletion(vNode)
   }
   handlePrePlacementFocusPersistence()
@@ -548,7 +548,7 @@ function commitWork(vNode: VNode) {
           // prevent scope applying to descendants of this element node
           currentPlacementScope.active = false
         }
-      } else if (bitmapOps.isFlagSet(node, FLAG.PLACEMENT)) {
+      } else if (flags.get(node.flags, FLAG.PLACEMENT)) {
         currentPlacementScope = { parent: node, active: true }
         placementScopes.push(currentPlacementScope)
       }
@@ -560,7 +560,7 @@ function commitWork(vNode: VNode) {
         currentPlacementScope.active = true
         inheritsPlacement = true
       }
-      if (bitmapOps.isFlagSet(node, FLAG.DELETION)) {
+      if (flags.get(node.flags, FLAG.DELETION)) {
         return commitDeletion(node)
       }
       if (node.dom) {
@@ -592,12 +592,12 @@ function commitDom(
   if (
     inheritsPlacement ||
     !vNode.dom.isConnected ||
-    bitmapOps.isFlagSet(vNode, FLAG.PLACEMENT)
+    flags.get(vNode.flags, FLAG.PLACEMENT)
   ) {
     const parent = hostNode?.node ?? getDomParent(vNode)
     placeDom(vNode, parent, hostNode?.lastChild?.dom)
   }
-  if (!vNode.prev || bitmapOps.isFlagSet(vNode, FLAG.UPDATE)) {
+  if (!vNode.prev || flags.get(vNode.flags, FLAG.UPDATE)) {
     updateDom(vNode)
   }
   if (hostNode) {
