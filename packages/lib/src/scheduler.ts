@@ -62,9 +62,12 @@ export class Scheduler {
     this.sleep()
   }
 
-  wake() {
+  wake(immediate?: boolean) {
     if (this.isRunning) return
     this.isRunning = true
+    if (immediate) {
+      return this.workLoop()
+    }
     this.requestIdleCallback(this.workLoop.bind(this))
   }
 
@@ -76,12 +79,12 @@ export class Scheduler {
     }
   }
 
-  nextIdle(fn: (scheduler: this) => void) {
+  nextIdle(fn: (scheduler: this) => void, wakeUpIfIdle = true) {
     this.nextIdleEffects.push(fn)
-    this.wake()
+    if (wakeUpIfIdle) this.wake()
   }
 
-  queueUpdate(vNode: VNode) {
+  queueUpdate(vNode: VNode, immediate?: boolean) {
     if (vNode.prev?.memoizedProps) {
       delete vNode.prev.memoizedProps
     }
@@ -101,7 +104,7 @@ export class Scheduler {
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
-      return this.wake()
+      return this.wake(immediate)
     }
 
     const treeIdx = this.treesInProgress.indexOf(vNode)
@@ -191,26 +194,23 @@ export class Scheduler {
 
   private workLoop(deadline?: IdleDeadline): void {
     ctx.current = this.appCtx
-    let shouldYield = false
-    while (this.nextUnitOfWork && !shouldYield) {
+    while (this.nextUnitOfWork) {
       this.nextUnitOfWork =
         this.performUnitOfWork(this.nextUnitOfWork) ??
         this.treesInProgress[++this.currentTreeIndex]
 
-      shouldYield =
-        (deadline && deadline.timeRemaining() < 1) ??
-        (!deadline && !this.nextUnitOfWork)
+      if ((deadline?.timeRemaining() ?? 1) < 1) break
     }
 
     if (this.isFlushReady()) {
       while (this.deletions.length) {
         commitWork(this.deletions.shift()!)
       }
-      const tip = [...this.treesInProgress]
+      const treesInProgress = [...this.treesInProgress]
       this.treesInProgress = []
       this.currentTreeIndex = 0
-      for (const t of tip) {
-        commitWork(t)
+      for (const tree of treesInProgress) {
+        commitWork(tree)
       }
 
       this.isImmediateEffectsMode = true

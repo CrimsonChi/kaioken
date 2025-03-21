@@ -48,9 +48,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     return new Promise<AppContext<T>>((resolve) => {
       if (this.mounted) return resolve(this)
       this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
-      if (renderMode.current === "hydrate") {
-        hydrationStack.captureEvents(this.root!, this.scheduler)
-      }
       const appNode = createElement(this.appFunc, this.appProps as T)
       this.rootNode = createElement(
         this.root!.nodeName.toLowerCase(),
@@ -66,12 +63,18 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       }
 
       this.rootNode.dom = this.root
-      this.scheduler.queueUpdate(this.rootNode)
+      if (renderMode.current === "hydrate") {
+        hydrationStack.captureEvents(this.root!)
+      }
       this.scheduler.nextIdle(() => {
+        if (renderMode.current === "hydrate") {
+          hydrationStack.releaseEvents(this.root!)
+        }
         this.mounted = true
         window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)
-      })
+      }, false)
+      this.scheduler.queueUpdate(this.rootNode, true)
     })
   }
 
