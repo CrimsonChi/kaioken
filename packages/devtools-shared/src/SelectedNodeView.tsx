@@ -1,4 +1,5 @@
 import { AppContext, useEffect, useMemo, useRequestUpdate } from "kaioken"
+import { isVNodeDeleted } from "kaioken/utils"
 import {
   applyObjectChangeFromKeys,
   getComponentFileLink,
@@ -8,8 +9,6 @@ import { NodeDataSection } from "./NodeDataSection"
 import { RefreshIcon } from "./RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
 import { ExternalLinkIcon } from "./ExternalLinkIcon"
-import { FLAG } from "../../lib/dist/constants"
-import { bitmapOps } from "../../lib/dist/bitmap"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
@@ -29,7 +28,7 @@ export function SelectedNodeView({
   useEffect(() => {
     const handleUpdate = (appCtx: AppContext) => {
       if (appCtx !== selectedApp) return
-      if (bitmapOps.isFlagSet(selectedNode, FLAG.DELETION)) {
+      if (isVNodeDeleted(selectedNode)) {
         setSelectedNode(null)
       } else {
         requestUpdate()
