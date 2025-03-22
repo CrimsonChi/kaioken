@@ -10,7 +10,8 @@ import type {
   SvgGlobalAttributes,
   StyleObject,
 } from "./types.dom"
-import { SomeDom } from "./types.utils"
+import type { SomeDom } from "./types.utils"
+import type { Renderer } from "./renderer"
 
 export type { ElementProps, StyleObject }
 
@@ -204,6 +205,7 @@ declare global {
       prevStyleObj?: StyleObject
       hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
+      renderer?: Renderer<any>
     }
   }
 }

@@ -6,6 +6,7 @@ import { renderMode } from "./globals.js"
 import { __DEV__ } from "./env.js"
 import { flags } from "./flags.js"
 import type { DomVNode, ElementVNode, MaybeDom, SomeDom } from "./types.utils"
+import type { AppContext } from "./appContext.js"
 export type RendererNodeTypes = {
   parent: any
   child: any
@@ -47,10 +48,12 @@ type PlacementScope = {
   child?: VNode
 }
 
-export function commitWork(renderer: Renderer<any>, vNode: VNode) {
+export function commitWork(appCtx: AppContext, vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
   }
+  let renderer = appCtx.renderer
+
   if (flags.get(vNode.flags, FLAG.DELETION)) {
     return commitDeletion(renderer, vNode)
   }
@@ -63,6 +66,10 @@ export function commitWork(renderer: Renderer<any>, vNode: VNode) {
 
   postOrderApply(vNode, {
     onDescent: (node) => {
+      if (node.renderer) {
+        appCtx.renderers.push(node.renderer)
+        renderer = appCtx.renderer
+      }
       if (!node.child) return
       if (node.dom) {
         // collect host nodes as we go
@@ -101,6 +108,10 @@ export function commitWork(renderer: Renderer<any>, vNode: VNode) {
       commitSnapshot(node)
     },
     onBeforeAscent(node) {
+      if (node.renderer) {
+        appCtx.renderers.pop()
+        renderer = appCtx.renderer
+      }
       if (currentPlacementScope?.parent === node) {
         placementScopes.pop()
         currentPlacementScope = placementScopes[placementScopes.length - 1]

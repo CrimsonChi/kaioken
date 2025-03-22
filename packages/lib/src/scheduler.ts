@@ -32,10 +32,10 @@ export class Scheduler {
     post: [] as Function[],
   }
   private maxFrameMs = 50
-  private tick =
-    "requestAnimationFrame" in globalThis
-      ? globalThis.requestAnimationFrame
-      : globalThis.setTimeout
+  private tick = ("requestAnimationFrame" in globalThis
+    ? globalThis.requestAnimationFrame
+    : globalThis.setTimeout
+  ).bind(globalThis)
 
   constructor(private appCtx: AppContext<any>) {
     if (appCtx.options?.maxFrameMs) {
@@ -207,13 +207,13 @@ export class Scheduler {
 
     if (this.isFlushReady()) {
       while (this.deletions.length) {
-        commitWork(this.appCtx.renderer, this.deletions.shift()!)
+        commitWork(this.appCtx, this.deletions.shift()!)
       }
       const treesInProgress = [...this.treesInProgress]
       this.treesInProgress = []
       this.currentTreeIndex = 0
       for (const tree of treesInProgress) {
-        commitWork(this.appCtx.renderer, tree)
+        commitWork(this.appCtx, tree)
       }
 
       this.isImmediateEffectsMode = true
@@ -257,6 +257,7 @@ export class Scheduler {
 
   private performUnitOfWork(vNode: VNode): VNode | void {
     let preventRenderFurther = false
+
     doWork: try {
       const { type, props } = vNode
       if (typeof type === "function") {
@@ -274,6 +275,9 @@ export class Scheduler {
           }
         }
         this.updateFunctionComponent(vNode as FunctionVNode)
+        if (vNode.renderer) {
+          this.appCtx.renderers.push(vNode.renderer)
+        }
       } else if (isExoticVNode(vNode)) {
         vNode.child =
           reconcileChildren(
@@ -328,6 +332,9 @@ export class Scheduler {
       }
 
       nextNode = nextNode.parent
+      if (nextNode?.renderer) {
+        this.appCtx.renderers.pop()
+      }
       if (renderMode.current === "hydrate" && nextNode?.dom) {
         ctx.current.renderer.onUpdateTraversalAscend()
       }

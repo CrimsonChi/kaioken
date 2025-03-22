@@ -6,6 +6,7 @@ import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { Scheduler } from "./scheduler.js"
 import createDomRenderer from "./renderer.dom.js"
+import { Renderer } from "./renderer.js"
 
 type VNode = Kaioken.VNode
 
@@ -33,7 +34,10 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   hookIndex = 0
   root?: HTMLElement
   mounted = false
-  renderer: ReturnType<typeof createDomRenderer>
+  renderers: Renderer<any>[] = []
+  get renderer() {
+    return this.renderers[this.renderers.length - 1]
+  }
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
@@ -43,7 +47,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     this.id = appCounter++
     this.name = options?.name ?? "App-" + this.id
     this.root = options?.root
-    this.renderer = createDomRenderer()
+    this.renderers = [createDomRenderer()]
   }
 
   mount() {
