@@ -1,5 +1,4 @@
 import type { AppContext, AppContextOptions } from "../appContext"
-import { hydrationStack } from "../hydration.js"
 import { renderMode } from "../globals.js"
 import { mount } from "../index.js"
 
@@ -20,7 +19,6 @@ export function hydrate<T extends Record<string, unknown>>(
   optionsOrRoot: HTMLElement | AppContextOptions,
   appProps = {} as T
 ) {
-  hydrationStack.clear()
   const prevRenderMode = renderMode.current
   renderMode.current = "hydrate"
   return new Promise((resolve) => {

@@ -206,8 +206,4 @@ declare global {
       memoizedProps?: Record<string, any>
     }
   }
-
-  interface Element {
-    __kaiokenNode?: Kaioken.VNode
-  }
 }

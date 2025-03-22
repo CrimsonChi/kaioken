@@ -34,6 +34,7 @@ export {
   svgTags,
   booleanAttributes,
   safeStringify,
+  getCurrentRenderMode,
 }
 
 type VNode = Kaioken.VNode
@@ -52,6 +53,10 @@ function latest<T>(thing: T): T {
     }
   }
   return tgt
+}
+
+function getCurrentRenderMode(): Kaioken.RenderMode {
+  return renderMode.current
 }
 
 /**

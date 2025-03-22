@@ -4,8 +4,8 @@ import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
-import { hydrationStack } from "./hydration.js"
 import { Scheduler } from "./scheduler.js"
+import createDomRenderer from "./renderer.dom.js"
 
 type VNode = Kaioken.VNode
 
@@ -33,6 +33,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   hookIndex = 0
   root?: HTMLElement
   mounted = false
+  renderer: ReturnType<typeof createDomRenderer>
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
@@ -42,34 +43,23 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     this.id = appCounter++
     this.name = options?.name ?? "App-" + this.id
     this.root = options?.root
+    this.renderer = createDomRenderer()
   }
 
   mount() {
     return new Promise<AppContext<T>>((resolve) => {
       if (this.mounted) return resolve(this)
-      this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
-      const appNode = createElement(this.appFunc, this.appProps as T)
-      this.rootNode = createElement(
-        this.root!.nodeName.toLowerCase(),
-        {},
-        appNode
-      )
-      this.rootNode.depth = 0
-      appNode.depth = 1
-      if (__DEV__) {
-        if (this.root) {
-          this.root.__kaiokenNode = this.rootNode
-        }
-      }
 
-      this.rootNode.dom = this.root
-      if (renderMode.current === "hydrate") {
-        hydrationStack.captureEvents(this.root!)
-      }
+      const root = this.root
+      if (!root) throw new KaiokenError("No root element provided")
+      this.scheduler = new Scheduler(this)
+      this.rootNode = this.renderer.createRoot(
+        root,
+        createElement(this.appFunc, this.appProps as T)
+      )
+
       this.scheduler.nextIdle(() => {
-        if (renderMode.current === "hydrate") {
-          hydrationStack.releaseEvents(this.root!)
-        }
+        this.renderer.onRootMounted(root)
         this.mounted = true
         window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)

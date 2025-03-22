@@ -2,14 +2,16 @@ import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { useVNode } from "./hooks/utils.js"
-import { getVNodeAppContext, isVNode } from "./utils.js"
+import { getVNodeAppContext } from "./utils.js"
 
-export { Portal, isPortal }
+export { Portal, isPortalRoot }
 
 type PortalProps = {
   children?: JSX.Children
   container: HTMLElement | (() => HTMLElement)
 }
+
+const $PORTAL_ROOT = Symbol.for("kaioken:portal-root")
 
 function Portal({ children, container }: PortalProps) {
   const vNode = useVNode()
@@ -25,6 +27,7 @@ function Portal({ children, container }: PortalProps) {
         }
         return null
       }
+      Object.assign(vNode.dom, { [$PORTAL_ROOT]: true })
       return children
     case "hydrate":
       const ctx = getVNodeAppContext(vNode)
@@ -36,8 +39,8 @@ function Portal({ children, container }: PortalProps) {
   }
 }
 
-function isPortal(
+function isPortalRoot(
   thing: unknown
-): thing is Kaioken.VNode & { type: typeof Portal } {
-  return isVNode(thing) && thing.type === Portal
+): thing is HTMLElement & { [$PORTAL_ROOT]: true } {
+  return !!thing && thing instanceof HTMLElement && $PORTAL_ROOT in thing
 }

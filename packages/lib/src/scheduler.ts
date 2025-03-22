@@ -2,12 +2,10 @@ import type { AppContext } from "./appContext"
 import type { FunctionVNode } from "./types.utils"
 import { flags } from "./flags.js"
 import { $MEMO, CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
-import { commitWork, createDom, hydrateDom } from "./dom.js"
+import { commitWork } from "./renderer.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
-import { hydrationStack } from "./hydration.js"
-import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { isExoticVNode, latest, traverseApply, vNodeContains } from "./utils.js"
 import { isMemoFn } from "./memo.js"
@@ -33,11 +31,12 @@ export class Scheduler {
     pre: [] as Function[],
     post: [] as Function[],
   }
+  private maxFrameMs = 50
 
-  constructor(
-    private appCtx: AppContext<any>,
-    private maxFrameMs = 50
-  ) {
+  constructor(private appCtx: AppContext<any>) {
+    if (appCtx.options?.maxFrameMs) {
+      this.maxFrameMs = appCtx.options.maxFrameMs
+    }
     const timeRemaining = () => this.frameDeadline - window.performance.now()
     const deadline = {
       didTimeout: false,
@@ -204,13 +203,13 @@ export class Scheduler {
 
     if (this.isFlushReady()) {
       while (this.deletions.length) {
-        commitWork(this.deletions.shift()!)
+        commitWork(this.appCtx.renderer, this.deletions.shift()!)
       }
       const treesInProgress = [...this.treesInProgress]
       this.treesInProgress = []
       this.currentTreeIndex = 0
       for (const tree of treesInProgress) {
-        commitWork(tree)
+        commitWork(this.appCtx.renderer, tree)
       }
 
       this.isImmediateEffectsMode = true
@@ -302,9 +301,6 @@ export class Scheduler {
       })
     }
     if (vNode.child && !preventRenderFurther) {
-      if (renderMode.current === "hydrate" && vNode.dom) {
-        hydrationStack.push(vNode.dom)
-      }
       return vNode.child
     }
 
@@ -326,7 +322,7 @@ export class Scheduler {
 
       nextNode = nextNode.parent
       if (renderMode.current === "hydrate" && nextNode?.dom) {
-        hydrationStack.pop()
+        ctx.current.renderer.onUpdateTraversalAscend()
       }
     }
   }
@@ -368,21 +364,10 @@ export class Scheduler {
 
   private updateHostComponent(vNode: VNode) {
     try {
+      const renderer = ctx.current.renderer
       node.current = vNode
-      assertValidElementProps(vNode)
-      if (!vNode.dom) {
-        if (renderMode.current === "hydrate") {
-          hydrateDom(vNode)
-        } else {
-          vNode.dom = createDom(vNode)
-        }
-      }
-
-      if (vNode.dom) {
-        // @ts-expect-error we apply vNode to the dom node
-        vNode.dom!.__kaiokenNode = vNode
-      }
-
+      renderer.validateProps(vNode)
+      vNode.dom ??= renderer.createElement(vNode)
       vNode.child =
         reconcileChildren(
           this.appCtx,
