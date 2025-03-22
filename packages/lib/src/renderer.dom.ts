@@ -233,6 +233,9 @@ export default function createRenderer(): Renderer<DomRendererNodeTypes> {
     shouldSearchChildrenForSibling(vNode) {
       return !isPortalRoot(vNode.dom)
     },
+    canBeCommitted(vNode) {
+      return !isPortalRoot(vNode.dom)
+    },
     createRoot(container, children) {
       const root = createElement(container.nodeName.toLowerCase(), {}, children)
       root.dom = container
@@ -295,16 +298,16 @@ export default function createRenderer(): Renderer<DomRendererNodeTypes> {
       return parentNode
     },
     isValidParent(element): element is HTMLElement | SVGElement {
-      return (
-        //element.isConnected &&
-        element instanceof Element || element instanceof SVGElement
-      )
+      return element instanceof Element || element instanceof SVGElement
+    },
+    isParentEmpty(element) {
+      return element.children.length === 0
     },
     canInsertAfter(element) {
       return element.isConnected
     },
     elementRequiresPlacement(vNode) {
-      return (!vNode.dom || !vNode.dom.isConnected) && !isPortalRoot(vNode.dom)
+      return !vNode.dom!.isConnected
     },
     updateElement,
     validateProps(vNode) {

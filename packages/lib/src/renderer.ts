@@ -18,9 +18,11 @@ export type Renderer<T extends RendererNodeTypes> = {
   onRemove(vNode: Kaioken.VNode): void
   insertAfter(parent: T["parent"], prev: T["child"], element: T["child"]): void
   isValidParent(element: T["child"]): boolean
+  isParentEmpty(element: T["parent"]): boolean
   getMountableParent(vNode: Kaioken.VNode): Kaioken.VNode
   canInsertAfter(element: T["child"]): boolean
   shouldSearchChildrenForSibling: (vNode: Kaioken.VNode) => boolean
+  canBeCommitted(vNode: Kaioken.VNode): boolean
   elementRequiresPlacement(vNode: Kaioken.VNode): boolean
   updateElement(
     vNode: Kaioken.VNode,
@@ -136,7 +138,7 @@ function placeDom(
   if (prevSiblingDom) {
     return renderer.insertAfter(mntParent.dom, prevSiblingDom, dom)
   }
-  if (mntParent.dom?.childNodes.length === 0) {
+  if (renderer.isParentEmpty(mntParent.dom)) {
     return renderer.appendChild(mntParent.dom, dom)
   }
   /**
@@ -215,6 +217,7 @@ function commitDom(
   hostNode: HostNode | undefined,
   inheritsPlacement: boolean
 ) {
+  if (!renderer.canBeCommitted(vNode)) return
   if (
     inheritsPlacement ||
     renderer.elementRequiresPlacement(vNode) ||
