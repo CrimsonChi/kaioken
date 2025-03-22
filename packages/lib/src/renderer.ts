@@ -6,12 +6,12 @@ import { renderMode } from "./globals.js"
 import { __DEV__ } from "./env.js"
 import { flags } from "./flags.js"
 import type { DomVNode, ElementVNode, MaybeDom, SomeDom } from "./types.utils"
-type RendererNodeTypes = {
+export type RendererNodeTypes = {
   parent: any
   child: any
 }
 
-export interface Renderer<T extends RendererNodeTypes> {
+export type Renderer<T extends RendererNodeTypes> = {
   appendChild(parent: T["parent"], element: T["child"]): void
   prependChild(parent: T["parent"], element: T["child"]): void
   onRemove(vNode: Kaioken.VNode): void
@@ -20,6 +20,7 @@ export interface Renderer<T extends RendererNodeTypes> {
   getMountableParent(vNode: Kaioken.VNode): Kaioken.VNode
   canInsertAfter(element: T["child"]): boolean
   shouldSearchChildrenForSibling: (vNode: Kaioken.VNode) => boolean
+  elementRequiresPlacement(vNode: Kaioken.VNode): boolean
   updateElement(
     vNode: Kaioken.VNode,
     prevProps: Record<string, any>,
@@ -205,7 +206,7 @@ function commitDom(
 ) {
   if (
     inheritsPlacement ||
-    !vNode.dom.isConnected ||
+    renderer.elementRequiresPlacement(vNode) ||
     flags.get(vNode.flags, FLAG.PLACEMENT)
   ) {
     const parent = hostNode?.node ?? renderer.getMountableParent(vNode)

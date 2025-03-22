@@ -297,6 +297,9 @@ export default function createRenderer(): Renderer<DomRendererNodeTypes> {
     canInsertAfter(element) {
       return element.isConnected
     },
+    elementRequiresPlacement(vNode) {
+      return (!vNode.dom || !vNode.dom.isConnected) && !isPortalRoot(vNode.dom)
+    },
     updateElement,
     validateProps(vNode) {
       if ("children" in vNode.props && vNode.props.innerHTML) {
