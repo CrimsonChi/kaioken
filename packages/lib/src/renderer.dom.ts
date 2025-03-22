@@ -251,13 +251,13 @@ export default function createRenderer(): Renderer<DomRendererNodeTypes> {
       let dom
       if (getCurrentRenderMode() === "dom") {
         const t = vNode.type as string
-        dom =
-          t == ELEMENT_TYPE.text
-            ? createTextNode(vNode)
-            : svgTags.includes(t)
-              ? document.createElementNS("http://www.w3.org/2000/svg", t)
-              : document.createElement(t)
-        return dom
+        if (t === ELEMENT_TYPE.text) {
+          dom = createTextNode(vNode)
+        } else if (svgTags.includes(t)) {
+          dom = document.createElementNS("http://www.w3.org/2000/svg", t)
+        } else {
+          dom = document.createElement(t)
+        }
       } else {
         hydrateDom(vNode)
         dom = vNode.dom!
