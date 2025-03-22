@@ -9,6 +9,7 @@ import {
   useVNode,
   type Renderer,
 } from "kaioken"
+import { reactiveArray } from "./reactiveArray"
 
 export const Canvas = {
   Root: CanvasRoot,
@@ -55,6 +56,8 @@ type CanvasRendererNodeTypes = {
 }
 
 const $CUSTOM_CANVAS_ELEMENT = Symbol.for("customCanvasElement")
+const FPS_PADDING_Y = 16
+const FPS_PADDING_X = 24
 
 const useImmediateOnce = (cb: () => void) => {
   const hasRun = useRef(false)
@@ -135,6 +138,7 @@ enum MouseDownState {
 }
 
 function createCanvasRenderer(): CanvasRenderer {
+  let options: CanvasRendererOptions | undefined
   let canvas: HTMLCanvasElement | null = null
   let ctx: CanvasRenderingContext2D | null = null
   let id = 0
@@ -159,7 +163,7 @@ function createCanvasRenderer(): CanvasRenderer {
     }
   >()
 
-  const elements: Array<CanvasElement> = []
+  const elements: CanvasElement[] = reactiveArray(() => render())
   const cleanups: Array<() => void> = []
 
   const eventLoopTick = () => {
@@ -256,14 +260,39 @@ function createCanvasRenderer(): CanvasRenderer {
     cleanups.push(() => canvas.removeEventListener("mouseup", handleMouseUp))
   }
 
-  function clearCanvas() {
-    ctx?.clearRect(0, 0, canvas?.width || 0, canvas?.height || 0)
+  let lastTick = -1
+  const tickTimes: number[] = []
+  function drawFps(c: CanvasRenderingContext2D) {
+    const delta = performance.now() - lastTick
+    lastTick = performance.now()
+    tickTimes.push(delta)
+    if (tickTimes.length > 10) tickTimes.shift()
+    const avg = tickTimes.reduce((a, b) => a + b, 0) / tickTimes.length
+
+    c.save()
+    c.font = "12px monospace"
+    const txt = `fps: ${Math.round(1000 / avg)}`
+    const width = c.measureText(txt).width + FPS_PADDING_X
+    const height = 12 + FPS_PADDING_Y
+
+    const x = window.innerWidth - width - 4,
+      y = window.innerHeight - height - 4
+
+    c.fillStyle = "#000a"
+    c.beginPath()
+    c.roundRect(x, y, width, height, 6)
+    c.fill()
+    c.textBaseline = "top"
+    c.fillStyle = "white"
+    c.fillText(txt, x + FPS_PADDING_X / 2, y + FPS_PADDING_Y / 2)
+
+    c.restore()
   }
 
   const render = createThrottled(() => {
-    clearCanvas()
     const c = ctx
     if (!c) return
+    c.clearRect(0, 0, canvas!.width || 0, canvas!.height || 0)
     elements.forEach(
       ({ pos: _pos, shape: _shape, color: _color, stroke: _stroke }) => {
         const pos = unwrap(_pos)
@@ -297,6 +326,7 @@ function createCanvasRenderer(): CanvasRenderer {
         c.restore()
       }
     )
+    if (options?.showFps) drawFps(c)
     eventLoopTick()
   }, 1000 / 60)
 
@@ -341,9 +371,10 @@ function createCanvasRenderer(): CanvasRenderer {
   }
 
   return {
-    init(cvs: HTMLCanvasElement) {
-      canvas = cvs
-      ctx = cvs.getContext("2d")
+    init(_canvas, _options) {
+      canvas = _canvas
+      ctx = canvas.getContext("2d")
+      options = _options
       initMouseEvents(canvas)
       render()
     },
@@ -352,20 +383,16 @@ function createCanvasRenderer(): CanvasRenderer {
     },
     appendChild(_, element) {
       elements.push(element)
-      render()
     },
     prependChild(_, element) {
       elements.unshift(element)
-      render()
     },
     onRemove(vNode) {
       elements.splice(elements.indexOf(vNode.dom as any as CanvasElement), 1)
-      render()
     },
     insertAfter(_, prev, element) {
       const index = elements.indexOf(prev as any as CanvasElement)
       elements.splice(index + 1, 0, element)
-      render()
     },
     isParentEmpty() {
       return elements.length === 0

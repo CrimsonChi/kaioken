@@ -14,14 +14,15 @@ const HALF_BOX_HEIGHT = BOX_HEIGHT / 2
 
 export function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const isMouseDown = useSignal(false)
+  const isMouseOver = useSignal(false)
+  const vel = useSignal({ x: 2, y: 2 })
   const pos = useSignal({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
   })
-  const vel = useSignal({ x: 2, y: 2 })
   const hue = useSignal(50)
-  const isMouseDown = useSignal(false)
-  const isMouseOver = useSignal(false)
+  const color = useComputed(() => `hsl(${hue.value}, 100%, 50%)`)
   const stroke = useComputed<CanvasElementStroke | undefined>(() => {
     const mDown = isMouseDown.value,
       mOver = isMouseOver.value
@@ -69,6 +70,7 @@ export function App() {
   return (
     <div>
       <Canvas.Root
+        options={{ showFps: true }}
         oncontextmenu={(e) => e.preventDefault()}
         onMounted={(canvas) => {
           canvasRef.current = canvas
@@ -82,9 +84,7 @@ export function App() {
           onMouseUp={() => (isMouseDown.value = false)}
           onMouseOver={() => (isMouseOver.value = true)}
           onMouseOut={() => (isMouseOver.value = false)}
-          stroke={stroke}
-          color={`hsl(${hue}, 100%, 50%)`}
-          pos={pos}
+          {...{ stroke, color, pos }}
           shape={{ type: "rect", width: BOX_WIDTH, height: BOX_HEIGHT }}
           //shape={{ type: "circle", radius: BOX_HEIGHT / 2 }}
         />
