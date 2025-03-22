@@ -216,11 +216,14 @@ export default function createRenderer(): Renderer<DomRendererNodeTypes> {
     },
     onRemove(vNode) {
       if (vNode.dom) {
-        if (vNode.props.ref)
+        if (vNode.props.ref) {
           setDomRef(vNode.props.ref as Kaioken.Ref<SomeDom>, null)
+        }
 
-        if (vNode.dom.isConnected && !isPortalRoot(vNode.dom))
+        if (vNode.dom.isConnected && !isPortalRoot(vNode.dom)) {
           vNode.dom.remove()
+        }
+
         delete vNode.dom
       }
     },
@@ -261,6 +264,9 @@ export default function createRenderer(): Renderer<DomRendererNodeTypes> {
       } else {
         hydrateDom(vNode)
         dom = vNode.dom!
+      }
+      if (vNode.props.ref) {
+        setDomRef(vNode.props.ref as Kaioken.Ref<SomeDom>, dom)
       }
       // @ts-ignore
       dom.__kaiokenNode = vNode
