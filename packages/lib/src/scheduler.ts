@@ -32,6 +32,10 @@ export class Scheduler {
     post: [] as Function[],
   }
   private maxFrameMs = 50
+  private tick =
+    "requestAnimationFrame" in globalThis
+      ? globalThis.requestAnimationFrame
+      : globalThis.setTimeout
 
   constructor(private appCtx: AppContext<any>) {
     if (appCtx.options?.maxFrameMs) {
@@ -241,8 +245,11 @@ export class Scheduler {
   }
 
   private requestIdleCallback(callback: IdleRequestCallback) {
-    this.frameHandle = globalThis.requestAnimationFrame((time) => {
-      this.frameDeadline = time + this.maxFrameMs
+    this.frameHandle = this.tick((time) => {
+      this.frameDeadline =
+        "requestAnimationFrame" in globalThis
+          ? time + this.maxFrameMs
+          : this.maxFrameMs
       this.pendingCallback = callback
       this.channel.port1.postMessage(null)
     })
