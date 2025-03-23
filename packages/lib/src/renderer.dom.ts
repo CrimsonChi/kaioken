@@ -13,7 +13,7 @@ import { unwrap } from "./signals/utils.js"
 import { Signal } from "./signals/base.js"
 import { isPortalRoot } from "./portal.js"
 import { KaiokenError } from "./error.js"
-import { createElement } from "./element"
+import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 
 type WrappedFocusEventMap = {
