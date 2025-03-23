@@ -54,10 +54,10 @@ export function commitWork(appCtx: AppContext, vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
   }
-  let renderer = appCtx.renderer
+  const renderer = vNode.renderer ?? appCtx.renderer
 
   if (flags.get(vNode.flags, FLAG.DELETION)) {
-    return commitDeletion(renderer, vNode)
+    return commitDeletion(appCtx, vNode)
   }
   renderer.onBeforeCommit()
 
@@ -68,16 +68,15 @@ export function commitWork(appCtx: AppContext, vNode: VNode) {
 
   postOrderApply(vNode, {
     onDescent: (node) => {
-      if (node.renderer) {
-        appCtx.renderers.push(node.renderer)
-        renderer = appCtx.renderer
-      }
       if (!node.child) return
+      if (node.renderer) {
+        node.renderer.onBeforeCommit()
+      }
       if (node.dom) {
         // collect host nodes as we go
         currentHostNode = { node: node as ElementVNode }
         hostNodes.push(currentHostNode)
-        renderer.onCommitTraversalDescend(node)
+        ;(node.renderer ?? renderer).onCommitTraversalDescend(node)
 
         if (currentPlacementScope?.active) {
           currentPlacementScope.child = node
@@ -96,10 +95,12 @@ export function commitWork(appCtx: AppContext, vNode: VNode) {
         currentPlacementScope.active = true
         inheritsPlacement = true
       }
+      const renderer = node.renderer ?? appCtx.renderer
       if (flags.get(node.flags, FLAG.DELETION)) {
-        return commitDeletion(renderer, node)
+        return commitDeletion(appCtx, node)
       }
-      if (node.dom) {
+      // if (node === appCtx.rootNode) debugger
+      if (node.dom && renderer.canBeCommitted(node)) {
         commitDom(
           renderer,
           node as DomVNode,
@@ -111,8 +112,7 @@ export function commitWork(appCtx: AppContext, vNode: VNode) {
     },
     onBeforeAscent(node) {
       if (node.renderer) {
-        appCtx.renderers.pop()
-        renderer = appCtx.renderer
+        node.renderer.onAfterCommit()
       }
       if (currentPlacementScope?.parent === node) {
         placementScopes.pop()
@@ -217,7 +217,6 @@ function commitDom(
   hostNode: HostNode | undefined,
   inheritsPlacement: boolean
 ) {
-  if (!renderer.canBeCommitted(vNode)) return
   if (
     inheritsPlacement ||
     renderer.elementRequiresPlacement(vNode) ||
@@ -234,7 +233,7 @@ function commitDom(
   }
 }
 
-function commitDeletion(renderer: Renderer<any>, vNode: VNode) {
+function commitDeletion(appCtx: AppContext, vNode: VNode) {
   if (vNode === vNode.parent?.child) {
     vNode.parent.child = vNode.sibling
   }
@@ -243,6 +242,7 @@ function commitDeletion(renderer: Renderer<any>, vNode: VNode) {
     while (hooks?.length) cleanupHook(hooks.pop()!)
     while (subs?.length) Signal.unsubscribe(node, subs.pop()!)
     if (cleanups) Object.values(cleanups).forEach((c) => c())
-    renderer.onRemove(node)
+    const _renderer = node.renderer ?? appCtx.renderer
+    _renderer.onRemove(node)
   })
 }

@@ -1,15 +1,16 @@
 import {
+  createContext,
   createElement,
   ElementProps,
   Signal,
   unwrap,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
   useVNode,
   type Renderer,
 } from "kaioken"
-import { reactiveArray } from "./reactiveArray"
 
 export const Canvas = {
   Root: CanvasRoot,
@@ -49,7 +50,7 @@ type CanvasElement = {
   onMouseDown?: (e: Event) => void
   onMouseUp?: (e: Event) => void
 }
-type CanvasElementProps = Omit<CanvasElement, "id">
+export type CanvasElementProps = Omit<CanvasElement, "id">
 
 type CanvasRendererNodeTypes = {
   parent: CanvasElement
@@ -59,14 +60,6 @@ type CanvasRendererNodeTypes = {
 const $CUSTOM_CANVAS_ELEMENT = Symbol.for("customCanvasElement")
 const FPS_PADDING_Y = 16
 const FPS_PADDING_X = 24
-
-const useImmediateOnce = (cb: () => void) => {
-  const hasRun = useRef(false)
-  if (!hasRun.current) {
-    hasRun.current = true
-    cb()
-  }
-}
 
 type CanvasRendererOptions = {
   showFps?: boolean
@@ -93,25 +86,31 @@ function CanvasRoot({
   )
 }
 
+const CanvasRendererContext = createContext<CanvasRenderer>(null as any)
+const useCanvasRenderer = () => useContext(CanvasRendererContext)
+
 const CanvasRenderer: Kaioken.FC<{
   canvasRef: Kaioken.RefObject<HTMLCanvasElement>
   options?: CanvasRendererOptions
 }> = ({ children, canvasRef, options }) => {
   const vNode = useVNode()
-  useImmediateOnce(() => {
-    vNode.renderer = createCanvasRenderer()
-  })
+  vNode.renderer ??= vNode.prev?.renderer ?? createCanvasRenderer()
   useLayoutEffect(() => {
     const renderer = vNode.renderer as CanvasRenderer
     renderer.init(canvasRef.current!, options)
     return () => renderer.dispose()
-  }, [])
-  return children
+  }, [children])
+  return (
+    <CanvasRendererContext.Provider value={vNode.renderer as any}>
+      {children}
+    </CanvasRendererContext.Provider>
+  )
 }
 
 function CanvasBox(props: CanvasElementProps) {
   const el = createElement($CUSTOM_CANVAS_ELEMENT as any, { cfg: props })
   el.dom = $CUSTOM_CANVAS_ELEMENT as any
+  el.renderer = useCanvasRenderer()
   return el
 }
 
@@ -120,10 +119,20 @@ function createThrottled<T extends (...args: any) => void>(
   delay: number
 ) {
   let timeout: number | null = null
+  let queuedArgs: any
   return ((...args: any) => {
-    if (timeout) return
+    if (timeout) {
+      queuedArgs = args
+      return
+    }
     fn(...args)
-    timeout = window.setTimeout(() => (timeout = null), delay)
+    timeout = window.setTimeout(() => {
+      timeout = null
+      if (queuedArgs) {
+        fn(...queuedArgs)
+        queuedArgs = null
+      }
+    }, delay)
   }) as T
 }
 
@@ -138,11 +147,22 @@ enum MouseDownState {
   Clicked,
 }
 
+type CanvasRendererState = {
+  options?: CanvasRendererOptions
+  canvas: HTMLCanvasElement | null
+  ctx: CanvasRenderingContext2D | null
+  id: number
+  elements: Set<CanvasElement>
+}
+
 function createCanvasRenderer(): CanvasRenderer {
-  let options: CanvasRendererOptions | undefined
-  let canvas: HTMLCanvasElement | null = null
-  let ctx: CanvasRenderingContext2D | null = null
-  let id = 0
+  console.log("createCanvasRenderer")
+  const state: CanvasRendererState = {
+    canvas: null as HTMLCanvasElement | null,
+    ctx: null as CanvasRenderingContext2D | null,
+    id: 0,
+    elements: new Set<CanvasElement>(),
+  }
 
   const mouseState = {
     x: 0,
@@ -164,7 +184,6 @@ function createCanvasRenderer(): CanvasRenderer {
     }
   >()
 
-  const elements: CanvasElement[] = reactiveArray(() => render())
   const cleanups: Array<() => void> = []
 
   const eventLoopTick = () => {
@@ -293,10 +312,10 @@ function createCanvasRenderer(): CanvasRenderer {
   }
 
   const render = createThrottled(() => {
-    const c = ctx
+    const c = state.ctx
     if (!c) return
-    c.clearRect(0, 0, canvas!.width || 0, canvas!.height || 0)
-    elements.forEach(
+    c.clearRect(0, 0, state.canvas!.width || 0, state.canvas!.height || 0)
+    state.elements.forEach(
       ({ pos: _pos, shape: _shape, color: _color, stroke: _stroke }) => {
         const pos = unwrap(_pos)
         const shape = unwrap(_shape)
@@ -334,7 +353,7 @@ function createCanvasRenderer(): CanvasRenderer {
         c.restore()
       }
     )
-    if (options?.showFps) drawFps(c)
+    if (state.options?.showFps) drawFps(c)
     eventLoopTick()
   }, 1000 / 60)
 
@@ -370,19 +389,18 @@ function createCanvasRenderer(): CanvasRenderer {
         ;(evts as any)[key] = nextHandler
       }
     })
-    const existingEl = elements.find(
-      (e) => e.id === (vNode.dom as any as CanvasElement).id
-    )
-    if (!existingEl) return
-    Object.assign(existingEl, nextProps.cfg)
+    // const existingEl = state.elements.(
+    //   (e) => e.id === (vNode.dom as any as CanvasElement).id
+    // )
+    Object.assign(vNode.dom as any, nextProps.cfg)
     render()
   }
 
   return {
-    init(_canvas, _options) {
-      canvas = _canvas
-      ctx = canvas.getContext("2d")
-      options = _options
+    init(canvas, options) {
+      state.canvas = canvas
+      state.ctx = canvas.getContext("2d")
+      state.options = options
       initMouseEvents(canvas)
       render()
     },
@@ -390,20 +408,24 @@ function createCanvasRenderer(): CanvasRenderer {
       cleanups.forEach((fn) => fn())
     },
     appendChild(_, element) {
-      elements.push(element)
+      state.elements.add(element)
+      render()
     },
     prependChild(_, element) {
-      elements.unshift(element)
+      state.elements.add(element)
+      render()
     },
     onRemove(vNode) {
-      elements.splice(elements.indexOf(vNode.dom as any as CanvasElement), 1)
+      state.elements.delete(vNode.dom as any as CanvasElement)
+      elementEventStates.delete(vNode.dom as any as CanvasElement)
+      render()
     },
-    insertAfter(_, prev, element) {
-      const index = elements.indexOf(prev as any as CanvasElement)
-      elements.splice(index + 1, 0, element)
+    insertAfter(_, __, element) {
+      state.elements.add(element)
+      render()
     },
     isParentEmpty() {
-      return elements.length === 0
+      return state.elements.size === 0
     },
     shouldSearchChildrenForSibling() {
       return true
@@ -419,7 +441,7 @@ function createCanvasRenderer(): CanvasRenderer {
     },
     onRootMounted() {},
     createElement(vNode) {
-      return { ...vNode.props.cfg, id: ++id }
+      return { ...vNode.props.cfg, id: ++state.id, renderer: this }
     },
     getMountableParent() {
       return null as any

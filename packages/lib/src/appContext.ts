@@ -34,10 +34,8 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   hookIndex = 0
   root?: HTMLElement
   mounted = false
-  renderers: Renderer<any>[] = []
-  get renderer() {
-    return this.renderers[this.renderers.length - 1]
-  }
+  // @ts-expect-error - this should only be initialized in the browser
+  renderer: Renderer<any>
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
@@ -47,7 +45,9 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     this.id = appCounter++
     this.name = options?.name ?? "App-" + this.id
     this.root = options?.root
-    this.renderers = [createDomRenderer()]
+    if ("window" in globalThis) {
+      this.renderer = createDomRenderer()
+    }
   }
 
   mount() {

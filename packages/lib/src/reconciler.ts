@@ -238,6 +238,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.sibling = undefined
     oldNode.flags = flags.set(oldNode.flags, FLAG.UPDATE)
     oldNode.memoizedProps = newNode.memoizedProps
+    oldNode.renderer = newNode.renderer
     return oldNode
   }
   const created = createElement(nodeType, newNode.props)
@@ -292,7 +293,8 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     newNode.parent = parent
     newNode.depth = parent.depth! + 1
     newNode.flags = flags.set(newNode.flags, FLAG.PLACEMENT)
-    if ("memoizedProps" in child) newNode.memoizedProps = child.memoizedProps
+    newNode.memoizedProps = child.memoizedProps
+    newNode.renderer = child.renderer
     return newNode
   }
 
@@ -372,8 +374,8 @@ function updateFromMap(
     if (oldChild) {
       oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props = newChild.props
-      if ("memoizedProps" in newChild)
-        oldChild.memoizedProps = newChild.memoizedProps
+      oldChild.memoizedProps = newChild.memoizedProps
+      oldChild.renderer = newChild.renderer
       oldChild.sibling = undefined
       oldChild.index = index
       return oldChild

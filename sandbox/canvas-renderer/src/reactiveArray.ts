@@ -5,23 +5,21 @@ export function reactiveArray<T>(onChange: () => void): T[] {
     get(target, prop, receiver) {
       // Allow regular array functionality
       const value = Reflect.get(target, prop, receiver)
-      if (typeof value === "function") {
-        // If it's a method, wrap it to track changes
+      if (
+        typeof value === "function" &&
+        [
+          "push",
+          "pop",
+          "shift",
+          "unshift",
+          "splice",
+          "sort",
+          "reverse",
+        ].includes(prop.toString())
+      ) {
         return (...args: any[]) => {
           const result = value.apply(target, args)
-          if (
-            [
-              "push",
-              "pop",
-              "shift",
-              "unshift",
-              "splice",
-              "sort",
-              "reverse",
-            ].includes(prop.toString())
-          ) {
-            onChange()
-          }
+          onChange()
           return result
         }
       }

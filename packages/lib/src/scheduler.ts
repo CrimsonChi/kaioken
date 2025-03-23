@@ -275,9 +275,6 @@ export class Scheduler {
           }
         }
         this.updateFunctionComponent(vNode as FunctionVNode)
-        if (vNode.renderer) {
-          this.appCtx.renderers.push(vNode.renderer)
-        }
       } else if (isExoticVNode(vNode)) {
         vNode.child =
           reconcileChildren(
@@ -332,11 +329,9 @@ export class Scheduler {
       }
 
       nextNode = nextNode.parent
-      if (nextNode?.renderer) {
-        this.appCtx.renderers.pop()
-      }
       if (renderMode.current === "hydrate" && nextNode?.dom) {
-        ctx.current.renderer.onUpdateTraversalAscend()
+        const renderer = nextNode.renderer ?? this.appCtx.renderer
+        renderer.onUpdateTraversalAscend()
       }
     }
   }
@@ -378,7 +373,7 @@ export class Scheduler {
 
   private updateHostComponent(vNode: VNode) {
     try {
-      const renderer = ctx.current.renderer
+      const renderer = vNode.renderer ?? this.appCtx.renderer
       node.current = vNode
       renderer.validateProps(vNode)
       vNode.dom ??= renderer.createElement(vNode)
