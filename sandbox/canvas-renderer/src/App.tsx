@@ -21,14 +21,16 @@ export function App() {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
   })
+  const radii = useSignal(0)
   const hue = useSignal(50)
+  const hueVel = useSignal(0)
   const color = useComputed(() => `hsl(${hue.value}, 100%, 50%)`)
   const stroke = useComputed<CanvasElementStroke | undefined>(() => {
     const mDown = isMouseDown.value,
       mOver = isMouseOver.value
     if (!mDown && !mOver) return undefined
     return {
-      color: mDown ? "#f00" : "#00f",
+      color: mDown ? "white" : "#fff6",
       size: mOver ? 3 : 1,
     }
   })
@@ -39,6 +41,10 @@ export function App() {
       if (cancelled) return
       id = window.requestAnimationFrame(tick)
       if (getCurrentVNode()) return // prevent conflicts with kaioken's event loop
+      radii.value = Math.min(BOX_HEIGHT / 2, Math.max(0, radii.peek() - 5))
+      if (isMouseOver.peek()) {
+        radii.value += 15
+      }
 
       pos.value.x += vel.value.x
       pos.value.y += vel.value.y
@@ -48,7 +54,8 @@ export function App() {
       if (pos.value.y > window.innerHeight - HALF_BOX_HEIGHT) vel.value.y *= -1
       pos.notify()
 
-      hue.value = (hue.peek() + 1) % 360
+      hue.value = (hue.peek() + 1 + hueVel.peek()) % 360
+      hueVel.value = Math.max(0, hueVel.peek() - 1)
     }
     id = window.requestAnimationFrame(tick)
 
@@ -79,13 +86,13 @@ export function App() {
       >
         {/* <Box /> */}
         <Canvas.Box
-          onClick={(e) => console.log(e)}
+          onClick={() => hueVel.value += 10}
           onMouseDown={() => (isMouseDown.value = true)}
           onMouseUp={() => (isMouseDown.value = false)}
-          onMouseOver={() => (isMouseOver.value = true)}
+          onMouseOver={() => isMouseOver.value = true}
           onMouseOut={() => (isMouseOver.value = false)}
           {...{ stroke, color, pos }}
-          shape={{ type: "rect", width: BOX_WIDTH, height: BOX_HEIGHT }}
+          shape={{ type: "rect", width: BOX_WIDTH, height: BOX_HEIGHT, radii }}
           //shape={{ type: "circle", radius: BOX_HEIGHT / 2 }}
         />
       </Canvas.Root>

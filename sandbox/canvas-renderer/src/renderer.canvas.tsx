@@ -19,12 +19,13 @@ export const Canvas = {
 type CanvasElementShape =
   | {
       type: "circle"
-      radius: number
+      radius: Signalable<number>
     }
   | {
       type: "rect"
-      width: number
-      height: number
+      width: Signalable<number>
+      height: Signalable<number>
+      radii?: Signalable<number | undefined>
     }
 
 type Vec2 = {
@@ -175,13 +176,15 @@ function createCanvasRenderer(): CanvasRenderer {
       const pos = unwrap(el.pos)
       switch (shape.type) {
         case "circle":
-          const rad = shape.radius
+          const rad = unwrap(shape.radius)
           isMouseColliding =
             (x - pos.x) * (x - pos.x) + (y - pos.y) * (y - pos.y) <= rad * rad
           break
         case "rect":
-          const halfW = shape.width / 2
-          const halfH = shape.height / 2
+          const width = unwrap(shape.width)
+          const height = unwrap(shape.height)
+          const halfW = width / 2
+          const halfH = height / 2
           isMouseColliding =
             x >= pos.x - halfW &&
             x <= pos.x + halfW &&
@@ -304,14 +307,19 @@ function createCanvasRenderer(): CanvasRenderer {
         c.beginPath()
         switch (shape.type) {
           case "circle":
-            c.arc(0, 0, shape.radius, 0, Math.PI * 2)
+            const radius = unwrap(shape.radius)
+            c.arc(0, 0, radius, 0, Math.PI * 2)
             break
           case "rect":
-            c.rect(
+            const width = unwrap(shape.width)
+            const height = unwrap(shape.height)
+            const radii = unwrap(shape.radii)
+            c.roundRect(
               -shape.width / 2,
               -shape.height / 2,
-              shape.width,
-              shape.height
+              width,
+              height,
+              radii
             )
             break
         }
