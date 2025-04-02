@@ -55,7 +55,7 @@ function latest<T>(thing: T): T {
 }
 
 /**
- * Returns true if called during DOM or hydration render mode.
+ * Returns false if called during "stream" or "string" render modes.
  */
 function sideEffectsEnabled(): boolean {
   return renderMode.current === "dom" || renderMode.current === "hydrate"
