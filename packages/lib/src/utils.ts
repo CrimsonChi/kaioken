@@ -388,6 +388,7 @@ function propToHtmlAttr(key: string): string {
       return key.toLowerCase()
 
     default:
+      if (key.indexOf("-") > -1) return key
       if (key.startsWith("aria"))
         return "aria-" + key.substring(4).toLowerCase()
 
