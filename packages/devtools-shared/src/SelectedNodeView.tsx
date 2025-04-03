@@ -96,7 +96,7 @@ export function SelectedNodeView({
   )
 }
 
-type DisplayGroupHook = Kaioken.Hook<{
+type DisplayGroupHook = Kaioken.HookState<{
   name: "devtools:useHookDebugGroup"
   displayName: string
   action: "start" | "end"
@@ -104,14 +104,16 @@ type DisplayGroupHook = Kaioken.Hook<{
 type HookGroupNode = {
   parent: HookGroupNode | null
   name: string
-  children: (Kaioken.Hook<any> | HookGroupNode)[]
+  children: (Kaioken.HookState<any> | HookGroupNode)[]
   [hookGroupSymbol]: true
 }
-function isDisplayGroupHook(hook: Kaioken.Hook<any>): hook is DisplayGroupHook {
+function isDisplayGroupHook(
+  hook: Kaioken.HookState<any>
+): hook is DisplayGroupHook {
   return hook.name === "devtools:useHookDebugGroup"
 }
 function isHookGroupNode(
-  node: HookGroupNode | Kaioken.Hook<any>
+  node: HookGroupNode | Kaioken.HookState<any>
 ): node is HookGroupNode {
   return hookGroupSymbol in node
 }
@@ -164,7 +166,7 @@ function HookTreeDisplay({
   selectedApp,
   depth = 0,
 }: {
-  node: HookGroupNode | Kaioken.Hook<any>
+  node: HookGroupNode | Kaioken.HookState<any>
   selectedApp: AppContext
   depth?: number
 }) {
@@ -185,7 +187,7 @@ function HookTreeDisplay({
       </NodeDataSection>
     )
   }
-  const { name, dev, cleanup, ...rest } = node as Kaioken.Hook<{}>
+  const { name, dev, cleanup, ...rest } = node as Kaioken.HookState<{}>
   const devtools = dev?.devtools
   const data = typeof devtools?.get === "function" ? devtools.get() : rest
 
