@@ -51,18 +51,18 @@ export function useModel<
     "useModel",
     createUseModelState,
     ({ hook, isInit, update, queueEffect }) => {
-      if (isInit) {
-        if (__DEV__) {
-          hook.dev = {
-            devtools: {
-              get: () => ({ value: hook.value }),
-              set: ({ value }) => {
-                hook.value = value
-                if (hook.ref.current) setElementValue(hook.ref.current, value)
-              },
+      if (__DEV__) {
+        hook.dev = {
+          devtools: {
+            get: () => ({ value: hook.value }),
+            set: ({ value }) => {
+              hook.value = value
+              if (hook.ref.current) setElementValue(hook.ref.current, value)
             },
-          }
+          },
         }
+      }
+      if (isInit) {
         hook.value = initial
         hook.cleanup = () => {
           hook.element &&

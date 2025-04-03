@@ -93,6 +93,13 @@ function createStore<T, U extends MethodFactory<T>>(
       "useStore",
       { stateSlice: null as any as T | R, lastChangeSync: -1 },
       ({ hook, isInit, vNode, index }) => {
+        if (__DEV__) {
+          hook.dev = {
+            devtools: {
+              get: () => ({ value: hook.stateSlice }),
+            },
+          }
+        }
         if (isInit) {
           subscribers.add(vNode)
           hook.stateSlice = sliceFn ? sliceFn(state) : state
@@ -108,13 +115,6 @@ function createStore<T, U extends MethodFactory<T>>(
           hook.cleanup = () => {
             nodeToSliceComputeMap.delete(vNode)
             subscribers.delete(vNode)
-          }
-          if (__DEV__) {
-            hook.dev = {
-              devtools: {
-                get: () => ({ value: hook.stateSlice }),
-              },
-            }
           }
         }
 
@@ -144,7 +144,7 @@ function createStore<T, U extends MethodFactory<T>>(
       [$HMR_ACCEPT]: {
         provide: () => ({
           $initial,
-          state,
+          state: state,
           subscribers,
           nodeToSliceComputeMap,
         }),

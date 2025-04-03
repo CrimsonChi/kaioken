@@ -15,16 +15,13 @@ export function useRef<T>(initialValue?: T | null) {
 
 const useRefCallback = <T>({
   hook,
-  isInit,
 }: HookCallbackState<UseCallbackState<T>>) => {
-  if (isInit) {
-    if (__DEV__) {
-      hook.dev = {
-        devtools: {
-          get: () => ({ value: hook.ref.current }),
-          set: ({ value }) => (hook.ref.current = value),
-        } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
-      }
+  if (__DEV__) {
+    hook.dev = {
+      devtools: {
+        get: () => ({ value: hook.ref.current }),
+        set: ({ value }) => (hook.ref.current = value),
+      } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
     }
   }
   return hook.ref

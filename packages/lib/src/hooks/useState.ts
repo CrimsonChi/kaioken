@@ -18,15 +18,15 @@ export function useState<T>(
       dispatch: noop as (value: Kaioken.StateSetter<T>) => void,
     },
     ({ hook, isInit, update }) => {
-      if (isInit) {
-        if (__DEV__) {
-          hook.dev = {
-            devtools: {
-              get: () => ({ value: hook.state }),
-              set: ({ value }) => (hook.state = value),
-            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
-          }
+      if (__DEV__) {
+        hook.dev = {
+          devtools: {
+            get: () => ({ value: hook.state }),
+            set: ({ value }) => (hook.state = value),
+          } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
         }
+      }
+      if (isInit) {
         hook.state =
           typeof initial === "function" ? (initial as Function)() : initial
         hook.dispatch = (setter: Kaioken.StateSetter<T>) => {

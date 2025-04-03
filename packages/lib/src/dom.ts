@@ -59,8 +59,8 @@ function createDom(vNode: VNode): SomeDom {
     t == ELEMENT_TYPE.text
       ? createTextNode(vNode)
       : svgTags.includes(t)
-        ? document.createElementNS("http://www.w3.org/2000/svg", t)
-        : document.createElement(t)
+      ? document.createElementNS("http://www.w3.org/2000/svg", t)
+      : document.createElement(t)
   //setDomRef(vNode, dom)
   return dom
 }

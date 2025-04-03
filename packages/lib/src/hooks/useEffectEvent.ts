@@ -7,6 +7,7 @@ export function useEffectEvent<T extends Function>(callback: T): T {
   return useHook("useEffectEvent", { callback }, ({ hook }) => {
     if (__DEV__) {
       hook.dev = {
+        // persist function ref so that effects referring to it will continue using the latest version
         reinitUponRawArgsChanged: true,
       }
     }

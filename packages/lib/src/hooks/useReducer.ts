@@ -12,15 +12,15 @@ export function useReducer<T, A>(
     "useReducer",
     { state, dispatch: noop as (action: A) => void },
     ({ hook, isInit, update }) => {
-      if (isInit) {
-        if (__DEV__) {
-          hook.dev = {
-            devtools: {
-              get: () => ({ value: hook.state }),
-              set: ({ value }) => (hook.state = value),
-            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
-          }
+      if (__DEV__) {
+        hook.dev = {
+          devtools: {
+            get: () => ({ value: hook.state }),
+            set: ({ value }) => (hook.state = value),
+          } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
         }
+      }
+      if (isInit) {
         hook.dispatch = (action: A) => {
           const newState = reducer(hook.state, action)
           if (Object.is(hook.state, newState)) return

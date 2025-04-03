@@ -27,12 +27,12 @@ export function useSyncExternalStore<T>(
       unsubscribe: noop as () => void,
     },
     ({ hook, isInit, update }) => {
-      if (isInit) {
-        if (__DEV__) {
-          hook.dev = {
-            devtools: { get: () => ({ value: hook.state }) },
-          }
+      if (__DEV__) {
+        hook.dev = {
+          devtools: { get: () => ({ value: hook.state }) },
         }
+      }
+      if (isInit) {
         hook.state = getState()
         hook.unsubscribe = subscribe(() => {
           const newState = getState()

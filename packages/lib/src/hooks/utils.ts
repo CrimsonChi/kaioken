@@ -112,11 +112,33 @@ const useVNode = () => {
 }
 
 type HookCallbackContext<T> = {
+  /**
+   * The current state of the hook
+   */
   hook: HookState<T>
+  /**
+   * Indicates if this is the first time the hook has been initialized,
+   * or if `state.dev.reinitUponRawArgsChanged` has been set to `true`
+   * and its raw arguments were changed.
+   */
   isInit: boolean
+  /**
+   * Queues the current component to be re-rendered
+   */
   update: () => void
+  /**
+   * Queues an effect to be run, either immediately or on the next render
+   */
   queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
+  /**
+   * The VNode associated with the current component
+   */
   vNode: Kaioken.VNode
+  /**
+   * The index of the current hook.
+   * You can count on this being stable across renders,
+   * and unique across separate hooks in the same component.
+   */
   index: number
 }
 type HookCallback<T> = (state: HookCallbackContext<T>) => any
@@ -170,11 +192,11 @@ function useHook<
     ;(vNode.effects ??= []).push(callback)
   }
 
+  const index = ctx.hookIndex++
+
   if (__DEV__) {
     let oldHook = (
-      vNode.prev
-        ? vNode.prev.hooks?.at(ctx.hookIndex)
-        : vNode.hooks?.at(ctx.hookIndex)
+      vNode.prev ? vNode.prev.hooks?.at(index) : vNode.hooks?.at(index)
     ) as HookState<T> | undefined
     if (oldHook && $HOOK_INVALIDATED in oldHook) {
       oldHook = undefined
@@ -198,9 +220,8 @@ function useHook<
       }
     }
 
-    const idx = ctx.hookIndex++
     vNode.hooks ??= []
-    vNode.hooks[idx] = hook
+    vNode.hooks[index] = hook
 
     const hmrRuntimeInvalidated =
       ctx.options?.useRuntimeHookInvalidation &&
@@ -210,12 +231,12 @@ function useHook<
       const dev = hook.dev ?? {}
       const shouldReinit = dev?.rawArgsChanged && dev?.reinitUponRawArgsChanged
       const res = (callback as HookCallback<T>)({
-        hook: hook,
+        hook,
         isInit: Boolean(!oldHook || hmrRuntimeInvalidated || shouldReinit),
         update: () => ctx.requestUpdate(vNode),
         queueEffect,
         vNode,
-        index: idx,
+        index,
       })
       return res
     } catch (error) {
@@ -232,9 +253,7 @@ function useHook<
 
   try {
     const oldHook = (
-      vNode.prev
-        ? vNode.prev.hooks?.at(ctx.hookIndex)
-        : vNode.hooks?.at(ctx.hookIndex)
+      vNode.prev ? vNode.prev.hooks?.at(index) : vNode.hooks?.at(index)
     ) as HookState<T> | undefined
 
     let hook: HookState<T>
@@ -247,17 +266,16 @@ function useHook<
       hook = oldHook
     }
 
-    const idx = ctx.hookIndex++
     vNode.hooks ??= []
-    vNode.hooks[idx] = hook
+    vNode.hooks[index] = hook
 
     const res = (callback as HookCallback<T>)({
-      hook: hook,
+      hook,
       isInit: !oldHook,
       update: () => ctx.requestUpdate(vNode),
       queueEffect,
       vNode,
-      index: idx,
+      index,
     })
     return res
   } catch (error) {

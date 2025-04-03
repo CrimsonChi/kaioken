@@ -63,10 +63,10 @@ export function useAsync<T>(
       ) => void,
     },
     ({ hook, isInit, update }) => {
+      if (__DEV__) {
+        hook.dev = { devtools: { get: () => ({ value: hook.task }) } }
+      }
       if (isInit) {
-        if (__DEV__) {
-          hook.dev = { devtools: { get: () => ({ value: hook.task }) } }
-        }
         hook.cleanup = () => abortTask(hook.task)
         hook.load = (func) => {
           let invalidated = false

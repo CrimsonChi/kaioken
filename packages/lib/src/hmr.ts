@@ -4,10 +4,7 @@ import { $HMR_ACCEPT } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { Signal } from "./signals/base.js"
 import { traverseApply } from "./utils.js"
-import {
-  cleanupHook,
-  HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
-} from "./hooks/utils.js"
+import { HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY } from "./hooks/utils.js"
 import type { AppContext } from "./appContext"
 
 export type HMRAccept<T = {}> = {
@@ -142,7 +139,8 @@ export function createHMRContext() {
                     // @ts-ignore
                     hook.dev.rawArgsChanged = true
                   } else {
-                    cleanupHook(hook)
+                    hook.cleanup?.()
+                    // replace it with our 'invalidate' sentinel. This will cause `useHook` to recreate the hookState from scratch.
                     vNode.hooks[hooksToReset[i]] =
                       HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY
                   }
