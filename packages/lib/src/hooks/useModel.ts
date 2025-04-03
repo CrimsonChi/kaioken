@@ -7,25 +7,25 @@ type ToPrimitive<T extends string | number | boolean | FileList | null> =
   T extends null
     ? null
     : T extends string
-      ? string
-      : T extends boolean
-        ? boolean
-        : T extends FileList
-          ? FileList
-          : never
+    ? string
+    : T extends boolean
+    ? boolean
+    : T extends FileList
+    ? FileList
+    : never
 
 type UseModelReturn<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-  U extends string | boolean | FileList | null,
+  U extends string | boolean | FileList | null
 > = readonly [
   Kaioken.RefObject<T>,
   ToPrimitive<U>,
-  (newValue: ToPrimitive<U>) => void,
+  (newValue: ToPrimitive<U>) => void
 ]
 
 type UseModelState<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-  U extends string | boolean | FileList | null,
+  U extends string | boolean | FileList | null
 > = {
   value: U
   element: T | null
@@ -36,13 +36,13 @@ type UseModelState<
 
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
-  U extends string | boolean | FileList | null = string,
+  U extends string | boolean | FileList | null = string
 >(
   initial: U
 ): readonly [
   Kaioken.RefObject<T>,
   ToPrimitive<U>,
-  (newValue: ToPrimitive<U>) => void,
+  (newValue: ToPrimitive<U>) => void
 ] {
   if (!sideEffectsEnabled()) {
     return [{ current: null }, initial, noop] as any as UseModelReturn<T, U>
@@ -53,11 +53,13 @@ export function useModel<
     ({ hook, isInit, update, queueEffect }) => {
       if (isInit) {
         if (__DEV__) {
-          hook.debug = {
-            get: () => ({ value: hook.value }),
-            set: ({ value }) => {
-              hook.value = value
-              if (hook.ref.current) setElementValue(hook.ref.current, value)
+          hook.dev = {
+            devtools: {
+              get: () => ({ value: hook.value }),
+              set: ({ value }) => {
+                hook.value = value
+                if (hook.ref.current) setElementValue(hook.ref.current, value)
+              },
             },
           }
         }

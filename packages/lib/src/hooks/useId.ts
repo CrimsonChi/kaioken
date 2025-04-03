@@ -17,7 +17,9 @@ const createUseIdState = (): UseIdState => ({
 
 const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
   if (__DEV__) {
-    hook.debug = { get: () => ({ id: hook.id }) }
+    hook.dev = {
+      devtools: { get: () => ({ id: hook.id }) },
+    }
   }
   if (isInit || vNode.index !== hook.idx) {
     hook.idx = vNode.index

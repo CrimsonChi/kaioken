@@ -19,7 +19,9 @@ export function useEffect(
   if (!sideEffectsEnabled()) return
   return useHook("useEffect", { deps }, ({ hook, isInit, queueEffect }) => {
     if (__DEV__) {
-      hook.debug = { get: () => ({ callback, dependencies: hook.deps }) }
+      hook.dev = {
+        devtools: { get: () => ({ callback, dependencies: hook.deps }) },
+      }
     }
     if (isInit || depsRequireChange(deps, hook.deps)) {
       hook.deps = deps

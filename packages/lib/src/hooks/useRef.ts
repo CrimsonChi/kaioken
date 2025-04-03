@@ -19,10 +19,12 @@ const useRefCallback = <T>({
 }: HookCallbackState<UseCallbackState<T>>) => {
   if (isInit) {
     if (__DEV__) {
-      hook.debug = {
-        get: () => ({ value: hook.ref.current }),
-        set: ({ value }) => (hook.ref.current = value),
-      } satisfies Kaioken.HookDebug<{ value: T }>
+      hook.dev = {
+        devtools: {
+          get: () => ({ value: hook.ref.current }),
+          set: ({ value }) => (hook.ref.current = value),
+        } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
+      }
     }
   }
   return hook.ref

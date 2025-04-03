@@ -8,8 +8,10 @@ export function useCallback<T extends Function>(
   if (!sideEffectsEnabled()) return callback
   return useHook("useCallback", { callback, deps }, ({ hook }) => {
     if (__DEV__) {
-      hook.debug = {
-        get: () => ({ callback: hook.callback, dependencies: hook.deps }),
+      hook.dev = {
+        devtools: {
+          get: () => ({ callback: hook.callback, dependencies: hook.deps }),
+        },
       }
     }
     if (depsRequireChange(deps, hook.deps)) {

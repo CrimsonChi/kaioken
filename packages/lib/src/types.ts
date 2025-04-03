@@ -18,8 +18,8 @@ type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
     ? HTMLElementTagNameMap[T]
     : T extends keyof HTMLElementDeprecatedTagNameMap
-      ? HTMLElementDeprecatedTagNameMap[T]
-      : never
+    ? HTMLElementDeprecatedTagNameMap[T]
+    : never
 
 type SVGTagToElement<T extends keyof SvgElementAttributes> =
   T extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[T] : never
@@ -142,22 +142,24 @@ declare global {
     type FCProps<T = {}> = T & { children?: JSX.Children }
     type InferProps<T> = T extends Kaioken.FC<infer P> ? P : never
 
-    interface HookDebug<T extends Record<string, any>> {
+    interface HookDevtoolsProvisions<T extends Record<string, any>> {
       get: () => T
       set?: (value: ReturnType<this["get"]>) => void
-      /**
-       * If true, during development, when the raw arguments of the hook change,
-       * the hook will persist instead of being recreated.
-       * During the next render, `isInit` will be set to `true`, indicating
-       * that the hook should be reinitialized.
-       */
-      reinitUponRawArgsChanged?: boolean
     }
     type Hook<T> = T & {
       cleanup?: () => void
-      debug?: HookDebug<any>
       name?: string
-      readonly rawArgsChanged?: boolean
+      dev?: {
+        devtools?: HookDevtoolsProvisions<any>
+        /**
+         * If true, during development, when the raw arguments of the hook change,
+         * the hook will persist instead of being recreated.
+         * During the next render, `isInit` will be set to `true`, indicating
+         * that the hook should be reinitialized.
+         */
+        reinitUponRawArgsChanged?: boolean
+        readonly rawArgsChanged?: boolean
+      }
     }
     type RefObject<T> = {
       readonly current: T | null

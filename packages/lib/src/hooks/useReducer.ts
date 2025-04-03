@@ -14,10 +14,12 @@ export function useReducer<T, A>(
     ({ hook, isInit, update }) => {
       if (isInit) {
         if (__DEV__) {
-          hook.debug = {
-            get: () => ({ value: hook.state }),
-            set: ({ value }) => (hook.state = value),
-          } satisfies Kaioken.HookDebug<{ value: T }>
+          hook.dev = {
+            devtools: {
+              get: () => ({ value: hook.state }),
+              set: ({ value }) => (hook.state = value),
+            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
+          }
         }
         hook.dispatch = (action: A) => {
           const newState = reducer(hook.state, action)

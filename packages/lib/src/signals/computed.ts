@@ -81,11 +81,13 @@ export const useComputed = <T>(getter: () => T, displayName?: string) => {
     },
     ({ hook, isInit, vNode }) => {
       if (__DEV__) {
-        hook.debug = {
-          get: () => ({
-            displayName: hook.signal.displayName,
-            value: hook.signal.peek(),
-          }),
+        hook.dev = {
+          devtools: {
+            get: () => ({
+              displayName: hook.signal.displayName,
+              value: hook.signal.peek(),
+            }),
+          },
         }
         if (!isInit && vNode.hmrUpdated) {
           // isInit would be true if this is our initial render or if  the

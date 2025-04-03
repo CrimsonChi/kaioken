@@ -138,9 +138,9 @@ export function createHMRContext() {
               if (!ctx.options?.useRuntimeHookInvalidation && vNode.hooks) {
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hook = vNode.hooks[hooksToReset[i]]
-                  if (hook.debug?.reinitUponRawArgsChanged) {
+                  if (hook.dev?.reinitUponRawArgsChanged) {
                     // @ts-ignore
-                    hook.rawArgsChanged = true
+                    hook.dev.rawArgsChanged = true
                   } else {
                     cleanupHook(hook)
                     vNode.hooks[hooksToReset[i]] =

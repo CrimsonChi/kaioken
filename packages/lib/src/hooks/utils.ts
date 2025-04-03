@@ -125,7 +125,7 @@ const nestedHookWarnings = new Set<string>()
 
 function useHook<
   T extends () => Record<string, unknown>,
-  U extends HookCallback<ReturnType<T>>,
+  U extends HookCallback<ReturnType<T>>
 >(hookName: string, hookInitializer: T, callback: U): ReturnType<U>
 
 function useHook<T extends Record<string, unknown>, U extends HookCallback<T>>(
@@ -138,7 +138,7 @@ function useHook<
   T,
   U extends T extends () => Record<string, unknown>
     ? HookCallback<ReturnType<T>>
-    : HookCallback<T>,
+    : HookCallback<T>
 >(
   hookName: string,
   hookDataOrInitializer: Kaioken.Hook<T> | (() => Kaioken.Hook<T>),
@@ -197,12 +197,13 @@ function useHook<
       ctx.options?.useRuntimeHookInvalidation &&
       doRuntimeHookInvalidation(vNode, hook, oldHook)
     try {
+      const dev = hook.dev ?? {}
       const res = (callback as HookCallback<T>)({
         hook: hook,
         isInit: Boolean(
           !oldHook ||
             hmrRuntimeInvalidated ||
-            (hook.rawArgsChanged && hook.debug?.reinitUponRawArgsChanged)
+            (dev?.rawArgsChanged && dev?.reinitUponRawArgsChanged)
         ),
         update: () => ctx.requestUpdate(vNode),
         queueEffect,

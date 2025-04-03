@@ -5,6 +5,11 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
 export function useEffectEvent<T extends Function>(callback: T): T {
   if (!sideEffectsEnabled()) return callback
   return useHook("useEffectEvent", { callback }, ({ hook }) => {
+    if (__DEV__) {
+      hook.dev = {
+        reinitUponRawArgsChanged: true,
+      }
+    }
     hook.callback = callback
     return function () {
       if (node.current) {

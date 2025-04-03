@@ -29,7 +29,9 @@ export function useSyncExternalStore<T>(
     ({ hook, isInit, update }) => {
       if (isInit) {
         if (__DEV__) {
-          hook.debug = { get: () => ({ value: hook.state }) }
+          hook.dev = {
+            devtools: { get: () => ({ value: hook.state }) },
+          }
         }
         hook.state = getState()
         hook.unsubscribe = subscribe(() => {

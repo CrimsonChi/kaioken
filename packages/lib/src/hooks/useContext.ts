@@ -27,13 +27,15 @@ const useContextCallback = <T>({
 }: HookCallbackState<UseContextHookState<T>>) => {
   if (isInit) {
     if (__DEV__) {
-      hook.debug = {
-        get: () => ({
-          contextName: hook.context.Provider.displayName || "",
-          value: hook.ctxNode
-            ? hook.ctxNode.props.value
-            : hook.context.default(),
-        }),
+      hook.dev = {
+        devtools: {
+          get: () => ({
+            contextName: hook.context.Provider.displayName || "",
+            value: hook.ctxNode
+              ? hook.ctxNode.props.value
+              : hook.context.default(),
+          }),
+        },
       }
     }
 

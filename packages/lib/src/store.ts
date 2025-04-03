@@ -17,7 +17,7 @@ type StoreHook<T, U extends Record<string, Function>> = {
   <R>(sliceFn: (state: T) => R): Prettify<{ value: R } & U>
   <
     F extends null | ((state: T) => unknown),
-    R extends F extends Function ? ReturnType<F> : T,
+    R extends F extends Function ? ReturnType<F> : T
   >(
     sliceFn: F,
     equality: (prev: R, next: R, compare: typeof shallowCompare) => boolean
@@ -111,8 +111,10 @@ function createStore<T, U extends MethodFactory<T>>(
             subscribers.delete(vNode)
           }
           if (__DEV__) {
-            hook.debug = {
-              get: () => ({ value: hook.stateSlice }),
+            hook.dev = {
+              devtools: {
+                get: () => ({ value: hook.stateSlice }),
+              },
             }
           }
         }

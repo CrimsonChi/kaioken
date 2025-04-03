@@ -8,8 +8,10 @@ export function useMemo<T>(factory: () => T, deps: unknown[]): T {
     { deps, value: undefined as T },
     ({ hook, isInit }) => {
       if (__DEV__) {
-        hook.debug = {
-          get: () => ({ value: hook.value, dependencies: hook.deps }),
+        hook.dev = {
+          devtools: {
+            get: () => ({ value: hook.value, dependencies: hook.deps }),
+          },
         }
       }
       if (isInit || depsRequireChange(deps, hook.deps)) {

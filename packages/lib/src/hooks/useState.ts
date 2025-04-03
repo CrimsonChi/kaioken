@@ -20,10 +20,12 @@ export function useState<T>(
     ({ hook, isInit, update }) => {
       if (isInit) {
         if (__DEV__) {
-          hook.debug = {
-            get: () => ({ value: hook.state }),
-            set: ({ value }) => (hook.state = value),
-          } satisfies Kaioken.HookDebug<{ value: T }>
+          hook.dev = {
+            devtools: {
+              get: () => ({ value: hook.state }),
+              set: ({ value }) => (hook.state = value),
+            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
+          }
         }
         hook.state =
           typeof initial === "function" ? (initial as Function)() : initial

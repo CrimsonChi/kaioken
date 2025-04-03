@@ -171,17 +171,19 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
     { signal: undefined as any as Signal<T> },
     ({ hook, isInit }) => {
       if (__DEV__) {
-        hook.debug = {
-          get: () => ({
-            displayName: hook.signal.displayName,
-            value: hook.signal.peek(),
-          }),
-          set: ({ value }) => {
-            hook.signal.sneak(value)
-          },
+        hook.dev = {
           reinitUponRawArgsChanged: true,
+          devtools: {
+            get: () => ({
+              displayName: hook.signal.displayName,
+              value: hook.signal.peek(),
+            }),
+            set: ({ value }) => {
+              hook.signal.sneak(value)
+            },
+          },
         }
-        if (isInit && hook.rawArgsChanged) {
+        if (isInit && hook.dev.rawArgsChanged) {
           hook.signal.value = initial
           return hook.signal
         }
