@@ -146,7 +146,7 @@ declare global {
       get: () => T
       set?: (value: ReturnType<this["get"]>) => void
     }
-    type Hook<T> = T & {
+    type HookState<T> = T & {
       cleanup?: () => void
       name?: string
       dev?: {
@@ -192,7 +192,7 @@ declare global {
       }
       index: number
       depth: number
-      hooks?: Hook<unknown>[]
+      hooks?: HookState<unknown>[]
       subs?: string[]
       cleanups?: Record<string, Function>
       parent?: VNode

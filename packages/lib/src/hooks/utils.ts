@@ -14,17 +14,19 @@ export {
   useRequestUpdate,
   HookDebugGroupAction,
   HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
-  type Hook,
+  type HookState,
   type HookCallback,
-  type HookCallbackState,
+  type HookCallbackContext as HookCallbackState,
 }
 
+type HookState<T> = Kaioken.HookState<T>
+
 const $HOOK_INVALIDATED = Symbol.for("kaioken.hookInvalidated")
-const HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY: Hook<any> = {
+const HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY: HookState<any> = {
   [$HOOK_INVALIDATED]: true,
 }
 
-type DevHook<T> = Hook<T> & {
+type DevHook<T> = HookState<T> & {
   devInvalidationValue?: string
 }
 
@@ -109,16 +111,15 @@ const useVNode = () => {
   return n
 }
 
-type Hook<T> = Kaioken.Hook<T>
-
-type HookCallbackState<T> = {
-  hook: Hook<T>
+type HookCallbackContext<T> = {
+  hook: HookState<T>
   isInit: boolean
   update: () => void
   queueEffect: (callback: Function, opts?: { immediate?: boolean }) => void
   vNode: Kaioken.VNode
+  index: number
 }
-type HookCallback<T> = (state: HookCallbackState<T>) => any
+type HookCallback<T> = (state: HookCallbackContext<T>) => any
 
 let currentHookName: string | null = null
 const nestedHookWarnings = new Set<string>()
@@ -141,7 +142,7 @@ function useHook<
     : HookCallback<T>
 >(
   hookName: string,
-  hookDataOrInitializer: Kaioken.Hook<T> | (() => Kaioken.Hook<T>),
+  hookDataOrInitializer: HookState<T> | (() => HookState<T>),
   callback: U
 ): ReturnType<U> {
   const vNode = node.current
@@ -174,14 +175,14 @@ function useHook<
       vNode.prev
         ? vNode.prev.hooks?.at(ctx.hookIndex)
         : vNode.hooks?.at(ctx.hookIndex)
-    ) as Hook<T> | undefined
+    ) as HookState<T> | undefined
     if (oldHook && $HOOK_INVALIDATED in oldHook) {
       oldHook = undefined
     }
 
     currentHookName = hookName
 
-    let hook: Hook<T>
+    let hook: HookState<T>
     if (!oldHook) {
       hook =
         typeof hookDataOrInitializer === "function"
@@ -197,8 +198,9 @@ function useHook<
       }
     }
 
+    const idx = ctx.hookIndex++
     vNode.hooks ??= []
-    vNode.hooks[ctx.hookIndex++] = hook
+    vNode.hooks[idx] = hook
 
     const hmrRuntimeInvalidated =
       ctx.options?.useRuntimeHookInvalidation &&
@@ -213,6 +215,7 @@ function useHook<
         update: () => ctx.requestUpdate(vNode),
         queueEffect,
         vNode,
+        index: idx,
       })
       return res
     } catch (error) {
@@ -232,9 +235,9 @@ function useHook<
       vNode.prev
         ? vNode.prev.hooks?.at(ctx.hookIndex)
         : vNode.hooks?.at(ctx.hookIndex)
-    ) as Hook<T> | undefined
+    ) as HookState<T> | undefined
 
-    let hook: Hook<T>
+    let hook: HookState<T>
     if (!oldHook) {
       hook =
         typeof hookDataOrInitializer === "function"
@@ -244,8 +247,9 @@ function useHook<
       hook = oldHook
     }
 
+    const idx = ctx.hookIndex++
     vNode.hooks ??= []
-    vNode.hooks[ctx.hookIndex++] = hook
+    vNode.hooks[idx] = hook
 
     const res = (callback as HookCallback<T>)({
       hook: hook,
@@ -253,6 +257,7 @@ function useHook<
       update: () => ctx.requestUpdate(vNode),
       queueEffect,
       vNode,
+      index: idx,
     })
     return res
   } catch (error) {
@@ -262,8 +267,8 @@ function useHook<
 
 function doRuntimeHookInvalidation<T>(
   vNode: Kaioken.VNode,
-  hook: Hook<T>,
-  oldHook: Hook<T> | undefined
+  hook: HookState<T>,
+  oldHook: HookState<T> | undefined
 ): boolean {
   if (nextHookDevInvalidationValue === undefined) return false
 

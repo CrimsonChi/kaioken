@@ -1,6 +1,6 @@
 import type { Prettify } from "./types.utils.js"
 import { __DEV__ } from "./env.js"
-import { sideEffectsEnabled, useAppContext, useHook } from "./hooks/utils.js"
+import { sideEffectsEnabled, useHook } from "./hooks/utils.js"
 import { getVNodeAppContext, safeStringify, shallowCompare } from "./utils.js"
 import { $HMR_ACCEPT } from "./constants.js"
 import { HMRAccept } from "./hmr.js"
@@ -89,17 +89,16 @@ function createStore<T, U extends MethodFactory<T>>(
     if (!sideEffectsEnabled()) {
       return { value: sliceFn ? sliceFn(state) : state, ...methods }
     }
-    const ctx = useAppContext()
     return useHook(
       "useStore",
       { stateSlice: null as any as T | R, lastChangeSync: -1 },
-      ({ hook, isInit, vNode }) => {
+      ({ hook, isInit, vNode, index }) => {
         if (isInit) {
           subscribers.add(vNode)
           hook.stateSlice = sliceFn ? sliceFn(state) : state
           if (sliceFn || equality) {
             const computes = nodeToSliceComputeMap.get(vNode) ?? []
-            computes[ctx.hookIndex - 1] = {
+            computes[index] = {
               sliceFn,
               eq: equality,
               slice: hook.stateSlice,
@@ -121,9 +120,7 @@ function createStore<T, U extends MethodFactory<T>>(
 
         if (hook.lastChangeSync !== stateIteration) {
           hook.lastChangeSync = stateIteration
-          const compute = (nodeToSliceComputeMap.get(vNode) ?? [])?.[
-            ctx.hookIndex - 1
-          ]
+          const compute = (nodeToSliceComputeMap.get(vNode) ?? [])?.[index]
           hook.stateSlice = compute ? compute.slice : state
         }
 
