@@ -185,14 +185,15 @@ function HookTreeDisplay({
       </NodeDataSection>
     )
   }
-  const { name, debug, ...rest } = node
-  const data = debug?.get ? debug.get() : rest
+  const { name, dev, cleanup, ...rest } = node as Kaioken.Hook<{}>
+  const devtools = dev?.devtools
+  const data = typeof devtools?.get === "function" ? devtools.get() : rest
 
   const handleChange = (keys: string[], value: unknown) => {
-    if (!selectedApp?.mounted || !debug?.set) return
-    const data = debug.get()
+    if (!selectedApp?.mounted || !devtools?.set || !devtools?.get) return
+    const data = devtools.get()
     applyObjectChangeFromKeys(data, keys, value)
-    debug.set(data)
+    devtools.set(data)
   }
 
   return (
@@ -202,7 +203,7 @@ function HookTreeDisplay({
         <ValueEditor
           data={data}
           onChange={handleChange}
-          mutable={!!debug?.set}
+          mutable={!!devtools?.set}
           objectRefAcc={[]}
         />
       </div>
