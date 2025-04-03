@@ -178,33 +178,38 @@ function useHook<
     if (oldHook && $HOOK_INVALIDATED in oldHook) {
       oldHook = undefined
     }
-    const hook =
-      oldHook ??
-      (typeof hookDataOrInitializer === "function"
-        ? hookDataOrInitializer()
-        : { ...hookDataOrInitializer })
 
-    if (!vNode.hooks) vNode.hooks = []
-    vNode.hooks[ctx.hookIndex++] = hook
-    if (!oldHook) hook.name = hookName
     currentHookName = hookName
-    if (oldHook && oldHook.name !== hookName) {
-      console.warn(
-        `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
-      )
+
+    let hook: Hook<T>
+    if (!oldHook) {
+      hook =
+        typeof hookDataOrInitializer === "function"
+          ? hookDataOrInitializer()
+          : { ...hookDataOrInitializer }
+      hook.name = hookName
+    } else {
+      hook = oldHook
+      if (oldHook.name !== hookName) {
+        console.warn(
+          `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
+        )
+      }
     }
+
+    vNode.hooks ??= []
+    vNode.hooks[ctx.hookIndex++] = hook
+
     const hmrRuntimeInvalidated =
       ctx.options?.useRuntimeHookInvalidation &&
       doRuntimeHookInvalidation(vNode, hook, oldHook)
+
     try {
       const dev = hook.dev ?? {}
+      const shouldReinit = dev?.rawArgsChanged && dev?.reinitUponRawArgsChanged
       const res = (callback as HookCallback<T>)({
         hook: hook,
-        isInit: Boolean(
-          !oldHook ||
-            hmrRuntimeInvalidated ||
-            (dev?.rawArgsChanged && dev?.reinitUponRawArgsChanged)
-        ),
+        isInit: Boolean(!oldHook || hmrRuntimeInvalidated || shouldReinit),
         update: () => ctx.requestUpdate(vNode),
         queueEffect,
         vNode,
@@ -215,8 +220,10 @@ function useHook<
     } finally {
       currentHookName = null
       nextHookDevInvalidationValue = undefined
-      // @ts-ignore - Reset the rawArgsChanged flag
-      hook.rawArgsChanged = false
+      if (hook.dev) {
+        // @ts-ignore - Reset the rawArgsChanged flag
+        hook.dev.rawArgsChanged = false
+      }
     }
   }
 
@@ -226,14 +233,20 @@ function useHook<
         ? vNode.prev.hooks?.at(ctx.hookIndex)
         : vNode.hooks?.at(ctx.hookIndex)
     ) as Hook<T> | undefined
-    const hook =
-      oldHook ??
-      (typeof hookDataOrInitializer === "function"
-        ? hookDataOrInitializer()
-        : { ...hookDataOrInitializer })
 
-    if (!vNode.hooks) vNode.hooks = []
+    let hook: Hook<T>
+    if (!oldHook) {
+      hook =
+        typeof hookDataOrInitializer === "function"
+          ? hookDataOrInitializer()
+          : { ...hookDataOrInitializer }
+    } else {
+      hook = oldHook
+    }
+
+    vNode.hooks ??= []
     vNode.hooks[ctx.hookIndex++] = hook
+
     const res = (callback as HookCallback<T>)({
       hook: hook,
       isInit: !oldHook,
