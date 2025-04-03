@@ -19,7 +19,7 @@ export {
   type HookCallbackContext as HookCallbackState,
 }
 
-type HookState<T> = Kaioken.HookState<T>
+type HookState<T> = Kaioken.Hook<T>
 
 const $HOOK_INVALIDATED = Symbol.for("kaioken.hookInvalidated")
 const HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY: HookState<any> = {
