@@ -1,6 +1,8 @@
 import { kaiokenGlobal, toggleElementToVnode, useDevtoolsStore } from "./store"
 import {
   AppViewIcon,
+  broadcastChannel,
+  BroadcastChannelMessage,
   CogIcon,
   ExternalLinkIcon,
   SelectedNodeView,
@@ -19,7 +21,6 @@ import {
   useComputed,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRequestUpdate,
   useSignal,
   useState,
@@ -29,11 +30,11 @@ import { getFileLink } from "devtools-shared/src/utils"
 
 const handleToggleInspect = () => {
   if (!window.opener) return
-  kaiokenGlobal?.emit(
-    // @ts-expect-error We have our own custom type here
-    "devtools:toggleInspect",
-    { value: !toggleElementToVnode.value }
-  )
+  toggleElementToVnode.value = !toggleElementToVnode.value
+  broadcastChannel.send({
+    type: "set-inspect-enabled",
+    value: toggleElementToVnode.value,
+  })
 }
 
 const APP_TABS = {
@@ -94,15 +95,15 @@ type StoreSelection = {
 
 function StoresView() {
   const currentStore = useSignal<null | StoreSelection>(null)
-  const stores = useSignal<null | Map<string, Store<any, any>>>(null)
+  const stores = useSignal<Record<string, Store<any, any>>>({})
 
-  const onStoresChanged = (newStores: Map<string, Store<any, any>>) => {
+  const onStoresChanged = (newStores: Record<string, Store<any, any>>) => {
     if (!currentStore.value) return
-    if (newStores.has(currentStore.value.name)) return
+    if (currentStore.value.name in newStores) return
 
     // store was removed
     if (!newStores.size) return (currentStore.value = null)
-    for (const [name, store] of newStores) {
+    for (const [name, store] of Object.entries(newStores)) {
       currentStore.value = {
         name,
         store,
@@ -135,15 +136,12 @@ function StoresView() {
             value={currentStore.value?.name ?? ""}
             options={[
               { text: "Select Store", key: "", disabled: true },
-              ...(stores.value?.keys() ?? []),
+              ...Object.keys(stores.value ?? {}),
             ]}
             onChange={(name) => {
-              const store = stores.value?.get(name)
+              const store = stores.value[name]
               if (!store) return
-              currentStore.value = {
-                name,
-                store,
-              }
+              currentStore.value = { name, store }
             }}
           />
         </div>
@@ -154,8 +152,10 @@ function StoresView() {
               href={fileLink}
               onclick={(e) => {
                 e.preventDefault()
-                // @ts-expect-error we have our own event
-                kaiokenGlobal?.emit("devtools:openEditor", fileLink)
+                broadcastChannel.send({
+                  type: "open-editor",
+                  fileLink: fileLink.value!,
+                })
               }}
               //target="_top"
               title="Open in editor"
@@ -218,19 +218,21 @@ function AppView() {
   }, [selectedApp])
 
   useEffect(() => {
-    const handleSelectNode = (
-      ctx: AppContext,
-      vnode: Kaioken.VNode & { type: Function }
-    ) => {
-      setSelectedApp(ctx)
-      setSelectedNode(vnode)
-      inspectComponent.value = vnode
+    const handleSelectNode = (e: MessageEvent<BroadcastChannelMessage>) => {
+      if (e.data.type !== "select-node") return
+      if (!window.__devtoolsSelection) {
+        console.error("no selection ptr")
+        return
+      }
+      const { app, node } = window.__devtoolsSelection
+      window.__devtoolsSelection = null
+      setSelectedApp(app)
+      setSelectedNode(node as any)
+      inspectComponent.value = node
       toggleElementToVnode.value = false
     }
-    // @ts-expect-error
-    kaiokenGlobal?.on("devtools:selectNode", handleSelectNode)
-    // @ts-expect-error
-    return () => kaiokenGlobal?.off("devtools:selectNode", handleSelectNode)
+    broadcastChannel.addEventListener(handleSelectNode)
+    return () => broadcastChannel.removeEventListener(handleSelectNode)
   }, [selectedApp])
 
   return (

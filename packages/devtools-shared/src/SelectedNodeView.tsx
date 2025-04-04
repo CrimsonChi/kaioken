@@ -4,6 +4,7 @@ import { applyObjectChangeFromKeys, getFileLink, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { ValueEditor } from "./ValueEditor"
 import { ExternalLinkIcon, RefreshIcon } from "./icons"
+import { broadcastChannel } from "./broadcastChannel"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
@@ -60,8 +61,10 @@ export function SelectedNodeView({
               href={fileLink}
               onclick={(e) => {
                 e.preventDefault()
-                // @ts-expect-error we have our own event
-                kaiokenGlobal?.emit("devtools:openEditor", fileLink)
+                broadcastChannel.send({
+                  type: "open-editor",
+                  fileLink,
+                })
               }}
               //target="_top"
               title="Open in editor"

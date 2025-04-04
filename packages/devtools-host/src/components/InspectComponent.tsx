@@ -10,6 +10,7 @@ import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "kaioken/utils"
 import { toggleElementToVnode, popup } from "../store"
 import { useDevTools } from "../hooks/useDevtools"
+import { broadcastChannel } from "devtools-shared"
 
 export const InspectComponent: Kaioken.FC = () => {
   const openDevTools = useDevTools()
@@ -48,12 +49,11 @@ export const InspectComponent: Kaioken.FC = () => {
   const bounding = useElementBounding(boundingRef)
 
   useEffect(() => {
-    if (toggleElementToVnode.value) {
-      controls.start()
-    } else {
-      controls.stop()
-    }
-  }, [toggleElementToVnode.value])
+    const unsub = toggleElementToVnode.subscribe((toggled) => {
+      controls[toggled ? "start" : "stop"]()
+    })
+    return unsub
+  }, [])
 
   useEffect(() => {
     if (vnode && element) {
@@ -67,10 +67,14 @@ export const InspectComponent: Kaioken.FC = () => {
     if (toggleElementToVnode.value === true && vnode && elApp) {
       e.preventDefault()
       const emitSelectNode = (w: Window) => {
-        // @ts-expect-error we have our own custom event
-        window.__kaioken?.emit("devtools:selectNode", elApp, vnode)
-        // @ts-expect-error we have our own custom event
-        window.__kaioken?.emit("devtools:toggleInspect", { value: false })
+        w.__devtoolsSelection = { node: vnode, app: elApp }
+        broadcastChannel.send({ type: "select-node" })
+        broadcastChannel.send({
+          type: "set-inspect-enabled",
+          value: false,
+        })
+        toggleElementToVnode.value = false
+        boundingRef.current = null
         w.focus()
       }
 

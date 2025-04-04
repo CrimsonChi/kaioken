@@ -3,6 +3,7 @@ import App from "./App"
 // @ts-expect-error
 import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
 import { popup } from "./store"
+import { broadcastChannel } from "devtools-shared"
 if ("window" in globalThis) {
   let hasMounted = false
   window.__kaioken?.on("mount", async () => {
@@ -32,8 +33,10 @@ if ("window" in globalThis) {
     window.addEventListener("close", handleMainWindowClose)
     window.addEventListener("beforeunload", handleMainWindowClose)
   })
-  // @ts-expect-error We have our own custom type here
-  window.__kaioken?.on("devtools:openEditor", (fileLink: string) => {
-    window.open(fileLink)
+
+  broadcastChannel.addEventListener((msg) => {
+    if (msg.data.type === "open-editor") {
+      window.open(msg.data.fileLink)
+    }
   })
 }

@@ -5,26 +5,27 @@ import { Store } from "./store"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
 
-class ReactiveMap<K, V> {
-  #map = new Map<K, V>()
-  #listeners = new Set<(value: Map<K, V>) => void>()
-  add(key: K, value: V) {
+class ReactiveMap<V> {
+  #map = new Map<string, V>()
+  #listeners = new Set<(value: Record<string, V>) => void>()
+  add(key: string, value: V) {
     if (this.#map.has(key)) return
     this.#map.set(key, value)
     this.notify()
   }
-  delete(key: K) {
+  delete(key: string) {
     if (!this.#map.has(key)) return
     this.#map.delete(key)
     this.notify()
   }
 
   private notify() {
-    this.#listeners.forEach((cb) => cb(this.#map))
+    const val = Object.fromEntries(this.#map)
+    this.#listeners.forEach((cb) => cb(val))
   }
-  subscribe(cb: (value: Map<K, V>) => void) {
+  subscribe(cb: (value: Record<string, V>) => void) {
     this.#listeners.add(cb)
-    cb(this.#map)
+    cb(Object.fromEntries(this.#map))
     return () => this.#listeners.delete(cb)
   }
   get size() {
@@ -58,7 +59,7 @@ class KaiokenGlobalContext {
     GlobalKaiokenEvent,
     Set<(ctx: AppContext, data?: Evt["data"]) => void>
   > = new Map()
-  stores: ReactiveMap<string, Store<any, any>> = new ReactiveMap()
+  stores: ReactiveMap<Store<any, any>> = new ReactiveMap()
   HMRContext?: ReturnType<typeof createHMRContext>
 
   constructor() {

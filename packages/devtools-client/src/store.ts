@@ -1,5 +1,6 @@
 import { AppContext, createStore, signal } from "kaioken"
 import { isDevtoolsApp } from "./utils"
+import { broadcastChannel } from "devtools-shared"
 
 export const kaiokenGlobal =
   "window" in globalThis
@@ -7,14 +8,11 @@ export const kaiokenGlobal =
     : undefined
 
 export const toggleElementToVnode = signal(false)
-kaiokenGlobal?.on(
-  // @ts-expect-error We have our own custom type here
-  "devtools:toggleInspect",
-  // @ts-expect-error We have our own custom type here
-  ({ value }) => {
-    toggleElementToVnode.value = !!value
+broadcastChannel.addEventListener((e) => {
+  if (e.data.type === "set-inspect-enabled") {
+    toggleElementToVnode.value = e.data.value
   }
-)
+})
 
 const initialApps = (kaiokenGlobal?.apps ?? []).filter(
   (app) => !isDevtoolsApp(app)
