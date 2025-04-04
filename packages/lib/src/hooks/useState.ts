@@ -2,6 +2,11 @@ import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 
+/**
+ * Creates a stateful value, and returns the current value and a function to update it.
+ *
+ * @see https://kaioken.dev/docs/hooks/useState
+ */
 export function useState<T>(
   initial: T | (() => T)
 ): readonly [T, (value: Kaioken.StateSetter<T>) => void] {

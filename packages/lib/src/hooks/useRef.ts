@@ -13,6 +13,12 @@ export function useRef<T>(initialValue?: T | null) {
   return useHook("useRef", { ref: { current: initialValue } }, useRefCallback)
 }
 
+/**
+ * Creates a ref object. Useful for persisting values between renders or getting
+ * a reference to an element.
+ *
+ * @see https://kaioken.dev/docs/hooks/useRef
+ */
 const useRefCallback = <T>({
   hook,
 }: HookCallbackState<UseCallbackState<T>>) => {

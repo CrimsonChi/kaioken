@@ -93,6 +93,11 @@ function setQuery(query: Record<string, string>) {
   window.dispatchEvent(new PopStateEvent("popstate", { state: {} }))
 }
 
+/**
+ * Gets state and methods provided by a parent <Router>.
+ *
+ * @see https://kaioken.dev/docs/api/routing
+ */
 export function useRouter() {
   const { viewTransition, params, query } = useContext(RouterContext)
   return { viewTransition, params, query, setQuery }
@@ -145,6 +150,11 @@ const initLoc = () => ({
   search: window.location.search,
 })
 
+/**
+ * Main router component.
+ *
+ * @see https://kaioken.dev/docs/api/routing
+ */
 export function Router(props: RouterProps) {
   const appCtx = useAppContext()
   const viewTransition = useRef<ViewTransition | null>(null)

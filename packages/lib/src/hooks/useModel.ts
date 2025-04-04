@@ -34,6 +34,11 @@ type UseModelState<
   listener: () => void
 }
 
+/**
+ * Similar to [useRef](https://kaioken.dev/docs/hooks/useRef), but creates a ref specifically to
+ * be used with an HTMLInputElement, HTMLTextAreaElement, or HTMLSelectElement.
+ * Automatically binds change listeners to the element.
+ */
 export function useModel<
   T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   U extends string | boolean | FileList | null = string

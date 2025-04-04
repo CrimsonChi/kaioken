@@ -1,6 +1,11 @@
 import { __DEV__ } from "../env.js"
 import { depsRequireChange, useHook, sideEffectsEnabled } from "./utils.js"
 
+/**
+ * Creates a memoized callback function.
+ *
+ * @see https://kaioken.dev/docs/hooks/useCallback
+ */
 export function useCallback<T extends Function>(
   callback: T,
   deps: unknown[]

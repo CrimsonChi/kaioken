@@ -2,6 +2,11 @@ import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 
+/**
+ * Creates 'dispatcher-driven' state.
+ *
+ * @see https://kaioken.dev/docs/hooks/useReducer
+ */
 export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
   state: T

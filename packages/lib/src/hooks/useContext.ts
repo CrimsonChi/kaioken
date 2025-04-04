@@ -9,6 +9,11 @@ type UseContextHookState<T> = {
   warnIfNotFound: boolean
 }
 
+/**
+ * Gets the current value of a context provider created by the context.
+ *
+ * @see https://kaioken.dev/docs/hooks/useContext
+ */
 export function useContext<T>(
   context: Kaioken.Context<T>,
   warnIfNotFound = true
