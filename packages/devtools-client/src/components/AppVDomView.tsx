@@ -11,7 +11,7 @@ const handleSearch: ElementProps<"input">["oninput"] = (e) => {
   if (inspectComponent.value) inspectComponent.value = null
 }
 
-export function AppView() {
+export function AppVDomView() {
   const { value: app } = useDevtoolsStore((state) => state.selectedApp)
   const { searchRef } = useKeyboardControls()
 

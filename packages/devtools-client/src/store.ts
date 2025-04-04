@@ -52,12 +52,11 @@ export const useDevtoolsStore = createStore(
 )
 
 kaiokenGlobal?.on("mount", (app) => {
-  if (!isDevtoolsApp(app)) {
-    useDevtoolsStore.methods.addApp(app)
-    const selected = useDevtoolsStore.getState().selectedApp
-    if (!selected) {
-      useDevtoolsStore.methods.setSelectedApp(app)
-    }
+  if (isDevtoolsApp(app)) return
+  useDevtoolsStore.methods.addApp(app)
+  const selected = useDevtoolsStore.getState().selectedApp
+  if (!selected) {
+    useDevtoolsStore.methods.setSelectedApp(app)
   }
 })
 kaiokenGlobal?.on("unmount", (app) => {

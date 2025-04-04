@@ -1,14 +1,9 @@
 import { AppContext, useEffect, useMemo, useRequestUpdate } from "kaioken"
 import { isVNodeDeleted } from "kaioken/utils"
-import {
-  applyObjectChangeFromKeys,
-  getComponentFileLink,
-  getNodeName,
-} from "./utils"
+import { applyObjectChangeFromKeys, getFileLink, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
-import { RefreshIcon } from "./RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
-import { ExternalLinkIcon } from "./ExternalLinkIcon"
+import { ExternalLinkIcon, RefreshIcon } from "./icons"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
@@ -40,7 +35,7 @@ export function SelectedNodeView({
   }, [])
 
   const fileLink = useMemo<string | null>(
-    () => getComponentFileLink(selectedNode),
+    () => getFileLink(selectedNode.type),
     [selectedNode]
   )
 

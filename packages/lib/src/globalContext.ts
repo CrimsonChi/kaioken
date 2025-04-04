@@ -1,8 +1,36 @@
 import type { AppContext } from "./appContext"
 import { __DEV__ } from "./env.js"
 import { createHMRContext } from "./hmr.js"
+import { Store } from "./store"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
+
+class ReactiveMap<K, V> {
+  #map = new Map<K, V>()
+  #listeners = new Set<(value: Map<K, V>) => void>()
+  add(key: K, value: V) {
+    if (this.#map.has(key)) return
+    this.#map.set(key, value)
+    this.notify()
+  }
+  delete(key: K) {
+    if (!this.#map.has(key)) return
+    this.#map.delete(key)
+    this.notify()
+  }
+
+  private notify() {
+    this.#listeners.forEach((cb) => cb(this.#map))
+  }
+  subscribe(cb: (value: Map<K, V>) => void) {
+    this.#listeners.add(cb)
+    cb(this.#map)
+    return () => this.#listeners.delete(cb)
+  }
+  get size() {
+    return this.#map.size
+  }
+}
 
 type Evt =
   | {
@@ -30,6 +58,7 @@ class KaiokenGlobalContext {
     GlobalKaiokenEvent,
     Set<(ctx: AppContext, data?: Evt["data"]) => void>
   > = new Map()
+  stores: ReactiveMap<string, Store<any, any>> = new ReactiveMap()
   HMRContext?: ReturnType<typeof createHMRContext>
 
   constructor() {
@@ -43,6 +72,7 @@ class KaiokenGlobalContext {
   get apps() {
     return Array.from(this.#contexts)
   }
+
   emit<T extends Evt>(event: T["name"], ctx: AppContext, data?: T["data"]) {
     this.listeners.get(event)?.forEach((cb) => cb(ctx, data))
   }

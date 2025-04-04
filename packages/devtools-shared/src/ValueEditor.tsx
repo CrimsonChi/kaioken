@@ -1,6 +1,6 @@
 import { ElementProps, useMemo, useState } from "kaioken"
-import { Chevron } from "./Chevron"
 import { useSettings } from "./Settings"
+import { ChevronIcon } from "./icons"
 
 const noop = Object.freeze(() => {})
 
@@ -204,7 +204,9 @@ function ValueFieldEditor({
       return (
         <ObjectPropertyWrapper>
           {Label}
-          <TextValueDisplay>{`ƒ ${value.name || "anonymous"}()`}</TextValueDisplay>
+          <TextValueDisplay>{`ƒ ${
+            value.name || "anonymous"
+          }()`}</TextValueDisplay>
         </ObjectPropertyWrapper>
       )
     default:
@@ -220,7 +222,7 @@ function ValueFieldEditor({
               }}
             >
               {label}
-              <Chevron
+              <ChevronIcon
                 width={10}
                 height={10}
                 className={`transition ${collapsed ? "" : "rotate-90"}`}
@@ -268,7 +270,7 @@ function ValueFieldEditor({
             }}
           >
             {label}
-            <Chevron
+            <ChevronIcon
               width={10}
               height={10}
               className={`transition ${collapsed ? "" : "rotate-90"}`}
@@ -364,7 +366,7 @@ function ArrayChunkDisplay({
       >
         [{range.start}..
         {(range.end < array.length ? range.end : array.length) - 1}]
-        <Chevron
+        <ChevronIcon
           width={10}
           height={10}
           className={`transition ${collapsed ? "" : "rotate-90"}`}
