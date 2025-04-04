@@ -1,1 +1,1 @@
-export type FilePathFormatter = (path: string) => string
+export type FileLinkFormatter = (path: string, line: number) => string

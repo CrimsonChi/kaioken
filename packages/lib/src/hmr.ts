@@ -22,6 +22,7 @@ type HotVarDesc = {
   type: string
   value: HotVar
   hooks?: Array<{ name: string; args: string }>
+  link: string
 }
 
 export function isGenericHmrAcceptor(
@@ -39,13 +40,13 @@ export function isGenericHmrAcceptor(
 type ModuleMemory = {
   hotVars: Map<string, HotVarDesc>
   unnamedWatchers: Array<WatchEffect>
-  fileLink: string
 }
 
 type HotVarRegistrationEntry = {
   type: string
   value: HotVar
   hooks?: Array<{ name: string; args: string }>
+  link: string
 }
 
 export function createHMRContext() {
@@ -57,14 +58,13 @@ export function createHMRContext() {
   let isWaitingForNextWatchCall = false
   let tmpUnnamedWatchers: WatchEffect[] = []
 
-  const prepare = (filePath: string, fileLink: string) => {
+  const prepare = (filePath: string) => {
     let mod = moduleMap.get(filePath)
     isModuleReplacementExecution = !!mod
     if (!mod) {
       mod = {
         hotVars: new Map(),
         unnamedWatchers: [],
-        fileLink,
       }
       moduleMap.set(filePath, mod)
     }
@@ -80,18 +80,21 @@ export function createHMRContext() {
     let dirtiedApps: Set<AppContext> = new Set()
     for (const [name, newEntry] of Object.entries(hotVarRegistrationEntries)) {
       const oldEntry = currentModuleMemory.hotVars.get(name)
+
+      // @ts-ignore - this is how we tell devtools what file the hotvar is from
+      newEntry.value.__devtoolsFileLink = newEntry.link
+
       if (typeof newEntry.value === "function") {
-        // @ts-ignore - this is how we tell devtools what file the component is from
-        newEntry.value.__devtoolsFileLink = currentModuleMemory.fileLink + ":0"
         if (oldEntry?.value) {
           /**
-           * this is how, when the previous function has been stored somewhere else (eg. by Vike),
+           * this is how, when the previous function has been stored somewhere else (eg. in a Map, or by Vike),
            * we can trace it to its latest version
            */
           // @ts-ignore
           oldEntry.value.__next = newEntry.value
         }
       }
+
       currentModuleMemory.hotVars.set(name, newEntry)
       if (!oldEntry) continue
       if (

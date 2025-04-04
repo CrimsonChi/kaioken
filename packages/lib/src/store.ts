@@ -144,7 +144,7 @@ function createStore<T, U extends MethodFactory<T>>(
       [$HMR_ACCEPT]: {
         provide: () => ({
           $initial,
-          state: state,
+          state,
           subscribers,
           nodeToSliceComputeMap,
         }),

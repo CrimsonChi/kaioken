@@ -1,13 +1,13 @@
 import type { ProgramNode } from "rollup"
-import { FilePathFormatter } from "./types"
+import { FileLinkFormatter } from "./types"
 import MagicString from "magic-string"
+import fs from "node:fs"
 
 type SrcInsertion = {
   content: string
   offset: number
 }
 type SrcInsertionContext = {
-  id: string
   code: MagicString
   inserts: SrcInsertion[]
 }
@@ -56,24 +56,23 @@ if (import.meta.hot && "window" in globalThis) {
 export function injectHMRContextPreamble(
   code: MagicString,
   ast: ProgramNode,
-  fileLinkFormatter: FilePathFormatter,
-  id: string
+  fileLinkFormatter: FileLinkFormatter,
+  filePath: string
 ): MagicString | null {
   try {
     const srcInsertCtx: SrcInsertionContext = {
-      id,
       code,
       inserts: [],
     }
     createUnnamedWatchInserts(srcInsertCtx, ast.body as AstNode[])
 
-    const hotVars = findHotVars(ast.body as AstNode[], id)
+    const hotVars = findHotVars(ast.body as AstNode[], filePath)
 
     if (hotVars.size === 0 && srcInsertCtx.inserts.length === 0) return null
 
     code.prepend(`
 if (import.meta.hot && "window" in globalThis) {
-  window.__kaioken.HMRContext?.prepare("${id}", "${fileLinkFormatter(id)}");
+  window.__kaioken.HMRContext?.prepare("${filePath}");
 }
 `)
     for (const insert of srcInsertCtx.inserts) {
@@ -83,13 +82,18 @@ if (import.meta.hot && "window" in globalThis) {
     const componentNamesToHookArgs = getComponentHookArgs(
       ast.body as AstNode[],
       code.original,
-      id
+      filePath
     )
 
     code.append(`
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
-  ${createHMRRegistrationBlurb(hotVars, componentNamesToHookArgs)}
+  ${createHMRRegistrationBlurb(
+    hotVars,
+    componentNamesToHookArgs,
+    fileLinkFormatter,
+    filePath
+  )}
 }
 `)
 
@@ -107,13 +111,18 @@ type HotVarDesc = {
 
 function createHMRRegistrationBlurb(
   hotVars: Set<HotVarDesc>,
-  componentHookArgs: Record<string, HookToArgs[]>
+  componentHookArgs: Record<string, HookToArgs[]>,
+  fileLinkFormatter: FileLinkFormatter,
+  filePath: string
 ) {
+  const src = fs.readFileSync(filePath, "utf-8")
   const entries = Array.from(hotVars).map(({ name, type }) => {
+    const line = findHotVarLineInSrc(src, name)
     if (type !== "component") {
       return `    ${name}: {
       type: "${type}",
-      value: ${name}
+      value: ${name},
+      link: "${fileLinkFormatter(filePath, line)}"
     }`
     }
     if (!componentHookArgs[name]) {
@@ -128,13 +137,37 @@ function createHMRRegistrationBlurb(
     return `    ${name}: {
       type: "component",
       value: ${name},
-      hooks: [${args.join(",")}]
+      hooks: [${args.join(",")}],
+      link: "${fileLinkFormatter(filePath, line)}"
     }`
   })
   return `
   window.__kaioken.HMRContext?.register({
 ${entries.join(",\n")}
   });`
+}
+
+function findHotVarLineInSrc(src: string, name: string) {
+  const lines = src.split("\n")
+  const potentialMatches = [
+    `const ${name}`,
+    `let ${name}`,
+    `var ${name}`,
+    `function ${name}`,
+    `export const ${name}`,
+    `export let ${name}`,
+    `export var ${name}`,
+    `export default ${name}`,
+    `export function ${name}`,
+    `export default function ${name}`,
+  ]
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    for (let j = 0; j < potentialMatches.length; j++) {
+      if (line.startsWith(potentialMatches[j])) return i + 1
+    }
+  }
+  return 0
 }
 
 function createAliasHandler(name: string) {
@@ -183,7 +216,7 @@ function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
       continue
     }
 
-    if (findComponent(node, bodyNodes)) {
+    if (isComponent(node, bodyNodes)) {
       addHotVarDesc(node, hotVars, "component")
       continue
     }
@@ -191,6 +224,7 @@ function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
     for (const aliasHandler of aliasHandlers) {
       if (findNode(node, aliasHandler.nodeContainsAliasCall)) {
         addHotVarDesc(node, hotVars, aliasHandler.name)
+        break
       }
     }
   }
@@ -223,7 +257,7 @@ function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
         return findNode(node, isFuncDecOrExpr)
       }
       const name = findNodeName(node)
-      if (!name) return false
+      if (name === null) return false
       const dec = findVariableDeclaration(node, name, bodyNodes)
       if (!dec) return false
       return isFuncDecOrExpr(dec[0])
@@ -234,30 +268,31 @@ function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
   return false
 }
 
-function findComponent(node: AstNode, bodyNodes: AstNode[]): boolean {
+function isComponent(node: AstNode, bodyNodes: AstNode[]): boolean {
   const isTlf = isTopLevelFunction(node, bodyNodes)
   if (!isTlf) return false
   const name = findNodeName(node)
-  if (!name) return false
+  if (name === null) return false
   const charCode = name.charCodeAt(0)
   return charCode >= 65 && charCode <= 90
 }
 
-function findNodeName(node: AstNode): string | void {
+function findNodeName(node: AstNode): string | null {
   if (node.id?.name) return node.id.name
   if (node.declaration?.id?.name) return node.declaration.id.name
   if (node.declaration?.declarations?.[0]?.id?.name)
     return node.declaration.declarations[0].id.name
   if (node.declarations?.[0]?.id?.name) return node.declarations[0].id.name
+  return null
 }
 
 function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   const name = findNodeName(node)
-  if (!name && type === "component") {
+  if (name == null && type === "component") {
     console.error("[vite-plugin-kaioken]: failed to find component name", node)
     throw new Error("[vite-plugin-kaioken]: Component name not found")
   }
-  if (name) {
+  if (name !== null) {
     names.add({ type, name })
   }
 }
@@ -269,13 +304,13 @@ type HookToArgs = [HookName, string]
 function getComponentHookArgs(
   bodyNodes: AstNode[],
   code: string,
-  id: string
+  filePath: string
 ): Record<string, HookToArgs[]> {
   const res: Record<ComponentName, HookToArgs[]> = {}
   for (const node of bodyNodes) {
-    if (findComponent(node, bodyNodes)) {
+    if (isComponent(node, bodyNodes)) {
       const name = findNodeName(node)
-      if (!name) {
+      if (name === null) {
         console.error(
           "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component name)",
           node
@@ -310,7 +345,7 @@ function getComponentHookArgs(
               } catch (error) {
                 console.error(
                   "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
-                  id,
+                  filePath,
                   error,
                   dec.init?.callee
                 )
@@ -330,7 +365,7 @@ function getComponentHookArgs(
             } catch (error) {
               console.error(
                 "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
-                id,
+                filePath,
                 error,
                 bodyNode.expression?.callee
               )

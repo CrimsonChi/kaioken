@@ -1,7 +1,7 @@
 import type { ESBuildOptions, Plugin, UserConfig } from "vite"
 import devtoolsLinkScript from "kaioken-devtools-host"
 import devtoolsUiScript from "kaioken-devtools-client"
-import { FilePathFormatter } from "./types"
+import { FileLinkFormatter } from "./types"
 import { injectHMRContextPreamble } from "./codegen.js"
 import MagicString from "magic-string"
 import path from "node:path"
@@ -24,15 +24,16 @@ export interface KaiokenPluginOptions {
    * @returns {string} the formatted link
    * @default (path) => `vscode://file/${path}`
    */
-  formatFileLink?: FilePathFormatter
+  formatFileLink?: FileLinkFormatter
 }
 
-const vscodeFilePathFormatter = (path: string) => `vscode://file/${path}`
+const vscodeFileLinkFormatter = (path: string, line: number) =>
+  `vscode://file/${path}:${line}`
 
 export default function kaioken(
   opts: KaiokenPluginOptions = {
     devtools: true,
-    formatFileLink: vscodeFilePathFormatter,
+    formatFileLink: vscodeFileLinkFormatter,
   }
 ): Plugin {
   const tsxOrJsxRegex = /\.(tsx|jsx)$/
@@ -40,7 +41,7 @@ export default function kaioken(
   let isProduction = false
   let isBuild = false
 
-  const fileLinkFormatter = opts.formatFileLink || vscodeFilePathFormatter
+  const fileLinkFormatter = opts.formatFileLink || vscodeFileLinkFormatter
   let _config: UserConfig | null = null
 
   return {
