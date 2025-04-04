@@ -29,15 +29,13 @@ export class Scheduler {
   private immediateEffectDirtiedRender = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
+  private isPreparingSyncUpdate = false
   private effectCallbacks = {
     pre: [] as Function[],
     post: [] as Function[],
   }
 
-  constructor(
-    private appCtx: AppContext<any>,
-    private maxFrameMs = 50
-  ) {
+  constructor(private appCtx: AppContext<any>, private maxFrameMs = 50) {
     const timeRemaining = () => this.frameDeadline - window.performance.now()
     const deadline = {
       didTimeout: false,
@@ -84,6 +82,21 @@ export class Scheduler {
     if (wakeUpIfIdle) this.wake()
   }
 
+  beginSyncUpdate() {
+    this.isPreparingSyncUpdate = true
+    if (this.frameHandle !== null) {
+      globalThis.cancelAnimationFrame(this.frameHandle)
+      this.frameHandle = null
+      this.nextUnitOfWork = undefined
+      this.currentTreeIndex = 0
+    }
+  }
+
+  endSyncUpdate() {
+    this.isPreparingSyncUpdate = false
+    this.workLoop()
+  }
+
   queueUpdate(vNode: VNode, immediate?: boolean) {
     if (vNode.prev?.memoizedProps) {
       delete vNode.prev.memoizedProps
@@ -104,6 +117,7 @@ export class Scheduler {
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
+      if (this.isPreparingSyncUpdate) return
       return this.wake(immediate)
     }
 

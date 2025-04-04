@@ -115,6 +115,37 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     })
   }
 
+  /**
+   * Provides a synchronous batched update
+   * @param callback
+   * @example
+   * ```tsx
+   * const App = () => {
+   *   const appCtx = useAppContext()
+   *   const [count, setCount] = useState(0)
+   *   const [name, setName] = useState("John")
+   *   const update = () => {
+   *     appCtx.batchSync(() => {
+   *       setCount((prev) => prev + 1)
+   *       setName("Jane")
+   *     })
+   *   }
+   *   return (
+   *     <>
+   *      <div>Count: {count}</div>
+   *      <div>Name: {name}</div>
+   *      <button onclick={update}>Update</button>
+   *     </>
+   *   )
+   * }
+   * ```
+   */
+  batchSync(callback: () => void) {
+    this.scheduler?.beginSyncUpdate()
+    callback()
+    this.scheduler?.endSyncUpdate()
+  }
+
   requestUpdate(vNode?: VNode) {
     if (!vNode) {
       if (!this.mounted || !this.rootNode) return
