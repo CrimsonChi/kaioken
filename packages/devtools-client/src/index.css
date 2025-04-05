@@ -8,12 +8,15 @@
 
 #app {
   min-width: fit-content;
-  background-color: #171616;
+  background-image: linear-gradient(#171616, #0e0e0e);
+  /* background: #171616; */
   color: #fff;
   min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: row;
+  padding: 0.5rem;
+  gap: 0.5rem;
 }
 
 select {

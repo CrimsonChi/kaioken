@@ -3,31 +3,55 @@ import { signal } from "kaioken"
 import { AppTabView } from "./tabs/AppTabView"
 import { StoresTabView } from "./tabs/StoresTabView"
 
+type TabViewProps = { active: boolean; children: JSX.Element }
+
+const TabView = (props: TabViewProps) => {
+  return (
+    <main
+      className="flex flex-col flex-1 max-h-screen overflow-y-auto"
+      style={props.active ? {} : { display: "none" }}
+    >
+      {props.children}
+    </main>
+  )
+}
+
 const APP_TABS = {
   Apps: {
     Icon: AppViewIcon,
-    View: AppTabView,
+    View: (props: { active: boolean }) => {
+      return (
+        <TabView active={props.active}>
+          <AppTabView />
+        </TabView>
+      )
+    },
   },
   Stores: {
     Icon: StoresViewIcon,
-    View: StoresTabView,
+    View: (props: { active: boolean }) => {
+      return (
+        <TabView active={props.active}>
+          <StoresTabView />
+        </TabView>
+      )
+    },
   },
 }
 
 const selectedTab = signal<keyof typeof APP_TABS>("Apps")
 
 export function App() {
-  const View = APP_TABS[selectedTab.value].View
   return (
     <>
-      <nav className="flex flex-col gap-2 p-2 bg-[#1e1e1e] border-r border-neutral-900">
+      <nav className="flex flex-col gap-2 p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
         {Object.keys(APP_TABS).map((key) => (
           <TabButton key={key} title={key as keyof typeof APP_TABS} />
         ))}
       </nav>
-      <main className="flex flex-col flex-1 max-h-screen overflow-y-auto">
-        <View />
-      </main>
+      {Object.entries(APP_TABS).map(([title, { View }]) => (
+        <View key={title} active={selectedTab.value === title} />
+      ))}
     </>
   )
 }
@@ -49,7 +73,7 @@ function TabButton({ title }: { title: keyof typeof APP_TABS }) {
       title={title}
     >
       <Icon className="text-primary" />
-      {title}
+      <span className="hidden md:inline">{title}</span>
     </button>
   )
 }

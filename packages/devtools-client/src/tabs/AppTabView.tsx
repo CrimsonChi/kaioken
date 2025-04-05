@@ -15,7 +15,6 @@ import { inspectComponent } from "../signal"
 import { toggleElementToVnode, useDevtoolsStore, kaiokenGlobal } from "../store"
 
 const handleToggleInspect = () => {
-  if (!window.opener) return
   toggleElementToVnode.value = !toggleElementToVnode.value
   broadcastChannel.send({
     type: "set-inspect-enabled",
@@ -66,10 +65,10 @@ export function AppTabView() {
     <SettingsProvider>
       {(settingsCtx) => (
         <>
-          <div className="sticky top-0 z-10 flex items-center justify-between gap-4 p-2 bg-neutral-800 border-b border-black border-opacity-30">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-4 p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
             <div className="flex items-center gap-4">
               <Select
-                className="px-2 py-1 bg-[#333] text-white rounded border border-white border-opacity-10"
+                className="px-2 py-1 bg-neutral-800 text-neutral-100 rounded border border-white border-opacity-10"
                 options={[
                   { text: "Select App", key: "", disabled: true },
                   ...apps.map((app) => app.name),

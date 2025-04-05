@@ -1,8 +1,4 @@
-import {
-  useElementBounding,
-  useEventListener,
-  useMouse,
-} from "@kaioken-core/hooks"
+import { useEventListener, useMouse, useElementBounding } from "devtools-shared"
 import {
   ElementProps,
   useCallback,

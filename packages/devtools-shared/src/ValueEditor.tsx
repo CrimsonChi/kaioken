@@ -132,7 +132,9 @@ function ValueFieldEditor({
       </ObjectPropertyWrapper>
     )
   }
-  if (value instanceof (window.opener.Node as typeof Node)) {
+
+  const nodeCtor = window.opener ? (window.opener.Node as typeof Node) : Node
+  if (value instanceof nodeCtor) {
     return (
       <ObjectPropertyWrapper>
         {Label}

@@ -125,6 +125,10 @@ export function SettingsDrawer() {
     <Portal container={() => document.getElementById("portal-root")!}>
       <Transition
         in={open}
+        duration={{
+          in: 0,
+          out: 150,
+        }}
         element={(state) => (
           <Drawer
             state={state}
@@ -157,7 +161,7 @@ function Drawer({ state, close, userSettings, saveUserSettings }: DrawerProps) {
       style={{ opacity, pointerEvents, transition: "0.3s" }}
     >
       <div
-        className="fixed flex flex-col flex-grow gap-2 p-4 transition-transform h-full bg-neutral-900 w-[300px]"
+        className="fixed flex flex-col flex-grow gap-2 p-4 transition-transform duration-150 h-full bg-neutral-900 w-[300px]"
         style={{ right: "0", transform: `translateX(${offsetX}%)` }}
       >
         <h1>Settings</h1>

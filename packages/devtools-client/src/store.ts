@@ -2,10 +2,15 @@ import { AppContext, createStore, signal } from "kaioken"
 import { isDevtoolsApp } from "./utils"
 import { broadcastChannel } from "devtools-shared"
 
-export const kaiokenGlobal =
-  "window" in globalThis
-    ? (window.opener.__kaioken as typeof window.__kaioken)
-    : undefined
+export let kaiokenGlobal: typeof window.__kaioken
+let runAnyway = true
+if ("window" in globalThis) {
+  if (window.opener) {
+    kaiokenGlobal = window.opener.__kaioken
+  } else if (runAnyway) {
+    kaiokenGlobal = window.__kaioken
+  }
+}
 
 export const toggleElementToVnode = signal(false)
 broadcastChannel.addEventListener((e) => {
