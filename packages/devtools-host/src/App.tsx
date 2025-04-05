@@ -73,6 +73,7 @@ export default function App() {
       />
       <div
         ref={anchorRef}
+        draggable
         className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${
           toggled.value ? "rounded-3xl" : "rounded-full"
         } p-1 gap-1 items-center will-change-transform bg-crimson`}
