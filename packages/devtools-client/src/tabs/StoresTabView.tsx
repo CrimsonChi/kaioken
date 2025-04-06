@@ -21,10 +21,18 @@ kaiokenGlobal?.stores.subscribe((newStores) => {
 })
 
 export function StoresTabView() {
+  const storeEntries = Object.entries(stores.value)
+  if (storeEntries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <h2 className="text-lg italic text-neutral-400">No stores detected</h2>
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col items-start">
       <div className="flex flex-col gap-2 w-full">
-        {Object.entries(stores.value).map(([name, store]) => (
+        {storeEntries.map(([name, store]) => (
           <StoreView key={name} selection={{ name, store }} />
         ))}
       </div>
