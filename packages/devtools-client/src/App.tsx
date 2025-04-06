@@ -8,7 +8,7 @@ type TabViewProps = { active: boolean; children: JSX.Element }
 const TabView = (props: TabViewProps) => {
   return (
     <main
-      className="flex flex-col flex-1 max-h-screen overflow-y-auto"
+      className="flex flex-col flex-1 max-h-[calc(100vh-1rem)] overflow-y-auto"
       style={props.active ? {} : { display: "none" }}
     >
       {props.children}

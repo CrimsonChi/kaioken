@@ -1,10 +1,10 @@
-import { AppContext, useEffect, useMemo, useRequestUpdate } from "kaioken"
+import { AppContext, useEffect, useRequestUpdate } from "kaioken"
 import { isVNodeDeleted } from "kaioken/utils"
-import { applyObjectChangeFromKeys, getFileLink, getNodeName } from "./utils"
+import { applyObjectChangeFromKeys, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { ValueEditor } from "./ValueEditor"
-import { ExternalLinkIcon, RefreshIcon } from "./icons"
-import { broadcastChannel } from "./broadcastChannel"
+import { RefreshIcon } from "./icons"
+import { FileLink } from "./FileLink"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
@@ -35,11 +35,6 @@ export function SelectedNodeView({
     return () => kaiokenGlobal?.off("update", handleUpdate)
   }, [])
 
-  const fileLink = useMemo<string | null>(
-    () => getFileLink(selectedNode.type),
-    [selectedNode]
-  )
-
   const refresh = () => {
     if (!selectedNode || !selectedApp?.mounted) return
     selectedApp.requestUpdate(selectedNode)
@@ -55,24 +50,7 @@ export function SelectedNodeView({
       <h2 className="flex justify-between items-center font-bold mb-2 pb-2 border-b-2 border-neutral-800">
         <div className="flex gap-2 items-center">
           {"<" + getNodeName(selectedNode) + ">"}
-          {fileLink && (
-            <a
-              className="flex items-center gap-1 text-[10px] opacity-50 hover:opacity-100 transition-opacity"
-              href={fileLink}
-              onclick={(e) => {
-                e.preventDefault()
-                broadcastChannel.send({
-                  type: "open-editor",
-                  fileLink,
-                })
-              }}
-              //target="_top"
-              title="Open in editor"
-            >
-              Open in editor
-              <ExternalLinkIcon width="0.65rem" height="0.65rem" />
-            </a>
-          )}
+          <FileLink fn={selectedNode.type} />
         </div>
         <button onclick={refresh}>
           <RefreshIcon className="w-5 h-5" />
