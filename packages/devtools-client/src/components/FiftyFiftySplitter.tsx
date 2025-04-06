@@ -1,8 +1,4 @@
-import {
-  useElementBounding,
-  useEventListener,
-  useMouse,
-} from "@kaioken-core/hooks"
+import { useEventListener, useMouse, useElementBounding } from "devtools-shared"
 import {
   ElementProps,
   useCallback,
@@ -31,41 +27,43 @@ export const FiftyFiftySplitter = (props: {
     firstContainerWidth.value = mainContainer.current.clientWidth / 2
   }, [mainContainer.current])
 
-  const onMouseUp = useCallback(() => {
-    startMouse.value = null
-  }, [])
-  useEventListener("mouseup", onMouseUp)
+  useEventListener(
+    "mouseup",
+    useCallback(() => (startMouse.value = null), [])
+  )
 
-  const onMouseMove = useCallback<
-    NonNullable<ElementProps<"div">["onmousemove"]>
-  >((e) => {
-    if (startMouse.value == null || mainContainer.current == null) return
+  useEventListener(
+    "mousemove",
+    useCallback<NonNullable<ElementProps<"div">["onmousemove"]>>((e) => {
+      if (startMouse.value == null || mainContainer.current == null) return
 
-    const max = Math.max(
-      prevFirstContainerWidth.value + e.x - startMouse.value.x,
-      250
-    )
-    firstContainerWidth.value = Math.min(
-      max,
-      mainContainer.current.clientWidth - 250
-    )
-  }, [])
-  useEventListener("mousemove", onMouseMove)
-
-  const onResize = useCallback(() => {
-    if (mainContainer.current == null) return
-
-    if (mainContainer.current.clientWidth - 250 < firstContainerWidth.value) {
-      firstContainerWidth.value = Math.max(
-        mainContainer.current.clientWidth - 250,
+      const max = Math.max(
+        prevFirstContainerWidth.value + e.x - startMouse.value.x,
         250
       )
-    }
-  }, [])
-  useEventListener("resize", onResize)
+      firstContainerWidth.value = Math.min(
+        max,
+        mainContainer.current.clientWidth - 250
+      )
+    }, [])
+  )
+
+  useEventListener(
+    "resize",
+    useCallback(() => {
+      if (mainContainer.current == null) return
+
+      if (mainContainer.current.clientWidth - 250 < firstContainerWidth.value) {
+        firstContainerWidth.value = Math.max(
+          mainContainer.current.clientWidth - 250,
+          250
+        )
+      }
+    }, [])
+  )
 
   return (
-    <main
+    <div
       ref={mainContainer}
       className="flex-grow grid gap-2 items-start w-full relative"
       style={{ gridTemplateColumns: `${firstContainerWidth}px 1fr` }}
@@ -87,6 +85,6 @@ export const FiftyFiftySplitter = (props: {
         </div>
       )}
       <div className="secondContainer h-full">{secondView}</div>
-    </main>
+    </div>
   )
 }

@@ -15,13 +15,14 @@ import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
 import { toggleElementToVnode } from "./store"
+import { broadcastChannel } from "devtools-shared"
 
 const handleToggleInspect = () => {
-  window.__kaioken?.emit(
-    // @ts-expect-error We have our own custom type here
-    "devtools:toggleInspect",
-    { value: !toggleElementToVnode.value }
-  )
+  toggleElementToVnode.value = !toggleElementToVnode.value
+  broadcastChannel.send({
+    type: "set-inspect-enabled",
+    value: toggleElementToVnode.value,
+  })
 }
 
 export default function App() {
@@ -72,9 +73,14 @@ export default function App() {
       />
       <div
         ref={anchorRef}
-        className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${toggled.value ? "rounded-3xl" : "rounded-full"} p-1 gap-1 items-center will-change-transform bg-crimson`}
+        draggable
+        className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${
+          toggled.value ? "rounded-3xl" : "rounded-full"
+        } p-1 gap-1 items-center will-change-transform bg-crimson`}
         style={{
-          transform: `translate3d(${Math.round(springBtnCoords.value.x)}px, ${Math.round(springBtnCoords.value.y)}px, 0)`,
+          transform: `translate3d(${Math.round(
+            springBtnCoords.value.x
+          )}px, ${Math.round(springBtnCoords.value.y)}px, 0)`,
         }}
       >
         <Transition
@@ -101,7 +107,9 @@ export default function App() {
                   title="Toggle Component Inspection"
                   onclick={handleToggleInspect}
                   style={{ transform: `scale(${scale})`, opacity }}
-                  className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${toggleElementToVnode.value ? "bg-[#0003]" : ""}`}
+                  className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${
+                    toggleElementToVnode.value ? "bg-[#0003]" : ""
+                  }`}
                 >
                   <SquareMouse width={16} height={16} />
                 </button>

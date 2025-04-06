@@ -95,6 +95,10 @@ export function createHMRContext() {
         }
       }
 
+      if (newEntry.type === "createStore") {
+        window.__kaioken!.stores.add(name, newEntry.value as Store<any, any>)
+      }
+
       currentModuleMemory.hotVars.set(name, newEntry)
       if (!oldEntry) continue
       if (

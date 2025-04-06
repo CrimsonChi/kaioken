@@ -60,14 +60,11 @@ export const useAnchorPos = () => {
   }, [startMouse.value, mouse.value])
 
   useEventListener(
-    "mousedown",
+    "dragstart",
     (e) => {
       e.preventDefault()
-
-      timeoutRef.current = window.setTimeout(() => {
-        startMouse.value = { x: e.x, y: e.y }
-        lastDroppedCoord.value = anchorCoords.value
-      }, 100)
+      startMouse.value = { x: e.x, y: e.y }
+      lastDroppedCoord.value = anchorCoords.value
     },
     {
       ref: () => anchorRef.current,

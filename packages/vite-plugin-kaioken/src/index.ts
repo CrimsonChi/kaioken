@@ -1,10 +1,10 @@
 import type { ESBuildOptions, Plugin, UserConfig } from "vite"
-import devtoolsLinkScript from "kaioken-devtools-host"
-import devtoolsUiScript from "kaioken-devtools-client"
-import { FileLinkFormatter } from "./types"
+import devtoolsHostBuild from "kaioken-devtools-host"
+import devtoolsClientBuild from "kaioken-devtools-client"
 import { injectHMRContextPreamble } from "./codegen.js"
 import MagicString from "magic-string"
 import path from "node:path"
+import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import * as kaioken from "kaioken"`,
@@ -15,33 +15,22 @@ export const defaultEsBuildOptions: ESBuildOptions = {
   include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
 }
 
-export interface KaiokenPluginOptions {
-  devtools?: boolean
-  /**
-   * Formats the link displayed in devtools to the component's source code
-   * @param path the path to the file that contains the component on disk
-   * @param line the component's line number
-   * @returns {string} the formatted link
-   * @default (path) => `vscode://file/${path}`
-   */
-  formatFileLink?: FileLinkFormatter
-}
-
-const vscodeFileLinkFormatter = (path: string, line: number) =>
-  `vscode://file/${path}:${line}`
-
-export default function kaioken(
-  opts: KaiokenPluginOptions = {
-    devtools: true,
-    formatFileLink: vscodeFileLinkFormatter,
-  }
-): Plugin {
+export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   const tsxOrJsxRegex = /\.(tsx|jsx)$/
   const tsOrJsRegex = /\.(ts|js)$/
   let isProduction = false
   let isBuild = false
 
-  const fileLinkFormatter = opts.formatFileLink || vscodeFileLinkFormatter
+  const fileLinkFormatter: FileLinkFormatter =
+    opts?.formatFileLink ||
+    ((path: string, line: number) => `vscode://file/${path}:${line}`)
+
+  let dtClientPathname = "/__devtools__"
+  if (typeof opts?.devtools === "object") {
+    dtClientPathname = opts.devtools.pathname ?? dtClientPathname
+  }
+  const dtHostScriptPath = "/__devtools_host__.js"
+
   let _config: UserConfig | null = null
 
   return {
@@ -56,7 +45,7 @@ export default function kaioken(
       } as UserConfig)
     },
     transformIndexHtml(html) {
-      if (isProduction || isBuild || !opts.devtools) return
+      if (isProduction || isBuild || opts?.devtools === false) return
       return {
         html,
         tags: [
@@ -64,7 +53,7 @@ export default function kaioken(
             tag: "script",
             attrs: {
               type: "module",
-              src: "/__devtools__.js",
+              src: dtHostScriptPath,
             },
           },
         ],
@@ -75,13 +64,13 @@ export default function kaioken(
       isBuild = config.command === "build"
     },
     configureServer(server) {
-      if (isProduction || isBuild || !opts.devtools) return
-      server.middlewares.use("/__devtools__.js", (_, res) => {
+      if (isProduction || isBuild || opts?.devtools === false) return
+      server.middlewares.use(dtHostScriptPath, (_, res) => {
         res.setHeader("Content-Type", "application/javascript")
-        res.end(devtoolsLinkScript, "utf-8")
+        res.end(devtoolsHostBuild, "utf-8")
       })
-      server.middlewares.use("/__devtools__", (_, res) => {
-        res.end(devtoolsUiScript)
+      server.middlewares.use(dtClientPathname, (_, res) => {
+        res.end(devtoolsClientBuild)
       })
     },
     transform(code, id) {
