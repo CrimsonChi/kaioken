@@ -10,6 +10,7 @@ import { flags } from "./flags.js"
 export {
   isVNode,
   isFragment,
+  isLazy,
   isContextProvider,
   isExoticVNode,
   isVNodeDeleted,
@@ -76,10 +77,16 @@ function isExoticVNode(thing: unknown): thing is ExoticVNode {
   )
 }
 
-function isFragment(
-  thing: unknown
-): thing is VNode & { type: typeof $FRAGMENT } {
-  return isVNode(thing) && thing.type === $FRAGMENT
+function isFragment(vNode: VNode): vNode is VNode & { type: typeof $FRAGMENT } {
+  return vNode.type === $FRAGMENT
+}
+
+function isLazy(vNode: VNode): boolean {
+  return (
+    typeof vNode.type === "function" &&
+    "displayName" in vNode.type &&
+    vNode.type.displayName === "Kaioken.lazy"
+  )
 }
 
 function isContextProvider(
