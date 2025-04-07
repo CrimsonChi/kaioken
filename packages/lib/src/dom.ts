@@ -10,7 +10,7 @@ import {
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
-import { ctx, renderMode } from "./globals.js"
+import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
@@ -189,7 +189,6 @@ function updateDom(vNode: VNode) {
       if (Signal.isSignal(nextProps[key])) {
         const unsub = nextProps[key].subscribe((value) => {
           setProp(vNode, dom, key, value, null)
-          emitGranularSignalChange(nextProps[key])
         })
         ;(vNode.cleanups ??= {})[key] = unsub
         return setProp(
@@ -214,18 +213,9 @@ function updateDom(vNode: VNode) {
   })
 }
 
-function emitGranularSignalChange(signal: Signal<any>) {
-  if (__DEV__) {
-    if (Signal.subscribers(signal).size === 1) {
-      window.__kaioken?.emit("update", ctx.current)
-    }
-  }
-}
-
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
   ;(vNode.cleanups ??= {})["nodeValue"] = signal.subscribe((v) => {
     textNode.nodeValue = v
-    emitGranularSignalChange(signal)
   })
 }
 

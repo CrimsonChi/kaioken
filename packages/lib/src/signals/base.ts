@@ -179,7 +179,7 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
               value: hook.signal.peek(),
             }),
             set: ({ value }) => {
-              hook.signal.sneak(value)
+              hook.signal.value = value
             },
           },
         }
