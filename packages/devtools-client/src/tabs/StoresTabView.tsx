@@ -2,6 +2,7 @@ import {
   AppContext,
   Store,
   signal,
+  useEffect,
   useLayoutEffect,
   useRequestUpdate,
   useState,
@@ -115,8 +116,19 @@ function StoreSubscriberAppTree({
   store: Store<any, any>
   app: AppContext
 }) {
+  const requestUpdate = useRequestUpdate()
   const { subscribers, nodeToSliceComputeMap } = getStoreInternals(store)
   const root = app.rootNode!.child
+
+  useEffect(() => {
+    const handleUpdate = (appCtx: AppContext) => {
+      if (appCtx !== app) return
+      requestUpdate()
+    }
+    kaiokenGlobal?.on("update", handleUpdate)
+    return () => kaiokenGlobal?.off("update", handleUpdate)
+  }, [])
+
   if (!root) return null
 
   const clonedTree = cloneTree(root, (node) => subscribers.has(node as any)) as
