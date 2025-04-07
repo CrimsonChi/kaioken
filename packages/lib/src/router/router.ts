@@ -84,7 +84,7 @@ const RouterContext = createContext<RouterCtx>({
   basePath: undefined,
   isDefault: true,
 })
-RouterContext.displayName = "RouterContextProvider"
+RouterContext.displayName = "Router"
 
 function setQuery(query: Record<string, string>) {
   const url = new URL(window.location.href)
@@ -256,24 +256,22 @@ export function Router(props: RouterProps) {
     )
   }
   const params = { ...parentRouterContext.params, ...parsedParams }
-  return createElement(
-    RouterContext.Provider,
-    {
-      value: {
-        params,
-        query,
-        routePath:
-          (dynamicParentPath || "") +
-          (props.basePath || "") +
-          (route?.props.path || ""),
-        basePath: props.basePath,
-        isDefault: false,
-        queueSyncNav: (callback: () => void) => {
-          syncNavCallback.current = callback
-        },
-        viewTransition: viewTransition,
-      } satisfies RouterCtx,
+
+  return RouterContext.Provider({
+    value: {
+      params,
+      query,
+      routePath:
+        (dynamicParentPath || "") +
+        (props.basePath || "") +
+        (route?.props.path || ""),
+      basePath: props.basePath,
+      isDefault: false,
+      queueSyncNav: (callback: () => void) => {
+        syncNavCallback.current = callback
+      },
+      viewTransition: viewTransition,
     },
-    route ?? fallbackRoute ?? null
-  )
+    children: route ?? fallbackRoute ?? null,
+  })
 }
