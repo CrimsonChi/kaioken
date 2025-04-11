@@ -17,6 +17,7 @@ export {
   vNodeContains,
   getCurrentVNode,
   getVNodeAppContext,
+  tryFindThrowHandler,
   commitSnapshot,
   traverseApply,
   postOrderApply,
@@ -107,6 +108,22 @@ function getVNodeAppContext(vNode: VNode): AppContext {
       vNode,
     })
   return n
+}
+
+function tryFindThrowHandler(
+  vNode: Kaioken.VNode,
+  value: unknown
+): (Kaioken.VNode & { throwHandler: Kaioken.ThrowHandler<unknown> }) | null {
+  let node: Kaioken.VNode | undefined = vNode
+  while (node) {
+    if (node.throwHandler && node.throwHandler.accepts(value)) {
+      return node as Kaioken.VNode & {
+        throwHandler: Kaioken.ThrowHandler<unknown>
+      }
+    }
+    node = vNode.parent
+  }
+  return null
 }
 
 function commitSnapshot(vNode: VNode): void {

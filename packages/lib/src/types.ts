@@ -179,6 +179,11 @@ declare global {
 
     type Signal<T> = SignalClass<T> | ReadonlySignal<T>
 
+    type ThrowHandler<T> = {
+      accepts: (value: unknown) => boolean
+      onThrow: (value: T) => void
+    }
+
     type ExoticSymbol = typeof $FRAGMENT | typeof $CONTEXT_PROVIDER
 
     type VNode = {
@@ -188,7 +193,7 @@ declare global {
         [key: string]: any
         children?: unknown
         key?: JSX.ElementKey
-        ref?: Kaioken.Ref<unknown>
+        ref?: Ref<unknown>
       }
       index: number
       depth: number
@@ -206,6 +211,7 @@ declare global {
       prevStyleObj?: StyleObject
       hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
+      throwHandler?: ThrowHandler<unknown>
     }
   }
 

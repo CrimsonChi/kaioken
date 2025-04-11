@@ -17,6 +17,7 @@ const MemoExample = lazy(() => import("./components/MemoExample"))
 const RouterExample = lazy(() => import("./components/RouterExample"))
 const SignalsExample = lazy(() => import("./components/SignalsExample"))
 const StoreExample = lazy(() => import("./components/StoreExample"))
+const SuspenseExample = lazy(() => import("./components/SuspenseExample"))
 const TransitionsExample = lazy(() => import("./components/TransitionsExample"))
 const UseAsyncExample = lazy(() => import("./components/UseAsyncExample"))
 const UseSyncExternalStoreExample = lazy(
@@ -61,6 +62,10 @@ export const ROUTES: Record<string, AppRoute> = {
   "/store-example": {
     title: "Store",
     component: StoreExample,
+  },
+  "/suspense-example": {
+    title: "Suspense",
+    component: SuspenseExample,
   },
   "/transitions-example": {
     title: "Transitions",

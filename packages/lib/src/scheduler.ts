@@ -9,7 +9,13 @@ import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { isExoticVNode, latest, traverseApply, vNodeContains } from "./utils.js"
+import {
+  isExoticVNode,
+  latest,
+  traverseApply,
+  tryFindThrowHandler,
+  vNodeContains,
+} from "./utils.js"
 import { isMemoFn } from "./memo.js"
 
 type VNode = Kaioken.VNode
@@ -281,7 +287,16 @@ export class Scheduler {
             }
           }
         }
-        this.updateFunctionComponent(vNode as FunctionVNode)
+        try {
+          this.updateFunctionComponent(vNode as FunctionVNode)
+        } catch (error) {
+          const handlerNode = tryFindThrowHandler(vNode, error)
+          if (handlerNode !== null) {
+            handlerNode.throwHandler.onThrow(error)
+            return handlerNode
+          }
+          throw error
+        }
       } else if (isExoticVNode(vNode)) {
         vNode.child =
           reconcileChildren(

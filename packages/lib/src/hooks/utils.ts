@@ -12,6 +12,7 @@ export {
   useHookDebugGroup,
   useHookHMRInvalidation,
   useRequestUpdate,
+  useThrowHandler,
   HookDebugGroupAction,
   HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
   type HookState,
@@ -87,6 +88,14 @@ const useRequestUpdate = () => {
   if (!n) error_hookMustBeCalledTopLevel("useRequestUpdate")
   const ctx = getVNodeAppContext(n)
   return () => ctx.requestUpdate(n)
+}
+
+function useThrowHandler<T>(handler: Kaioken.ThrowHandler<T>) {
+  const vNode = node.current
+  if (!vNode) {
+    error_hookMustBeCalledTopLevel("useThrowHandler")
+  }
+  vNode.throwHandler = handler as Kaioken.ThrowHandler<unknown>
 }
 
 /**
