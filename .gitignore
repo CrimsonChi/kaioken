@@ -8,3 +8,4 @@ sandbox/*
 !sandbox/ssr
 !sandbox/ssr-standalone
 !sandbox/tauri
+!sandbox/shared

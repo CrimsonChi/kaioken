@@ -1,6 +1,5 @@
 import { useSignal } from "kaioken"
-import SuspenseExample from "./components/SuspenseExample"
-
+import { SuspenseExample } from "shared/components"
 export default function App() {
   return (
     <>

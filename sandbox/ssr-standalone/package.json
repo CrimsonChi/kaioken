@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
-    "kaioken": "workspace:^"
+    "kaioken": "workspace:^",
+    "shared": "workspace:^"
   }
 }

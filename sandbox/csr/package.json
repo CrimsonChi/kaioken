@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@kaioken-core/hooks": "0.0.9",
-    "kaioken": "workspace:^"
+    "kaioken": "workspace:^",
+    "shared": "workspace:^"
   }
 }

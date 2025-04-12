@@ -1,5 +1,4 @@
 import { Suspense, useSuspense, signal, ErrorBoundary } from "kaioken"
-import { Spinner } from "./atoms/Spinner"
 
 type Product = {
   id: number
@@ -17,11 +16,11 @@ type Product = {
 
 const productId = signal(1)
 
-export default function SuspenseExample() {
+export function SuspenseExample() {
   return (
     <div>
       <button onclick={() => productId.value++}>Next Product</button>
-      <Suspense fallback={<Spinner />}>
+      <Suspense fallback={<div>Loading...</div>}>
         <SomeAsyncComponent />
         <ErrorBoundary
           logger={console.error}
@@ -39,12 +38,10 @@ function SomeComponentThatThrows() {
   return <div>Something you'll never see because I throw</div>
 }
 
-function loadProduct() {
-  return new Promise<Product>((res) => setTimeout(res, 1000)).then(() =>
-    fetch(`https://dummyjson.com/products/${productId}`).then((res) =>
-      res.json()
-    )
-  )
+async function loadProduct() {
+  await new Promise<Product>((res) => setTimeout(res, 1000))
+  const res = await fetch(`https://dummyjson.com/products/${productId}`)
+  return await res.json()
 }
 
 function SomeAsyncComponent() {
