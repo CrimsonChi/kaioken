@@ -1,6 +1,8 @@
 import { renderMode } from "./globals.js"
 import {
+  depsRequireChange,
   useContext,
+  useHook,
   useId,
   useRequestUpdate,
   useState,
@@ -39,48 +41,54 @@ type WrappedPromise<T> = Promise<T> & {
   reason?: any
 }
 
-const useSuspense = <T>(promiseFn: () => Promise<T>): [T, () => void] => {
+const useSuspense = <T>(promiseFn: () => Promise<T>, deps: unknown[]): T => {
   const { id: suspenseId, promises } = useContext(SuspenseContext)
   const id = useId()
-  let entry = promises.get(id)
-  if (!entry) {
-    if (renderMode.current === "hydrate") {
-      // @ts-ignore
-      const metaMap = window.__kaiokenSuspenseMeta as Map<string, any>
-      const x = (
-        metaMap.get(suspenseId) as {
-          data: WrappedPromise<T>
-        }
-      ).data
-      entry = { promise: x, fn: () => x }
-    } else {
-      const promise = Object.assign(promiseFn(), { id }) as WrappedPromise<T>
-      entry = { promise, fn: promiseFn }
-      promises.set(id, entry)
+  return useHook("useSuspense", { deps }, ({ hook }) => {
+    if (depsRequireChange(hook.deps, deps)) {
+      hook.deps = deps
+      promises.delete(id)
     }
-  }
-  const p = entry.promise
-  switch (p.status) {
-    case PROMISE_STATUS.FULFILLED:
-      return [p.value, () => {}]
-    case PROMISE_STATUS.REJECTED:
-      throw p.reason
-    case PROMISE_STATUS.PENDING:
-      throw p
-    default:
-      p.status = PROMISE_STATUS.PENDING
-      p.then(
-        (result) => {
-          p.status = PROMISE_STATUS.FULFILLED
-          p.value = result
-        },
-        (reason) => {
-          p.status = PROMISE_STATUS.REJECTED
-          p.reason = reason
-        }
-      )
-      throw p
-  }
+    let entry = promises.get(id)
+    if (!entry) {
+      if (renderMode.current === "hydrate") {
+        // @ts-ignore
+        const metaMap = window.__kaiokenSuspenseMeta as Map<string, any>
+        const x = (
+          metaMap.get(suspenseId) as {
+            data: WrappedPromise<T>
+          }
+        ).data
+        entry = { promise: x, fn: () => x }
+      } else {
+        const promise = Object.assign(promiseFn(), { id }) as WrappedPromise<T>
+        entry = { promise, fn: promiseFn }
+        promises.set(id, entry)
+      }
+    }
+    const p = entry.promise
+    switch (p.status) {
+      case PROMISE_STATUS.FULFILLED:
+        return p.value
+      case PROMISE_STATUS.REJECTED:
+        throw p.reason
+      case PROMISE_STATUS.PENDING:
+        throw p
+      default:
+        p.status = PROMISE_STATUS.PENDING
+        p.then(
+          (result) => {
+            p.status = PROMISE_STATUS.FULFILLED
+            p.value = result
+          },
+          (reason) => {
+            p.status = PROMISE_STATUS.REJECTED
+            p.reason = reason
+          }
+        )
+        throw p
+    }
+  })
 }
 
 const allPromisesResolved = (
@@ -103,7 +111,7 @@ function Suspense({ children, fallback }: SuspenseProps): JSX.Element {
   useThrowHandler<WrappedPromise<unknown>>({
     accepts: isWrappedPromise,
     onThrow: (value) => {
-      //promises.set(value.id, value)
+      requestUpdate()
       value.then(requestUpdate)
     },
     onServerThrow(value, ctx) {

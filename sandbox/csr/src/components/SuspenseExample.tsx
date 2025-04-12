@@ -15,35 +15,13 @@ type Product = {
   images: string[]
 }
 
-type PromiseCacheEntry<T> = {
-  promise: Promise<T>
-  fn: () => Promise<T>
-}
-
 const productId = signal(1)
-let cache = new Map<string, PromiseCacheEntry<any>>()
-
-function usePromiseCache<T>(
-  key: string,
-  fn: () => Promise<T>
-): PromiseCacheEntry<T> {
-  if (!cache.has(key)) {
-    cache.set(key, { promise: fn(), fn })
-  }
-  return cache.get(key)!
-}
 
 export default function SuspenseExample() {
   return (
     <div>
       <button onclick={() => productId.value++}>Next Product</button>
-      <Suspense
-        fallback={
-          <>
-            <Spinner />
-          </>
-        }
-      >
+      <Suspense fallback={<Spinner />}>
         <SomeAsyncComponent />
         <ErrorBoundary
           logger={console.error}
@@ -61,28 +39,24 @@ function SomeComponentThatThrows() {
   return <div>Something you'll never see because I throw</div>
 }
 
-function SomeAsyncComponent() {
-  const { promise: productPromise } = usePromiseCache<Product>(
-    `product:${productId}`,
-    () =>
-      new Promise<Product>((res) => setTimeout(res, 1000)).then(() =>
-        fetch(`https://dummyjson.com/products/${productId}`).then((res) =>
-          res.json()
-        )
-      )
+function loadProduct() {
+  return new Promise<Product>((res) => setTimeout(res, 1000)).then(() =>
+    fetch(`https://dummyjson.com/products/${productId}`).then((res) =>
+      res.json()
+    )
   )
-  const product = useSuspense(productPromise)
-  // @ts-ignore
-  window.test = true
+}
 
+function SomeAsyncComponent() {
+  const product = useSuspense<Product>(loadProduct, [productId.value])
   return (
-    <div>
+    <article>
       <h1>
         {product.title} <sup>({product.id})</sup>
       </h1>
       <p>{product.description}</p>
 
       <img src={product.thumbnail} />
-    </div>
+    </article>
   )
 }

@@ -1,6 +1,5 @@
 import { Suspense, useSuspense, signal, ErrorBoundary } from "kaioken"
 import { Spinner } from "./atoms/Spinner"
-import { usePromise } from "../promiseCache"
 
 type Product = {
   id: number
@@ -22,14 +21,14 @@ export default function SuspenseExample() {
   return (
     <div>
       <button onclick={() => productId.value++}>Next Product</button>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Spinner />}>
         <SomeAsyncComponent />
-        {/* <ErrorBoundary
+        <ErrorBoundary
           logger={console.error}
           fallback={<p>⚠️ Something went wrong 😭</p>}
         >
           <SomeComponentThatThrows />
-        </ErrorBoundary> */}
+        </ErrorBoundary>
       </Suspense>
     </div>
   )
@@ -40,15 +39,16 @@ function SomeComponentThatThrows() {
   return <div>Something you'll never see because I throw</div>
 }
 
-function SomeAsyncComponent() {
-  const [product, reloadProduct] = useSuspense<Product>(() =>
+function loadProduct() {
+  return new Promise<Product>((res) => setTimeout(res, 1000)).then(() =>
     fetch(`https://dummyjson.com/products/${productId}`).then((res) =>
       res.json()
     )
   )
-  // @ts-ignore
-  // window.test = true
+}
 
+function SomeAsyncComponent() {
+  const product = useSuspense<Product>(loadProduct, [productId.value])
   return (
     <article>
       <h1>
