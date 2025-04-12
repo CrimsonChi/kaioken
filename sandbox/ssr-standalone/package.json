@@ -1,0 +1,33 @@
+{
+  "name": "kaioken-csr-template",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx ./server.ts",
+    "build": "pnpm build:client && pnpm build:server && pnpm build:ssg",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --ssr src/entry-server.ts --outDir dist/server",
+    "build:ssg": "cross-env NODE_ENV=production node ./docs-ssg.js",
+    "preview": "cross-env NODE_ENV=production tsx ./server.ts"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.17",
+    "@types/compression": "^1.7.5",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.16",
+    "compression": "^1.8.0",
+    "cross-env": "^7.0.3",
+    "postcss": "^8.5.3",
+    "sirv": "^3.0.1",
+    "tailwindcss": "^4.0.17",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.4",
+    "vite-plugin-kaioken": "workspace:^"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "kaioken": "workspace:^"
+  }
+}

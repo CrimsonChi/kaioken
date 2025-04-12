@@ -1,8 +1,25 @@
 import { renderMode } from "./globals.js"
-import { useRef, useRequestUpdate, useThrowHandler } from "./hooks/index.js"
+import {
+  useContext,
+  useId,
+  useRequestUpdate,
+  useState,
+  useThrowHandler,
+} from "./hooks/index.js"
 import { __DEV__ } from "./env.js"
+import { createContext } from "./context.js"
 
 export { Suspense, useSuspense }
+
+const SuspenseContext = createContext<{
+  id: string
+  promises: Map<string, PromiseCacheEntry<any>>
+}>(null!)
+
+type PromiseCacheEntry<T> = {
+  promise: WrappedPromise<T>
+  fn: () => Promise<T>
+}
 
 type SuspenseProps = {
   fallback: JSX.Element
@@ -16,16 +33,36 @@ const PROMISE_STATUS = {
 } as const
 
 type WrappedPromise<T> = Promise<T> & {
+  id: string
   status: (typeof PROMISE_STATUS)[keyof typeof PROMISE_STATUS]
   value: T
   reason?: any
 }
 
-function useSuspense<T>(promise: Promise<T>) {
-  const p = promise as WrappedPromise<T>
+const useSuspense = <T>(promiseFn: () => Promise<T>): [T, () => void] => {
+  const { id: suspenseId, promises } = useContext(SuspenseContext)
+  const id = useId()
+  let entry = promises.get(id)
+  if (!entry) {
+    if (renderMode.current === "hydrate") {
+      // @ts-ignore
+      const metaMap = window.__kaiokenSuspenseMeta as Map<string, any>
+      const x = (
+        metaMap.get(suspenseId) as {
+          data: WrappedPromise<T>
+        }
+      ).data
+      entry = { promise: x, fn: () => x }
+    } else {
+      const promise = Object.assign(promiseFn(), { id }) as WrappedPromise<T>
+      entry = { promise, fn: promiseFn }
+      promises.set(id, entry)
+    }
+  }
+  const p = entry.promise
   switch (p.status) {
     case PROMISE_STATUS.FULFILLED:
-      return p.value
+      return [p.value, () => {}]
     case PROMISE_STATUS.REJECTED:
       throw p.reason
     case PROMISE_STATUS.PENDING:
@@ -42,57 +79,73 @@ function useSuspense<T>(promise: Promise<T>) {
           p.reason = reason
         }
       )
-      throw promise
+      throw p
   }
 }
 
-function isPromise<T>(value: any): value is Promise<T> {
-  return value instanceof Promise
-}
+const allPromisesResolved = (
+  promises: Map<string, PromiseCacheEntry<unknown>>
+) =>
+  promises
+    .values()
+    .every(({ promise }) => promise.status !== PROMISE_STATUS.PENDING)
 
-const allPromisesResolved = (promises: Set<WrappedPromise<unknown>>) =>
-  promises.values().every(({ status }) => status !== PROMISE_STATUS.PENDING)
+const isWrappedPromise = (value: unknown): value is WrappedPromise<unknown> =>
+  value instanceof Promise
 
 function Suspense({ children, fallback }: SuspenseProps): JSX.Element {
+  const id = useId()
   const requestUpdate = useRequestUpdate()
-  const promises = useRef<Set<WrappedPromise<unknown>> | null>(null)
+  const [promises] = useState<Map<string, PromiseCacheEntry<unknown>>>(
+    () => new Map()
+  )
 
   useThrowHandler<WrappedPromise<unknown>>({
-    accepts: isPromise,
+    accepts: isWrappedPromise,
     onThrow: (value) => {
-      ;(promises.current ??= new Set()).add(value)
+      //promises.set(value.id, value)
       value.then(requestUpdate)
+    },
+    onServerThrow(value, ctx) {
+      ctx.createSuspendedContentBoundary(id, value, fallback)
+      value.then(ctx.retry)
     },
   })
 
+  let result: JSX.Children
   switch (renderMode.current) {
     case "stream":
-      return children
-
+      result = children
+      break
     case "hydrate":
-      return fallback
-
+      result = children
+      break
     case "string":
       if (__DEV__) {
         console.warn(
           "[kaioken]: Suspense is not supported via renderToString(), fallback will be rendered"
         )
       }
-      return fallback
-
+      result = fallback
+      break
     case "dom":
-      if (!promises.current || promises.current.size === 0) {
+      if (promises.size === 0) {
         console.log("initial render, returning children")
-        return children
-      } else if (allPromisesResolved(promises.current)) {
+        result = children
+        break
+      } else if (allPromisesResolved(promises)) {
         // all promises have resolved, return children
-        return children
+        result = children
+        break
       } else {
         // some promises are pending, return fallback
-        return fallback
+        result = fallback
+        break
       }
     default:
       console.warn("[kaioken]: renderMode not supported")
-      return null
+      result = null
   }
+
+  return SuspenseContext.Provider({ value: { id, promises }, children: result })
 }

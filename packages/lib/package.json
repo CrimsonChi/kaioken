@@ -36,6 +36,16 @@
         "default": "./ssr/client.js"
       }
     },
+    "./ssr/bootstrap": {
+      "require": {
+        "types": "./ssr/bootstrap.d.ts",
+        "default": "./ssr/bootstrap.js"
+      },
+      "import": {
+        "types": "./ssr/bootstrap.d.ts",
+        "default": "./ssr/bootstrap.js"
+      }
+    },
     "./ssr/server": {
       "require": {
         "types": "./ssr/server.d.ts",

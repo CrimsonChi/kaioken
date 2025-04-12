@@ -1,0 +1,195 @@
+@import 'tailwindcss';
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@theme {
+  --dark-blue: #171739;
+  --color-primary-500: #97cad4;
+  --radius: 3px;
+}
+
+:root {
+  background-color: #181a1b;
+  background-image: linear-gradient(#181a1b, #060606);
+  color: #f2f2f2;
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+@media screen and (min-width: 680px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.text-muted {
+  color: #eae6de;
+}
+
+.text-spicy {
+  font-family: monospace;
+  color: var(--color-primary-500);
+}
+
+.svg-light {
+  fill: #ddd !important;
+}
+
+a {
+  color: var(--color-primary-500);
+}
+
+button {
+  padding: .25rem .5rem;
+}
+
+a.button-link {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  padding: .25rem .5rem;
+  border-radius: var(--radius);
+  background-color: transparent;
+  border: 2px solid var(--color-primary-500);
+  color: var(--color-primary-500);
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+footer {
+  padding: .5rem;
+}
+
+section {
+  padding: 1rem;
+  display: flex;
+}
+
+#hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hero .section-content {
+  max-width: 678px;
+}
+
+#hero .section-content h1>* {
+  display: block;
+}
+
+#hero .section-content h1 small {
+  font-size: 150%;
+  font-weight: 600;
+}
+
+#hero .section-content h1 big {
+  font-size: 420%;
+  line-height: 1;
+  font-weight: 700;
+}
+
+#hero .section-content p {
+  font-size: 125%;
+  font-weight: lighter;
+}
+
+#skills-list {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  justify-content: center;
+}
+
+@media screen and (min-width:480px) {
+  #skills-list {
+    padding: 1.5rem;
+  }
+}
+
+#skills-list svg {
+  filter: grayscale(1);
+  transition: filter .3s;
+
+}
+
+#skills-list svg:hover {
+  filter: grayscale(0);
+}
+
+.badge-list {
+  display: flex;
+  gap: .25rem;
+}
+
+.badge {
+  text-shadow: -1px -1px rgba(0, 0, 0, .3);
+  color: #fff;
+  border-radius: var(--radius);
+}
+
+.repos-list {
+  @apply flex gap-4 flex-wrap text-sm md:text-base;
+}
+
+.repos-list__item {
+  @apply p-4 bg-white/2 rounded-lg border border-white/5 grow basis-[300px];
+  @apply flex flex-col gap-2;
+}
+
+.repos-list__item__header {
+  @apply flex gap-4 justify-between;
+}
+
+a.repos-list__item__stars {
+  @apply flex items-center gap-2 cursor-pointer text-neutral-200 hover:text-amber-300 no-underline;
+}
+
+.repos-list__item__description {
+  @apply text-neutral-200;
+}

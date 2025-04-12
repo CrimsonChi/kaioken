@@ -20,9 +20,13 @@ export const hydrationStack = {
     this.childIdxStack.push(0)
   },
   nextChild: function () {
-    return this.parentStack[this.parentStack.length - 1].childNodes[
-      this.childIdxStack[this.childIdxStack.length - 1]++
-    ] as MaybeDom
+    let child: MaybeDom
+    do {
+      child = this.parentStack[this.parentStack.length - 1].childNodes[
+        this.childIdxStack[this.childIdxStack.length - 1]++
+      ] as MaybeDom
+    } while (child?.nodeType === Node.COMMENT_NODE)
+    return child
   },
   bumpChildIndex: function () {
     this.childIdxStack[this.childIdxStack.length - 1]++

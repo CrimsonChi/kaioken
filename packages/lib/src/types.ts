@@ -179,14 +179,25 @@ declare global {
 
     type Signal<T> = SignalClass<T> | ReadonlySignal<T>
 
+    type ServerThrowContext = {
+      createSuspendedContentBoundary: (
+        id: string,
+        value: unknown,
+        fallback: JSX.Element
+      ) => void
+      retry: () => void
+    }
+
     type ThrowHandler<T> = {
       accepts: (value: unknown) => boolean
       onThrow: (value: T) => void
+      onServerThrow: (value: T, ctx: ServerThrowContext) => void
     }
 
     type ExoticSymbol = typeof $FRAGMENT | typeof $CONTEXT_PROVIDER
 
     type VNode = {
+      id?: string
       type: string | Function | ExoticSymbol
       dom?: SomeDom
       props: {

@@ -7,14 +7,16 @@ import {
   encodeHtmlEntities,
   propsToElementAttributes,
   selfClosingTags,
+  tryFindThrowHandler,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
 import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
-type RequestState = {
+type ServerRenderState = {
   stream: Readable
   ctx: AppContext
+  promises: Promise<any>[]
 }
 
 export function renderToReadableStream<T extends Record<string, unknown>>(
@@ -23,9 +25,13 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
 ): Readable {
   const prev = renderMode.current
   renderMode.current = "stream"
-  const state: RequestState = {
-    stream: new Readable(),
+  const state: ServerRenderState = {
+    stream: new Readable({
+      read: () => {}, // not needed since we're using `stream.push()`
+      objectMode: true,
+    }),
     ctx: new AppContext<any>(appFunc, appProps),
+    promises: [],
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
@@ -34,15 +40,17 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   state.ctx.rootNode.depth = 0
   appNode.depth = 1
   renderToStream_internal(state, appNode, state.ctx.rootNode, 0)
-  state.stream.push(null)
-  renderMode.current = prev
-  ctx.current = prevCtx
+  Promise.all(state.promises).then(() => {
+    renderMode.current = prev
+    ctx.current = prevCtx
+    state.stream.push(null)
+  })
 
   return state.stream
 }
 
 function renderToStream_internal(
-  state: RequestState,
+  state: ServerRenderState,
   el: unknown,
   parent: Kaioken.VNode,
   idx: number
@@ -89,9 +97,47 @@ function renderToStream_internal(
   if (typeof type !== "string") {
     nodeToCtxMap.set(el, state.ctx)
     node.current = el
-    const res = type(props)
-    node.current = undefined
-    return renderToStream_internal(state, res, parent, idx)
+    try {
+      const res = type(props)
+      return renderToStream_internal(state, res, el, 0)
+    } catch (error) {
+      const handlerNode = tryFindThrowHandler(el, error)
+      if (handlerNode === null)
+        return console.error("failed to find handler", error)
+
+      const { promise, resolve } = Promise.withResolvers<void>()
+      let _id: string | undefined
+      // @ts-ignore
+      let _value: unknown
+      handlerNode.throwHandler.onServerThrow(error, {
+        createSuspendedContentBoundary(id, value, fallback) {
+          _id = id
+          _value = value
+          state.promises.push(promise)
+          state.stream.push(`<!--suspense:0:${_id}-->`)
+          renderToStream_internal(state, fallback, handlerNode, 0)
+          state.stream.push(`<!--suspense:1:${_id}-->`)
+        },
+        retry() {
+          if (_id === undefined)
+            throw new Error(
+              "[kaioken]: retry() called before createSuspendedContentBoundary()"
+            )
+          state.stream.push(`<k-suspense hidden>`)
+          renderToStream_internal(state, el, parent, 0)
+          state.stream.push(`</k-suspense>`)
+          state.stream.push(
+            `<script>window.__kaioken_resolveSuspense("${_id}", ${JSON.stringify(
+              _value
+            )});</script>`
+          )
+          resolve()
+        },
+      })
+      return
+    } finally {
+      node.current = undefined
+    }
   }
 
   assertValidElementProps(el)

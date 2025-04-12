@@ -21,6 +21,7 @@ function ErrorBoundary({ children, fallback, logger }: ErrorBoundaryProps) {
       logger?.(value)
       err.current = value
     },
+    onServerThrow() {},
   })
 
   if (renderMode.current === "string" || renderMode.current === "stream") {

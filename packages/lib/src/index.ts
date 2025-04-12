@@ -41,8 +41,11 @@ export function mount<T extends Record<string, unknown>>(
   appProps = {} as T
 ): Promise<AppContext<T>> {
   let root: HTMLElement, opts: AppContextOptions | undefined
-  if (optionsOrRoot instanceof HTMLElement) {
-    root = optionsOrRoot
+  if (
+    optionsOrRoot instanceof HTMLElement ||
+    optionsOrRoot instanceof Document
+  ) {
+    root = optionsOrRoot as any
     opts = { root }
   } else {
     opts = optionsOrRoot

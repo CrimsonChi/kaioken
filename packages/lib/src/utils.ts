@@ -114,14 +114,14 @@ function tryFindThrowHandler(
   vNode: Kaioken.VNode,
   value: unknown
 ): (Kaioken.VNode & { throwHandler: Kaioken.ThrowHandler<unknown> }) | null {
-  let node: Kaioken.VNode | undefined = vNode
+  let node = vNode.parent
   while (node) {
     if (node.throwHandler && node.throwHandler.accepts(value)) {
       return node as Kaioken.VNode & {
         throwHandler: Kaioken.ThrowHandler<unknown>
       }
     }
-    node = vNode.parent
+    node = node.parent
   }
   return null
 }

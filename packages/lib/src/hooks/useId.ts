@@ -18,7 +18,7 @@ type UseIdState = {
 
 const createUseIdState = (): UseIdState => ({
   id: "",
-  idx: 0,
+  idx: -1,
 })
 
 const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
@@ -28,6 +28,9 @@ const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
     }
   }
   if (isInit || vNode.index !== hook.idx) {
+    if (vNode.index === hook.idx && vNode.id) {
+      return vNode.id
+    }
     hook.idx = vNode.index
     const accumulator: number[] = []
     let n: Kaioken.VNode | undefined = vNode
@@ -37,6 +40,7 @@ const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
       n = n.parent
     }
     hook.id = `k:${BigInt(accumulator.join("")).toString(36)}`
+    vNode.id = hook.id
   }
   return hook.id
 }

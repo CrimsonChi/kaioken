@@ -1,4 +1,5 @@
 import type { ESBuildOptions, Plugin, UserConfig } from "vite"
+import { SSRBootstrapScriptContents } from "kaioken/ssr/bootstrap"
 import devtoolsHostBuild from "kaioken-devtools-host"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import { injectHMRContextPreamble } from "./codegen.js"
@@ -55,6 +56,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
               type: "module",
               src: dtHostScriptPath,
             },
+          },
+          {
+            tag: "script",
+            children: SSRBootstrapScriptContents,
           },
         ],
       }
