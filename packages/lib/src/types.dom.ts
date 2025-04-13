@@ -8,7 +8,10 @@ export type {
   GlobalEventAttributes,
   EventAttributes,
   StyleObject,
+  ClassNameArray,
 }
+
+type ClassNameArray = Array<string | false | undefined>
 
 type StyleObject = Prettify<
   Partial<
@@ -207,7 +210,7 @@ type ErrorableElementTags = "img" | "iframe" | "link" | "script" | "source"
 type GlobalAttributes = {
   accessKey?: string
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters"
-  className?: string
+  className?: string | ClassNameArray
   contentEditable?: boolean
   dir?: Direction
   draggable?: boolean | "auto"
@@ -252,8 +255,8 @@ type InputEvent<T extends "input" | "select" | "textarea"> = Omit<
   target: T extends "input"
     ? HTMLInputElement
     : T extends "select"
-      ? HTMLSelectElement
-      : HTMLTextAreaElement
+    ? HTMLSelectElement
+    : HTMLTextAreaElement
 }
 type InputEventAttributes<T extends "input" | "select" | "textarea"> = {
   onblur?: (e: InputEvent<T>) => void

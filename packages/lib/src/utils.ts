@@ -21,10 +21,11 @@ export {
   traverseApply,
   postOrderApply,
   findParent,
+  classNameToString,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   propsToElementAttributes,
-  styleObjectToCss,
+  styleObjectToString,
   shallowCompare,
   sideEffectsEnabled,
   encodeHtmlEntities,
@@ -482,7 +483,7 @@ const snakeCaseAttrs = new Map([
   ["xHeight", "x-height"],
 ])
 
-function styleObjectToCss(obj: Partial<CSSStyleDeclaration>): string {
+function styleObjectToString(obj: Partial<CSSStyleDeclaration>): string {
   let cssString = ""
   for (const key in obj) {
     const cssKey = key.replace(REGEX_UNIT.ALPHA_UPPER_G, "-$&").toLowerCase()
@@ -491,17 +492,31 @@ function styleObjectToCss(obj: Partial<CSSStyleDeclaration>): string {
   return cssString
 }
 
+function classNameToString(className: unknown): string {
+  if (typeof className === "string") return className
+  if (Array.isArray(className)) return className.filter(Boolean).join(" ")
+  return ""
+}
+
 function propValueToHtmlAttrValue(key: string, value: unknown): string {
   return key === "style" && typeof value === "object" && !!value
-    ? styleObjectToCss(value)
+    ? styleObjectToString(value)
     : String(value)
 }
 function propsToElementAttributes(props: Record<string, unknown>): string {
   const attrs: string[] = []
-  const keys = Object.keys(props).filter(propFilters.isProperty)
+  const { className, style, ...rest } = props
+  if (className) {
+    attrs.push(`class="${classNameToString(unwrap(className))}"`)
+  }
+  if (style) {
+    attrs.push(`style="${styleObjectToString(unwrap(style))}"`)
+  }
+
+  const keys = Object.keys(rest).filter(propFilters.isProperty)
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i]
-    const val = unwrap(props[k])
+    let val = unwrap(props[k])
     if (val === null || val === undefined) continue
 
     const key = propToHtmlAttr(k)
@@ -515,7 +530,7 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
           continue
         }
     }
-    attrs.push(`${key}="${propValueToHtmlAttrValue(k, val)}"`)
+    attrs.push(`${key}="${val}"`)
   }
   return attrs.join(" ")
 }

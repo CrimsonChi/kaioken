@@ -6,6 +6,7 @@ import {
   propToHtmlAttr,
   svgTags,
   postOrderApply,
+  classNameToString,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
@@ -319,6 +320,8 @@ function setProp(
   switch (key) {
     case "style":
       return setStyleProp(vNode, element, value, prev)
+    case "className":
+      return setClassName(element, value)
     case "innerHTML":
       return setInnerHTML(element, value)
     case "muted":
@@ -351,6 +354,14 @@ function setInnerHTML(element: SomeElement, value: unknown) {
     return
   }
   element.innerHTML = String(value)
+}
+
+function setClassName(element: SomeElement, value: unknown) {
+  if (value === null || value === undefined || typeof value === "boolean") {
+    element.removeAttribute("class")
+    return
+  }
+  element.setAttribute("class", classNameToString(value))
 }
 
 function setStyleProp(
