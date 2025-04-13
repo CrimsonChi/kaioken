@@ -1,4 +1,4 @@
-import { renderMode } from "./globals.js"
+import { node, renderMode } from "./globals.js"
 import {
   depsRequireChange,
   useContext,
@@ -28,14 +28,14 @@ type SuspenseProps = {
   children: JSX.Children
 }
 
-const PROMISE_STATUS = {
+export const PROMISE_STATUS = {
   PENDING: 0,
   FULFILLED: 1,
   REJECTED: 2,
 } as const
 
-type WrappedPromise<T> = Promise<T> & {
-  id: string
+export type WrappedPromise<T> = Promise<T> & {
+  key: string
   status: (typeof PROMISE_STATUS)[keyof typeof PROMISE_STATUS]
   value: T
   reason?: any
@@ -44,12 +44,13 @@ type WrappedPromise<T> = Promise<T> & {
 const useSuspense = <T>(promiseFn: () => Promise<T>, deps: unknown[]): T => {
   const { id: suspenseId, promises } = useContext(SuspenseContext)
   const id = useId()
-  return useHook("useSuspense", { deps }, ({ hook }) => {
+  return useHook("useSuspense", { deps }, ({ hook, index }) => {
+    const key = `${id}:${index}`
     if (depsRequireChange(hook.deps, deps)) {
       hook.deps = deps
-      promises.delete(id)
+      promises.delete(key)
     }
-    let entry = promises.get(id)
+    let entry = promises.get(key)
     if (!entry) {
       if (renderMode.current === "hydrate") {
         // @ts-ignore
@@ -59,11 +60,11 @@ const useSuspense = <T>(promiseFn: () => Promise<T>, deps: unknown[]): T => {
             data: WrappedPromise<T>
           }
         ).data
-        entry = { promise: x, fn: () => x }
+        entry = { promise: x, fn: promiseFn }
       } else {
-        const promise = Object.assign(promiseFn(), { id }) as WrappedPromise<T>
+        const promise = Object.assign(promiseFn(), { key }) as WrappedPromise<T>
         entry = { promise, fn: promiseFn }
-        promises.set(id, entry)
+        promises.set(key, entry)
       }
     }
     const p = entry.promise
@@ -116,6 +117,7 @@ function Suspense({ children, fallback }: SuspenseProps): JSX.Element {
     },
     onServerThrow(value, ctx) {
       ctx.createSuspendedContentBoundary(id, value, fallback)
+      node.current!.suspended = true
       value.then(ctx.retry)
     },
   })

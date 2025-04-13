@@ -223,6 +223,8 @@ declare global {
       hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
       throwHandler?: ThrowHandler<unknown>
+      suspended?: boolean
+      suspenseId?: string
     }
   }
 

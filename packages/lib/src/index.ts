@@ -16,7 +16,7 @@ export * from "./renderToString.js"
 export * from "./router/index.js"
 export * from "./signals/index.js"
 export * from "./store.js"
-export * from "./suspense.js"
+export { Suspense, useSuspense } from "./suspense.js"
 export * from "./transition.js"
 
 if ("window" in globalThis) {

@@ -13,24 +13,24 @@ window.__kaiokenSuspenseMeta = new Map();
 console.log("SSRBootstrap");
 const mutationObserver = new MutationObserver(mutations => {
   for (const mutation of mutations) {
-    if (mutation.type === 'childList') {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType === Node.COMMENT_NODE) {
-          const comment = node.textContent;
-          if (comment.startsWith('suspense:0:k:')) {
-            const id = comment.replace('suspense:0:', '');
-            if (window.__kaiokenSuspenseMeta.get(id)) return;  
-            window.__kaiokenSuspenseMeta.set(id, { markers: { pre: node } });
-            console.log('window.__kaiokenSuspenseMeta', window.__kaiokenSuspenseMeta);
-          } else if (comment.startsWith('suspense:1:k:')) {
-            const meta = window.__kaiokenSuspenseMeta.get(comment.replace('suspense:1:', ''));
-            if (!meta) {
-              console.error('no meta entry for', comment);
-            }
-            if (meta.resolved) return;
-            meta.markers.post = node;
-          }
+    if (mutation.type !== 'childList') return;
+    
+    for (const node of mutation.addedNodes) {
+      if (node.nodeType !== Node.COMMENT_NODE) return;
+      
+      const comment = node.textContent;
+      if (comment.startsWith('suspense:0:k:')) {
+        const id = comment.replace('suspense:0:', '');
+        if (window.__kaiokenSuspenseMeta.get(id)) return;  
+        window.__kaiokenSuspenseMeta.set(id, { markers: { pre: node } });
+        console.log('window.__kaiokenSuspenseMeta', window.__kaiokenSuspenseMeta);
+      } else if (comment.startsWith('suspense:1:k:')) {
+        const meta = window.__kaiokenSuspenseMeta.get(comment.replace('suspense:1:', ''));
+        if (!meta) {
+          console.error('no meta entry for', comment);
         }
+        if (meta.resolved) return;
+        meta.markers.post = node;
       }
     }
   }
@@ -66,12 +66,7 @@ window.__kaioken_resolveSuspense = (id, data) => {
     markers.pre.parentNode?.insertBefore(n, markers.pre);
     n = n.nextSibling;
   }
-  markers.pre.remove();
-  markers.post.remove();
-  el.previousSibling.remove();
-  el.remove();
-
-  meta.resolved = true;
-  
+  [markers.pre, markers.post, el.previousSibling, el].forEach((n) => n.remove());
+  meta.resolved = true;  
   console.log('suspense resolved', meta, content);
 }`

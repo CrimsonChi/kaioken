@@ -12,11 +12,12 @@ import {
 import { Signal } from "../signals/base.js"
 import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
+import { PROMISE_STATUS, WrappedPromise } from "../suspense.js"
 
 type ServerRenderState = {
   stream: Readable
   ctx: AppContext
-  promises: Promise<any>[]
+  promises: Map<string, WrappedPromise<any>[]>
 }
 
 export function renderToReadableStream<T extends Record<string, unknown>>(
@@ -31,7 +32,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
       objectMode: true,
     }),
     ctx: new AppContext<any>(appFunc, appProps),
-    promises: [],
+    promises: new Map(),
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
@@ -40,7 +41,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   state.ctx.rootNode.depth = 0
   appNode.depth = 1
   renderToStream_internal(state, appNode, state.ctx.rootNode, 0)
-  Promise.all(state.promises).then(() => {
+  Promise.all(state.promises.values().flatMap((p) => p)).then(() => {
     renderMode.current = prev
     ctx.current = prevCtx
     state.stream.push(null)
@@ -98,40 +99,53 @@ function renderToStream_internal(
     nodeToCtxMap.set(el, state.ctx)
     node.current = el
     try {
+      state.ctx.hookIndex = 0
       const res = type(props)
-      return renderToStream_internal(state, res, el, 0)
+      if (!el.suspended) {
+        return renderToStream_internal(state, res, el, 0)
+      }
+
+      const promises = state.promises.get(el.suspenseId!)!.map((p) => p.value)
+      console.log("SUSPENSE_FIN_PRE", el.suspenseId, promises)
+
+      state.stream.push(`<k-suspense hidden>`)
+      renderToStream_internal(state, res, el, 0)
+      state.stream.push(`</k-suspense>`)
+      state.stream.push(
+        `<script>window.__kaioken_resolveSuspense("${
+          el.suspenseId
+        }", ${JSON.stringify(promises)});</script>`
+      )
+      console.log("SUSPENSE_FIN_POST", el.suspenseId)
+      return
     } catch (error) {
       const handlerNode = tryFindThrowHandler(el, error)
-      if (handlerNode === null)
-        return console.error("failed to find handler", error)
+      if (handlerNode === null) throw error
 
-      const { promise, resolve } = Promise.withResolvers<void>()
-      let _id: string | undefined
-      // @ts-ignore
-      let _value: unknown
       handlerNode.throwHandler.onServerThrow(error, {
-        createSuspendedContentBoundary(id, value, fallback) {
-          _id = id
-          _value = value
-          state.promises.push(promise)
-          state.stream.push(`<!--suspense:0:${_id}-->`)
+        createSuspendedContentBoundary(suspenseId, value, fallback) {
+          el.suspenseId = suspenseId
+          const didPushFallback = state.promises.has(suspenseId)
+          const promises = state.promises.get(suspenseId) ?? []
+          const asWrapped = value as WrappedPromise<any>
+          console.log(
+            "createSuspendedContentBoundary",
+            suspenseId,
+            asWrapped.key
+          )
+          if (promises.find((p) => p.key === asWrapped.key)) return
+
+          state.promises.set(suspenseId, [...promises, asWrapped])
+          if (didPushFallback) return
+
+          console.log("push fallback", asWrapped.key)
+
+          state.stream.push(`<!--suspense:0:${suspenseId}-->`)
           renderToStream_internal(state, fallback, handlerNode, 0)
-          state.stream.push(`<!--suspense:1:${_id}-->`)
+          state.stream.push(`<!--suspense:1:${suspenseId}-->`)
         },
         retry() {
-          if (_id === undefined)
-            throw new Error(
-              "[kaioken]: retry() called before createSuspendedContentBoundary()"
-            )
-          state.stream.push(`<k-suspense hidden>`)
           renderToStream_internal(state, el, parent, 0)
-          state.stream.push(`</k-suspense>`)
-          state.stream.push(
-            `<script>window.__kaioken_resolveSuspense("${_id}", ${JSON.stringify(
-              _value
-            )});</script>`
-          )
-          resolve()
         },
       })
       return

@@ -44,8 +44,17 @@ async function loadProduct() {
   return await res.json()
 }
 
+async function loadRandomNumber(product: Product) {
+  await new Promise((res) => setTimeout(res, 1000))
+  return product.price
+}
+
 function SomeAsyncComponent() {
+  console.log("SomeAsyncComponent -> product")
   const product = useSuspense<Product>(loadProduct, [productId.value])
+  console.log("SomeAsyncComponent -> randomNumber")
+  const randomNumber = useSuspense(() => loadRandomNumber(product), [product])
+  console.log("randomNumber", randomNumber)
   return (
     <article>
       <h1>
