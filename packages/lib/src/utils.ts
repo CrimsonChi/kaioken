@@ -21,7 +21,7 @@ export {
   traverseApply,
   postOrderApply,
   findParent,
-  classNameToString,
+  classNamePropToString,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   propsToElementAttributes,
@@ -492,9 +492,15 @@ function styleObjectToString(obj: Partial<CSSStyleDeclaration>): string {
   return cssString
 }
 
-function classNameToString(className: unknown): string {
+function classNamePropToString(className: unknown): string {
   if (typeof className === "string") return className
   if (Array.isArray(className)) return className.filter(Boolean).join(" ")
+  return ""
+}
+
+function stylePropToString(style: unknown) {
+  if (typeof style === "string") return style
+  if (typeof style === "object" && !!style) return styleObjectToString(style)
   return ""
 }
 
@@ -507,10 +513,10 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
   const attrs: string[] = []
   const { className, style, ...rest } = props
   if (className) {
-    attrs.push(`class="${classNameToString(unwrap(className))}"`)
+    attrs.push(`class="${classNamePropToString(unwrap(className))}"`)
   }
   if (style) {
-    attrs.push(`style="${styleObjectToString(unwrap(style))}"`)
+    attrs.push(`style="${stylePropToString(unwrap(style))}"`)
   }
 
   const keys = Object.keys(rest).filter(propFilters.isProperty)

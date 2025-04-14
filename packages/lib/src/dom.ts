@@ -6,7 +6,7 @@ import {
   propToHtmlAttr,
   svgTags,
   postOrderApply,
-  classNameToString,
+  classNamePropToString,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
@@ -361,7 +361,7 @@ function setClassName(element: SomeElement, value: unknown) {
     element.removeAttribute("class")
     return
   }
-  element.setAttribute("class", classNameToString(value))
+  element.setAttribute("class", classNamePropToString(value))
 }
 
 function setStyleProp(
