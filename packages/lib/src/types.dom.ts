@@ -544,6 +544,7 @@ interface HtmlElementAttributes {
   pre: {}
   progress: {
     value?: string | number
+    min?: string | number
     max?: string | number
   }
   q: {
