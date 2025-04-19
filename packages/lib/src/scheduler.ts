@@ -264,24 +264,11 @@ export class Scheduler {
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
-    let preventRenderFurther = false
-    doWork: try {
+    let renderChild = true
+    try {
       const { type, props } = vNode
       if (typeof type === "function") {
-        if (isMemoFn(type)) {
-          vNode.memoizedProps = props
-          if (vNode.prev?.memoizedProps) {
-            const arePropsEqual = type[$MEMO].arePropsEqual(
-              vNode.prev.memoizedProps,
-              props
-            )
-            if (arePropsEqual) {
-              preventRenderFurther = true
-              break doWork
-            }
-          }
-        }
-        this.updateFunctionComponent(vNode as FunctionVNode)
+        renderChild = this.updateFunctionComponent(vNode as FunctionVNode)
       } else if (isExoticVNode(vNode)) {
         vNode.child =
           reconcileChildren(
@@ -315,10 +302,8 @@ export class Scheduler {
         throw error
       })
     }
-    if (vNode.child && !preventRenderFurther) {
-      if (renderMode.current === "hydrate" && vNode.dom) {
-        hydrationStack.push(vNode.dom)
-      }
+
+    if (renderChild && vNode.child) {
       return vNode.child
     }
 
@@ -347,6 +332,16 @@ export class Scheduler {
 
   private updateFunctionComponent(vNode: FunctionVNode) {
     const { type, props } = vNode
+    if (isMemoFn(type)) {
+      vNode.memoizedProps = props
+      if (
+        vNode.prev?.memoizedProps &&
+        type[$MEMO].arePropsEqual(vNode.prev.memoizedProps, props) &&
+        !vNode.hmrUpdated
+      ) {
+        return false
+      }
+    }
     try {
       node.current = vNode
       nodeToCtxMap.set(vNode, this.appCtx)
@@ -375,6 +370,7 @@ export class Scheduler {
           vNode.child || null,
           newChildren
         ) || undefined
+      return true
     } finally {
       node.current = undefined
     }
@@ -392,11 +388,8 @@ export class Scheduler {
         }
       }
 
-      if (vNode.dom) {
-        // @ts-expect-error we apply vNode to the dom node
-        vNode.dom!.__kaiokenNode = vNode
-      }
-
+      // @ts-expect-error we apply vNode to the dom node
+      vNode.dom!.__kaiokenNode = vNode
       vNode.child =
         reconcileChildren(
           this.appCtx,
@@ -404,6 +397,10 @@ export class Scheduler {
           vNode.child || null,
           vNode.props.children
         ) || undefined
+
+      if (renderMode.current === "hydrate") {
+        hydrationStack.push(vNode.dom!)
+      }
     } finally {
       node.current = undefined
     }
