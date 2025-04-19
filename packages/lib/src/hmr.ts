@@ -115,13 +115,21 @@ export function createHMRContext() {
         const hooksToReset: number[] = []
         if ("hooks" in oldEntry && "hooks" in newEntry) {
           const hooks = newEntry.hooks!
-          for (let i = 0; i < hooks.length; i++) {
+          const oldHooks = oldEntry.hooks ?? []
+
+          for (let i = 0; i < oldHooks.length; i++) {
             const hook = hooks[i]
-            const oldHook = oldEntry.hooks?.[i]
-            if (oldHook && hook.args === oldHook.args) {
-              continue
+            const oldHook = oldHooks[i]
+            if (hook.name !== oldHook.name) {
+              // new hook inserted before old hook, invalidate all remaining
+              for (let j = i; j < hooks.length; j++) {
+                hooksToReset.push(j)
+              }
+              break
             }
-            hooksToReset.push(i)
+            if (hook.args !== oldHook.args) {
+              hooksToReset.push(i)
+            }
           }
         }
 
