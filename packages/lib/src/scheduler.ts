@@ -398,7 +398,7 @@ export class Scheduler {
           vNode.props.children
         ) || undefined
 
-      if (renderMode.current === "hydrate") {
+      if (vNode.child && renderMode.current === "hydrate") {
         hydrationStack.push(vNode.dom!)
       }
     } finally {
