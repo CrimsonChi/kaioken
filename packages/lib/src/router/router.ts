@@ -185,12 +185,11 @@ export function Router(props: RouterProps) {
       }
 
       viewTransition.current = document.startViewTransition(() => {
-        appCtx.batchSync(() => {
-          setLoc({
-            pathname: window.location.pathname,
-            search: window.location.search,
-          })
+        setLoc({
+          pathname: window.location.pathname,
+          search: window.location.search,
         })
+        appCtx.flushSync()
       })
       viewTransition.current.finished.then(() => {
         viewTransition.current = null

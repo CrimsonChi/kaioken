@@ -29,7 +29,6 @@ export class Scheduler {
   private immediateEffectDirtiedRender = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
-  private isPreparingSyncUpdate = false
   private effectCallbacks = {
     pre: [] as Function[],
     post: [] as Function[],
@@ -55,17 +54,15 @@ export class Scheduler {
     this.currentTreeIndex = 0
     this.nextIdleEffects = []
     this.deletions = []
+    this.effectCallbacks = { pre: [], post: [] }
     this.frameDeadline = 0
     this.pendingCallback = undefined
     this.sleep()
   }
 
-  wake(immediate?: boolean) {
+  wake() {
     if (this.isRunning) return
     this.isRunning = true
-    if (immediate) {
-      return this.workLoop()
-    }
     this.requestIdleCallback(this.workLoop.bind(this))
   }
 
@@ -82,22 +79,15 @@ export class Scheduler {
     if (wakeUpIfIdle) this.wake()
   }
 
-  beginSyncUpdate() {
-    this.isPreparingSyncUpdate = true
+  flushSync() {
     if (this.frameHandle !== null) {
       globalThis.cancelAnimationFrame(this.frameHandle)
       this.frameHandle = null
-      this.nextUnitOfWork = undefined
-      this.currentTreeIndex = 0
     }
-  }
-
-  endSyncUpdate() {
-    this.isPreparingSyncUpdate = false
     this.workLoop()
   }
 
-  queueUpdate(vNode: VNode, immediate?: boolean) {
+  queueUpdate(vNode: VNode) {
     if (vNode.prev?.memoizedProps) {
       delete vNode.prev.memoizedProps
     }
@@ -117,8 +107,7 @@ export class Scheduler {
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
-      if (this.isPreparingSyncUpdate) return
-      return this.wake(immediate)
+      return this.wake()
     }
 
     const treeIdx = this.treesInProgress.indexOf(vNode)

@@ -74,7 +74,8 @@ export class AppContext<T extends Record<string, unknown> = {}> {
         window.__kaioken?.emit("mount", this as AppContext<any>)
         resolve(this)
       }, false)
-      this.scheduler.queueUpdate(this.rootNode, true)
+      this.scheduler.queueUpdate(this.rootNode)
+      this.scheduler.flushSync()
     })
   }
 
@@ -115,35 +116,8 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     })
   }
 
-  /**
-   * Provides a synchronous batched update
-   * @param callback
-   * @example
-   * ```tsx
-   * const App = () => {
-   *   const appCtx = useAppContext()
-   *   const [count, setCount] = useState(0)
-   *   const [name, setName] = useState("John")
-   *   const update = () => {
-   *     appCtx.batchSync(() => {
-   *       setCount((prev) => prev + 1)
-   *       setName("Jane")
-   *     })
-   *   }
-   *   return (
-   *     <>
-   *      <div>Count: {count}</div>
-   *      <div>Name: {name}</div>
-   *      <button onclick={update}>Update</button>
-   *     </>
-   *   )
-   * }
-   * ```
-   */
-  batchSync(callback: () => void) {
-    this.scheduler?.beginSyncUpdate()
-    callback()
-    this.scheduler?.endSyncUpdate()
+  flushSync() {
+    this.scheduler?.flushSync()
   }
 
   requestUpdate(vNode?: VNode) {
