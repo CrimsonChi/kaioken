@@ -8,62 +8,72 @@
   "exports": {
     ".": {
       "require": {
-        "types": "./index.d.ts",
-        "default": "./index.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "import": {
-        "types": "./index.d.ts",
-        "default": "./index.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./router": {
+      "require": {
+        "types": "./dist/router/index.d.ts",
+        "default": "./dist/router/index.js"
+      },
+      "import": {
+        "types": "./dist/router/index.d.ts",
+        "default": "./dist/router/index.js"
       }
     },
     "./utils": {
       "require": {
-        "types": "./utils.d.ts",
-        "default": "./utils.js"
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
       },
       "import": {
-        "types": "./utils.d.ts",
-        "default": "./utils.js"
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
       }
     },
     "./ssr/client": {
       "require": {
-        "types": "./ssr/client.d.ts",
-        "default": "./ssr/client.js"
+        "types": "./dist/ssr/client.d.ts",
+        "default": "./dist/ssr/client.js"
       },
       "import": {
-        "types": "./ssr/client.d.ts",
-        "default": "./ssr/client.js"
+        "types": "./dist/ssr/client.d.ts",
+        "default": "./dist/ssr/client.js"
       }
     },
     "./ssr/server": {
       "require": {
-        "types": "./ssr/server.d.ts",
-        "default": "./ssr/server.js"
+        "types": "./dist/ssr/server.d.ts",
+        "default": "./dist/ssr/server.js"
       },
       "import": {
-        "types": "./ssr/server.d.ts",
-        "default": "./ssr/server.js"
+        "types": "./dist/ssr/server.d.ts",
+        "default": "./dist/ssr/server.js"
       }
     },
     "./jsx-dev-runtime": {
       "require": {
-        "types": "./jsx-dev-runtime.d.ts",
-        "default": "./jsx-dev-runtime.js"
+        "types": "./dist/jsx.d.ts",
+        "default": "./dist/jsx.js"
       },
       "import": {
-        "types": "./jsx-dev-runtime.d.ts",
-        "default": "./jsx-dev-runtime.js"
+        "types": "./dist/jsx.d.ts",
+        "default": "./dist/jsx.js"
       }
     },
     "./jsx-runtime": {
       "require": {
-        "types": "./jsx-runtime.d.ts",
-        "default": "./jsx-runtime.js"
+        "types": "./dist/jsx.d.ts",
+        "default": "./dist/jsx.js"
       },
       "import": {
-        "types": "./jsx-runtime.d.ts",
-        "default": "./jsx-runtime.js"
+        "types": "./dist/jsx.d.ts",
+        "default": "./dist/jsx.js"
       }
     }
   },

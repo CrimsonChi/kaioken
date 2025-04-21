@@ -1,13 +1,5 @@
-import {
-  signal,
-  computed,
-  Route,
-  Router,
-  Link,
-  watch,
-  useComputed,
-  useSignal,
-} from "kaioken"
+import { signal, computed, watch, useComputed, useSignal } from "kaioken"
+import { Route, Router, Link } from "kaioken/router"
 
 const count = signal(0, "coussdsdnt")
 const isTracking = signal(true, "isTracking")

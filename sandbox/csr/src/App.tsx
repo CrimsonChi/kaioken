@@ -1,7 +1,4 @@
 import {
-  Router,
-  Route,
-  Link,
   useRef,
   useCallback,
   useComputed,
@@ -11,6 +8,7 @@ import {
   useWatch,
   computed,
 } from "kaioken"
+import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
 
 function Counter() {
