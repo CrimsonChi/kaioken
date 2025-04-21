@@ -375,10 +375,12 @@ export class Scheduler {
         } else {
           vNode.dom = createDom(vNode)
         }
+        if (__DEV__) {
+          // @ts-expect-error we apply vNode to the dom node
+          vNode.dom!.__kaiokenNode = vNode
+        }
       }
 
-      // @ts-expect-error we apply vNode to the dom node
-      vNode.dom!.__kaiokenNode = vNode
       vNode.child =
         reconcileChildren(
           this.appCtx,

@@ -37,7 +37,7 @@ export const getComponentVnodeFromElement = (domNode: Element | null) => {
   if (domNode == null) return null
 
   let parentComponent: Kaioken.VNode | null = null
-  let parent = (domNode?.__kaiokenNode as Kaioken.VNode)?.parent
+  let parent = domNode?.__kaiokenNode?.parent
   while (parent) {
     if (typeof parent.type === "function" && !isFragment(parent)) {
       parentComponent = parent

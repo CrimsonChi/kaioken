@@ -57,9 +57,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       this.rootNode.depth = 0
       appNode.depth = 1
       if (__DEV__) {
-        if (this.root) {
-          this.root.__kaiokenNode = this.rootNode
-        }
+        this.root!.__kaiokenNode = this.rootNode
       }
 
       this.rootNode.dom = this.root
