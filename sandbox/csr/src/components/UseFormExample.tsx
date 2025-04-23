@@ -18,7 +18,7 @@ export default function UseFormExample() {
       name: "",
       email: "",
     },
-    onSubmit: (state) => console.log("submit", state),
+    onSubmit: ({ state }) => console.log("submit", state),
   })
 
   console.log("render UseFormExample")

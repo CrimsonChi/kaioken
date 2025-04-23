@@ -1,6 +1,5 @@
 import { shallowCompare } from "../utils.js"
 import { useEffect } from "./useEffect.js"
-import { useLayoutEffect } from "./useLayoutEffect.js"
 import { useHook, useRequestUpdate } from "./utils.js"
 
 type RecordKey<T extends Record<string, unknown>> = keyof T & string
@@ -18,11 +17,12 @@ type AsyncFormFieldValidator<T extends unknown> = ({
 }) => Promise<string | false | undefined>
 
 type FormFieldValidators<T> = {
-  onMount?: FormFieldValidator<T>
+  onBlur?: FormFieldValidator<T>
   onChange?: FormFieldValidator<T>
   onChangeAsyncDebounceMs?: number
   onChangeAsync?: AsyncFormFieldValidator<T>
-  onBlur?: FormFieldValidator<T>
+  onMount?: FormFieldValidator<T>
+  onSubmit?: FormFieldValidator<T>
 }
 
 export type FormFieldContext<
@@ -80,13 +80,22 @@ type SubscribeComponent<T extends Record<string, unknown>> = <
 type UseFormReturn<T extends Record<string, unknown>> = {
   Field: FieldComponent<T>
   Subscribe: SubscribeComponent<T>
-  handleSubmit: () => void
+  handleSubmit: () => Promise<void>
   reset: () => void
+}
+
+type FormContext<T extends Record<string, unknown>> = {
+  state: T
+  validateForm: () => Promise<string[]>
+  resetField: (name: RecordKey<T>) => void
+  deleteField: (name: RecordKey<T>) => void
+  setFieldValue: <K extends RecordKey<T>>(name: K, value: T[K]) => void
 }
 
 type UseFormConfig<T extends Record<string, unknown>> = {
   initialValues?: T
-  onSubmit?: (values: T) => void
+  onSubmit?: (ctx: FormContext<T>) => void | Promise<void>
+  onSubmitInvalid?: (ctx: FormContext<T>) => void | Promise<void>
 }
 
 interface FormStateSubscriber<T extends Record<string, unknown>> {
@@ -95,11 +104,12 @@ interface FormStateSubscriber<T extends Record<string, unknown>> {
   update: () => void
 }
 
-type UseFormState<T extends Record<string, unknown>> = {
+type UseFormInternalState<T extends Record<string, unknown>> = {
   Field: FieldComponent<T>
   Subscribe: SubscribeComponent<T>
-  getState: () => T
-  reset: () => void
+  getFormContext: () => FormContext<T>
+  validateForm: () => Promise<string[]>
+  reset: (values?: T) => void
 }
 
 function createFormState<T extends Record<string, unknown>>(
@@ -107,8 +117,8 @@ function createFormState<T extends Record<string, unknown>>(
 ) {
   let isSubmitting = false
   const subscribers = new Set<FormStateSubscriber<T>>()
-  const state = { ...(config.initialValues ?? {}) } as T
-  const validators: Partial<
+  const state: T = { ...(config.initialValues ?? {}) } as T
+  const validatorConfigs: Partial<
     Record<RecordKey<T>, FormFieldValidators<T[RecordKey<T>]>>
   > = {}
   const fieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
@@ -121,6 +131,9 @@ function createFormState<T extends Record<string, unknown>>(
         error?: string
       }
       onBlur?: {
+        error?: string
+      }
+      onSubmit?: {
         error?: string
       }
       onChangeAsync?: {
@@ -172,7 +185,7 @@ function createFormState<T extends Record<string, unknown>>(
     }
     switch (evt) {
       case "onMount": {
-        const res = validators[name]?.onMount?.({ value: state[name] })
+        const res = validatorConfigs[name]?.onMount?.({ value: state[name] })
         fieldMeta[name].onMount = {
           error: typeof res === "string" ? res : undefined,
         }
@@ -185,7 +198,7 @@ function createFormState<T extends Record<string, unknown>>(
         if (fieldMeta[name].onMount) {
           delete fieldMeta[name].onMount
         }
-        const res = validators[name]?.onChange?.({ value: state[name] })
+        const res = validatorConfigs[name]?.onChange?.({ value: state[name] })
         fieldMeta[name].onChange = {
           error: typeof res === "string" ? res : undefined,
         }
@@ -205,7 +218,7 @@ function createFormState<T extends Record<string, unknown>>(
         break
       }
       case "onBlur": {
-        const res = validators[name]?.onBlur?.({ value: state[name] })
+        const res = validatorConfigs[name]?.onBlur?.({ value: state[name] })
         fieldMeta[name].onBlur = {
           error: typeof res === "string" ? res : undefined,
         }
@@ -218,31 +231,47 @@ function createFormState<T extends Record<string, unknown>>(
           return
         }
         window.clearTimeout(fieldMeta[name].onChangeAsync?.timeout)
+        const debounceMs = validatorConfigs[name]?.onChangeAsyncDebounceMs ?? 0
         const epoch = (fieldMeta[name].onChangeAsync?.epoch ?? 0) + 1
-
-        fieldMeta[name].onChangeAsync = {
-          error: undefined,
-          epoch,
-          timeout: window.setTimeout(() => {
-            const res = validators[name]?.onChangeAsync?.({
-              value: state[name],
-            })
-            res?.then((error) => {
-              if (epoch !== fieldMeta[name].onChangeAsync?.epoch) return
-              fieldMeta[name].onChangeAsync = {
-                error: typeof error === "string" ? error : undefined,
-                timeout: -1,
-                epoch,
-              }
-              updateSubscribers()
-              updateFieldComponents(name)
-            })
-          }),
+        const doValidation = () => {
+          const res = validatorConfigs[name]?.onChangeAsync?.({
+            value: state[name],
+          })
+          res?.then((error) => {
+            if (epoch !== fieldMeta[name].onChangeAsync?.epoch) return
+            fieldMeta[name].onChangeAsync = {
+              error: typeof error === "string" ? error : undefined,
+              timeout: -1,
+              epoch,
+            }
+            updateSubscribers()
+            updateFieldComponents(name)
+          })
+        }
+        if (debounceMs > 0) {
+          fieldMeta[name].onChangeAsync = {
+            error: undefined,
+            epoch,
+            timeout: window.setTimeout(doValidation, debounceMs),
+          }
+        } else {
+          fieldMeta[name].onChangeAsync = {
+            error: undefined,
+            epoch,
+            timeout: -1,
+          }
+          doValidation()
         }
         updateSubscribers()
         updateFieldComponents(name)
 
         break
+      }
+      case "onSubmit": {
+        const res = validatorConfigs[name]?.onBlur?.({ value: state[name] })
+        fieldMeta[name].onSubmit = {
+          error: typeof res === "string" ? res : undefined,
+        }
       }
     }
   }
@@ -344,10 +373,60 @@ function createFormState<T extends Record<string, unknown>>(
     })
   }
 
+  const validateForm = async () => {
+    for (const name in validatorConfigs) {
+      if (validatorConfigs[name]?.onChange) {
+        validateField(name, "onChange")
+      }
+      if (validatorConfigs[name]?.onSubmit) {
+        validateField(name, "onSubmit")
+      }
+      if (validatorConfigs[name]?.onChangeAsync) {
+        const value = state[name] as T[RecordKey<T>]
+        const epoch = (fieldMeta[name].onChangeAsync?.epoch ?? 0) + 1
+        const res = await validatorConfigs[name].onChangeAsync({ value })
+        fieldMeta[name].onChangeAsync = {
+          error: typeof res === "string" ? res : undefined,
+          epoch,
+          timeout: -1,
+        }
+      }
+    }
+    return getErrors()
+  }
+
+  const deleteField = (name: RecordKey<T>) => {
+    delete state[name]
+    delete fieldMeta[name]
+    updateSubscribers()
+  }
+  const resetField = (name: RecordKey<T>) => {
+    if (config.initialValues?.[name]) {
+      state[name] = config.initialValues[name]
+    } else {
+      delete state[name]
+    }
+    updateSubscribers()
+  }
+  const setFieldValue = (name: RecordKey<T>, value: T[RecordKey<T>]) => {
+    state[name] = value
+    updateSubscribers()
+  }
+
+  const getFormContext = (): FormContext<T> => {
+    return {
+      deleteField,
+      resetField,
+      setFieldValue,
+      validateForm,
+      state,
+    }
+  }
+
   return {
     subscribers,
-    values: state,
-    validators,
+    state,
+    validatorConfigs,
     fieldMeta,
     validateField,
     getFieldState,
@@ -355,80 +434,88 @@ function createFormState<T extends Record<string, unknown>>(
     connectField,
     disconnectField,
     getSelectorState,
+    validateForm,
     reset,
+    getFormContext,
   }
 }
 
 export function useForm<T extends Record<string, unknown> = {}>(
   config: UseFormConfig<T>
 ): UseFormReturn<T> {
-  return useHook("useForm", {} as UseFormState<T>, ({ hook, isInit }) => {
-    if (isInit) {
-      const formState = createFormState(config)
-      hook.reset = () => formState.reset()
-      hook.getState = () => formState.values
+  return useHook(
+    "useForm",
+    {} as UseFormInternalState<T>,
+    ({ hook, isInit }) => {
+      if (isInit) {
+        const formState = createFormState(config)
+        hook.validateForm = () => formState.validateForm()
+        hook.reset = () => formState.reset()
+        hook.getFormContext = () => formState.getFormContext()
 
-      hook.Field = function Field<Name extends RecordKey<T>>(
-        props: FormFieldProps<T, Name>
-      ) {
-        const update = useRequestUpdate()
-        useEffect(() => {
-          formState.validators[props.name] = props.validators as any
-          formState.connectField(props.name, update)
-          if (props.validators?.onMount) {
-            formState.validateField(props.name, "onMount")
-          }
-          return () => {
-            formState.disconnectField(props.name, update)
-          }
-        }, [])
-        return props.children({
-          name: props.name,
-          state: formState.getFieldState(props.name) as any,
-          handleChange: (value: T[Name]) => {
-            formState.updateFieldValue(props.name, value)
-            formState.validateField(props.name, "onChange")
-            if (props.validators?.onChangeAsync) {
-              formState.validateField(props.name, "onChangeAsync")
+        hook.Field = function Field<Name extends RecordKey<T>>(
+          props: FormFieldProps<T, Name>
+        ) {
+          const update = useRequestUpdate()
+          useEffect(() => {
+            formState.validatorConfigs[props.name] = props.validators as any
+            formState.connectField(props.name, update)
+            if (props.validators?.onMount) {
+              formState.validateField(props.name, "onMount")
             }
-          },
-          handleBlur: () => {
-            formState.validateField(props.name, "onBlur")
-          },
-        })
-      }
-      hook.Subscribe = function Subscribe<
-        Selector extends (state: SelectorState<T>) => unknown
-      >(props: FormSubscribeProps<T, Selector, ReturnType<Selector>>) {
-        const selection = useHook(
-          "useFormSubscription",
-          { sub: null! as FormStateSubscriber<T> },
-          ({ hook, isInit, update }) => {
-            if (isInit) {
-              hook.sub = {
-                selector: props.selector,
-                selection: props.selector(formState.getSelectorState()),
-                update,
+            return () => {
+              formState.disconnectField(props.name, update)
+            }
+          }, [])
+
+          return props.children({
+            name: props.name,
+            state: formState.getFieldState(props.name) as any,
+            handleChange: (value: T[Name]) => {
+              formState.updateFieldValue(props.name, value)
+              formState.validateField(props.name, "onChange")
+              if (props.validators?.onChangeAsync) {
+                formState.validateField(props.name, "onChangeAsync")
               }
-              formState.subscribers.add(hook.sub)
-              hook.cleanup = () => formState.subscribers.delete(hook.sub)
+            },
+            handleBlur: () => {
+              formState.validateField(props.name, "onBlur")
+            },
+          })
+        }
+        hook.Subscribe = function Subscribe<
+          Selector extends (state: SelectorState<T>) => unknown
+        >(props: FormSubscribeProps<T, Selector, ReturnType<Selector>>) {
+          const selection = useHook(
+            "useFormSubscription",
+            { sub: null! as FormStateSubscriber<T> },
+            ({ hook, isInit, update }) => {
+              if (isInit) {
+                hook.sub = {
+                  selector: props.selector,
+                  selection: props.selector(formState.getSelectorState()),
+                  update,
+                }
+                formState.subscribers.add(hook.sub)
+                hook.cleanup = () => formState.subscribers.delete(hook.sub)
+              }
+              return hook.sub.selection
             }
-            return hook.sub.selection
-          }
-        ) as ReturnType<Selector>
-        return props.children(selection)
+          ) as ReturnType<Selector>
+          return props.children(selection)
+        }
       }
+      return {
+        Field: hook.Field,
+        Subscribe: hook.Subscribe,
+        handleSubmit: async () => {
+          const errors = await hook.validateForm()
+          const formCtx = hook.getFormContext()
+          if (errors.length) return config.onSubmitInvalid?.(formCtx)
+          await config.onSubmit?.(formCtx)
+        },
+        reset: (values?: T) => hook.reset(values),
+      } satisfies UseFormReturn<T>
     }
-    return {
-      Field: hook.Field,
-      Subscribe: hook.Subscribe,
-      handleSubmit: () => {
-        // exec validators
-
-        // submit
-        config.onSubmit?.(hook.getState())
-      },
-      reset: () => hook.reset(),
-    } satisfies UseFormReturn<T>
-  })
+  )
 }
