@@ -11,11 +11,16 @@ function FieldInfo({ field }: { field: AnyFormFieldContext }) {
   )
 }
 
+type Person = {
+  name: string
+}
+
 export default function UseFormExample() {
   const form = useForm({
     initialValues: {
       name: "",
       email: "",
+      friends: [] as Person[],
     },
     onSubmit: ({ state }) => console.log("submit", state),
   })
@@ -41,7 +46,7 @@ export default function UseFormExample() {
               : undefined,
           onChangeAsyncDebounceMs: 500,
           onChangeAsync: async ({ value }) => {
-            await new Promise((resolve) => setTimeout(resolve, 5000))
+            await new Promise((resolve) => setTimeout(resolve, 1000))
             return value.includes("error") && 'No "error" allowed in first name'
           },
         }}
@@ -60,6 +65,47 @@ export default function UseFormExample() {
             </div>
           )
         }}
+      />
+      <form.Field
+        array
+        name="friends"
+        validators={{
+          onChange: ({ value }) => {
+            if (value.length < 2) {
+              return "Must have at least 2 friends"
+            }
+          },
+        }}
+        children={(field) => (
+          <div className="flex flex-col gap-2">
+            <label htmlFor={field.name}>Friends:</label>
+            <ul className="flex flex-col gap-2">
+              {field.state.value.map((friend, i) => (
+                <li>
+                  <input
+                    id={`${field.name}-${i}`}
+                    name={`${field.name}-${i}`}
+                    value={friend.name}
+                    onblur={field.handleBlur}
+                    oninput={(e) =>
+                      field.items.replace(i, { name: e.target.value })
+                    }
+                  />
+                  <button type="button" onclick={() => field.items.remove(i)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onclick={() => field.items.push({ name: "" })}
+            >
+              Add Friend
+            </button>
+            <FieldInfo field={field} />
+          </div>
+        )}
       />
       <form.Subscribe
         selector={(state) => [state.canSubmit, state.isSubmitting] as const}

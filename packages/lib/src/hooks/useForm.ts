@@ -51,7 +51,8 @@ type InferFormFieldErrors<T extends FormFieldValidators<any>> =
 export type FormFieldContext<
   T extends Record<string, unknown>,
   Name extends RecordKey<T>,
-  Validators extends FormFieldValidators<T[Name]>
+  Validators extends FormFieldValidators<T[Name]>,
+  IsArray extends Boolean
 > = {
   name: Name
   state: {
@@ -62,17 +63,33 @@ export type FormFieldContext<
   }
   handleChange: (value: T[Name]) => void
   handleBlur: () => void
-}
-export type AnyFormFieldContext = FormFieldContext<any, any, any>
+} & (IsArray extends true
+  ? {
+      items: {
+        replace: (
+          index: number,
+          value: T[Name] extends Array<infer U> ? U : any
+        ) => void
+        push: (value: T[Name] extends Array<infer U> ? U : any) => void
+        remove: (index: number) => void
+      }
+    }
+  : {})
+
+export type AnyFormFieldContext = FormFieldContext<any, any, any, any>
 
 interface FormFieldProps<
   T extends Record<string, unknown>,
   Name extends RecordKey<T>,
-  Validators extends FormFieldValidators<T[Name]>
+  Validators extends FormFieldValidators<T[Name]>,
+  IsArray extends boolean
 > {
   name: Name
   validators?: Validators
-  children: (context: FormFieldContext<T, Name, Validators>) => JSX.Element
+  array?: IsArray
+  children: (
+    context: FormFieldContext<T, Name, Validators, IsArray>
+  ) => JSX.Element
 }
 
 type SelectorState<T extends Record<string, unknown>> = {
@@ -96,9 +113,10 @@ type Prettify<T> = {
 
 type FormFieldComponent<T extends Record<string, unknown>> = <
   Name extends RecordKey<T>,
-  Validators extends FormFieldValidators<T[Name]>
+  Validators extends FormFieldValidators<T[Name]>,
+  IsArray extends boolean
 >(
-  props: Prettify<FormFieldProps<T, Name, Validators>>
+  props: Prettify<FormFieldProps<T, Name, Validators, IsArray>>
 ) => JSX.Element
 
 type FormSubscribeComponent<T extends Record<string, unknown>> = <
@@ -344,9 +362,30 @@ function createFormState<T extends Record<string, unknown>>(
     }
   }
 
+  const validateFieldOnChange = (name: RecordKey<T>) => {
+    validateField(name, "onChange")
+    if (formFieldValidators[name]?.onChangeAsync) {
+      validateField(name, "onChangeAsync")
+    }
+  }
   const updateFieldValue = (name: RecordKey<T>, value: T[RecordKey<T>]) => {
     state[name] = value
-    updateSubscribers()
+    validateFieldOnChange(name)
+  }
+
+  const arrayFieldReplace = (name: RecordKey<T>, index: number, value: any) => {
+    ;(state[name] as Array<any>)[index] = value
+    validateFieldOnChange(name)
+  }
+
+  const arrayFieldPush = (name: RecordKey<T>, value: any) => {
+    ;(state[name] as Array<any>).push(value)
+    validateFieldOnChange(name)
+  }
+
+  const arrayFieldRemove = (name: RecordKey<T>, index: number) => {
+    ;(state[name] as Array<any>).splice(index, 1)
+    validateFieldOnChange(name)
   }
 
   const getErrors = () => {
@@ -434,12 +473,12 @@ function createFormState<T extends Record<string, unknown>>(
     for (const name in formFieldValidators) {
       const fieldValidators = formFieldValidators[name]
       if (fieldValidators?.onChange) {
-        validateField(name, "onChange")
+        await validateField(name, "onChange")
       }
       if (fieldValidators?.onSubmit) {
-        validateField(name, "onSubmit")
+        await validateField(name, "onSubmit")
       }
-      if (fieldValidators?.onChangeAsync) {
+      if (!formFieldErrors[name]?.onChange && fieldValidators?.onChangeAsync) {
         const value = state[name] as T[RecordKey<T>]
         const abortController = new AbortController()
         const asyncValidators = (asyncFormFieldValidators[
@@ -462,6 +501,8 @@ function createFormState<T extends Record<string, unknown>>(
           epoch,
           abortController: null,
         }
+        updateFieldComponents(name)
+        updateSubscribers()
       }
     }
     return getErrors()
@@ -503,6 +544,9 @@ function createFormState<T extends Record<string, unknown>>(
     validateField,
     getFieldState,
     updateFieldValue,
+    arrayFieldReplace,
+    arrayFieldPush,
+    arrayFieldRemove,
     connectField,
     disconnectField,
     getSelectorState,
@@ -527,8 +571,9 @@ export function useForm<T extends Record<string, unknown> = {}>(
 
         hook.Field = function Field<
           Name extends RecordKey<T>,
-          Validators extends FormFieldValidators<T[Name]>
-        >(props: FormFieldProps<T, Name, Validators>) {
+          Validators extends FormFieldValidators<T[Name]>,
+          IsArray extends boolean
+        >(props: FormFieldProps<T, Name, Validators, IsArray>) {
           const update = useRequestUpdate()
           if (props.validators) {
             formState.formFieldValidators[props.name] = props.validators
@@ -543,20 +588,43 @@ export function useForm<T extends Record<string, unknown> = {}>(
             }
           }, [])
 
-          return props.children({
+          const childProps: FormFieldContext<T, Name, Validators, false> = {
             name: props.name,
             state: formState.getFieldState(props.name) as any,
             handleChange: (value: T[Name]) => {
               formState.updateFieldValue(props.name, value)
-              formState.validateField(props.name, "onChange")
-              if (props.validators?.onChangeAsync) {
-                formState.validateField(props.name, "onChangeAsync")
-              }
             },
             handleBlur: () => {
               formState.validateField(props.name, "onBlur")
             },
-          })
+          }
+
+          if (props.array) {
+            const asArrayProps = childProps as FormFieldContext<
+              T,
+              Name,
+              Validators,
+              true
+            >
+            asArrayProps.items = {
+              replace: (
+                index: number,
+                value: T[Name] extends Array<infer U> ? U : any
+              ) => {
+                formState.arrayFieldReplace(props.name, index, value)
+              },
+              push: (value: T[Name] extends Array<infer U> ? U : any) => {
+                formState.arrayFieldPush(props.name, value)
+              },
+              remove: (index: number) => {
+                formState.arrayFieldRemove(props.name, index)
+              },
+            }
+          }
+
+          return props.children(
+            childProps as FormFieldContext<T, Name, Validators, IsArray>
+          )
         }
         hook.Subscribe = function Subscribe<
           Selector extends (state: SelectorState<T>) => unknown
