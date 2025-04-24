@@ -203,10 +203,11 @@ function createFormState<T extends Record<string, unknown>>(
           error: typeof res === "string" ? res : undefined,
         }
         if (
-          fieldMeta[name].onChangeAsync &&
-          fieldMeta[name].onChangeAsync.timeout !== -1
+          (fieldMeta[name].onChangeAsync &&
+            fieldMeta[name].onChangeAsync.timeout !== -1) ||
+          fieldMeta[name].onChangeAsync?.error
         ) {
-          window.clearTimeout(fieldMeta[name].onChangeAsync?.timeout)
+          window.clearTimeout(fieldMeta[name].onChangeAsync.timeout)
           fieldMeta[name].onChangeAsync = {
             error: undefined,
             timeout: -1,
@@ -227,9 +228,7 @@ function createFormState<T extends Record<string, unknown>>(
         break
       }
       case "onChangeAsync": {
-        if (fieldMeta[name].onChange?.error) {
-          return
-        }
+        if (fieldMeta[name].onChange?.error) return
         window.clearTimeout(fieldMeta[name].onChangeAsync?.timeout)
         const debounceMs = validatorConfigs[name]?.onChangeAsyncDebounceMs ?? 0
         const epoch = (fieldMeta[name].onChangeAsync?.epoch ?? 0) + 1
@@ -238,6 +237,7 @@ function createFormState<T extends Record<string, unknown>>(
             value: state[name],
           })
           res?.then((error) => {
+            if (fieldMeta[name].onChange?.error) return
             if (epoch !== fieldMeta[name].onChangeAsync?.epoch) return
             fieldMeta[name].onChangeAsync = {
               error: typeof error === "string" ? error : undefined,

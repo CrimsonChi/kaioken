@@ -53,7 +53,7 @@ export default function UseFormExample() {
               <label htmlFor={field.name}>First Name:</label>
               <input
                 id={field.name}
-                name={field.name}
+                //name={field.name}
                 value={field.state.value}
                 onblur={field.handleBlur}
                 oninput={(e) => field.handleChange(e.target.value)}
