@@ -169,10 +169,8 @@ function createFormState<T extends Record<string, unknown>>(
   const formFieldValidators = {} as {
     [key in RecordKey<T>]: FormFieldValidators<T[key]>
   }
-  const formFieldsMeta = {} as {
-    [key in RecordKey<T>]: {
-      isTouched: boolean
-    }
+  const formFieldsTouched = {} as {
+    [key in RecordKey<T>]?: boolean
   }
   const formFieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
   const asyncFormFieldValidators = {} as {
@@ -246,9 +244,7 @@ function createFormState<T extends Record<string, unknown>>(
       }
       case "onChange": {
         if (fieldErrors.onMount) delete fieldErrors.onMount
-        if (!formFieldsMeta[name]) {
-          formFieldsMeta[name] = { isTouched: true }
-        }
+        formFieldsTouched[name] = true
         if (!fieldValidators.onChange) return
 
         fieldErrors.onChange = fieldValidators.onChange(validatorCtx)
@@ -275,6 +271,7 @@ function createFormState<T extends Record<string, unknown>>(
         break
       }
       case "onBlur": {
+        formFieldsTouched[name] = true
         if (!fieldValidators.onBlur) return
         fieldErrors.onBlur = fieldValidators.onBlur(validatorCtx)
         updateSubscribers()
@@ -357,7 +354,7 @@ function createFormState<T extends Record<string, unknown>>(
     return {
       value: state[name],
       errors,
-      isTouched: !!formFieldsMeta[name]?.isTouched,
+      isTouched: !!formFieldsTouched[name],
       isValidating,
     }
   }
@@ -452,12 +449,17 @@ function createFormState<T extends Record<string, unknown>>(
         }
       }
     }
+    for (const fieldName in formFieldsTouched) {
+      delete formFieldsTouched[fieldName]
+    }
     for (const fieldName in asyncFormFieldValidators) {
-      if (asyncFormFieldValidators[fieldName].onChangeAsync?.timeout !== -1) {
-        window.clearTimeout(
-          asyncFormFieldValidators[fieldName].onChangeAsync?.timeout
-        )
+      const asyncFieldValidators = asyncFormFieldValidators[fieldName]
+      const { timeout, abortController } =
+        asyncFieldValidators?.onChangeAsync ?? {}
+      if (timeout !== -1) {
+        window.clearTimeout(timeout)
       }
+      abortController?.abort()
       delete asyncFormFieldValidators[fieldName]
     }
     for (const fieldName in formFieldErrors) {
