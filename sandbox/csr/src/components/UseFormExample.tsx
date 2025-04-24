@@ -46,6 +46,7 @@ export default function UseFormExample() {
           },
         }}
         children={(field) => {
+          const error = field.state.errors[0]
           return (
             <div className="flex">
               <label htmlFor={field.name}>First Name:</label>
@@ -61,23 +62,15 @@ export default function UseFormExample() {
           )
         }}
       />
-      {/* <form.Field
-        name="email"
-        children={(field) => (
-          <input
-            type="email"
-            name={field.name}
-            value={field.state.value}
-            onblur={field.handleBlur}
-            oninput={(e) => field.handleChange(e.target.value)}
-          />
-        )}
-      /> */}
       <form.Subscribe
         selector={(state) => [state.canSubmit, state.isSubmitting] as const}
         children={([canSubmit, isSubmitting]) => (
           <>
-            <button type="submit" disabled={!canSubmit}>
+            <button
+              className={canSubmit ? "bg-green-500" : "bg-red-500"}
+              type="submit"
+              disabled={!canSubmit}
+            >
               {isSubmitting ? "..." : "Submit"}
             </button>
             <button type="reset" onclick={() => form.reset()}>

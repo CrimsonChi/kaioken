@@ -4,17 +4,13 @@ import { useHook, useRequestUpdate } from "./utils.js"
 
 type RecordKey<T extends Record<string, unknown>> = keyof T & string
 
-type FormFieldValidator<T extends unknown> = ({
-  value,
-}: {
-  value: T
-}) => string | false | undefined
+type FormFieldValidator<T extends unknown> = ({ value }: { value: T }) => any
 
 type AsyncFormFieldValidator<T extends unknown> = ({
   value,
 }: {
   value: T
-}) => Promise<string | false | undefined>
+}) => Promise<any>
 
 type FormFieldValidators<T> = {
   onBlur?: FormFieldValidator<T>
@@ -25,29 +21,51 @@ type FormFieldValidators<T> = {
   onSubmit?: FormFieldValidator<T>
 }
 
+type InferValidatorReturn<T> = T extends undefined
+  ? never
+  : T extends null
+  ? never
+  : T extends Promise<infer U>
+  ? InferValidatorReturn<U>
+  : T extends boolean
+  ? never
+  : T
+
+// create a type that produces an array of error returns from FormFieldValidators
+type ObjectValuesArray<T extends object> = T[keyof T][]
+
+type InferFormFieldErrors<T extends FormFieldValidators<any>> =
+  ObjectValuesArray<{
+    [K in keyof T]: T[K] extends FormFieldValidator<any>
+      ? InferValidatorReturn<ReturnType<T[K]>>
+      : never
+  }>
+
 export type FormFieldContext<
   T extends Record<string, unknown>,
-  U extends RecordKey<T>
+  Name extends RecordKey<T>,
+  Validators extends FormFieldValidators<T[Name]>
 > = {
-  name: U
+  name: Name
   state: {
-    value: T[U]
-    errors: string[]
+    value: T[Name]
+    errors: InferFormFieldErrors<Validators>
     isTouched: boolean
     isValidating: boolean
   }
-  handleChange: (value: T[U]) => void
+  handleChange: (value: T[Name]) => void
   handleBlur: () => void
 }
-export type AnyFormFieldContext = FormFieldContext<any, any>
+export type AnyFormFieldContext = FormFieldContext<any, any, any>
 
 interface FormFieldProps<
   T extends Record<string, unknown>,
-  Name extends RecordKey<T>
+  Name extends RecordKey<T>,
+  Validators extends FormFieldValidators<T[Name]>
 > {
   name: Name
-  validators?: FormFieldValidators<T[Name]>
-  children: (context: FormFieldContext<T, Name>) => JSX.Element
+  validators?: Validators
+  children: (context: FormFieldContext<T, Name, Validators>) => JSX.Element
 }
 
 type SelectorState<T extends Record<string, unknown>> = {
@@ -65,10 +83,15 @@ interface FormSubscribeProps<
   children: (selection: U) => JSX.Element
 }
 
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+}
+
 type FieldComponent<T extends Record<string, unknown>> = <
-  Name extends RecordKey<T>
+  Name extends RecordKey<T>,
+  Validators extends FormFieldValidators<T[Name]>
 >(
-  props: FormFieldProps<T, Name>
+  props: Prettify<FormFieldProps<T, Name, Validators>>
 ) => JSX.Element
 
 type SubscribeComponent<T extends Record<string, unknown>> = <
@@ -86,7 +109,7 @@ type UseFormReturn<T extends Record<string, unknown>> = {
 
 type FormContext<T extends Record<string, unknown>> = {
   state: T
-  validateForm: () => Promise<string[]>
+  validateForm: () => Promise<any[]>
   resetField: (name: RecordKey<T>) => void
   deleteField: (name: RecordKey<T>) => void
   setFieldValue: <K extends RecordKey<T>>(name: K, value: T[K]) => void
@@ -108,7 +131,7 @@ type UseFormInternalState<T extends Record<string, unknown>> = {
   Field: FieldComponent<T>
   Subscribe: SubscribeComponent<T>
   getFormContext: () => FormContext<T>
-  validateForm: () => Promise<string[]>
+  validateForm: () => Promise<any[]>
   reset: (values?: T) => void
 }
 
@@ -146,11 +169,10 @@ function createFormState<T extends Record<string, unknown>>(
   }
 
   const canSubmit = () => {
-    const errors = getErrors()
-    return errors.length === 0 && isAnyFieldValidating() === false
+    return isAnyFieldValidating() === false && getErrors().length === 0
   }
 
-  const getSelectorState = () => {
+  const getSelectorState = (): SelectorState<T> => {
     return {
       values: state,
       canSubmit: canSubmit(),
@@ -265,6 +287,7 @@ function createFormState<T extends Record<string, unknown>>(
           }, debounceMs),
           epoch,
         }
+        updateSubscribers()
         break
       }
       case "onSubmit": {
@@ -274,7 +297,7 @@ function createFormState<T extends Record<string, unknown>>(
   }
 
   const getFieldState = (name: RecordKey<T>) => {
-    let errors: string[] = []
+    let errors: any[] = []
     let isValidating = false
     const fieldErrors = formFieldErrors[name] ?? {}
     const asyncMeta = asyncFormFieldValidators[name] ?? {}
@@ -292,8 +315,6 @@ function createFormState<T extends Record<string, unknown>>(
         ].filter(Boolean)
       )
     }
-
-    console.log("getFieldState", name, errors)
 
     return {
       value: state[name],
@@ -325,8 +346,14 @@ function createFormState<T extends Record<string, unknown>>(
   }
 
   const isAnyFieldValidating = () => {
-    for (const key in asyncFormFieldValidators) {
-      if (asyncFormFieldValidators[key] !== undefined) return true
+    for (const fieldName in asyncFormFieldValidators) {
+      const fieldValidators = asyncFormFieldValidators[fieldName]
+      if (
+        fieldValidators.onChangeAsync &&
+        fieldValidators.onChangeAsync.timeout !== -1
+      ) {
+        return true
+      }
     }
     return false
   }
@@ -454,9 +481,10 @@ export function useForm<T extends Record<string, unknown> = {}>(
         hook.reset = () => formState.reset()
         hook.getFormContext = () => formState.getFormContext()
 
-        hook.Field = function Field<Name extends RecordKey<T>>(
-          props: FormFieldProps<T, Name>
-        ) {
+        hook.Field = function Field<
+          Name extends RecordKey<T>,
+          Validators extends FormFieldValidators<T[Name]>
+        >(props: FormFieldProps<T, Name, Validators>) {
           const update = useRequestUpdate()
           if (props.validators) {
             formState.formFieldValidators[props.name] = props.validators
