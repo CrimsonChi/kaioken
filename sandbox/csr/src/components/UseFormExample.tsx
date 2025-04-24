@@ -1,14 +1,13 @@
 import { type AnyFormFieldContext, useForm } from "kaioken"
 
 function FieldInfo({ field }: { field: AnyFormFieldContext }) {
-  console.log("render FieldInfo", field)
   return (
-    <>
+    <div>
       {field.state.isTouched && field.state.errors.length ? (
-        <em>{field.state.errors.join(",")}</em>
+        <em>{field.state.errors}</em>
       ) : null}
       {field.state.isValidating ? "Validating..." : null}
-    </>
+    </div>
   )
 }
 
@@ -47,13 +46,12 @@ export default function UseFormExample() {
           },
         }}
         children={(field) => {
-          console.log("render 'name'", field.state.errors)
           return (
             <div className="flex">
               <label htmlFor={field.name}>First Name:</label>
               <input
                 id={field.name}
-                //name={field.name}
+                name={field.name}
                 value={field.state.value}
                 onblur={field.handleBlur}
                 oninput={(e) => field.handleChange(e.target.value)}

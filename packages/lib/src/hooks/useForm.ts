@@ -118,29 +118,30 @@ function createFormState<T extends Record<string, unknown>>(
   let isSubmitting = false
   const subscribers = new Set<FormStateSubscriber<T>>()
   const state: T = { ...(config.initialValues ?? {}) } as T
-  const validatorConfigs: Partial<
-    Record<RecordKey<T>, FormFieldValidators<T[RecordKey<T>]>>
-  > = {}
-  const fieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
-  let fieldMeta = {} as {
+  const formFieldValidators = {} as {
+    [key in RecordKey<T>]: FormFieldValidators<T[key]>
+  }
+  const formFieldsMeta = {} as {
     [key in RecordKey<T>]: {
-      onMount?: {
-        error?: string
-      }
-      onChange?: {
-        error?: string
-      }
-      onBlur?: {
-        error?: string
-      }
-      onSubmit?: {
-        error?: string
-      }
+      isTouched: boolean
+    }
+  }
+  const formFieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
+  const asyncFormFieldValidators = {} as {
+    [key in RecordKey<T>]: {
       onChangeAsync?: {
-        error?: string
         timeout: number
         epoch: number
       }
+    }
+  }
+  const formFieldErrors = {} as {
+    [key in RecordKey<T>]: {
+      onMount?: any
+      onChange?: any
+      onBlur?: any
+      onSubmit?: any
+      onChangeAsync?: any
     }
   }
 
@@ -169,109 +170,105 @@ function createFormState<T extends Record<string, unknown>>(
   }
 
   const updateFieldComponents = (name: RecordKey<T>) => {
-    if (!fieldUpdaters.has(name)) return
-    for (const update of fieldUpdaters.get(name)!) update()
+    if (!formFieldUpdaters.has(name)) return
+    for (const update of formFieldUpdaters.get(name)!) update()
   }
 
-  const validateField = (
+  const validateField = async (
     name: RecordKey<T>,
     evt: keyof Omit<
       FormFieldValidators<T[RecordKey<T>]>,
       "onChangeAsyncDebounceMs"
     >
   ) => {
-    if (!fieldMeta[name]) {
-      fieldMeta[name] = {}
-    }
+    const fieldErrors = (formFieldErrors[name] ??= {})
+    const asyncFieldValidatorStates = (asyncFormFieldValidators[name] ??= {})
+    const fieldValidators = formFieldValidators[name] ?? {}
+
+    const validatorCtx = { value: state[name] }
+
     switch (evt) {
       case "onMount": {
-        const res = validatorConfigs[name]?.onMount?.({ value: state[name] })
-        fieldMeta[name].onMount = {
-          error: typeof res === "string" ? res : undefined,
-        }
-        console.log("validate onMount", name, res)
+        if (!fieldValidators.onMount) return
+
+        fieldErrors.onMount = fieldValidators.onMount(validatorCtx)
         updateSubscribers()
         updateFieldComponents(name)
         break
       }
       case "onChange": {
-        if (fieldMeta[name].onMount) {
-          delete fieldMeta[name].onMount
+        if (fieldErrors.onMount) delete fieldErrors.onMount
+        if (!formFieldsMeta[name]) {
+          formFieldsMeta[name] = { isTouched: true }
         }
-        const res = validatorConfigs[name]?.onChange?.({ value: state[name] })
-        fieldMeta[name].onChange = {
-          error: typeof res === "string" ? res : undefined,
-        }
+        if (!fieldValidators.onChange) return
+
+        fieldErrors.onChange = fieldValidators.onChange(validatorCtx)
+
         if (
-          (fieldMeta[name].onChangeAsync &&
-            fieldMeta[name].onChangeAsync.timeout !== -1) ||
-          fieldMeta[name].onChangeAsync?.error
+          asyncFieldValidatorStates.onChangeAsync &&
+          asyncFieldValidatorStates.onChangeAsync.timeout !== -1
         ) {
-          window.clearTimeout(fieldMeta[name].onChangeAsync.timeout)
-          fieldMeta[name].onChangeAsync = {
-            error: undefined,
+          window.clearTimeout(asyncFieldValidatorStates.onChangeAsync.timeout)
+          asyncFieldValidatorStates.onChangeAsync = {
+            epoch: asyncFieldValidatorStates.onChangeAsync.epoch,
             timeout: -1,
-            epoch: fieldMeta[name].onChangeAsync.epoch,
           }
+          delete fieldErrors.onChangeAsync
+        } else if (fieldErrors.onChangeAsync) {
+          delete fieldErrors.onChangeAsync
         }
+
         updateSubscribers()
         updateFieldComponents(name)
         break
       }
       case "onBlur": {
-        const res = validatorConfigs[name]?.onBlur?.({ value: state[name] })
-        fieldMeta[name].onBlur = {
-          error: typeof res === "string" ? res : undefined,
-        }
+        if (!fieldValidators.onBlur) return
+        fieldErrors.onBlur = fieldValidators.onBlur(validatorCtx)
         updateSubscribers()
         updateFieldComponents(name)
         break
       }
       case "onChangeAsync": {
-        if (fieldMeta[name].onChange?.error) return
-        window.clearTimeout(fieldMeta[name].onChangeAsync?.timeout)
-        const debounceMs = validatorConfigs[name]?.onChangeAsyncDebounceMs ?? 0
-        const epoch = (fieldMeta[name].onChangeAsync?.epoch ?? 0) + 1
-        const doValidation = () => {
-          const res = validatorConfigs[name]?.onChangeAsync?.({
-            value: state[name],
-          })
-          res?.then((error) => {
-            if (fieldMeta[name].onChange?.error) return
-            if (epoch !== fieldMeta[name].onChangeAsync?.epoch) return
-            fieldMeta[name].onChangeAsync = {
-              error: typeof error === "string" ? error : undefined,
-              timeout: -1,
-              epoch,
-            }
-            updateSubscribers()
-            updateFieldComponents(name)
-          })
-        }
-        if (debounceMs > 0) {
-          fieldMeta[name].onChangeAsync = {
-            error: undefined,
-            epoch,
-            timeout: window.setTimeout(doValidation, debounceMs),
-          }
-        } else {
-          fieldMeta[name].onChangeAsync = {
-            error: undefined,
-            epoch,
-            timeout: -1,
-          }
-          doValidation()
-        }
-        updateSubscribers()
-        updateFieldComponents(name)
+        if (fieldErrors.onChange || !fieldValidators.onChangeAsync) return
 
+        window.clearTimeout(asyncFieldValidatorStates.onChangeAsync?.timeout)
+
+        const epoch = (asyncFieldValidatorStates.onChangeAsync?.epoch ?? 0) + 1
+        const debounceMs = fieldValidators.onChangeAsyncDebounceMs ?? 0
+
+        if (debounceMs <= 0) {
+          fieldErrors.onChangeAsync = await fieldValidators.onChangeAsync(
+            validatorCtx
+          )
+          updateSubscribers()
+          updateFieldComponents(name)
+          return
+        }
+
+        asyncFieldValidatorStates.onChangeAsync = {
+          timeout: window.setTimeout(() => {
+            fieldValidators.onChangeAsync?.(validatorCtx).then((result) => {
+              if (fieldErrors.onChange) return
+              if (epoch !== asyncFieldValidatorStates.onChangeAsync?.epoch) {
+                return
+              }
+              fieldErrors.onChangeAsync = result
+              asyncFieldValidatorStates.onChangeAsync = {
+                timeout: -1,
+                epoch,
+              }
+              updateSubscribers()
+              updateFieldComponents(name)
+            })
+          }, debounceMs),
+          epoch,
+        }
         break
       }
       case "onSubmit": {
-        const res = validatorConfigs[name]?.onBlur?.({ value: state[name] })
-        fieldMeta[name].onSubmit = {
-          error: typeof res === "string" ? res : undefined,
-        }
+        fieldErrors.onSubmit = fieldValidators.onSubmit?.(validatorCtx)
       }
     }
   }
@@ -279,25 +276,29 @@ function createFormState<T extends Record<string, unknown>>(
   const getFieldState = (name: RecordKey<T>) => {
     let errors: string[] = []
     let isValidating = false
-    const meta = fieldMeta[name]
-    if (meta) {
-      if (meta.onChangeAsync && meta.onChangeAsync.timeout !== -1) {
-        isValidating = true
-      } else {
-        errors.push(
-          ...[
-            meta.onChangeAsync?.error,
-            meta.onMount?.error,
-            meta.onChange?.error,
-            meta.onBlur?.error,
-          ].filter((v) => v !== undefined)
-        )
-      }
+    const fieldErrors = formFieldErrors[name] ?? {}
+    const asyncMeta = asyncFormFieldValidators[name] ?? {}
+    if (asyncMeta.onChangeAsync && asyncMeta.onChangeAsync.timeout !== -1) {
+      isValidating = true
     }
+
+    if (!isValidating) {
+      errors.push(
+        ...[
+          fieldErrors.onChangeAsync,
+          fieldErrors.onMount,
+          fieldErrors.onChange,
+          fieldErrors.onBlur,
+        ].filter(Boolean)
+      )
+    }
+
+    console.log("getFieldState", name, errors)
+
     return {
       value: state[name],
       errors,
-      isTouched: !!(meta?.onChange || meta?.onBlur),
+      isTouched: !!formFieldsMeta[name]?.isTouched,
       isValidating,
     }
   }
@@ -309,42 +310,36 @@ function createFormState<T extends Record<string, unknown>>(
 
   const getErrors = () => {
     const errors: string[] = []
-    for (const key in fieldMeta) {
-      const valState = fieldMeta[key]
-      if (valState.onMount?.error) {
-        errors.push(valState.onMount.error)
-      }
-      if (valState.onChange?.error) {
-        errors.push(valState.onChange.error)
-      }
-      if (valState.onChangeAsync?.error) {
-        errors.push(valState.onChangeAsync.error)
-      }
-      if (valState.onBlur?.error) {
-        errors.push(valState.onBlur.error)
-      }
+    for (const key in formFieldErrors) {
+      const meta = formFieldErrors[key]
+      errors.push(
+        ...[
+          meta.onChangeAsync,
+          meta.onMount,
+          meta.onChange,
+          meta.onBlur,
+        ].filter(Boolean)
+      )
     }
     return errors
   }
 
   const isAnyFieldValidating = () => {
-    for (const key in fieldMeta) {
-      const valState = fieldMeta[key]
-      if (valState.onChangeAsync && valState.onChangeAsync.timeout !== -1)
-        return true
+    for (const key in asyncFormFieldValidators) {
+      if (asyncFormFieldValidators[key] !== undefined) return true
     }
     return false
   }
 
   const connectField = (name: RecordKey<T>, update: () => void) => {
-    if (!fieldUpdaters.has(name)) {
-      fieldUpdaters.set(name, new Set())
+    if (!formFieldUpdaters.has(name)) {
+      formFieldUpdaters.set(name, new Set())
     }
-    fieldUpdaters.get(name)!.add(update)
+    formFieldUpdaters.get(name)!.add(update)
   }
   const disconnectField = (name: RecordKey<T>, update: () => void) => {
-    if (!fieldUpdaters.has(name)) return
-    fieldUpdaters.get(name)!.delete(update)
+    if (!formFieldUpdaters.has(name)) return
+    formFieldUpdaters.get(name)!.delete(update)
   }
 
   const reset = (values?: T) => {
@@ -366,30 +361,36 @@ function createFormState<T extends Record<string, unknown>>(
         }
       }
     }
-    fieldMeta = {} as any
+    for (const fieldName in asyncFormFieldValidators) {
+      if (asyncFormFieldValidators[fieldName].onChangeAsync?.timeout !== -1) {
+        window.clearTimeout(
+          asyncFormFieldValidators[fieldName].onChangeAsync?.timeout
+        )
+      }
+      delete asyncFormFieldValidators[fieldName]
+    }
+    for (const fieldName in formFieldErrors) {
+      delete formFieldErrors[fieldName]
+    }
     updateSubscribers()
-    fieldUpdaters.forEach((updaters) => {
+    formFieldUpdaters.forEach((updaters) => {
       updaters.forEach((update) => update())
     })
   }
 
   const validateForm = async () => {
-    for (const name in validatorConfigs) {
-      if (validatorConfigs[name]?.onChange) {
+    for (const name in formFieldValidators) {
+      const fieldValidators = formFieldValidators[name]
+      if (fieldValidators?.onChange) {
         validateField(name, "onChange")
       }
-      if (validatorConfigs[name]?.onSubmit) {
+      if (fieldValidators?.onSubmit) {
         validateField(name, "onSubmit")
       }
-      if (validatorConfigs[name]?.onChangeAsync) {
+      if (fieldValidators?.onChangeAsync) {
         const value = state[name] as T[RecordKey<T>]
-        const epoch = (fieldMeta[name].onChangeAsync?.epoch ?? 0) + 1
-        const res = await validatorConfigs[name].onChangeAsync({ value })
-        fieldMeta[name].onChangeAsync = {
-          error: typeof res === "string" ? res : undefined,
-          epoch,
-          timeout: -1,
-        }
+        formFieldErrors[name].onChangeAsync =
+          await fieldValidators.onChangeAsync({ value })
       }
     }
     return getErrors()
@@ -397,7 +398,7 @@ function createFormState<T extends Record<string, unknown>>(
 
   const deleteField = (name: RecordKey<T>) => {
     delete state[name]
-    delete fieldMeta[name]
+    delete formFieldErrors[name]
     updateSubscribers()
   }
   const resetField = (name: RecordKey<T>) => {
@@ -426,8 +427,8 @@ function createFormState<T extends Record<string, unknown>>(
   return {
     subscribers,
     state,
-    validatorConfigs,
-    fieldMeta,
+    formFieldValidators,
+    formFieldErrors,
     validateField,
     getFieldState,
     updateFieldValue,
@@ -457,8 +458,10 @@ export function useForm<T extends Record<string, unknown> = {}>(
           props: FormFieldProps<T, Name>
         ) {
           const update = useRequestUpdate()
+          if (props.validators) {
+            formState.formFieldValidators[props.name] = props.validators
+          }
           useEffect(() => {
-            formState.validatorConfigs[props.name] = props.validators as any
             formState.connectField(props.name, update)
             if (props.validators?.onMount) {
               formState.validateField(props.name, "onMount")
