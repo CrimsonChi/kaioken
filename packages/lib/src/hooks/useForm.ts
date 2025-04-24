@@ -2,7 +2,32 @@ import { shallowCompare } from "../utils.js"
 import { useEffect } from "./useEffect.js"
 import { useHook, useRequestUpdate } from "./utils.js"
 
-type RecordKey<T extends Record<string, unknown>> = keyof T & string
+type ObjectValuesArray<T extends object> = T[keyof T][]
+
+type InferRecordKeys<T extends Record<string, unknown>> = {
+  [K in keyof T & string]: T[K] extends Array<infer U>
+    ? `${K}` | `${K}.${number}.${keyof U & string}`
+    : K
+}
+
+type RecordKey<T extends Record<string, unknown>> = ObjectValuesArray<
+  InferRecordKeys<T>
+>[number]
+
+type InferRecordKeyValue<
+  T extends Record<string, unknown>,
+  K extends RecordKey<T>
+> = K extends `${infer ArrayKey}.${infer _}.${infer Property}`
+  ? ArrayKey extends keyof T
+    ? T[ArrayKey] extends Array<infer U>
+      ? U extends Record<string, unknown>
+        ? U[Property]
+        : never
+      : never
+    : never
+  : K extends keyof T
+  ? T[K]
+  : never
 
 type ValidatorContext<T> = {
   value: T
@@ -38,9 +63,6 @@ type InferValidatorReturn<T> = T extends Falsy
   ? InferValidatorReturn<U>
   : T
 
-// create a type that produces an array of error returns from FormFieldValidators
-type ObjectValuesArray<T extends object> = T[keyof T][]
-
 type InferFormFieldErrors<T extends FormFieldValidators<any>> =
   ObjectValuesArray<{
     [K in keyof T]: T[K] extends FormFieldValidator<any>
@@ -56,12 +78,12 @@ export type FormFieldContext<
 > = {
   name: Name
   state: {
-    value: T[Name]
+    value: InferRecordKeyValue<T, Name>
     errors: InferFormFieldErrors<Validators>
     isTouched: boolean
     isValidating: boolean
   }
-  handleChange: (value: T[Name]) => void
+  handleChange: (value: InferRecordKeyValue<T, Name>) => void
   handleBlur: () => void
 } & (IsArray extends true
   ? {
@@ -366,7 +388,26 @@ function createFormState<T extends Record<string, unknown>>(
     }
   }
   const updateFieldValue = (name: RecordKey<T>, value: T[RecordKey<T>]) => {
-    state[name] = value
+    const parts = name.split(".")
+    if (parts.length === 1) {
+      state[name] = value
+    } else {
+      const [name, index, property] = parts
+      if (!Array.isArray(state[name])) {
+        console.error("[kaioken]: useForm - Invalid array field access:", name)
+        return
+      }
+      const idxAsNum = Number(index)
+      if (state[name].length <= idxAsNum) {
+        console.error(
+          "[kaioken]: useForm - Invalid array index access:",
+          name,
+          index
+        )
+        return
+      }
+      ;(state[name] as Array<any>)[idxAsNum][property] = value
+    }
     validateFieldOnChange(name)
   }
 
@@ -387,8 +428,8 @@ function createFormState<T extends Record<string, unknown>>(
 
   const getErrors = () => {
     const errors: string[] = []
-    for (const key in formFieldErrors) {
-      const meta = formFieldErrors[key]
+    for (const fieldName in formFieldErrors) {
+      const meta = formFieldErrors[fieldName as RecordKey<T>]
       errors.push(
         ...[
           meta.onChangeAsync,
@@ -403,7 +444,8 @@ function createFormState<T extends Record<string, unknown>>(
 
   const isAnyFieldValidating = () => {
     for (const fieldName in asyncFormFieldValidators) {
-      const fieldValidators = asyncFormFieldValidators[fieldName]
+      const fieldValidators =
+        asyncFormFieldValidators[fieldName as RecordKey<T>]
       if (
         fieldValidators.onChangeAsync &&
         fieldValidators.onChangeAsync.timeout !== -1
@@ -442,28 +484,30 @@ function createFormState<T extends Record<string, unknown>>(
       ])
       for (const key in keys) {
         if (config.initialValues?.[key]) {
-          // @ts-ignore
-          state[key as any as RecordKey<T>] = config.initialValues?.[key]
+          state[key as RecordKey<T>] = config.initialValues?.[
+            key
+          ] as T[RecordKey<T>]
         } else {
           delete state[key]
         }
       }
     }
     for (const fieldName in formFieldsTouched) {
-      delete formFieldsTouched[fieldName]
+      delete formFieldsTouched[fieldName as RecordKey<T>]
     }
     for (const fieldName in asyncFormFieldValidators) {
-      const asyncFieldValidators = asyncFormFieldValidators[fieldName]
+      const asyncFieldValidators =
+        asyncFormFieldValidators[fieldName as RecordKey<T>]
       const { timeout, abortController } =
         asyncFieldValidators?.onChangeAsync ?? {}
       if (timeout !== -1) {
         window.clearTimeout(timeout)
       }
       abortController?.abort()
-      delete asyncFormFieldValidators[fieldName]
+      delete asyncFormFieldValidators[fieldName as RecordKey<T>]
     }
     for (const fieldName in formFieldErrors) {
-      delete formFieldErrors[fieldName]
+      delete formFieldErrors[fieldName as RecordKey<T>]
     }
     updateSubscribers()
     formFieldUpdaters.forEach((updaters) => {
@@ -472,19 +516,22 @@ function createFormState<T extends Record<string, unknown>>(
   }
 
   const validateForm = async () => {
-    for (const name in formFieldValidators) {
-      const fieldValidators = formFieldValidators[name]
+    for (const fieldName in formFieldValidators) {
+      const fieldValidators = formFieldValidators[fieldName as RecordKey<T>]
       if (fieldValidators?.onChange) {
-        await validateField(name, "onChange")
+        await validateField(fieldName as RecordKey<T>, "onChange")
       }
       if (fieldValidators?.onSubmit) {
-        await validateField(name, "onSubmit")
+        await validateField(fieldName as RecordKey<T>, "onSubmit")
       }
-      if (!formFieldErrors[name]?.onChange && fieldValidators?.onChangeAsync) {
-        const value = state[name] as T[RecordKey<T>]
+      if (
+        !formFieldErrors[fieldName as RecordKey<T>]?.onChange &&
+        fieldValidators?.onChangeAsync
+      ) {
+        const value = state[fieldName] as T[RecordKey<T>]
         const abortController = new AbortController()
         const asyncValidators = (asyncFormFieldValidators[
-          name as RecordKey<T>
+          fieldName as RecordKey<T>
         ] ??= {})
         const epoch = asyncValidators.onChangeAsync?.epoch ?? 0
         asyncValidators.onChangeAsync = {
@@ -496,14 +543,14 @@ function createFormState<T extends Record<string, unknown>>(
           value,
           abortSignal: abortController.signal,
         }
-        formFieldErrors[name].onChangeAsync =
+        formFieldErrors[fieldName as RecordKey<T>].onChangeAsync =
           await fieldValidators.onChangeAsync(ctx)
         asyncValidators.onChangeAsync = {
           timeout: -1,
           epoch,
           abortController: null,
         }
-        updateFieldComponents(name)
+        updateFieldComponents(fieldName as RecordKey<T>)
         updateSubscribers()
       }
     }

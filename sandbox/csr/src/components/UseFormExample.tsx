@@ -13,6 +13,7 @@ function FieldInfo({ field }: { field: AnyFormFieldContext }) {
 
 type Person = {
   name: string
+  age: number
 }
 
 export default function UseFormExample() {
@@ -80,26 +81,33 @@ export default function UseFormExample() {
           <div className="flex flex-col gap-2">
             <label htmlFor={field.name}>Friends:</label>
             <ul className="flex flex-col gap-2">
-              {field.state.value.map((friend, i) => (
-                <li>
-                  <input
-                    id={`${field.name}-${i}`}
-                    name={`${field.name}-${i}`}
-                    value={friend.name}
-                    onblur={field.handleBlur}
-                    oninput={(e) =>
-                      field.items.replace(i, { name: e.target.value })
-                    }
-                  />
-                  <button type="button" onclick={() => field.items.remove(i)}>
-                    Remove
-                  </button>
-                </li>
+              {field.state.value.map((_, i) => (
+                <form.Field
+                  key={i}
+                  name={`friends.${i}.name`}
+                  children={(subField) => (
+                    <li>
+                      <input
+                        id={subField.name}
+                        name={subField.name}
+                        value={subField.state.value}
+                        onblur={field.handleBlur}
+                        oninput={(e) => subField.handleChange(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onclick={() => field.items.remove(i)}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  )}
+                />
               ))}
             </ul>
             <button
               type="button"
-              onclick={() => field.items.push({ name: "" })}
+              onclick={() => field.items.push({ name: "", age: 42 })}
             >
               Add Friend
             </button>
