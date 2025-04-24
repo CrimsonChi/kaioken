@@ -11,6 +11,11 @@ function FieldInfo({ field }: { field: AnyFormFieldContext }) {
   )
 }
 
+const specialCharsRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/
+function hasSpecialChars(str: string) {
+  return specialCharsRegex.test(str)
+}
+
 type Person = {
   name: string
   age: number
@@ -83,6 +88,14 @@ export default function UseFormExample() {
             <ul className="flex flex-col gap-2">
               {field.state.value.map((_, i) => (
                 <form.Field
+                  validators={{
+                    onChange: ({ value }) => {
+                      // if value contains any special characters, return an error
+                      if (hasSpecialChars(value)) {
+                        return "Name must not contain special characters"
+                      }
+                    },
+                  }}
                   name={`friends.${i}.name`}
                   children={(subField) => {
                     return (
@@ -100,6 +113,7 @@ export default function UseFormExample() {
                         >
                           Remove
                         </button>
+                        <FieldInfo field={subField} />
                       </li>
                     )
                   }}
