@@ -83,25 +83,26 @@ export default function UseFormExample() {
             <ul className="flex flex-col gap-2">
               {field.state.value.map((_, i) => (
                 <form.Field
-                  key={i}
                   name={`friends.${i}.name`}
-                  children={(subField) => (
-                    <li>
-                      <input
-                        id={subField.name}
-                        name={subField.name}
-                        value={subField.state.value}
-                        onblur={field.handleBlur}
-                        oninput={(e) => subField.handleChange(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        onclick={() => field.items.remove(i)}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  )}
+                  children={(subField) => {
+                    return (
+                      <li>
+                        <input
+                          id={subField.name}
+                          name={subField.name}
+                          value={subField.state.value}
+                          onblur={subField.handleBlur}
+                          oninput={(e) => subField.handleChange(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onclick={() => field.items.remove(i)}
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    )
+                  }}
                 />
               ))}
             </ul>

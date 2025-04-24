@@ -1,3 +1,5 @@
+import { Fragment } from "../element.js"
+import { generateRandomID } from "../generateId.js"
 import { shallowCompare } from "../utils.js"
 import { useEffect } from "./useEffect.js"
 import { useHook, useRequestUpdate } from "./utils.js"
@@ -194,6 +196,9 @@ function createFormState<T extends Record<string, unknown>>(
   const formFieldsTouched = {} as {
     [key in RecordKey<T>]?: boolean
   }
+  const formArrayItemIds = {} as {
+    [key in RecordKey<T>]?: string[]
+  }
   const formFieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
   const asyncFormFieldValidators = {} as {
     [key in RecordKey<T>]: {
@@ -374,7 +379,7 @@ function createFormState<T extends Record<string, unknown>>(
     }
 
     return {
-      value: state[name],
+      value: getFieldValue(name),
       errors,
       isTouched: !!formFieldsTouched[name],
       isValidating,
@@ -387,6 +392,21 @@ function createFormState<T extends Record<string, unknown>>(
       validateField(name, "onChangeAsync")
     }
   }
+
+  const getFieldValue = (name: RecordKey<T>) => {
+    const parts = name.split(".")
+    if (parts.length === 1) {
+      return state[name]
+    }
+    const [_name, index, property] = parts
+    if (!Array.isArray(state[_name])) {
+      console.error("[kaioken]: useForm - Invalid array field access:", name)
+      return
+    }
+    // @ts-expect-error
+    return state[_name][index][property]
+  }
+
   const updateFieldValue = (name: RecordKey<T>, value: T[RecordKey<T>]) => {
     const parts = name.split(".")
     if (parts.length === 1) {
@@ -406,24 +426,37 @@ function createFormState<T extends Record<string, unknown>>(
         )
         return
       }
-      ;(state[name] as Array<any>)[idxAsNum][property] = value
+      state[name][idxAsNum][property] = value
     }
     validateFieldOnChange(name)
   }
 
   const arrayFieldReplace = (name: RecordKey<T>, index: number, value: any) => {
+    ;(formArrayItemIds[name] ??= [])[index] = generateRandomID()
     ;(state[name] as Array<any>)[index] = value
+
     validateFieldOnChange(name)
   }
 
   const arrayFieldPush = (name: RecordKey<T>, value: any) => {
     ;(state[name] as Array<any>).push(value)
+    ;(formArrayItemIds[name] ??= []).push(generateRandomID())
+
     validateFieldOnChange(name)
   }
 
   const arrayFieldRemove = (name: RecordKey<T>, index: number) => {
+    ;(formArrayItemIds[name] ??= []).splice(index, 1)
     ;(state[name] as Array<any>).splice(index, 1)
+
     validateFieldOnChange(name)
+  }
+
+  const arrayFieldGetId = (name: RecordKey<T>, index: string | undefined) => {
+    if (!formArrayItemIds[name]) {
+      return null
+    }
+    return formArrayItemIds[name][parseInt(index as string)] ?? null
   }
 
   const getErrors = () => {
@@ -596,6 +629,7 @@ function createFormState<T extends Record<string, unknown>>(
     arrayFieldReplace,
     arrayFieldPush,
     arrayFieldRemove,
+    arrayFieldGetId,
     connectField,
     disconnectField,
     getSelectorState,
@@ -670,10 +704,13 @@ export function useForm<T extends Record<string, unknown> = {}>(
               },
             }
           }
-
-          return props.children(
-            childProps as FormFieldContext<T, Name, Validators, IsArray>
-          )
+          const [k, idx] = props.name.split(".")
+          return Fragment({
+            key: formState.arrayFieldGetId(k as RecordKey<T>, idx),
+            children: props.children(
+              childProps as FormFieldContext<T, Name, Validators, IsArray>
+            ),
+          })
         }
         hook.Subscribe = function Subscribe<
           Selector extends (state: SelectorState<T>) => unknown
