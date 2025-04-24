@@ -41,12 +41,11 @@ export default function UseFormExample() {
               : undefined,
           onChangeAsyncDebounceMs: 500,
           onChangeAsync: async ({ value }) => {
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            await new Promise((resolve) => setTimeout(resolve, 5000))
             return value.includes("error") && 'No "error" allowed in first name'
           },
         }}
         children={(field) => {
-          const error = field.state.errors[0]
           return (
             <div className="flex">
               <label htmlFor={field.name}>First Name:</label>
