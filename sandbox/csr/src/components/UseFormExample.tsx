@@ -27,6 +27,9 @@ export default function UseFormExample() {
       name: "",
       email: "",
       friends: [] as Person[],
+      foo: {
+        bar: 123,
+      },
     },
     onSubmit: ({ state }) => console.log("submit", state),
   })
@@ -71,6 +74,22 @@ export default function UseFormExample() {
             </div>
           )
         }}
+      />
+      <form.Field
+        name="foo.bar"
+        children={(field) => (
+          <div className="flex">
+            <label htmlFor={field.name}>Foo Bar:</label>
+            <input
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onblur={field.handleBlur}
+              oninput={(e) => field.handleChange(parseInt(e.target.value))}
+            />
+            <FieldInfo field={field} />
+          </div>
+        )}
       />
       <form.Field
         array

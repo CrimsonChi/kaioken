@@ -4,32 +4,77 @@ import { shallowCompare } from "../utils.js"
 import { useEffect } from "./useEffect.js"
 import { useHook, useRequestUpdate } from "./utils.js"
 
-type ObjectValuesArray<T extends object> = T[keyof T][]
-
-type InferRecordKeys<T extends Record<string, unknown>> = {
-  [K in keyof T & string]: T[K] extends Array<infer U>
-    ? `${K}` | `${K}.${number}.${keyof U & string}`
-    : K
+const objSet = (obj: Record<string, any>, path: string[], value: any) => {
+  let o = obj
+  for (let i = 0; i < path.length; i++) {
+    const key = path[i]
+    if (i === path.length - 1) {
+      o[key] = value
+    } else {
+      o = o[key]
+    }
+  }
 }
 
-type RecordKey<T extends Record<string, unknown>> = ObjectValuesArray<
-  InferRecordKeys<T>
->[number]
+const objGet = <T>(obj: Record<string, any>, path: string[]): T => {
+  return path.reduce((o, key) => o[key], obj) as T
+}
+
+type ObjectValuesArray<T extends object> = T[keyof T][]
+
+type InferKeyWithIndices<
+  RecordType extends Record<string, any>,
+  Pref extends string = ""
+> = {
+  [Key in keyof RecordType & string]: RecordType[Key] extends Record<
+    string,
+    any
+  >
+    ? RecordType[Key] extends Array<infer ArrayItem>
+      ? ArrayItem extends Record<string, any>
+        ?
+            | `${Pref}${Key}`
+            | InferKeyWithIndices<ArrayItem, `${Pref}${Key}.${number}.`>
+        : `${Pref}${Key}`
+      : `${Pref}${Key}` | InferKeyWithIndices<RecordType[Key], `${Pref}${Key}.`>
+    : `${Pref}${Key}`
+}[keyof RecordType & string]
+
+type RecordKey<T extends Record<string, unknown>> = InferKeyWithIndices<T>
+
+type PathSegments<T extends string> = T extends `${infer Head}.${infer Tail}`
+  ? [Head, ...PathSegments<Tail>]
+  : [T]
+
+type Join<T extends string[], D extends string> = T extends []
+  ? ""
+  : T extends [infer F extends string]
+  ? F
+  : T extends [infer F extends string, ...infer R extends string[]]
+  ? `${F}${D}${Join<R, D>}`
+  : string
+
+type IsNumeric<T extends string> = T extends `${number}` ? true : false
+
+type InferValue<T, P extends string> = PathSegments<P> extends [
+  infer K extends string,
+  ...infer Rest extends string[]
+]
+  ? IsNumeric<K> extends true
+    ? T extends Array<infer U>
+      ? InferValue<U, Join<Rest, ".">>
+      : never
+    : K extends keyof T
+    ? Rest["length"] extends 0
+      ? T[K]
+      : InferValue<T[K], Join<Rest, ".">>
+    : never
+  : never
 
 type InferRecordKeyValue<
   T extends Record<string, unknown>,
   K extends RecordKey<T>
-> = K extends `${infer ArrayKey}.${infer _}.${infer Property}`
-  ? ArrayKey extends keyof T
-    ? T[ArrayKey] extends Array<infer U>
-      ? U extends Record<string, unknown>
-        ? U[Property]
-        : never
-      : never
-    : never
-  : K extends keyof T
-  ? T[K]
-  : never
+> = InferValue<T, K>
 
 type ValidatorContext<T> = {
   value: T
@@ -100,7 +145,9 @@ export type FormFieldContext<
     }
   : {})
 
-export type AnyFormFieldContext = FormFieldContext<any, any, any, any>
+export type AnyFormFieldContext<
+  T extends Record<string, any> = Record<string, any>
+> = FormFieldContext<T, any, any, any>
 
 interface FormFieldProps<
   T extends Record<string, unknown>,
@@ -196,9 +243,7 @@ function createFormState<T extends Record<string, unknown>>(
   const formFieldsTouched = {} as {
     [key in RecordKey<T>]?: boolean
   }
-  const formArrayItemIds = {} as {
-    [key in RecordKey<T>]?: string[]
-  }
+  const formArrayItemIds = new WeakMap<any, string>()
   const formFieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
   const asyncFormFieldValidators = {} as {
     [key in RecordKey<T>]: {
@@ -396,47 +441,28 @@ function createFormState<T extends Record<string, unknown>>(
   const getFieldValue = <K extends RecordKey<T>>(
     name: K
   ): InferRecordKeyValue<T, K> => {
-    const parts = name.split(".")
-    if (parts.length === 1) {
-      return state[name] as InferRecordKeyValue<T, K>
-    }
-    const [_name, index, property] = parts
-    if (!Array.isArray(state[_name])) {
-      throw new Error(
-        `[kaioken]: useForm - Invalid array field access: ${_name}`
-      )
-    }
-    // @ts-expect-error
-    return state[_name][index][property]
+    return objGet(state, (name as string).split(".")) as InferRecordKeyValue<
+      T,
+      K
+    >
   }
 
-  const updateFieldValue = (name: RecordKey<T>, value: T[RecordKey<T>]) => {
-    const parts = name.split(".")
-    if (parts.length === 1) {
-      state[name] = value
-    } else {
-      const [name, index, property] = parts
-      if (!Array.isArray(state[name])) {
-        console.error("[kaioken]: useForm - Invalid array field access:", name)
-        return
-      }
-      const idxAsNum = Number(index)
-      if (state[name].length <= idxAsNum) {
-        console.error(
-          "[kaioken]: useForm - Invalid array index access:",
-          name,
-          index
-        )
-        return
-      }
-      state[name][idxAsNum][property] = value
-    }
+  const updateFieldValue = <K extends RecordKey<T>>(
+    name: K,
+    value: InferRecordKeyValue<T, K>
+  ) => {
+    objSet(state, (name as string).split("."), value)
+
     validateFieldOnChange(name)
   }
 
   const arrayFieldReplace = (name: RecordKey<T>, index: number, value: any) => {
-    ;(formArrayItemIds[name] ??= [])[index] = generateRandomID()
-    ;(state[name] as Array<any>)[index] = value
+    const path = [...(name as string).split("."), index.toString()]
+    const prev = objGet(state, path)
+    formArrayItemIds.delete(prev)
+    formArrayItemIds.set(value, generateRandomID())
+    objSet(state, path, value)
+
     delete formFieldErrors[name]
     delete asyncFormFieldValidators[name]
     delete formFieldsTouched[name]
@@ -447,24 +473,26 @@ function createFormState<T extends Record<string, unknown>>(
   }
 
   const arrayFieldPush = (name: RecordKey<T>, value: any) => {
-    ;(state[name] as Array<any>).push(value)
-    ;(formArrayItemIds[name] ??= []).push(generateRandomID())
+    const path = [...(name as string).split(".")]
+    const arr = objGet<any[]>(state, path)
+    arr.push(value)
+    formArrayItemIds.set(value, generateRandomID())
 
     validateFieldOnChange(name)
   }
 
   const arrayFieldRemove = (name: RecordKey<T>, index: number) => {
-    ;(formArrayItemIds[name] ??= []).splice(index, 1)
-    ;(state[name] as Array<any>).splice(index, 1)
+    const path = [...(name as string).split(".")]
+    const arr = objGet<any[]>(state, path)
+    const item = arr[index]
+    formArrayItemIds.delete(item)
+    arr.splice(index, 1)
 
     validateFieldOnChange(name)
   }
 
-  const arrayFieldGetId = (name: RecordKey<T>, index: string | undefined) => {
-    if (!formArrayItemIds[name]) {
-      return null
-    }
-    return formArrayItemIds[name][parseInt(index as string)] ?? null
+  const arrayFieldGetId = (value: any) => {
+    return formArrayItemIds.get(value)
   }
 
   const getErrors = () => {
@@ -679,10 +707,17 @@ export function useForm<T extends Record<string, unknown> = {}>(
             }
           }, [])
 
+          const fieldState = formState.getFieldState(props.name)
+
           const childProps: FormFieldContext<T, Name, Validators, false> = {
             name: props.name,
-            state: formState.getFieldState(props.name) as any,
-            handleChange: (value: T[Name]) => {
+            state: fieldState as FormFieldContext<
+              T,
+              Name,
+              Validators,
+              false
+            >["state"],
+            handleChange: (value: InferRecordKeyValue<T, Name>) => {
               formState.updateFieldValue(props.name, value)
             },
             handleBlur: () => {
@@ -712,9 +747,8 @@ export function useForm<T extends Record<string, unknown> = {}>(
               },
             }
           }
-          const [k, idx] = props.name.split(".")
           return Fragment({
-            key: formState.arrayFieldGetId(k as RecordKey<T>, idx),
+            key: formState.arrayFieldGetId(fieldState.value),
             children: props.children(
               childProps as FormFieldContext<T, Name, Validators, IsArray>
             ),
