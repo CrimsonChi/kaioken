@@ -19,6 +19,7 @@ function hasSpecialChars(str: string) {
 type Person = {
   name: string
   age: number
+  favoriteColors: string[]
 }
 
 export default function UseFormExample() {
@@ -106,42 +107,92 @@ export default function UseFormExample() {
             <label htmlFor={field.name}>Friends:</label>
             <ul className="flex flex-col gap-2">
               {field.state.value.map((_, i) => (
-                <form.Field
-                  validators={{
-                    onChange: ({ value }) => {
-                      // if value contains any special characters, return an error
-                      if (hasSpecialChars(value)) {
-                        return "Name must not contain special characters"
-                      }
-                    },
-                  }}
-                  name={`friends.${i}.name`}
-                  children={(subField) => {
-                    return (
-                      <li>
-                        <input
-                          id={subField.name}
-                          name={subField.name}
-                          value={subField.state.value}
-                          onblur={subField.handleBlur}
-                          oninput={(e) => subField.handleChange(e.target.value)}
-                        />
+                <li>
+                  <form.Field
+                    validators={{
+                      onChange: ({ value }) => {
+                        // if value contains any special characters, return an error
+                        if (hasSpecialChars(value)) {
+                          return "Name must not contain special characters"
+                        }
+                      },
+                    }}
+                    name={`friends.${i}.name`}
+                    children={(subField) => {
+                      return (
+                        <>
+                          <div className="flex">
+                            <input
+                              id={subField.name}
+                              name={subField.name}
+                              value={subField.state.value}
+                              onblur={subField.handleBlur}
+                              oninput={(e) =>
+                                subField.handleChange(e.target.value)
+                              }
+                            />
+                            <button
+                              type="button"
+                              onclick={() => field.items.remove(i)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <FieldInfo field={subField} />
+                        </>
+                      )
+                    }}
+                  />
+                  <form.Field
+                    array
+                    name={`friends.${i}.favoriteColors`}
+                    children={(subField) => (
+                      <div className="flex">
+                        <label htmlFor={subField.name}>Favorite Colors:</label>
+                        <ul>
+                          {subField.state.value.map((_, j) => (
+                            <li className="flex gap-2">
+                              <form.Field
+                                name={`friends.${i}.favoriteColors.${j}`}
+                                children={(colorField) => (
+                                  <input
+                                    id={colorField.name}
+                                    name={colorField.name}
+                                    value={colorField.state.value}
+                                    onblur={colorField.handleBlur}
+                                    type="color"
+                                    oninput={(e) =>
+                                      colorField.handleChange(e.target.value)
+                                    }
+                                  />
+                                )}
+                              />
+                              <button
+                                type="button"
+                                onclick={() => subField.items.remove(j)}
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                         <button
                           type="button"
-                          onclick={() => field.items.remove(i)}
+                          onclick={() => subField.items.push("")}
                         >
-                          Remove
+                          add color
                         </button>
-                        <FieldInfo field={subField} />
-                      </li>
-                    )
-                  }}
-                />
+                      </div>
+                    )}
+                  />
+                </li>
               ))}
             </ul>
             <button
               type="button"
-              onclick={() => field.items.push({ name: "", age: 42 })}
+              onclick={() =>
+                field.items.push({ name: "", age: 42, favoriteColors: [] })
+              }
             >
               Add Friend
             </button>

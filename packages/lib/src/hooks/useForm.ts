@@ -2,6 +2,7 @@ import { Fragment } from "../element.js"
 import { generateRandomID } from "../generateId.js"
 import { shallowCompare } from "../utils.js"
 import { useEffect } from "./useEffect.js"
+import { useMemo } from "./useMemo.js"
 import { useHook, useRequestUpdate } from "./utils.js"
 
 const objSet = (obj: Record<string, any>, path: string[], value: any) => {
@@ -22,52 +23,40 @@ const objGet = <T>(obj: Record<string, any>, path: string[]): T => {
 
 type ObjectValuesArray<T extends object> = T[keyof T][]
 
-type InferKeyWithIndices<
-  RecordType extends Record<string, any>,
-  Pref extends string = ""
-> = {
-  [Key in keyof RecordType & string]: RecordType[Key] extends Record<
-    string,
-    any
-  >
-    ? RecordType[Key] extends Array<infer ArrayItem>
-      ? ArrayItem extends Record<string, any>
-        ?
-            | `${Pref}${Key}`
-            | InferKeyWithIndices<ArrayItem, `${Pref}${Key}.${number}.`>
-        : `${Pref}${Key}`
-      : `${Pref}${Key}` | InferKeyWithIndices<RecordType[Key], `${Pref}${Key}.`>
-    : `${Pref}${Key}`
-}[keyof RecordType & string]
+type IsObject<T> = T extends object ? (T extends any[] ? false : true) : false
+
+type InferKeyWithIndices<T, Prefix extends string = ""> = {
+  [K in keyof T & string]: T[K] extends Array<infer U> | undefined
+    ? IsObject<U> extends true
+      ? // If it's an array of objects, infer the index and recurse into the object properties
+        | `${Prefix}${K}`
+          | `${Prefix}${K}.${number}`
+          | InferKeyWithIndices<U, `${Prefix}${K}.${number}.`>
+      : `${Prefix}${K}` | `${Prefix}${K}.${number}` // For arrays of primitives, only support indices
+    : IsObject<T[K]> extends true
+    ? // If it's an object, recurse into its properties
+      `${Prefix}${K}` | InferKeyWithIndices<T[K], `${Prefix}${K}.`>
+    : `${Prefix}${K}` // If it's a primitive, return the key
+}[keyof T & string]
 
 type RecordKey<T extends Record<string, unknown>> = InferKeyWithIndices<T>
 
-type PathSegments<T extends string> = T extends `${infer Head}.${infer Tail}`
-  ? [Head, ...PathSegments<Tail>]
-  : [T]
-
-type Join<T extends string[], D extends string> = T extends []
-  ? ""
-  : T extends [infer F extends string]
-  ? F
-  : T extends [infer F extends string, ...infer R extends string[]]
-  ? `${F}${D}${Join<R, D>}`
-  : string
-
-type IsNumeric<T extends string> = T extends `${number}` ? true : false
-
-type InferValue<T, P extends string> = PathSegments<P> extends [
-  infer K extends string,
-  ...infer Rest extends string[]
-]
-  ? IsNumeric<K> extends true
-    ? T extends Array<infer U>
-      ? InferValue<U, Join<Rest, ".">>
+type InferValue<
+  T,
+  Path extends string
+> = Path extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? InferValue<T[K], Rest> // Recursively resolve objects
+    : K extends `${number}` // Check if it's a numeric index for an array
+    ? T extends Array<infer U> | undefined
+      ? InferValue<U, Rest> // Recursively resolve array elements
       : never
-    : K extends keyof T
-    ? Rest["length"] extends 0
-      ? T[K]
-      : InferValue<T[K], Join<Rest, ".">>
+    : never
+  : Path extends keyof T
+  ? T[Path] // Direct lookup for simple keys
+  : Path extends `${number}` // If the path is numeric (array index)
+  ? T extends Array<infer U> | undefined
+    ? U // Resolve the array element type
     : never
   : never
 
@@ -243,7 +232,6 @@ function createFormState<T extends Record<string, unknown>>(
   const formFieldsTouched = {} as {
     [key in RecordKey<T>]?: boolean
   }
-  const formArrayItemIds = new WeakMap<any, string>()
   const formFieldUpdaters = new Map<RecordKey<T>, Set<() => void>>()
   const asyncFormFieldValidators = {} as {
     [key in RecordKey<T>]: {
@@ -458,9 +446,6 @@ function createFormState<T extends Record<string, unknown>>(
 
   const arrayFieldReplace = (name: RecordKey<T>, index: number, value: any) => {
     const path = [...(name as string).split("."), index.toString()]
-    const prev = objGet(state, path)
-    formArrayItemIds.delete(prev)
-    formArrayItemIds.set(value, generateRandomID())
     objSet(state, path, value)
 
     delete formFieldErrors[name]
@@ -470,29 +455,25 @@ function createFormState<T extends Record<string, unknown>>(
     formFieldUpdaters.delete(name)
 
     validateFieldOnChange(name)
+    updateFieldComponents(name)
   }
 
   const arrayFieldPush = (name: RecordKey<T>, value: any) => {
     const path = [...(name as string).split(".")]
     const arr = objGet<any[]>(state, path)
     arr.push(value)
-    formArrayItemIds.set(value, generateRandomID())
 
     validateFieldOnChange(name)
+    updateFieldComponents(name)
   }
 
   const arrayFieldRemove = (name: RecordKey<T>, index: number) => {
     const path = [...(name as string).split(".")]
     const arr = objGet<any[]>(state, path)
-    const item = arr[index]
-    formArrayItemIds.delete(item)
     arr.splice(index, 1)
 
     validateFieldOnChange(name)
-  }
-
-  const arrayFieldGetId = (value: any) => {
-    return formArrayItemIds.get(value)
+    updateFieldComponents(name)
   }
 
   const getErrors = () => {
@@ -665,7 +646,6 @@ function createFormState<T extends Record<string, unknown>>(
     arrayFieldReplace,
     arrayFieldPush,
     arrayFieldRemove,
-    arrayFieldGetId,
     connectField,
     disconnectField,
     getSelectorState,
@@ -748,7 +728,7 @@ export function useForm<T extends Record<string, unknown> = {}>(
             }
           }
           return Fragment({
-            key: formState.arrayFieldGetId(fieldState.value),
+            key: useMemo(generateRandomID, []),
             children: props.children(
               childProps as FormFieldContext<T, Name, Validators, IsArray>
             ),
