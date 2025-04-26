@@ -27,6 +27,8 @@ export default function UseFormExample() {
     initialValues: {
       name: "",
       email: "",
+      password: "",
+      confirmPassword: "",
       friends: [] as Person[],
       foo: {
         bar: 123,
@@ -48,6 +50,7 @@ export default function UseFormExample() {
       <form.Field
         name="name"
         validators={{
+          awwd: 123,
           onChange: ({ value }) =>
             !value
               ? "A first name is required"
@@ -61,6 +64,7 @@ export default function UseFormExample() {
           },
         }}
         children={(field) => {
+          console.log("render firstName")
           return (
             <div className="flex">
               <label htmlFor={field.name}>First Name:</label>
@@ -75,6 +79,53 @@ export default function UseFormExample() {
             </div>
           )
         }}
+      />
+      <form.Field
+        name="password"
+        validators={{
+          onChange: ({ value }) =>
+            value.length < 8
+              ? "Password must be at least 8 characters"
+              : undefined,
+        }}
+        children={(field) => (
+          <div className="flex">
+            <label htmlFor={field.name}>Password:</label>
+            <input
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onblur={field.handleBlur}
+              type="password"
+              oninput={(e) => field.handleChange(e.target.value)}
+            />
+            <FieldInfo field={field} />
+          </div>
+        )}
+      />
+      <form.Field
+        name="confirmPassword"
+        validators={{
+          dependentOn: ["password"],
+          onChange: ({ value }) =>
+            value !== form.getFieldState("password").value
+              ? "Passwords do not match"
+              : undefined,
+        }}
+        children={(field) => (
+          <div className="flex">
+            <label htmlFor={field.name}>Confirm Password:</label>
+            <input
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onblur={field.handleBlur}
+              type="password"
+              oninput={(e) => field.handleChange(e.target.value)}
+            />
+            <FieldInfo field={field} />
+          </div>
+        )}
       />
       <form.Field
         name="foo.bar"
@@ -202,20 +253,23 @@ export default function UseFormExample() {
       />
       <form.Subscribe
         selector={(state) => [state.canSubmit, state.isSubmitting] as const}
-        children={([canSubmit, isSubmitting]) => (
-          <>
-            <button
-              className={canSubmit ? "bg-green-500" : "bg-red-500"}
-              type="submit"
-              disabled={!canSubmit}
-            >
-              {isSubmitting ? "..." : "Submit"}
-            </button>
-            <button type="reset" onclick={() => form.reset()}>
-              Reset
-            </button>
-          </>
-        )}
+        children={([canSubmit, isSubmitting]) => {
+          console.log("render submit buttons")
+          return (
+            <>
+              <button
+                className={canSubmit ? "bg-green-500" : "bg-red-500"}
+                type="submit"
+                disabled={!canSubmit}
+              >
+                {isSubmitting ? "..." : "Submit"}
+              </button>
+              <button type="reset" onclick={() => form.reset()}>
+                Reset
+              </button>
+            </>
+          )
+        }}
       />
     </form>
   )
