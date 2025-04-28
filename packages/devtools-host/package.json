@@ -27,7 +27,9 @@
   },
   "dependencies": {
     "@kaioken-core/hooks": "0.0.9",
-    "devtools-shared": "workspace:^",
-    "kaioken": "workspace:^"
+    "devtools-shared": "workspace:^"
+  },
+  "peerDependencies": {
+    "kaioken": ">=0.37.0"
   }
 }

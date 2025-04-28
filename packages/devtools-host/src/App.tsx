@@ -1,5 +1,4 @@
 import * as kaioken from "kaioken"
-import { twMerge } from "tailwind-merge"
 import { Flame } from "./icon/Flame"
 import { useAnchorPos } from "./hooks/useAnchorPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
@@ -118,10 +117,10 @@ export default function App() {
           }}
         />
         <button
-          className={twMerge(
-            "bg-crimson rounded-full p-1",
-            startMouse.value && "pointer-events-none"
-          )}
+          className={
+            "bg-crimson rounded-full p-1" +
+            (startMouse.value ? " pointer-events-none" : "")
+          }
           onclick={() => {
             toggled.value = !toggled.value
           }}

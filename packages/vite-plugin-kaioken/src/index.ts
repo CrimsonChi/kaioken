@@ -1,6 +1,11 @@
-import type { ESBuildOptions, Plugin, UserConfig } from "vite"
-import devtoolsHostBuild from "kaioken-devtools-host"
+import type {
+  ESBuildOptions,
+  IndexHtmlTransformResult,
+  Plugin,
+  UserConfig,
+} from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
+import devtoolsHostBuild from "kaioken-devtools-host"
 import { injectHMRContextPreamble } from "./codegen.js"
 import MagicString from "magic-string"
 import path from "node:path"
@@ -30,11 +35,30 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
     dtClientPathname = opts.devtools.pathname ?? dtClientPathname
   }
   const dtHostScriptPath = "/__devtools_host__.js"
+  let transformedDtHostBuild = ""
+  let transformedDtClientBuild = ""
 
   let _config: UserConfig | null = null
 
   return {
     name: "vite-plugin-kaioken",
+    buildStart: async function () {
+      // transform 'devtoolsHostBuild' to use the correct path for kaioken imports
+      const [kaiokenPath, kaiokenUtilsPath] = await Promise.all([
+        this.resolve("kaioken"),
+        this.resolve("kaioken/utils"),
+      ])
+      transformedDtHostBuild = devtoolsHostBuild
+        .replaceAll('from "kaioken"', `from "/@fs/${kaiokenPath!.id}"`)
+        .replaceAll(
+          'from "kaioken/utils"',
+          `from "/@fs/${kaiokenUtilsPath!.id}"`
+        )
+      transformedDtClientBuild = devtoolsClientBuild.replaceAll(
+        'from"kaioken";',
+        `from"/@fs/${kaiokenPath!.id}";`
+      )
+    },
     config(config) {
       return (_config = {
         ...config,
@@ -50,6 +74,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         html,
         tags: [
           {
+            injectTo: "body",
             tag: "script",
             attrs: {
               type: "module",
@@ -57,7 +82,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
             },
           },
         ],
-      }
+      } satisfies IndexHtmlTransformResult
     },
     configResolved(config) {
       isProduction = config.isProduction
@@ -67,10 +92,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       if (isProduction || isBuild || opts?.devtools === false) return
       server.middlewares.use(dtHostScriptPath, (_, res) => {
         res.setHeader("Content-Type", "application/javascript")
-        res.end(devtoolsHostBuild, "utf-8")
+        res.end(transformedDtHostBuild, "utf-8")
       })
       server.middlewares.use(dtClientPathname, (_, res) => {
-        res.end(devtoolsClientBuild)
+        res.end(transformedDtClientBuild)
       })
     },
     transform(code, id) {
@@ -101,5 +126,5 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         map: map.toString(),
       }
     },
-  }
+  } satisfies Plugin
 }
