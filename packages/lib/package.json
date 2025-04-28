@@ -26,6 +26,16 @@
         "default": "./dist/router/index.js"
       }
     },
+    "./swr": {
+      "require": {
+        "types": "./dist/swr.d.ts",
+        "default": "./dist/swr.js"
+      },
+      "import": {
+        "types": "./dist/swr.d.ts",
+        "default": "./dist/swr.js"
+      }
+    },
     "./utils": {
       "require": {
         "types": "./dist/utils.d.ts",

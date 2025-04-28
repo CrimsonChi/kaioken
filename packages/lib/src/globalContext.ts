@@ -61,6 +61,7 @@ class KaiokenGlobalContext {
   > = new Map()
   stores: ReactiveMap<Store<any, any>> = new ReactiveMap()
   HMRContext?: ReturnType<typeof createHMRContext>
+  globalState: Record<symbol, any> = {}
 
   constructor() {
     this.on("mount", (ctx) => this.#contexts.add(ctx))
