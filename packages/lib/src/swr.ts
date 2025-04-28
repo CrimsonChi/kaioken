@@ -102,7 +102,10 @@ type SWRHook = Kaioken.Hook<{
   update: () => void
 }>
 
-export function useSWR<T, K extends string = any>(
+type SWRTupleKey = readonly [any, ...unknown[]]
+type SWRKey = string | SWRTupleKey | Record<any, any> | null | undefined | false
+
+export function useSWR<T, K extends SWRKey>(
   key: K,
   fetcher: (args: K) => Promise<T>,
   options: SWROptions = {}

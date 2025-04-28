@@ -15,13 +15,13 @@ interface Product {
   images: string[]
 }
 
-const fetcher = async (path: string) => {
-  const res = await fetch(`https://dummyjson.com/${path}`)
+const fetcher = async ([path, id]: [string, number]): Promise<Product> => {
+  const res = await fetch(`https://dummyjson.com/${path}/${id}`)
   if (!res.ok) throw new Error(res.statusText)
   return res.json()
 }
 
-const useProduct = (id: number) => useSWR<Product>(`products/${id}`, fetcher)
+const useProduct = (id: number) => useSWR(["products", id], fetcher)
 
 export default function SWRExample() {
   const [productId, setProductId] = useState(1)
