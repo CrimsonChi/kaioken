@@ -60,12 +60,10 @@ if ("window" in globalThis) {
 
   window.addEventListener("blur", () => {
     didBlur = true
-    console.log("blur 123")
   })
   window.addEventListener("focus", () => {
     if (didBlur) {
       didBlur = false
-      console.log("focus")
       for (const strKey in SWR_GLOBAL) {
         const { key, resource, fetcher, subscribers } = SWR_GLOBAL[strKey]
         if (
@@ -84,8 +82,6 @@ if ("window" in globalThis) {
           isValidating: true,
         }
 
-        console.log("revalidating", key)
-
         fetcher(key).then(
           (data) => {
             resource.value = {
@@ -95,17 +91,15 @@ if ("window" in globalThis) {
               isMutating: false,
               isValidating: false,
             }
-            resource.notify()
           },
           (error) => {
             resource.value = {
               data: null,
               isLoading: false,
-              error,
+              error: new UseSWRError(error),
               isMutating: false,
               isValidating: false,
             }
-            resource.notify()
           }
         )
       }
