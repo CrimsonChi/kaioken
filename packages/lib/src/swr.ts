@@ -1,6 +1,6 @@
 import { useHook } from "./hooks/utils.js"
 import { Signal } from "./signals/base.js"
-import { safeStringify, sideEffectsEnabled } from "./utils.js"
+import { noop, safeStringify, sideEffectsEnabled } from "./utils.js"
 
 type UseSWRReturn<T> = (
   | {
@@ -44,65 +44,50 @@ type SWRGlobalStateEntry<T> = {
   key: any
   resource: Signal<SWRResourceState<T>>
   fetcher: (args: any) => Promise<T>
-  subscribers: Set<[SWROptions, () => void]>
+  subscribers: Set<SWRHook>
 }
 
 type SWRGlobalState = {
   [key: string]: SWRGlobalStateEntry<any>
 }
 
-const $SWR_GLOBAL = Symbol.for("SWR_GLOBAL")
 let SWR_GLOBAL: SWRGlobalState
 
 if ("window" in globalThis) {
-  SWR_GLOBAL = window.__kaioken!.globalState[$SWR_GLOBAL] ??= {}
-  let didBlur = false
-
-  window.addEventListener("blur", () => {
-    didBlur = true
-  })
+  SWR_GLOBAL = window.__kaioken!.globalState[Symbol.for("SWR_GLOBAL")] ??= {}
   window.addEventListener("focus", () => {
-    if (didBlur) {
-      didBlur = false
-      for (const strKey in SWR_GLOBAL) {
-        const { key, resource, fetcher, subscribers } = SWR_GLOBAL[strKey]
-        if (
-          subscribers
-            .values()
-            .every(([options]) => options.revalidateOnFocus === false)
-        ) {
-          continue
-        }
+    for (const strKey in SWR_GLOBAL) {
+      const { key, resource, fetcher, subscribers } = SWR_GLOBAL[strKey]
+      const revalidators = subscribers
+        .values()
+        .filter(({ options }) => options.revalidateOnFocus !== false)
+        .toArray()
 
-        resource.value = {
-          data: resource.peek().data,
-          isLoading: false,
-          error: null,
-          isMutating: false,
-          isValidating: true,
-        }
+      if (revalidators.length === 0) continue
 
-        fetcher(key).then(
-          (data) => {
-            resource.value = {
-              data,
-              isLoading: false,
-              error: null,
-              isMutating: false,
-              isValidating: false,
-            }
-          },
-          (error) => {
-            resource.value = {
-              data: null,
-              isLoading: false,
-              error: new UseSWRError(error),
-              isMutating: false,
-              isValidating: false,
-            }
+      resource.value.isValidating = true
+      revalidators.forEach(({ update }) => update())
+
+      fetcher(key).then(
+        (data) => {
+          resource.value = {
+            data,
+            isLoading: false,
+            error: null,
+            isMutating: false,
+            isValidating: false,
           }
-        )
-      }
+        },
+        (error) => {
+          resource.value = {
+            data: null,
+            isLoading: false,
+            error: new UseSWRError(error),
+            isMutating: false,
+            isValidating: false,
+          }
+        }
+      )
     }
   })
 }
@@ -110,6 +95,12 @@ if ("window" in globalThis) {
 type SWROptions = {
   revalidateOnFocus?: boolean
 }
+
+type SWRHook = Kaioken.Hook<{
+  strKey: string
+  options: SWROptions
+  update: () => void
+}>
 
 export function useSWR<T, K extends string = any>(
   key: K,
@@ -119,101 +110,104 @@ export function useSWR<T, K extends string = any>(
   if (!sideEffectsEnabled())
     return { data: null, error: null, isLoading: true } as UseSWRReturn<T>
 
-  return useHook("useSWR", { strKey: "" }, ({ hook, isInit, update }) => {
-    const strKey = safeStringify(key)
-    if (isInit || strKey !== hook.strKey) {
-      hook.strKey = strKey
+  return useHook(
+    "useSWR",
+    { strKey: "", options, update: noop } satisfies SWRHook,
+    ({ hook, isInit, update }) => {
+      hook.options = options
+      const strKey = safeStringify(key)
+      if (isInit || strKey !== hook.strKey) {
+        hook.strKey = strKey
+        hook.update = update
 
-      // todo: base subscription on hook ref, unsub when key changes
-
-      let sub: [SWROptions, () => void] = [options, update]
-      if (!SWR_GLOBAL[strKey]) {
-        const state = (SWR_GLOBAL[strKey] = {
-          key,
-          resource: new Signal<SWRResourceState<any>>({
-            data: null,
-            isLoading: true,
-            error: null,
-            isMutating: false,
-            isValidating: false,
-          }),
-          fetcher,
-          subscribers: new Set(),
-        })
-
-        state.resource.subscribe(() => {
-          state.subscribers.forEach(([, update]) => update())
-        })
-
-        fetcher(key).then(
-          (result) => {
-            state.resource.value = {
-              data: result,
-              isLoading: false,
-              error: null,
-              isMutating: false,
-              isValidating: false,
-            }
-          },
-          (error) => {
-            state.resource.value = {
+        if (!SWR_GLOBAL[strKey]) {
+          const { resource, subscribers } = (SWR_GLOBAL[strKey] = {
+            key,
+            resource: new Signal<SWRResourceState<any>>({
               data: null,
-              isLoading: false,
-              error: new UseSWRError(error),
-              isMutating: false,
-              isValidating: false,
-            }
-          }
-        )
-        hook.cleanup = () => {
-          SWR_GLOBAL[strKey].subscribers.delete(sub)
-        }
-      }
-
-      SWR_GLOBAL[strKey].subscribers.add(sub)
-      hook.cleanup = () => {
-        SWR_GLOBAL[strKey].subscribers.delete(sub)
-      }
-    }
-
-    const resource = SWR_GLOBAL[strKey].resource as Signal<SWRResourceState<T>>
-    const { data, isLoading, error, isMutating } = resource.peek()
-    return {
-      data,
-      isLoading,
-      error,
-      mutate: (callback) => {
-        resource.value = {
-          data,
-          isLoading: false,
-          error: null,
-          isMutating: true,
-          isValidating: false,
-        }
-        callback().then(
-          (result) => {
-            resource.value = {
-              data: result,
-              isLoading: false,
+              isLoading: true,
               error: null,
               isMutating: false,
               isValidating: false,
+            }),
+            fetcher,
+            subscribers: new Set(),
+          })
+
+          resource.subscribe(() => {
+            subscribers.forEach(({ update }) => update())
+          })
+
+          fetcher(key).then(
+            (result) => {
+              resource.value = {
+                data: result,
+                isLoading: false,
+                error: null,
+                isMutating: false,
+                isValidating: false,
+              }
+            },
+            (error) => {
+              resource.value = {
+                data: null,
+                isLoading: false,
+                error: new UseSWRError(error),
+                isMutating: false,
+                isValidating: false,
+              }
             }
-          },
-          (error) => {
-            resource.value = {
-              data,
-              isLoading: false,
-              error: new UseSWRError(error),
-              isMutating: false,
-              isValidating: false,
-            }
+          )
+        }
+
+        const subs = SWR_GLOBAL[strKey].subscribers
+        subs.add(hook)
+        hook.cleanup = () => subs.delete(hook)
+      }
+
+      const resource = SWR_GLOBAL[strKey].resource as Signal<
+        SWRResourceState<T>
+      >
+      const { data, isLoading, error, isMutating, isValidating } =
+        resource.peek()
+      return {
+        data,
+        isLoading,
+        error,
+        isMutating,
+        isValidating,
+        mutate: (callback) => {
+          resource.value = {
+            data,
+            isLoading: false,
+            error: null,
+            isMutating: true,
+            isValidating: false,
           }
-        )
-      },
-      isMutating,
-    } as UseSWRReturn<T>
-  })
+          callback().then(
+            (result) => {
+              resource.value = {
+                data: result,
+                isLoading: false,
+                error: null,
+                isMutating: false,
+                isValidating: false,
+              }
+            },
+            (error) => {
+              resource.value = {
+                data,
+                isLoading: false,
+                error: new UseSWRError(error),
+                isMutating: false,
+                isValidating: false,
+              }
+            }
+          )
+        },
+      } as UseSWRReturn<T>
+    }
+  )
 }
 
 // function abortTask<T>(task: SWRTaskState<T> | null): void {

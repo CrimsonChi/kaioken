@@ -51,7 +51,8 @@ function ProductImage({ id }: { id: number }) {
 }
 
 function ProductTitle({ id }: { id: number }) {
-  const { data, isLoading, error, mutate, isMutating } = useProduct(id)
+  const { data, isLoading, error, mutate, isMutating, isValidating } =
+    useProduct(id)
 
   if (isLoading) return <p>Loading...</p>
   if (error) return <p>{error.message}</p>
@@ -74,6 +75,7 @@ function ProductTitle({ id }: { id: number }) {
         disabled={isMutating}
       />
       {isMutating && <p>Saving...</p>}
+      {isValidating && <p>Validating...</p>}
     </>
   )
 }
