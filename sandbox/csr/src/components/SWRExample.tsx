@@ -37,10 +37,10 @@ export default function SWRExample() {
 }
 
 function ProductImage({ id }: { id: number }) {
-  const { data, isLoading, error } = useProduct(id)
+  const { data, loading, error } = useProduct(id)
 
   console.log("render product image", id)
-  if (isLoading) return <p>Loading...</p>
+  if (loading) return <p>Loading...</p>
   if (error) return <p>{error.message}</p>
   return (
     <>
@@ -51,10 +51,10 @@ function ProductImage({ id }: { id: number }) {
 }
 
 function ProductTitle({ id }: { id: number }) {
-  const { data, isLoading, error, mutate, isMutating, isValidating } =
+  const { data, loading, error, mutate, isMutating, isValidating } =
     useProduct(id)
 
-  if (isLoading) return <p>Loading...</p>
+  if (loading) return <p>Loading...</p>
   if (error) return <p>{error.message}</p>
 
   const updateName = async (name: string) => {
@@ -74,8 +74,8 @@ function ProductTitle({ id }: { id: number }) {
         onchange={(e) => mutate(() => updateName(e.target.value))}
         disabled={isMutating}
       />
-      {isMutating && <p>Saving...</p>}
-      {isValidating && <p>Validating...</p>}
+      {isMutating.value && <p>Saving...</p>}
+      {isValidating.value && <p>Validating...</p>}
     </>
   )
 }
