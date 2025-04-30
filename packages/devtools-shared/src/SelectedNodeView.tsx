@@ -1,5 +1,5 @@
 import { AppContext, useEffect, useRequestUpdate } from "kaioken"
-import { isVNodeDeleted } from "kaioken/utils"
+import { isVNodeDeleted } from "../../lib/dist/utils.js"
 import { applyObjectChangeFromKeys, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
 import { ValueEditor } from "./ValueEditor"

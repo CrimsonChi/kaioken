@@ -1,7 +1,8 @@
-import { useElementBounding } from "@kaioken-core/hooks"
-import { isFragment } from "kaioken/utils"
+import { isFragment } from "../../../lib/dist/utils.js"
 import { DEFAULT_ANCHOR_POS, PADDING } from "./constants"
 import { Storage } from "./types"
+import { useElementBounding } from "devtools-shared"
+import "../../../lib/src/types"
 
 export const reinitializeAnchorPos = (
   storage: Storage,

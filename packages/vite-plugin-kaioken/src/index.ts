@@ -44,16 +44,11 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
     name: "vite-plugin-kaioken",
     buildStart: async function () {
       // transform 'devtoolsHostBuild' to use the correct path for kaioken imports
-      const [kaiokenPath, kaiokenUtilsPath] = await Promise.all([
-        this.resolve("kaioken"),
-        this.resolve("kaioken/utils"),
-      ])
-      transformedDtHostBuild = devtoolsHostBuild
-        .replaceAll('from "kaioken"', `from "/@fs/${kaiokenPath!.id}"`)
-        .replaceAll(
-          'from "kaioken/utils"',
-          `from "/@fs/${kaiokenUtilsPath!.id}"`
-        )
+      const kaiokenPath = await this.resolve("kaioken")
+      transformedDtHostBuild = devtoolsHostBuild.replaceAll(
+        'from "kaioken"',
+        `from "/@fs/${kaiokenPath!.id}"`
+      )
       transformedDtClientBuild = devtoolsClientBuild.replaceAll(
         'from"kaioken";',
         `from"/@fs/${kaiokenPath!.id}";`

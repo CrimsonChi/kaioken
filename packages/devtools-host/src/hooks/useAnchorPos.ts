@@ -1,10 +1,4 @@
 import {
-  useEffectDeep,
-  useElementBounding,
-  useEventListener,
-  useMouse,
-} from "@kaioken-core/hooks"
-import {
   useCallback,
   useLayoutEffect,
   useMemo,
@@ -14,6 +8,12 @@ import {
 import { LOCAL_KEY, PADDING } from "../utils/constants"
 import { SnapSide, Storage } from "../utils/types"
 import { reinitializeAnchorPos } from "../utils"
+import {
+  useEffectDeep,
+  useElementBounding,
+  useEventListener,
+  useMouse,
+} from "devtools-shared"
 
 export const useAnchorPos = () => {
   const { mouse } = useMouse()
@@ -133,7 +133,7 @@ export const useAnchorPos = () => {
         y: -PADDING,
       }
     }
-  }, [elementBound.width, elementBound.height])
+  }, [])
 
   useEffectDeep(() => {
     if (distanceCovered === null || !viewPortRef.current) return

@@ -1,16 +1,16 @@
 import * as kaioken from "kaioken"
+import { useEffect, useMemo, useRef } from "kaioken"
+import { getComponentVnodeFromElement, getNearestElm } from "../utils"
+import { vNodeContains } from "../../../lib/dist/utils.js"
+import { toggleElementToVnode, popup } from "../store"
+import { useDevTools } from "../hooks/useDevtools"
 import {
+  broadcastChannel,
   useElementBounding,
   useElementByPoint,
   useEventListener,
   useMouse,
-} from "@kaioken-core/hooks"
-import { useEffect, useMemo, useRef } from "kaioken"
-import { getComponentVnodeFromElement, getNearestElm } from "../utils"
-import { vNodeContains } from "kaioken/utils"
-import { toggleElementToVnode, popup } from "../store"
-import { useDevTools } from "../hooks/useDevtools"
-import { broadcastChannel } from "devtools-shared"
+} from "devtools-shared"
 
 export const InspectComponent: Kaioken.FC = () => {
   const openDevTools = useDevTools()
