@@ -1,4 +1,27 @@
-import { type AnyFormFieldContext, useForm } from "kaioken"
+import { type AnyFormFieldContext, FormFieldComponent, useForm } from "kaioken"
+
+const NameField: FormFieldComponent<{ name: string }> = () => {
+  return null
+}
+
+NameField({
+  name: "name",
+  validators: {
+    onChange: () => 123,
+  },
+  children: () => null,
+})
+
+const x = (
+  <NameField
+    name="name"
+    validators={{
+      asd: 123,
+      onChange: () => 123,
+    }}
+    children={() => null}
+  />
+)
 
 function FieldInfo({ field }: { field: AnyFormFieldContext }) {
   return (
@@ -50,7 +73,10 @@ export default function UseFormExample() {
       <form.Field
         name="name"
         validators={{
-          awwd: 123,
+          dependentOn: [],
+          onBlur: () => 123,
+          onMount: () => 123,
+          onSubmit: () => 123,
           onChange: ({ value }) =>
             !value
               ? "A first name is required"
