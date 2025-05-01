@@ -2,7 +2,7 @@
   "name": "kaioken",
   "version": "0.38.1",
   "description": "A powerful, easy-to-use rendering library with a tiny footprint",
-  "main": "index.js",
+  "main": "dist/index.js",
   "type": "module",
   "homepage": "https://kaioken.dev",
   "exports": {
