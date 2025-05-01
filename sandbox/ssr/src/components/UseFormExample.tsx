@@ -54,8 +54,8 @@ export default function UseFormExample() {
             !value
               ? "A first name is required"
               : value.length < 3
-              ? "First name must be at least 3 characters"
-              : undefined,
+                ? "First name must be at least 3 characters"
+                : undefined,
           onChangeAsyncDebounceMs: 500,
           onChangeAsync: async ({ value }) => {
             await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -206,6 +206,11 @@ export default function UseFormExample() {
                                 name={`friends.${i}.favoriteColors.${j}`}
                                 children={(colorField) => (
                                   <input
+                                    className={
+                                      colorField.state.isTouched
+                                        ? "border-2"
+                                        : ""
+                                    }
                                     id={colorField.name}
                                     name={colorField.name}
                                     value={colorField.state.value}

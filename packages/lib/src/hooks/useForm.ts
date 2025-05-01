@@ -282,7 +282,7 @@ function createFormController<T extends Record<string, unknown>>(
 ): FormController<T> {
   let isSubmitting = false
   const subscribers = new Set<FormStateSubscriber<T>>()
-  const state: T = { ...(config.initialValues ?? {}) } as T
+  const state: T = structuredClone(config.initialValues ?? {}) as T
   const formFieldValidators = {} as {
     [key in RecordKey<T>]: FormFieldValidators<
       RecordKey<T>,
@@ -507,6 +507,8 @@ function createFormController<T extends Record<string, unknown>>(
         }
       }
     }
+
+    formFieldUpdaters.get(name)?.forEach((update) => update())
   }
 
   const setFieldValue = <K extends RecordKey<T>>(
@@ -518,16 +520,19 @@ function createFormController<T extends Record<string, unknown>>(
     onFieldChanged(name)
   }
 
+  const removeFieldMeta = (name: RecordKey<T>) => {
+    delete formFieldErrors[name]
+    delete asyncFormFieldValidators[name]
+    delete formFieldsTouched[name]
+    delete formFieldValidators[name]
+    formFieldUpdaters.delete(name)
+  }
+
   const arrayFieldReplace = (name: RecordKey<T>, index: number, value: any) => {
     const path = [...(name as string).split("."), index.toString()]
     objSet(state, path, value)
 
-    const key = `${name}.${index}` as RecordKey<T>
-    delete formFieldErrors[key]
-    delete asyncFormFieldValidators[key]
-    delete formFieldsTouched[key]
-    delete formFieldValidators[key]
-    formFieldUpdaters.delete(key)
+    removeFieldMeta(`${name}.${index}` as RecordKey<T>)
 
     onFieldChanged(name)
     updateFieldComponents(name)
@@ -546,6 +551,8 @@ function createFormController<T extends Record<string, unknown>>(
     const path = [...(name as string).split(".")]
     const arr = objGet<any[]>(state, path)
     arr.splice(index, 1)
+
+    removeFieldMeta(`${name}.${index}` as RecordKey<T>)
 
     onFieldChanged(name)
     updateFieldComponents(name)
@@ -603,15 +610,16 @@ function createFormController<T extends Record<string, unknown>>(
         state[key] = values[key]
       }
     } else {
+      const initialValues = (config.initialValues ?? {}) as T
       const keys = new Set([
         ...Object.keys(state),
-        ...Object.keys(config.initialValues ?? {}),
+        ...Object.keys(initialValues),
       ])
-      for (const key in keys) {
-        if (config.initialValues?.[key]) {
-          state[key as RecordKey<T>] = config.initialValues?.[
-            key
-          ] as T[RecordKey<T>]
+      for (const key of keys) {
+        if (key in initialValues) {
+          state[key as RecordKey<T>] = structuredClone(
+            initialValues[key] as T[RecordKey<T>]
+          )
         } else {
           delete state[key]
         }
