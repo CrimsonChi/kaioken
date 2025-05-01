@@ -84,7 +84,7 @@ function createStore<T, U extends MethodFactory<T>>(
       const nodeState = nodeStateMap.get(n)
       if (!nodeState) return
       const { slices, update } = nodeState
-      let computeChanged = false
+      let computeChanged = slices.length === 0
 
       for (let i = 0; i < slices.length; i++) {
         const slice = slices[i]
@@ -102,9 +102,9 @@ function createStore<T, U extends MethodFactory<T>>(
 
         computeChanged = true
       }
-      if (!computeChanged) return
-
-      update()
+      if (computeChanged) {
+        update()
+      }
     })
     state.current.epoch++
   }
