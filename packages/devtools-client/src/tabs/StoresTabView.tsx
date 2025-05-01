@@ -11,6 +11,7 @@ import { kaiokenGlobal, useDevtoolsStore } from "../store"
 import { ChevronIcon, FileLink, getNodeName } from "devtools-shared"
 import { HMRAccept } from "../../../lib/dist/hmr"
 import { cloneTree } from "../utils"
+import { ValueEditor } from "devtools-shared/src/ValueEditor"
 
 type StoreSelection = {
   name: string
@@ -90,10 +91,21 @@ function StoreSubscribers({ store }: { store: Store<any, any> }) {
   )
 }
 
-type NodeSliceCompute = {
-  sliceFn: Function | null
-  eq: ((prev: any, next: any, compare: Function) => boolean) | undefined
-  slice: any
+type NodeState = {
+  update: () => void
+  slices: {
+    sliceFn: Function | null
+    eq: ((prev: any, next: any, compare: any) => boolean) | undefined
+    value: any
+  }[]
+}
+
+type NodeStateMap = WeakMap<Kaioken.VNode, NodeState>
+
+type InternalStoreState = {
+  value: any
+  subscribers: Set<Kaioken.VNode | Function>
+  nodeStateMap: NodeStateMap
 }
 
 const $HMR_ACCEPT = Symbol.for("kaioken.hmrAccept")
@@ -101,10 +113,9 @@ const getStoreInternals = (store: Store<any, any>) => {
   if ($HMR_ACCEPT in store) {
     return (
       store[$HMR_ACCEPT] as HMRAccept<{
-        subscribers: Set<Kaioken.VNode | Function>
-        nodeToSliceComputeMap: WeakMap<Kaioken.VNode, NodeSliceCompute[]>
+        current: InternalStoreState
       }>
-    ).provide()
+    ).provide().current
   }
   throw new Error("Unable to get store subscribers")
 }
@@ -117,7 +128,7 @@ function StoreSubscriberAppTree({
   app: AppContext
 }) {
   const requestUpdate = useRequestUpdate()
-  const { subscribers, nodeToSliceComputeMap } = getStoreInternals(store)
+  const { subscribers, nodeStateMap, value } = getStoreInternals(store)
   const root = app.rootNode!.child
 
   useEffect(() => {
@@ -138,12 +149,15 @@ function StoreSubscriberAppTree({
   return (
     <div className="flex flex-col gap-2 p-2 rounded-b border border-white border-opacity-10">
       <b>{app.name}</b>
+      <ValueEditor
+        data={{ value }}
+        mutable={false}
+        objectRefAcc={[]}
+        onChange={() => {}}
+      />
       {clonedTree && (
         <ul className="pl-8">
-          <TreeNodeView
-            node={clonedTree}
-            nodeToSliceComputeMap={nodeToSliceComputeMap}
-          />
+          <TreeNodeView node={clonedTree} nodeStateMap={nodeStateMap} />
         </ul>
       )}
     </div>
@@ -158,13 +172,14 @@ type KNodeTreeNode = {
 
 function TreeNodeView({
   node,
-  nodeToSliceComputeMap,
+  nodeStateMap,
 }: {
   node: KNodeTreeNode
-  nodeToSliceComputeMap: WeakMap<Kaioken.VNode, NodeSliceCompute[]>
+  nodeStateMap: NodeStateMap
 }) {
   const [expanded, setExpanded] = useState(false)
-  const sliceComputations = nodeToSliceComputeMap.get(node.ref)
+  const nodeState = nodeStateMap.get(node.ref)
+  const sliceComputations = nodeState?.slices ?? []
 
   return (
     <>
@@ -201,7 +216,7 @@ function TreeNodeView({
                       Slice:
                     </h5>
                     <pre className="text-neutral-400">
-                      {JSON.stringify(sliceCompute.slice, null, 2)}
+                      {JSON.stringify(sliceCompute.value, null, 2)}
                     </pre>
                   </div>
                   <div className="p-2 bg-black bg-opacity-30 text-sm">
@@ -231,18 +246,12 @@ function TreeNodeView({
         </div>
         {node.child && (
           <ul className="pl-8 flex flex-col gap-2">
-            <TreeNodeView
-              node={node.child}
-              nodeToSliceComputeMap={nodeToSliceComputeMap}
-            />
+            <TreeNodeView node={node.child} nodeStateMap={nodeStateMap} />
           </ul>
         )}
       </li>
       {node.sibling && (
-        <TreeNodeView
-          node={node.sibling}
-          nodeToSliceComputeMap={nodeToSliceComputeMap}
-        />
+        <TreeNodeView node={node.sibling} nodeStateMap={nodeStateMap} />
       )}
     </>
   )

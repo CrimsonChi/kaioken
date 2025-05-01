@@ -1,7 +1,13 @@
-import { AppViewIcon, StoresViewIcon } from "devtools-shared"
+import {
+  AppViewIcon,
+  CogIcon,
+  SettingsProvider,
+  StoresViewIcon,
+} from "devtools-shared"
 import { signal } from "kaioken"
 import { AppTabView } from "./tabs/AppTabView"
 import { StoresTabView } from "./tabs/StoresTabView"
+import { SettingsEditor } from "devtools-shared/src/Settings"
 
 type TabViewProps = { active: boolean; children: JSX.Element }
 
@@ -37,22 +43,34 @@ const APP_TABS = {
       )
     },
   },
+  Settings: {
+    Icon: CogIcon,
+    View: (props: { active: boolean }) => {
+      return (
+        <TabView active={props.active}>
+          <SettingsEditor />
+        </TabView>
+      )
+    },
+  },
 }
 
 const selectedTab = signal<keyof typeof APP_TABS>("Apps")
 
 export function App() {
   return (
-    <>
-      <nav className="flex flex-col gap-2 p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
-        {Object.keys(APP_TABS).map((key) => (
-          <TabButton key={key} title={key as keyof typeof APP_TABS} />
-        ))}
+    <SettingsProvider>
+      <nav className="flex flex-col gap-2 justify-between p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
+        <div className="flex flex-col gap-2">
+          {Object.keys(APP_TABS).map((key) => (
+            <TabButton key={key} title={key as keyof typeof APP_TABS} />
+          ))}
+        </div>
       </nav>
       {Object.entries(APP_TABS).map(([title, { View }]) => (
         <View key={title} active={selectedTab.value === title} />
       ))}
-    </>
+    </SettingsProvider>
   )
 }
 
@@ -73,7 +91,7 @@ function TabButton({ title }: { title: keyof typeof APP_TABS }) {
       title={title}
     >
       <Icon className="text-primary" />
-      <span className="hidden md:inline">{title}</span>
+      <span className="hidden sm:inline">{title}</span>
     </button>
   )
 }
