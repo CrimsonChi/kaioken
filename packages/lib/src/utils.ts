@@ -432,6 +432,7 @@ const booleanAttributes = [
   "noshade",
   "novalidate",
   "nowrap",
+  "open",
   "popover",
   "readonly",
   "required",
