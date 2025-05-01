@@ -7,84 +7,40 @@
   "homepage": "https://kaioken.dev",
   "exports": {
     ".": {
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./form": {
+      "types": "./dist/form/index.d.ts",
+      "default": "./dist/form/index.js"
     },
     "./router": {
-      "require": {
-        "types": "./dist/router/index.d.ts",
-        "default": "./dist/router/index.js"
-      },
-      "import": {
-        "types": "./dist/router/index.d.ts",
-        "default": "./dist/router/index.js"
-      }
+      "types": "./dist/router/index.d.ts",
+      "default": "./dist/router/index.js"
     },
     "./swr": {
-      "require": {
-        "types": "./dist/swr.d.ts",
-        "default": "./dist/swr.js"
-      },
-      "import": {
-        "types": "./dist/swr.d.ts",
-        "default": "./dist/swr.js"
-      }
+      "types": "./dist/swr.d.ts",
+      "default": "./dist/swr.js"
     },
     "./utils": {
-      "require": {
-        "types": "./dist/utils.d.ts",
-        "default": "./dist/utils.js"
-      },
-      "import": {
-        "types": "./dist/utils.d.ts",
-        "default": "./dist/utils.js"
-      }
+      "types": "./dist/utils.d.ts",
+      "default": "./dist/utils.js"
     },
     "./ssr/client": {
-      "require": {
-        "types": "./dist/ssr/client.d.ts",
-        "default": "./dist/ssr/client.js"
-      },
-      "import": {
-        "types": "./dist/ssr/client.d.ts",
-        "default": "./dist/ssr/client.js"
-      }
+      "types": "./dist/ssr/client.d.ts",
+      "default": "./dist/ssr/client.js"
     },
     "./ssr/server": {
-      "require": {
-        "types": "./dist/ssr/server.d.ts",
-        "default": "./dist/ssr/server.js"
-      },
-      "import": {
-        "types": "./dist/ssr/server.d.ts",
-        "default": "./dist/ssr/server.js"
-      }
+      "types": "./dist/ssr/server.d.ts",
+      "default": "./dist/ssr/server.js"
     },
     "./jsx-dev-runtime": {
-      "require": {
-        "types": "./dist/jsx.d.ts",
-        "default": "./dist/jsx.js"
-      },
-      "import": {
-        "types": "./dist/jsx.d.ts",
-        "default": "./dist/jsx.js"
-      }
+      "types": "./dist/jsx.d.ts",
+      "default": "./dist/jsx.js"
     },
     "./jsx-runtime": {
-      "require": {
-        "types": "./dist/jsx.d.ts",
-        "default": "./dist/jsx.js"
-      },
-      "import": {
-        "types": "./dist/jsx.d.ts",
-        "default": "./dist/jsx.js"
-      }
+      "types": "./dist/jsx.d.ts",
+      "default": "./dist/jsx.js"
     }
   },
   "repository": {

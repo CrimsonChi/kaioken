@@ -1,4 +1,4 @@
-import { type AnyFormFieldContext, useForm } from "kaioken"
+import { type AnyFormFieldContext, useForm } from "kaioken/form"
 
 function FieldInfo({ field }: { field: AnyFormFieldContext }) {
   return (
