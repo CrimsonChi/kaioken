@@ -69,7 +69,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         html,
         tags: [
           {
-            injectTo: "body",
             tag: "script",
             attrs: {
               type: "module",
