@@ -190,7 +190,9 @@ export function useSWR<T, K extends SWRKey>(
         hook.strKey = strKey
         hook.update = update
 
+        let isNewEntry = false
         if (!SWR_GLOBAL[strKey]) {
+          isNewEntry = true
           const state: SWRGlobalStateEntry<T> = (SWR_GLOBAL[strKey] = {
             key,
             resource: new Signal<SWRResourceState<T>>({
@@ -216,6 +218,8 @@ export function useSWR<T, K extends SWRKey>(
         const state = SWR_GLOBAL[strKey]
         const subs = state.subscribers
         if (subs.size === 0) {
+          if (!isNewEntry) performFetch(SWR_GLOBAL[strKey])
+
           state.options = options
           if (options.refreshInterval) {
             state.refreshInterval = window.setInterval(() => {
