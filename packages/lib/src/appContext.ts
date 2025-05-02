@@ -22,6 +22,9 @@ export interface AppContextOptions {
    */
   useRuntimeHookInvalidation?: boolean
   name?: string
+  debug?: {
+    flashElementOnDiff?: boolean
+  }
 }
 
 let appCounter = 0

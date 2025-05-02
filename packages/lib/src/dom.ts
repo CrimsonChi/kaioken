@@ -11,7 +11,7 @@ import {
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
-import { renderMode } from "./globals.js"
+import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
@@ -54,6 +54,33 @@ function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
   ;(ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
 }
 
+let debug_setOutline: (dom: HTMLElement | SVGElement, color: string) => void
+if (__DEV__) {
+  const pendingRemovals = new Map<HTMLElement | SVGElement, string>()
+  let isQueued = false
+  debug_setOutline = (dom, color) => {
+    if (!ctx.current.options?.debug?.flashElementOnDiff) {
+      return
+    }
+    if (!pendingRemovals.has(dom)) {
+      pendingRemovals.set(dom, dom.style.outline)
+    }
+    dom.style.outline = `2px solid ${color}`
+    if (!isQueued) {
+      isQueued = true
+      ctx.current.scheduler?.nextIdle(() => {
+        setTimeout(() => {
+          isQueued = false
+          pendingRemovals.forEach((prevOutline, dom) => {
+            dom.style.outline = prevOutline
+          })
+          pendingRemovals.clear()
+        }, 150)
+      })
+    }
+  }
+}
+
 function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
   const dom =
@@ -62,7 +89,9 @@ function createDom(vNode: VNode): SomeDom {
       : svgTags.includes(t)
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
       : document.createElement(t)
-  //setDomRef(vNode, dom)
+  if (__DEV__) {
+    if (!(dom instanceof Text)) debug_setOutline(dom, "green")
+  }
   return dom
 }
 function createTextNode(vNode: VNode): Text {
@@ -137,6 +166,12 @@ function updateDom(vNode: VNode) {
   const dom = vNode.dom as SomeDom
   const prevProps: Record<string, any> = vNode.prev?.props ?? {}
   const nextProps: Record<string, any> = vNode.props ?? {}
+
+  if (__DEV__) {
+    if (vNode.prev && !(dom instanceof Text)) {
+      debug_setOutline(dom, "blue")
+    }
+  }
 
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
