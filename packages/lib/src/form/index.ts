@@ -269,11 +269,26 @@ function createFormController<T extends Record<string, unknown>>(
   }
 
   const removeFieldMeta = (name: RecordKey<T>) => {
-    delete formFieldErrors[name]
-    delete asyncFormFieldValidators[name]
-    delete formFieldsTouched[name]
-    delete formFieldValidators[name]
+    for (const metaMap of [
+      formFieldErrors,
+      asyncFormFieldValidators,
+      formFieldsTouched,
+      formFieldValidators,
+    ]) {
+      delete metaMap[name]
+      for (const key in metaMap) {
+        if (key.startsWith(`${name}.`)) {
+          delete metaMap[key as RecordKey<T>]
+        }
+      }
+    }
+
     formFieldUpdaters.delete(name)
+    for (const key in formFieldUpdaters) {
+      if (key.startsWith(`${name}.`)) {
+        formFieldUpdaters.delete(key as RecordKey<T>)
+      }
+    }
   }
 
   const arrayFieldReplace = (name: RecordKey<T>, index: number, value: any) => {
