@@ -55,7 +55,7 @@ function StoreView({ selection }: { selection: StoreSelection }) {
       <div
         onclick={() => setExpanded(!expanded)}
         className={
-          "flex items-center gap-2 justify-between px-2 py-1 border border-white border-opacity-10 cursor-pointer" +
+          "flex items-center gap-2 justify-between p-2 border border-white border-opacity-10 cursor-pointer" +
           (expanded
             ? " bg-white bg-opacity-5 text-neutral-100 rounded-t"
             : " hover:bg-white hover:bg-opacity-10 text-neutral-400 rounded")
@@ -207,8 +207,15 @@ function TreeNodeView({
               />
             </div>
           </div>
-          {expanded && sliceComputations && (
+          {expanded && (
             <div className="flex flex-col gap-2 p-2 bg-[#1a1a1a]">
+              {sliceComputations.length === 0 && (
+                <div className="p-2 bg-black bg-opacity-30 text-sm">
+                  <h5 className="border-b border-white border-opacity-10">
+                    No slices
+                  </h5>
+                </div>
+              )}
               {sliceComputations.map((sliceCompute) => (
                 <div className="flex flex-col gap-2">
                   <div className="p-2 bg-black bg-opacity-30 text-sm">
@@ -216,7 +223,12 @@ function TreeNodeView({
                       Slice:
                     </h5>
                     <pre className="text-neutral-400">
-                      {JSON.stringify(sliceCompute.value, null, 2)}
+                      <ValueEditor
+                        data={{ value: sliceCompute.value }}
+                        mutable={false}
+                        objectRefAcc={[]}
+                        onChange={() => {}}
+                      />
                     </pre>
                   </div>
                   <div className="p-2 bg-black bg-opacity-30 text-sm">

@@ -16,6 +16,7 @@ interface Product {
 }
 
 const fetcher = async ([path, id]: [string, number]): Promise<Product> => {
+  await new Promise((resolve) => setTimeout(resolve, 1000))
   const res = await fetch(`https://dummyjson.com/${path}/${id}`)
   if (!res.ok) throw new Error(res.statusText)
   return res.json()

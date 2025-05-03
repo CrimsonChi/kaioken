@@ -2,6 +2,7 @@ import {
   AppViewIcon,
   CogIcon,
   GaugeIcon,
+  GlobeIcon,
   SettingsProvider,
   StoresViewIcon,
 } from "devtools-shared"
@@ -10,6 +11,7 @@ import { AppTabView } from "./tabs/AppTabView"
 import { StoresTabView } from "./tabs/StoresTabView"
 import { SettingsEditor } from "devtools-shared/src/Settings"
 import { ProfilingTabView } from "./tabs/ProfilingTabView"
+import { SWRTabView } from "./tabs/SWRTabView"
 
 type TabViewProps = { active: boolean; children: JSX.Element }
 
@@ -33,13 +35,17 @@ const APP_TABS = {
     Icon: StoresViewIcon,
     View: StoresTabView,
   },
-  Settings: {
-    Icon: CogIcon,
-    View: SettingsEditor,
+  SWR: {
+    Icon: GlobeIcon,
+    View: SWRTabView,
   },
   Profiling: {
     Icon: GaugeIcon,
     View: ProfilingTabView,
+  },
+  Settings: {
+    Icon: CogIcon,
+    View: SettingsEditor,
   },
 }
 

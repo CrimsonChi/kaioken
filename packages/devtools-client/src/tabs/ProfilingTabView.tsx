@@ -1,14 +1,6 @@
 import { AppContext, useEffect, useRequestUpdate } from "kaioken"
 import { kaiokenGlobal } from "../store"
-import { isDevtoolsApp } from "devtools-shared"
-
-function typedMapEntries<T extends Map<any, any>>(
-  map: T
-): InferredMapEntries<T> {
-  return Array.from(map.entries()) as InferredMapEntries<T>
-}
-
-type InferredMapEntries<T> = T extends Map<infer K, infer V> ? [K, V][] : never
+import { isDevtoolsApp, typedMapEntries } from "devtools-shared"
 
 export function ProfilingTabView() {
   const requestUpdate = useRequestUpdate()

@@ -30,3 +30,11 @@ export const getFileLink = (
 export function isDevtoolsApp(app: AppContext) {
   return app.name === "kaioken.devtools"
 }
+
+type InferredMapEntries<T> = T extends Map<infer K, infer V> ? [K, V][] : never
+
+export function typedMapEntries<T extends Map<any, any>>(
+  map: T
+): InferredMapEntries<T> {
+  return Array.from(map.entries()) as InferredMapEntries<T>
+}

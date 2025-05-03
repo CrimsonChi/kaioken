@@ -107,8 +107,9 @@ export function SettingsProvider({
 export function SettingsEditor() {
   const { userSettings, saveUserSettings } = useSettings()
   return (
-    <>
+    <div className="rounded bg-neutral-400 bg-opacity-5 border border-white border-opacity-10 overflow-hidden">
       <ValueEditor
+        border={false}
         data={userSettings}
         onChange={(keys, value) => {
           const newSettings = {
@@ -127,6 +128,6 @@ export function SettingsEditor() {
         mutable={true}
         objectRefAcc={[]}
       />
-    </>
+    </div>
   )
 }
