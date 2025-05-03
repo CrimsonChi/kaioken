@@ -1,14 +1,5 @@
 import { useSignal, useWatch } from "kaioken"
 
-// interface HtmlElementUnionProps {
-//   input: ValueUnionProp & CheckedUnionProp
-//   textarea: ValueUnionProp
-//   progress: ValueUnionProp
-//   details: OpenUnionProp
-//   dialog: OpenUnionProp
-//   audio: AudioUnionProp
-// }
-
 export default function ElementBindingsExample() {
   return (
     <div className="flex flex-col gap-2">
@@ -17,15 +8,25 @@ export default function ElementBindingsExample() {
       <NumberInput />
       <DateInput />
       <TextArea />
-      <Meter />
-      <Progress />
       <Checkbox />
       <Details />
       <Dialog />
       <Audio />
       <Video />
-      <select />
+      <Select />
     </div>
+  )
+}
+
+function Select() {
+  const value = useSignal("")
+  useWatch(() => console.log("Select", value.value))
+  return (
+    <select bind:value={value}>
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+    </select>
   )
 }
 
@@ -60,18 +61,6 @@ function TextArea() {
   const value = useSignal("")
   useWatch(() => console.log("TextArea", value.value))
   return <textarea bind:value={value} />
-}
-
-function Meter() {
-  const percent = useSignal(0.5)
-  useWatch(() => console.log("Meter", percent.value))
-  return <meter bind:value={percent} />
-}
-
-function Progress() {
-  const value = useSignal(0)
-  useWatch(() => console.log("Progress", value.value))
-  return <progress max="100" bind:value={value} />
 }
 
 function Checkbox() {

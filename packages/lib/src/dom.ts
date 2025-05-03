@@ -262,11 +262,10 @@ function setSignalProp(
     }
     let evtName = ""
     switch (attr) {
-      case "value":
-      case "checked": {
+      case "value": {
         const handleInput = (e: Event) => {
-          const target = e.currentTarget as HTMLInputElement
-          let val: any = target[attr]
+          const target = e.target as HTMLInputElement
+          let val: string | number = target.value
           if (
             typeof signal.peek() === "number" &&
             ["progress", "meter", "number", "range"].indexOf(target.type) !== -1
@@ -277,6 +276,10 @@ function setSignalProp(
         }
         addEvt("input", handleInput)
         cleanup = () => rmEvt("input", handleInput)
+        break
+      }
+      case "checked": {
+        evtName = "change"
         break
       }
       case "open": {
@@ -293,6 +296,7 @@ function setSignalProp(
       }
       case "currentTime": {
         evtName = "timeupdate"
+        break
       }
     }
     if (evtName) {

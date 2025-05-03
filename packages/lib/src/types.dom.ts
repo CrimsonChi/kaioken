@@ -296,34 +296,25 @@ declare class DoNotUseBindWithPlainError extends Error {
   $brand: "DoNotUseBindWithPlainError"
 }
 
-type BindError = DoNotUseBindWithPlainError
-
 type BindableProp<K extends string, V> =
   | ({
       [k in K]?: Signalable<V>
-    } & { [k in `bind:${K}`]?: BindError })
+    } & { [k in `bind:${K}`]?: DoNotUseBindWithPlainError })
   | ({
       [k in `bind:${K}`]?: Signal<V>
-    } & { [k in K]?: BindError })
+    } & { [k in K]?: DoNotUseBindWithPlainError })
 
-type ValueBindableProp = BindableProp<"value", string | number>
-type CheckedBindableProp = BindableProp<"checked", boolean>
-type OpenBindableProp = BindableProp<"open", boolean>
-type VolumeBindableProp = BindableProp<"volume", number>
-type PlaybackRateBindableProp = BindableProp<"playbackRate", number>
-type CurrentTimeBindableProp = BindableProp<"currentTime", number>
-
-type MediaElementBindableProps = VolumeBindableProp &
-  PlaybackRateBindableProp &
-  CurrentTimeBindableProp
+type MediaElementBindableProps = BindableProp<"volume", number> &
+  BindableProp<"playbackRate", number> &
+  BindableProp<"currentTime", number>
 
 interface HtmlElementBindableProps {
-  input: ValueBindableProp & CheckedBindableProp
-  textarea: ValueBindableProp
-  progress: ValueBindableProp
-  meter: ValueBindableProp
-  details: OpenBindableProp
-  dialog: OpenBindableProp
+  input: BindableProp<"value", string | number> &
+    BindableProp<"checked", boolean>
+  textarea: BindableProp<"value", string>
+  select: BindableProp<"value", string>
+  details: BindableProp<"open", boolean>
+  dialog: BindableProp<"open", boolean>
   audio: MediaElementBindableProps
   video: MediaElementBindableProps
 }
@@ -396,9 +387,7 @@ interface HtmlElementAttributes {
   }
   details: {}
   dfn: {}
-  dialog: {
-    open?: boolean
-  }
+  dialog: {}
   div: {}
   dl: {}
   dt: {}
