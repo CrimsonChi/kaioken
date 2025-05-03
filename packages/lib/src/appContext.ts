@@ -18,12 +18,14 @@ export interface AppContextOptions {
   maxFrameMs?: number
   /**
    * Enables runtime hook invalidation
+   * @deprecated
    * @default false
    */
   useRuntimeHookInvalidation?: boolean
   name?: string
   debug?: {
     flashElementOnDiff?: boolean
+    onRequestUpdate?: (vNode: VNode) => void
   }
 }
 
@@ -127,6 +129,11 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       vNode = this.rootNode
     }
     if (flags.get(vNode.flags, FLAG.DELETION)) return
+    if (__DEV__) {
+      if (this.options?.debug?.onRequestUpdate) {
+        this.options.debug.onRequestUpdate(vNode)
+      }
+    }
     if (renderMode.current === "hydrate") {
       return this.scheduler?.nextIdle((s) => {
         !flags.get(vNode.flags, FLAG.DELETION) && s.queueUpdate(vNode)

@@ -1,6 +1,7 @@
 import type { AppContext } from "./appContext"
 import { __DEV__ } from "./env.js"
 import { createHMRContext } from "./hmr.js"
+import { createProfilingContext } from "./profiling.js"
 import { Store } from "./store"
 
 export { KaiokenGlobalContext, type GlobalKaiokenEvent }
@@ -61,6 +62,7 @@ class KaiokenGlobalContext {
   > = new Map()
   stores: ReactiveMap<Store<any, any>> = new ReactiveMap()
   HMRContext?: ReturnType<typeof createHMRContext>
+  profilingContext?: ReturnType<typeof createProfilingContext>
   globalState: Record<symbol, any> = {}
 
   constructor() {
@@ -68,6 +70,7 @@ class KaiokenGlobalContext {
     this.on("unmount", (ctx) => this.#contexts.delete(ctx))
     if (__DEV__) {
       this.HMRContext = createHMRContext()
+      this.profilingContext = createProfilingContext()
     }
   }
 
