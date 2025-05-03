@@ -1,4 +1,4 @@
-import { useEffect, useSignal, useWatch } from "kaioken"
+import { useSignal, useWatch } from "kaioken"
 
 export default function ElementBindingsExample() {
   return (
