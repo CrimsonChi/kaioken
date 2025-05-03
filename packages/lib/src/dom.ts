@@ -54,11 +54,12 @@ function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
   ;(ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
 }
 
-let debug_setOutline: (dom: HTMLElement | SVGElement, color: string) => void
+let debug_setOutline: (dom: SomeDom, color: string) => void
 if (__DEV__) {
   const pendingRemovals = new Map<HTMLElement | SVGElement, string>()
   let isQueued = false
   debug_setOutline = (dom, color) => {
+    if (dom instanceof Text) return
     if (!ctx.current.options?.debug?.flashElementOnDiff) {
       return
     }
@@ -90,7 +91,7 @@ function createDom(vNode: VNode): SomeDom {
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
       : document.createElement(t)
   if (__DEV__) {
-    if (!(dom instanceof Text)) debug_setOutline(dom, "green")
+    debug_setOutline(dom, "green")
   }
   return dom
 }
@@ -168,9 +169,7 @@ function updateDom(vNode: VNode) {
   const nextProps: Record<string, any> = vNode.props ?? {}
 
   if (__DEV__) {
-    if (vNode.prev && !(dom instanceof Text)) {
-      debug_setOutline(dom, "blue")
-    }
+    if (vNode.prev) debug_setOutline(dom, "blue")
   }
 
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
@@ -263,89 +262,89 @@ function setSignalProp(
   signal: Signal<any>,
   prevValue: unknown
 ) {
-  if (key.startsWith("bind:")) {
-    const attr = key.substring(5)
-    const subscriberFn =
-      dom instanceof HTMLSelectElement
-        ? (value: any) => {
-            setSelectElementValue(dom, value)
-          }
-        : (value: any) => {
-            ;(dom as any)[attr] = value
-          }
-    const unsub = signal.subscribe(subscriberFn)
-    let cleanup: () => void | undefined
-    const addEvt = dom.addEventListener.bind(dom)
-    const rmEvt = dom.removeEventListener.bind(dom)
+  if (!key.startsWith("bind:")) {
+    const unsub = signal.subscribe((value) => {
+      setProp(vNode, dom, key, value, null)
+    })
+    ;(vNode.cleanups ??= {})[key] = unsub
 
-    const setSigFromElement = (val: any) => {
-      signal.sneak(val)
-      signal.notify({ filter: (sub) => sub !== subscriberFn })
-    }
-    let evtName = ""
-    switch (attr) {
-      case "value": {
-        const handleInput = (e: Event) => {
-          const target = e.target as HTMLInputElement | HTMLSelectElement
-          let val: any = target.value
-          if (target instanceof HTMLSelectElement) {
-            val = deriveSelectElementValue(target)
-          } else {
-            if (
-              typeof signal.peek() === "number" &&
-              ["progress", "meter", "number", "range"].indexOf(target.type) !==
-                -1
-            ) {
-              val = target.valueAsNumber
-            }
-          }
-          setSigFromElement(val)
+    return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
+  }
+
+  const attr = key.substring(5)
+  const subscriberFn =
+    dom instanceof HTMLSelectElement
+      ? (value: any) => {
+          setSelectElementValue(dom, value)
         }
-        addEvt("input", handleInput)
-        cleanup = () => rmEvt("input", handleInput)
-        break
-      }
-      case "checked": {
-        evtName = "change"
-        break
-      }
-      case "open": {
-        evtName = "toggle"
-        break
-      }
-      case "volume": {
-        evtName = "volumechange"
-        break
-      }
-      case "playbackRate": {
-        evtName = "ratechange"
-        break
-      }
-      case "currentTime": {
-        evtName = "timeupdate"
-        break
-      }
-    }
-    if (evtName) {
-      const handleChange = (e: Event) => {
-        const val = (e.target as any)[attr]
+      : (value: any) => {
+          ;(dom as any)[attr] = value
+        }
+  const unsub = signal.subscribe(subscriberFn)
+  const addEvt = dom.addEventListener.bind(dom)
+  const rmEvt = dom.removeEventListener.bind(dom)
+
+  let cleanup: () => void | undefined
+  let evtName = ""
+
+  const setSigFromElement = (val: any) => {
+    signal.sneak(val)
+    signal.notify({ filter: (sub) => sub !== subscriberFn })
+  }
+
+  switch (attr) {
+    case "value": {
+      const handleInput = (e: Event) => {
+        const target = e.target as HTMLInputElement | HTMLSelectElement
+        let val: any = target.value
+        if (target instanceof HTMLSelectElement) {
+          val = deriveSelectElementValue(target)
+        } else if (
+          typeof signal.peek() === "number" &&
+          ["progress", "meter", "number", "range"].indexOf(target.type) !== -1
+        ) {
+          val = target.valueAsNumber
+        }
         setSigFromElement(val)
       }
-      addEvt(evtName, handleChange)
-      cleanup = () => rmEvt(evtName, handleChange)
+      addEvt("input", handleInput)
+      cleanup = () => rmEvt("input", handleInput)
+      break
     }
-    ;(vNode.cleanups ??= {})[key] = () => {
-      unsub()
-      cleanup?.()
+    case "checked": {
+      evtName = "change"
+      break
     }
-    return setProp(vNode, dom, attr, signal.peek(), unwrap(prevValue))
+    case "open": {
+      evtName = "toggle"
+      break
+    }
+    case "volume": {
+      evtName = "volumechange"
+      break
+    }
+    case "playbackRate": {
+      evtName = "ratechange"
+      break
+    }
+    case "currentTime": {
+      evtName = "timeupdate"
+      break
+    }
   }
-  const unsub = signal.subscribe((value) => {
-    setProp(vNode, dom, key, value, null)
-  })
-  ;(vNode.cleanups ??= {})[key] = unsub
-
-  return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
+  if (evtName) {
+    const handleChange = (e: Event) => {
+      const val = (e.target as any)[attr]
+      setSigFromElement(val)
+    }
+    addEvt(evtName, handleChange)
+    cleanup = () => rmEvt(evtName, handleChange)
+  }
+  ;(vNode.cleanups ??= {})[key] = () => {
+    unsub()
+    cleanup?.()
+  }
+  return setProp(vNode, dom, attr, signal.peek(), unwrap(prevValue))
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
@@ -463,29 +462,24 @@ function setProp(
       return
     case "value":
       if (element.nodeName === "SELECT") {
-        setSelectElementValue(element as HTMLSelectElement, value)
-      } else {
-        if (needsExplicitValueSet(element)) {
-          element.value =
-            value === undefined || value === null ? "" : String(value)
-        } else {
-          element.setAttribute(
-            "value",
-            value === undefined ? "" : String(value)
-          )
-        }
+        return setSelectElementValue(element as HTMLSelectElement, value)
       }
+      const strVal = value === undefined || value === null ? "" : String(value)
+      if (needsExplicitValueSet(element)) {
+        element.value = strVal
+        return
+      }
+      element.setAttribute("value", strVal)
       return
     case "checked":
       if (element.nodeName === "INPUT") {
         ;(element as HTMLInputElement).checked = Boolean(value)
-      } else {
-        element.setAttribute("checked", String(value))
+        return
       }
+      element.setAttribute("checked", String(value))
       return
     default:
-      setDomAttribute(element, propToHtmlAttr(key), value)
-      break
+      return setDomAttribute(element, propToHtmlAttr(key), value)
   }
 }
 
@@ -555,9 +549,9 @@ function getDomParent(vNode: VNode): ElementVNode {
   }
 
   if (!parentNodeElement || !parentNode) {
-    if (!vNode.parent) {
-      // handle app entry
-      if (vNode.dom) return vNode as ElementVNode
+    // handle app entry
+    if (!vNode.parent && vNode.dom) {
+      return vNode as ElementVNode
     }
 
     throw new KaiokenError({
