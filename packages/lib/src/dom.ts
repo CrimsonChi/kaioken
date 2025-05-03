@@ -223,17 +223,7 @@ function updateDom(vNode: VNode) {
           (vNode.cleanups[key](), delete vNode.cleanups[key])
       }
       if (Signal.isSignal(nextProps[key])) {
-        const unsub = nextProps[key].subscribe((value) => {
-          setProp(vNode, dom, key, value, null)
-        })
-        ;(vNode.cleanups ??= {})[key] = unsub
-        return setProp(
-          vNode,
-          dom,
-          key,
-          nextProps[key].peek(),
-          unwrap(prevProps[key])
-        )
+        return setSignalProp(vNode, dom, key, nextProps[key], prevProps[key])
       }
       setProp(vNode, dom, key, nextProps[key], prevProps[key])
       return
@@ -247,6 +237,115 @@ function updateDom(vNode: VNode) {
       dom.nodeValue = nodeVal
     }
   })
+}
+
+function deriveSelectElementValue(dom: HTMLSelectElement) {
+  if (dom.multiple) {
+    return Array.from(dom.selectedOptions).map((option) => option.value)
+  }
+  return dom.value
+}
+
+function setSelectElementValue(dom: HTMLSelectElement, value: any) {
+  if (!dom.multiple || value === undefined || value === null || value === "") {
+    dom.value = value
+    return
+  }
+  Array.from(dom.options).forEach((option) => {
+    option.selected = value.indexOf(option.value) > -1
+  })
+}
+
+function setSignalProp(
+  vNode: VNode,
+  dom: Exclude<SomeDom, Text>,
+  key: string,
+  signal: Signal<any>,
+  prevValue: unknown
+) {
+  if (key.startsWith("bind:")) {
+    const attr = key.substring(5)
+    const subscriberFn =
+      dom instanceof HTMLSelectElement
+        ? (value: any) => {
+            setSelectElementValue(dom, value)
+          }
+        : (value: any) => {
+            ;(dom as any)[attr] = value
+          }
+    const unsub = signal.subscribe(subscriberFn)
+    let cleanup: () => void | undefined
+    const addEvt = dom.addEventListener.bind(dom)
+    const rmEvt = dom.removeEventListener.bind(dom)
+
+    const setSigFromElement = (val: any) => {
+      signal.sneak(val)
+      signal.notify({ filter: (sub) => sub !== subscriberFn })
+    }
+    let evtName = ""
+    switch (attr) {
+      case "value": {
+        const handleInput = (e: Event) => {
+          const target = e.target as HTMLInputElement | HTMLSelectElement
+          let val: any = target.value
+          if (target instanceof HTMLSelectElement) {
+            val = deriveSelectElementValue(target)
+          } else {
+            if (
+              typeof signal.peek() === "number" &&
+              ["progress", "meter", "number", "range"].indexOf(target.type) !==
+                -1
+            ) {
+              val = target.valueAsNumber
+            }
+          }
+          setSigFromElement(val)
+        }
+        addEvt("input", handleInput)
+        cleanup = () => rmEvt("input", handleInput)
+        break
+      }
+      case "checked": {
+        evtName = "change"
+        break
+      }
+      case "open": {
+        evtName = "toggle"
+        break
+      }
+      case "volume": {
+        evtName = "volumechange"
+        break
+      }
+      case "playbackRate": {
+        evtName = "ratechange"
+        break
+      }
+      case "currentTime": {
+        evtName = "timeupdate"
+        break
+      }
+    }
+    if (evtName) {
+      const handleChange = (e: Event) => {
+        const val = (e.target as any)[attr]
+        setSigFromElement(val)
+      }
+      addEvt(evtName, handleChange)
+      cleanup = () => rmEvt(evtName, handleChange)
+    }
+    ;(vNode.cleanups ??= {})[key] = () => {
+      unsub()
+      cleanup?.()
+    }
+    return setProp(vNode, dom, attr, signal.peek(), unwrap(prevValue))
+  }
+  const unsub = signal.subscribe((value) => {
+    setProp(vNode, dom, key, value, null)
+  })
+  ;(vNode.cleanups ??= {})[key] = unsub
+
+  return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
@@ -336,11 +435,11 @@ function setDomAttribute(element: Element, key: string, value: unknown) {
   )
 }
 
-const explicitValueElementTags = ["INPUT", "TEXTAREA", "SELECT"]
+const explicitValueElementTags = ["INPUT", "TEXTAREA"]
 
 const needsExplicitValueSet = (
   element: SomeElement
-): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
+): element is HTMLInputElement | HTMLTextAreaElement => {
   return explicitValueElementTags.indexOf(element.nodeName) > -1
 }
 
@@ -363,11 +462,18 @@ function setProp(
       ;(element as HTMLMediaElement).muted = Boolean(value)
       return
     case "value":
-      if (needsExplicitValueSet(element)) {
-        element.value =
-          value === undefined || value === null ? "" : String(value)
+      if (element.nodeName === "SELECT") {
+        setSelectElementValue(element as HTMLSelectElement, value)
       } else {
-        element.setAttribute("value", value === undefined ? "" : String(value))
+        if (needsExplicitValueSet(element)) {
+          element.value =
+            value === undefined || value === null ? "" : String(value)
+        } else {
+          element.setAttribute(
+            "value",
+            value === undefined ? "" : String(value)
+          )
+        }
       }
       return
     case "checked":

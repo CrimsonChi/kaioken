@@ -1,7 +1,9 @@
-import type { Prettify } from "./types.utils"
+import { Signal } from "./signals"
+import type { Prettify, Signalable } from "./types.utils"
 
 export type {
   HtmlElementAttributes,
+  HtmlElementBindableProps,
   SvgElementAttributes,
   SvgGlobalAttributes,
   GlobalAttributes,
@@ -41,15 +43,12 @@ type HTMLMediaElementAttrs = {
   autoplay?: boolean
   controls?: boolean
   crossOrigin?: string
-  currentTime?: number
   loop?: boolean
   muted?: boolean
-  playbackRate?: number
   preload?: MediaPreload
   preservesPitch?: boolean
   src?: string
   srcObject?: MediaProvider | null
-  volume?: number
 }
 
 type FormAction = ValidUrlOrPath
@@ -170,7 +169,7 @@ type IFrameSandbox = string | boolean
 
 type InputAccept = "audio/*" | "video/*" | "image/*" | MimeType
 type AutoComplete = "on" | "off"
-type FormMethod = "get" | "post"
+type FormMethod = "get" | "post" | "dialog"
 
 type Direction = "ltr" | "rtl" | "auto"
 
@@ -293,6 +292,39 @@ type PopoverControlAttributes = {
   popoverTargetAction?: "show" | "hide" | "toggle"
 }
 
+declare class DoNotUseBindWithPlainError extends Error {
+  $brand: "DoNotUseBindWithPlainError"
+}
+
+type BindableProp<K extends string, V> =
+  | ({
+      [k in K]?: Signalable<V>
+    } & { [k in `bind:${K}`]?: DoNotUseBindWithPlainError })
+  | ({
+      [k in `bind:${K}`]?: Signal<V>
+    } & { [k in K]?: DoNotUseBindWithPlainError })
+
+type MediaElementBindableProps = BindableProp<"volume", number> &
+  BindableProp<"playbackRate", number> &
+  BindableProp<"currentTime", number>
+
+interface HtmlElementBindableProps {
+  input: BindableProp<"value", string | number> &
+    BindableProp<"checked", boolean>
+  textarea: BindableProp<"value", string>
+  select:
+    | ({
+        multiple: true
+      } & BindableProp<"value", string[]>)
+    | ({
+        multiple?: false
+      } & BindableProp<"value", string>)
+  details: BindableProp<"open", boolean>
+  dialog: BindableProp<"open", boolean>
+  audio: MediaElementBindableProps
+  video: MediaElementBindableProps
+}
+
 interface HtmlElementAttributes {
   a: {
     download?: FileName
@@ -359,13 +391,9 @@ interface HtmlElementAttributes {
     cite?: string
     dateTime?: string
   }
-  details: {
-    open?: boolean
-  }
+  details: {}
   dfn: {}
-  dialog: {
-    open?: boolean
-  }
+  dialog: {}
   div: {}
   dl: {}
   dt: {}
@@ -433,7 +461,6 @@ interface HtmlElementAttributes {
     alt?: string
     autocomplete?: AutoComplete
     autofocus?: boolean
-    checked?: boolean
     dirName?: Direction
     disabled?: boolean
     files?: FileList | null
@@ -459,7 +486,6 @@ interface HtmlElementAttributes {
     src?: ValidUrlOrPath
     step?: string | number
     type?: InputType
-    value?: string | number
     width?: string | number
   } & PopoverControlAttributes
   ins: {
@@ -572,11 +598,9 @@ interface HtmlElementAttributes {
     autofocus?: boolean
     disabled?: boolean
     form?: ElementReference<HTMLFormElement>
-    multiple?: boolean
     name?: string
     required?: boolean
     size?: string | number
-    value?: string | number
   }
   slot: {
     name?: string
@@ -665,6 +689,7 @@ interface HtmlElementAttributes {
     rows?: string | number
     wrap?: "hard" | "soft"
     value?: string
+    "bind:value"?: Signal<string | number>
   }
   tfoot: {}
   th: {

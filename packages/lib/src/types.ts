@@ -1,4 +1,4 @@
-import type { ReadonlySignal, Signal, Signal as SignalClass } from "./signals"
+import type { ReadonlySignal, Signal as SignalClass } from "./signals"
 import type { $CONTEXT, $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
@@ -9,8 +9,9 @@ import type {
   SvgElementAttributes,
   SvgGlobalAttributes,
   StyleObject,
+  HtmlElementBindableProps,
 } from "./types.dom"
-import { SomeDom } from "./types.utils"
+import { Signalable, SomeDom } from "./types.utils"
 
 export type { ElementProps, StyleObject }
 
@@ -31,27 +32,25 @@ type WebComponentTag = `${string}-${string}`
 
 type SignalableHtmlElementAttributes<Tag extends keyof HtmlElementAttributes> =
   {
-    [K in keyof HtmlElementAttributes[Tag]]:
-      | Signal<HtmlElementAttributes[Tag][K]>
-      | HtmlElementAttributes[Tag][K]
-  }
+    [K in keyof HtmlElementAttributes[Tag]]: Signalable<
+      HtmlElementAttributes[Tag][K]
+    >
+  } & (Tag extends keyof HtmlElementBindableProps
+    ? HtmlElementBindableProps[Tag]
+    : {})
 type SignalableSvgElementAttributes<Tag extends keyof SvgElementAttributes> = {
-  [K in keyof SvgElementAttributes[Tag]]:
-    | SvgElementAttributes[Tag][K]
-    | Signal<SvgElementAttributes[Tag][K]>
+  [K in keyof SvgElementAttributes[Tag]]: Signalable<
+    SvgElementAttributes[Tag][K]
+  >
 }
 type SignalableAriaProps = {
-  [K in keyof ARIAMixin]?: ARIAMixin[K] | Signal<ARIAMixin[K]>
+  [K in keyof ARIAMixin]?: Signalable<ARIAMixin[K]>
 }
 type SignalableGlobalAttributes = {
-  [K in keyof GlobalAttributes]:
-    | GlobalAttributes[K]
-    | Signal<GlobalAttributes[K]>
+  [K in keyof GlobalAttributes]: Signalable<GlobalAttributes[K]>
 }
 type SignalableSvgGlobalAttributes = {
-  [K in keyof SvgGlobalAttributes]:
-    | SvgGlobalAttributes[K]
-    | Signal<SvgGlobalAttributes[K]>
+  [K in keyof SvgGlobalAttributes]: Signalable<SvgGlobalAttributes[K]>
 }
 
 type ElementMap = {
@@ -206,6 +205,7 @@ declare global {
       prevStyleObj?: StyleObject
       hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
+      boundAttrs?: Record<string, any>
     }
   }
 

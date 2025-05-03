@@ -1,4 +1,5 @@
 import type { $CONTEXT_PROVIDER } from "./constants"
+import type { Signal } from "./signals"
 
 export type SomeElement = HTMLElement | SVGElement
 export type SomeDom = HTMLElement | SVGElement | Text
@@ -21,3 +22,5 @@ export type ContextProviderNode<T> = Kaioken.VNode & {
 export type Prettify<T> = {
   [K in keyof T]: T[K]
 } & {}
+
+export type Signalable<T> = T | Signal<T>
