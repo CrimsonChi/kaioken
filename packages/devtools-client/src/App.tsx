@@ -9,7 +9,7 @@ import { signal } from "kaioken"
 import { AppTabView } from "./tabs/AppTabView"
 import { StoresTabView } from "./tabs/StoresTabView"
 import { SettingsEditor } from "devtools-shared/src/Settings"
-import { ProfilingView } from "./tabs/ProfilingView"
+import { ProfilingTabView } from "./tabs/ProfilingTabView"
 
 type TabViewProps = { active: boolean; children: JSX.Element }
 
@@ -39,7 +39,7 @@ const APP_TABS = {
   },
   Profiling: {
     Icon: GaugeIcon,
-    View: ProfilingView,
+    View: ProfilingTabView,
   },
 }
 

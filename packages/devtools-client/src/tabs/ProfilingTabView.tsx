@@ -10,7 +10,7 @@ function typedMapEntries<T extends Map<any, any>>(
 
 type InferredMapEntries<T> = T extends Map<infer K, infer V> ? [K, V][] : never
 
-export function ProfilingView() {
+export function ProfilingTabView() {
   const requestUpdate = useRequestUpdate()
   useEffect(() => {
     const update = (app: AppContext) => {
