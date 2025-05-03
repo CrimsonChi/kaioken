@@ -12,6 +12,9 @@ const FilteredListExample = lazy(
 )
 const BigListExample = lazy(() => import("./components/BigListExample"))
 const ContextExample = lazy(() => import("./components/ContextExample"))
+const ElementBindingsExample = lazy(
+  () => import("./components/ElementBindingsExample")
+)
 const UseModelExample = lazy(() => import("./components/UseModelExample"))
 const MemoExample = lazy(() => import("./components/MemoExample"))
 const RouterExample = lazy(() => import("./components/RouterExample"))
@@ -42,6 +45,10 @@ export const ROUTES: Record<string, AppRoute> = {
   "/context-example": {
     title: "Context",
     component: ContextExample,
+  },
+  "/element-bindings-example": {
+    title: "Element bindings",
+    component: ElementBindingsExample,
   },
   "/use-model-example": {
     title: "useModel",

@@ -1,7 +1,9 @@
-import type { Prettify } from "./types.utils"
+import { Signal } from "./signals"
+import type { Prettify, Signalable } from "./types.utils"
 
 export type {
   HtmlElementAttributes,
+  HtmlElementBindableProps,
   SvgElementAttributes,
   SvgGlobalAttributes,
   GlobalAttributes,
@@ -41,15 +43,12 @@ type HTMLMediaElementAttrs = {
   autoplay?: boolean
   controls?: boolean
   crossOrigin?: string
-  currentTime?: number
   loop?: boolean
   muted?: boolean
-  playbackRate?: number
   preload?: MediaPreload
   preservesPitch?: boolean
   src?: string
   srcObject?: MediaProvider | null
-  volume?: number
 }
 
 type FormAction = ValidUrlOrPath
@@ -170,7 +169,7 @@ type IFrameSandbox = string | boolean
 
 type InputAccept = "audio/*" | "video/*" | "image/*" | MimeType
 type AutoComplete = "on" | "off"
-type FormMethod = "get" | "post"
+type FormMethod = "get" | "post" | "dialog"
 
 type Direction = "ltr" | "rtl" | "auto"
 
@@ -293,6 +292,42 @@ type PopoverControlAttributes = {
   popoverTargetAction?: "show" | "hide" | "toggle"
 }
 
+declare class DoNotUseBindWithPlainError extends Error {
+  $brand: "DoNotUseBindWithPlainError"
+}
+
+type BindError = DoNotUseBindWithPlainError
+
+type BindableProp<K extends string, V> =
+  | ({
+      [k in K]?: Signalable<V>
+    } & { [k in `bind:${K}`]?: BindError })
+  | ({
+      [k in `bind:${K}`]?: Signal<V>
+    } & { [k in K]?: BindError })
+
+type ValueBindableProp = BindableProp<"value", string | number>
+type CheckedBindableProp = BindableProp<"checked", boolean>
+type OpenBindableProp = BindableProp<"open", boolean>
+type VolumeBindableProp = BindableProp<"volume", number>
+type PlaybackRateBindableProp = BindableProp<"playbackRate", number>
+type CurrentTimeBindableProp = BindableProp<"currentTime", number>
+
+type MediaElementBindableProps = VolumeBindableProp &
+  PlaybackRateBindableProp &
+  CurrentTimeBindableProp
+
+interface HtmlElementBindableProps {
+  input: ValueBindableProp & CheckedBindableProp
+  textarea: ValueBindableProp
+  progress: ValueBindableProp
+  meter: ValueBindableProp
+  details: OpenBindableProp
+  dialog: OpenBindableProp
+  audio: MediaElementBindableProps
+  video: MediaElementBindableProps
+}
+
 interface HtmlElementAttributes {
   a: {
     download?: FileName
@@ -359,9 +394,7 @@ interface HtmlElementAttributes {
     cite?: string
     dateTime?: string
   }
-  details: {
-    open?: boolean
-  }
+  details: {}
   dfn: {}
   dialog: {
     open?: boolean
@@ -433,7 +466,6 @@ interface HtmlElementAttributes {
     alt?: string
     autocomplete?: AutoComplete
     autofocus?: boolean
-    checked?: boolean
     dirName?: Direction
     disabled?: boolean
     files?: FileList | null
@@ -459,7 +491,6 @@ interface HtmlElementAttributes {
     src?: ValidUrlOrPath
     step?: string | number
     type?: InputType
-    value?: string | number
     width?: string | number
   } & PopoverControlAttributes
   ins: {
@@ -665,6 +696,7 @@ interface HtmlElementAttributes {
     rows?: string | number
     wrap?: "hard" | "soft"
     value?: string
+    "bind:value"?: Signal<string | number>
   }
   tfoot: {}
   th: {

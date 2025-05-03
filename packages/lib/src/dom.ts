@@ -223,17 +223,7 @@ function updateDom(vNode: VNode) {
           (vNode.cleanups[key](), delete vNode.cleanups[key])
       }
       if (Signal.isSignal(nextProps[key])) {
-        const unsub = nextProps[key].subscribe((value) => {
-          setProp(vNode, dom, key, value, null)
-        })
-        ;(vNode.cleanups ??= {})[key] = unsub
-        return setProp(
-          vNode,
-          dom,
-          key,
-          nextProps[key].peek(),
-          unwrap(prevProps[key])
-        )
+        return setSignalProp(vNode, dom, key, nextProps[key], prevProps[key])
       }
       setProp(vNode, dom, key, nextProps[key], prevProps[key])
       return
@@ -247,6 +237,86 @@ function updateDom(vNode: VNode) {
       dom.nodeValue = nodeVal
     }
   })
+}
+
+function setSignalProp(
+  vNode: VNode,
+  dom: Exclude<SomeDom, Text>,
+  key: string,
+  signal: Signal<any>,
+  prevValue: unknown
+) {
+  if (key.startsWith("bind:")) {
+    const attr = key.substring(5)
+    const subscriberFn = (value: any) => {
+      ;(dom as any)[attr] = value
+    }
+    const unsub = signal.subscribe(subscriberFn)
+    let cleanup: () => void | undefined
+    const addEvt = dom.addEventListener.bind(dom)
+    const rmEvt = dom.removeEventListener.bind(dom)
+
+    const setSigFromElement = (val: any) => {
+      signal.sneak(val)
+      signal.notify({ filter: (sub) => sub !== subscriberFn })
+    }
+    let evtName = ""
+    switch (attr) {
+      case "value":
+      case "checked": {
+        const handleInput = (e: Event) => {
+          const target = e.currentTarget as HTMLInputElement
+          let val: any = target[attr]
+          if (
+            typeof signal.peek() === "number" &&
+            ["progress", "meter", "number", "range"].indexOf(target.type) !== -1
+          ) {
+            val = target.valueAsNumber
+          }
+          setSigFromElement(val)
+        }
+        addEvt("input", handleInput)
+        cleanup = () => rmEvt("input", handleInput)
+        break
+      }
+      case "open": {
+        evtName = "toggle"
+        break
+      }
+      case "volume": {
+        evtName = "volumechange"
+        break
+      }
+      case "playbackRate": {
+        evtName = "ratechange"
+        break
+      }
+      case "currentTime": {
+        evtName = "timeupdate"
+      }
+    }
+    if (evtName) {
+      const handleChange = (e: Event) => {
+        const val = (e.target as any)[attr]
+        setSigFromElement(val)
+      }
+      addEvt(evtName, handleChange)
+      cleanup = () => rmEvt(evtName, handleChange)
+    }
+    ;(dom as any)[attr] = signal.peek()
+    ;(vNode.cleanups ??= {})[key] = () => {
+      unsub()
+      cleanup?.()
+    }
+
+    return
+  }
+
+  const unsub = signal.subscribe((value) => {
+    setProp(vNode, dom, key, value, null)
+  })
+  ;(vNode.cleanups ??= {})[key] = unsub
+  return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {

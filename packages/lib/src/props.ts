@@ -8,6 +8,15 @@ export function assertValidElementProps(vNode: Kaioken.VNode) {
       vNode,
     })
   }
+
+  for (const key in vNode.props) {
+    if ("bind:" + key in vNode.props) {
+      throw new KaiokenError({
+        message: `Cannot use both bind:${key} and ${key} on an element`,
+        vNode,
+      })
+    }
+  }
 }
 
 export function isValidElementKeyProp(
