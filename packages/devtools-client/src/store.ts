@@ -1,6 +1,5 @@
 import { AppContext, createStore, signal } from "kaioken"
-import { isDevtoolsApp } from "./utils"
-import { broadcastChannel } from "devtools-shared"
+import { broadcastChannel, isDevtoolsApp } from "devtools-shared"
 
 export let kaiokenGlobal: typeof window.__kaioken
 let runAnyway = true

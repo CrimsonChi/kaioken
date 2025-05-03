@@ -1,3 +1,5 @@
+import type { AppContext } from "kaioken"
+
 export function applyObjectChangeFromKeys(
   obj: Record<string, any>,
   keys: string[],
@@ -24,3 +26,7 @@ export function getNodeName(node: Kaioken.VNode) {
 export const getFileLink = (
   fn: Function & { __devtoolsFileLink?: string }
 ): string | null => fn.__devtoolsFileLink ?? null
+
+export function isDevtoolsApp(app: AppContext) {
+  return app.name === "kaioken.devtools"
+}

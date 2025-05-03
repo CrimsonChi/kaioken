@@ -5,4 +5,9 @@ import { broadcastChannel } from "devtools-shared"
 
 mount(App, document.getElementById("app")!).then(() => {
   broadcastChannel.send({ type: "ready" })
+  setInterval(() => {
+    if (!window.opener) {
+      window.close()
+    }
+  }, 250)
 })

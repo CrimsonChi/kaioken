@@ -1,9 +1,4 @@
-import type { AppContext } from "kaioken"
 import { isFragment, isLazy } from "../../lib/dist/utils.js"
-
-export function isDevtoolsApp(app: AppContext) {
-  return app.name === "kaioken.devtools"
-}
 
 export function getNodeName(node: Kaioken.VNode) {
   return (

@@ -1,6 +1,7 @@
 import {
   AppViewIcon,
   CogIcon,
+  GaugeIcon,
   SettingsProvider,
   StoresViewIcon,
 } from "devtools-shared"
@@ -8,6 +9,7 @@ import { signal } from "kaioken"
 import { AppTabView } from "./tabs/AppTabView"
 import { StoresTabView } from "./tabs/StoresTabView"
 import { SettingsEditor } from "devtools-shared/src/Settings"
+import { ProfilingView } from "./tabs/ProfilingView"
 
 type TabViewProps = { active: boolean; children: JSX.Element }
 
@@ -25,33 +27,19 @@ const TabView = (props: TabViewProps) => {
 const APP_TABS = {
   Apps: {
     Icon: AppViewIcon,
-    View: (props: { active: boolean }) => {
-      return (
-        <TabView active={props.active}>
-          <AppTabView />
-        </TabView>
-      )
-    },
+    View: AppTabView,
   },
   Stores: {
     Icon: StoresViewIcon,
-    View: (props: { active: boolean }) => {
-      return (
-        <TabView active={props.active}>
-          <StoresTabView />
-        </TabView>
-      )
-    },
+    View: StoresTabView,
   },
   Settings: {
     Icon: CogIcon,
-    View: (props: { active: boolean }) => {
-      return (
-        <TabView active={props.active}>
-          <SettingsEditor />
-        </TabView>
-      )
-    },
+    View: SettingsEditor,
+  },
+  Profiling: {
+    Icon: GaugeIcon,
+    View: ProfilingView,
   },
 }
 
@@ -68,7 +56,9 @@ export function App() {
         </div>
       </nav>
       {Object.entries(APP_TABS).map(([title, { View }]) => (
-        <View key={title} active={selectedTab.value === title} />
+        <TabView key={title} active={selectedTab.value === title}>
+          <View />
+        </TabView>
       ))}
     </SettingsProvider>
   )

@@ -6,7 +6,6 @@ import {
 import { useRequestUpdate, useEffect, AppContext } from "kaioken"
 import { AppVDomView } from "../components/AppVDomView"
 import { FiftyFiftySplitter } from "../components/FiftyFiftySplitter"
-import { Select } from "../components/Select"
 import { SquareMouse } from "../icons/SquareMouse"
 import { inspectComponent } from "../signal"
 import { toggleElementToVnode, useDevtoolsStore, kaiokenGlobal } from "../store"
@@ -62,17 +61,24 @@ export function AppTabView() {
     <>
       <div className="flex items-center justify-between gap-4 p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
         <div className="flex items-center gap-4">
-          <Select
+          <select
             className="px-2 py-1 bg-neutral-800 text-neutral-100 rounded border border-white border-opacity-10"
-            options={[
-              { text: "Select App", key: "", disabled: true },
-              ...apps.map((app) => app.name),
-            ]}
             value={selectedApp?.name ?? ""}
-            onChange={(name) =>
-              setSelectedApp(apps.find((a) => a.name === name)!)
+            onchange={(e) =>
+              setSelectedApp(
+                apps.find((a) => a.name === e.target.value) ?? null
+              )
             }
-          />
+          >
+            <option value="" disabled>
+              Select App
+            </option>
+            {apps.map((app) => (
+              <option key={app.id} value={app.name}>
+                {app.name}
+              </option>
+            ))}
+          </select>
           <button
             title="Toggle Component Inspection"
             onclick={handleToggleInspect}
