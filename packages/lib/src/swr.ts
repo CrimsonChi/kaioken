@@ -219,7 +219,12 @@ export function useSWR<T, K extends SWRKey>(
         entry ??= SWR_GLOBAL_CACHE.get(strKey)!
         const subs = entry.subscribers
         if (subs.size === 0) {
-          if (!isNewEntry) performFetch(entry)
+          if (!isNewEntry) {
+            entry.isValidating.value = true
+            performFetch(entry, () => {
+              entry.isValidating.value = false
+            })
+          }
 
           entry.options = options
           if (options.refreshInterval) {
