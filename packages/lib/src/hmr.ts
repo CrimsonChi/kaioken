@@ -113,6 +113,7 @@ export function createHMRContext() {
       }
       if (oldEntry.type === "component" && newEntry.type === "component") {
         const hooksToReset: number[] = []
+        let maxHookLen: number | null = null
         if ("hooks" in oldEntry && "hooks" in newEntry) {
           const hooks = newEntry.hooks!
           const oldHooks = oldEntry.hooks ?? []
@@ -120,6 +121,10 @@ export function createHMRContext() {
           for (let i = 0; i < oldHooks.length; i++) {
             const hook = hooks[i]
             const oldHook = oldHooks[i]
+            if (!hook) {
+              maxHookLen = i
+              break
+            }
             if (hook.name !== oldHook.name) {
               // new hook inserted before old hook, invalidate all remaining
               for (let j = i; j < hooks.length; j++) {
@@ -148,6 +153,12 @@ export function createHMRContext() {
                 delete vNode.subs
               }
               if (!ctx.options?.useRuntimeHookInvalidation && vNode.hooks) {
+                if (maxHookLen !== null) {
+                  for (let i = maxHookLen; i < vNode.hooks.length; i++) {
+                    vNode.hooks[i].cleanup?.()
+                  }
+                  vNode.hooks.length = maxHookLen
+                }
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hook = vNode.hooks[hooksToReset[i]]
                   if (hook.dev?.reinitUponRawArgsChanged) {
