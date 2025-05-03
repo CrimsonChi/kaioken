@@ -572,7 +572,8 @@ function styleObjectToString(obj: Partial<CSSStyleDeclaration>): string {
 
 function classNamePropToString(className: unknown): string {
   if (typeof className === "string") return className
-  if (Array.isArray(className)) return className.filter(Boolean).join(" ")
+  if (Array.isArray(className))
+    return className.flat().filter(Boolean).join(" ")
   return ""
 }
 

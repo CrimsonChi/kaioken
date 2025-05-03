@@ -13,7 +13,7 @@ export type {
   ClassNameArray,
 }
 
-type ClassNameArray = Array<string | false | undefined>
+type ClassNameArray = Array<string | false | undefined | ClassNameArray>
 
 type StyleObject = Prettify<
   Partial<
