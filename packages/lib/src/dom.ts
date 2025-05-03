@@ -239,6 +239,23 @@ function updateDom(vNode: VNode) {
   })
 }
 
+function deriveSelectElementValue(dom: HTMLSelectElement) {
+  if (dom.multiple) {
+    return Array.from(dom.selectedOptions).map((option) => option.value)
+  }
+  return dom.value
+}
+
+function setSelectElementValue(dom: HTMLSelectElement, value: any) {
+  if (!dom.multiple || value === undefined || value === null || value === "") {
+    dom.value = value
+    return
+  }
+  Array.from(dom.options).forEach((option) => {
+    option.selected = value.indexOf(option.value) > -1
+  })
+}
+
 function setSignalProp(
   vNode: VNode,
   dom: Exclude<SomeDom, Text>,
@@ -248,9 +265,14 @@ function setSignalProp(
 ) {
   if (key.startsWith("bind:")) {
     const attr = key.substring(5)
-    const subscriberFn = (value: any) => {
-      ;(dom as any)[attr] = value
-    }
+    const subscriberFn =
+      dom instanceof HTMLSelectElement
+        ? (value: any) => {
+            setSelectElementValue(dom, value)
+          }
+        : (value: any) => {
+            ;(dom as any)[attr] = value
+          }
     const unsub = signal.subscribe(subscriberFn)
     let cleanup: () => void | undefined
     const addEvt = dom.addEventListener.bind(dom)
@@ -264,13 +286,18 @@ function setSignalProp(
     switch (attr) {
       case "value": {
         const handleInput = (e: Event) => {
-          const target = e.target as HTMLInputElement
-          let val: string | number = target.value
-          if (
-            typeof signal.peek() === "number" &&
-            ["progress", "meter", "number", "range"].indexOf(target.type) !== -1
-          ) {
-            val = target.valueAsNumber
+          const target = e.target as HTMLInputElement | HTMLSelectElement
+          let val: any = target.value
+          if (target instanceof HTMLSelectElement) {
+            val = deriveSelectElementValue(target)
+          } else {
+            if (
+              typeof signal.peek() === "number" &&
+              ["progress", "meter", "number", "range"].indexOf(target.type) !==
+                -1
+            ) {
+              val = target.valueAsNumber
+            }
           }
           setSigFromElement(val)
         }
@@ -307,19 +334,17 @@ function setSignalProp(
       addEvt(evtName, handleChange)
       cleanup = () => rmEvt(evtName, handleChange)
     }
-    ;(dom as any)[attr] = signal.peek()
     ;(vNode.cleanups ??= {})[key] = () => {
       unsub()
       cleanup?.()
     }
-
-    return
+    return setProp(vNode, dom, attr, signal.peek(), unwrap(prevValue))
   }
-
   const unsub = signal.subscribe((value) => {
     setProp(vNode, dom, key, value, null)
   })
   ;(vNode.cleanups ??= {})[key] = unsub
+
   return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
 }
 
@@ -410,11 +435,11 @@ function setDomAttribute(element: Element, key: string, value: unknown) {
   )
 }
 
-const explicitValueElementTags = ["INPUT", "TEXTAREA", "SELECT"]
+const explicitValueElementTags = ["INPUT", "TEXTAREA"]
 
 const needsExplicitValueSet = (
   element: SomeElement
-): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
+): element is HTMLInputElement | HTMLTextAreaElement => {
   return explicitValueElementTags.indexOf(element.nodeName) > -1
 }
 
@@ -437,11 +462,18 @@ function setProp(
       ;(element as HTMLMediaElement).muted = Boolean(value)
       return
     case "value":
-      if (needsExplicitValueSet(element)) {
-        element.value =
-          value === undefined || value === null ? "" : String(value)
+      if (element.nodeName === "SELECT") {
+        setSelectElementValue(element as HTMLSelectElement, value)
       } else {
-        element.setAttribute("value", value === undefined ? "" : String(value))
+        if (needsExplicitValueSet(element)) {
+          element.value =
+            value === undefined || value === null ? "" : String(value)
+        } else {
+          element.setAttribute(
+            "value",
+            value === undefined ? "" : String(value)
+          )
+        }
       }
       return
     case "checked":

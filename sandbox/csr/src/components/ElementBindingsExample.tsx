@@ -1,4 +1,4 @@
-import { useSignal, useWatch } from "kaioken"
+import { useEffect, useSignal, useWatch } from "kaioken"
 
 export default function ElementBindingsExample() {
   return (
@@ -14,15 +14,28 @@ export default function ElementBindingsExample() {
       <Audio />
       <Video />
       <Select />
+      <MultipleSelect />
     </div>
   )
 }
 
 function Select() {
-  const value = useSignal("")
-  useWatch(() => console.log("Select", value.value))
+  const selected = useSignal("A")
+  useWatch(() => console.log("Select", selected.value))
   return (
-    <select bind:value={value}>
+    <select value={selected}>
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+    </select>
+  )
+}
+
+function MultipleSelect() {
+  const values = useSignal(["A", "B"])
+  useWatch(() => console.log("MultipleSelect", values.value))
+  return (
+    <select multiple value={values}>
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>

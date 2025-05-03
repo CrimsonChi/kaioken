@@ -312,7 +312,13 @@ interface HtmlElementBindableProps {
   input: BindableProp<"value", string | number> &
     BindableProp<"checked", boolean>
   textarea: BindableProp<"value", string>
-  select: BindableProp<"value", string>
+  select:
+    | ({
+        multiple: true
+      } & BindableProp<"value", string[]>)
+    | ({
+        multiple?: false
+      } & BindableProp<"value", string>)
   details: BindableProp<"open", boolean>
   dialog: BindableProp<"open", boolean>
   audio: MediaElementBindableProps
@@ -592,11 +598,9 @@ interface HtmlElementAttributes {
     autofocus?: boolean
     disabled?: boolean
     form?: ElementReference<HTMLFormElement>
-    multiple?: boolean
     name?: string
     required?: boolean
     size?: string | number
-    value?: string | number
   }
   slot: {
     name?: string
