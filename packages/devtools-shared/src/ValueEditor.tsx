@@ -286,8 +286,8 @@ function ValueFieldEditor({
                   <ValueFieldEditor
                     value={item}
                     onChange={noop}
-                    keys={[idx.toString()]}
-                    path={idx.toString()}
+                    keys={[...keys, idx.toString()]}
+                    path={path.concat(".", idx.toString())}
                     label={idx.toString()}
                     mutable={false}
                     objectRefAcc={objectRefAcc}
