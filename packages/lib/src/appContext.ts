@@ -6,6 +6,7 @@ import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { Scheduler } from "./scheduler.js"
+import { generateRandomID } from "./generateId.js"
 
 type VNode = Kaioken.VNode
 
@@ -29,9 +30,8 @@ export interface AppContextOptions {
   }
 }
 
-let appCounter = 0
 export class AppContext<T extends Record<string, unknown> = {}> {
-  id: number
+  id: string
   name: string
   scheduler: Scheduler | undefined
   rootNode: VNode | undefined = undefined
@@ -44,7 +44,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     private appProps = {},
     public options?: AppContextOptions
   ) {
-    this.id = appCounter++
+    this.id = generateRandomID()
     this.name = options?.name ?? "App-" + this.id
     this.root = options?.root
   }
