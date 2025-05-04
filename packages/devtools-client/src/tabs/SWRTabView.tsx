@@ -1,6 +1,6 @@
 import { AppContext, useEffect, useRequestUpdate, useState } from "kaioken"
 import { SWRCache, SWRCacheEntry } from "kaioken/swr"
-import { kaiokenGlobal } from "../store"
+import { kaiokenGlobal } from "../state"
 import { ChevronIcon, isDevtoolsApp, typedMapEntries } from "devtools-shared"
 import { ValueEditor } from "devtools-shared/src/ValueEditor"
 

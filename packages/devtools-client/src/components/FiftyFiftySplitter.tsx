@@ -19,8 +19,7 @@ export const FiftyFiftySplitter = (props: {
   const firstViewContainerBounding = useElementBounding(firstViewContainer)
   const mainContainer = useRef<HTMLDivElement>(null)
 
-  const firstView = Array.isArray(props.children) ? props.children[0] : <></>
-  const secondView = Array.isArray(props.children) ? props.children[1] : <></>
+  const [firstView, secondView] = Array.isArray(props.children) ? props.children : []
 
   useLayoutEffect(() => {
     if (!mainContainer.current) return

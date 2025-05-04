@@ -5,7 +5,7 @@ import {
   useRequestUpdate,
   useSignal,
 } from "kaioken"
-import { kaiokenGlobal } from "../store"
+import { kaiokenGlobal } from "../state"
 import {
   isDevtoolsApp,
   LineChart,

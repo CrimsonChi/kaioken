@@ -21,7 +21,8 @@ export const InspectComponent: Kaioken.FC = () => {
     y: mouse.value.y,
     immediate: false,
   })
-  const element = toggleElementToVnode.value ? controls.element.value : null
+  const _el = controls.element.value
+  const element = toggleElementToVnode.value ? _el : null
 
   const elApp = useMemo(() => {
     if (element && window.__kaioken) {

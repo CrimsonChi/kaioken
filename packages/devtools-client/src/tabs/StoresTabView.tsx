@@ -7,7 +7,7 @@ import {
   useRequestUpdate,
   useState,
 } from "kaioken"
-import { kaiokenGlobal, useDevtoolsStore } from "../store"
+import { kaiokenGlobal, mountedApps } from "../state"
 import { ChevronIcon, FileLink, getNodeName } from "devtools-shared"
 import { HMRAccept } from "../../../lib/dist/hmr"
 import { cloneTree } from "../utils"
@@ -75,10 +75,7 @@ function StoreView({ selection }: { selection: StoreSelection }) {
 }
 
 function StoreSubscribers({ store }: { store: Store<any, any> }) {
-  const {
-    value: { apps },
-  } = useDevtoolsStore()
-
+  const apps = mountedApps.value
   if (apps.length === 0) return null
 
   return (

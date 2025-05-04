@@ -7,8 +7,14 @@ import { useRequestUpdate, useEffect, AppContext } from "kaioken"
 import { AppVDomView } from "../components/AppVDomView"
 import { FiftyFiftySplitter } from "../components/FiftyFiftySplitter"
 import { SquareMouse } from "../icons/SquareMouse"
-import { inspectComponent } from "../signal"
-import { toggleElementToVnode, useDevtoolsStore, kaiokenGlobal } from "../store"
+import {
+  toggleElementToVnode,
+  kaiokenGlobal,
+  selectedApp,
+  selectedNode,
+  mountedApps,
+  inspectComponent,
+} from "../state"
 
 const handleToggleInspect = () => {
   toggleElementToVnode.value = !toggleElementToVnode.value
@@ -19,20 +25,13 @@ const handleToggleInspect = () => {
 }
 
 export function AppTabView() {
-  const {
-    value: { apps, selectedApp, selectedNode },
-    setSelectedApp,
-    setSelectedNode,
-  } = useDevtoolsStore(({ apps, selectedApp, selectedNode }) => ({
-    apps,
-    selectedApp,
-    selectedNode,
-  }))
-
+  const app = selectedApp.value
+  const node = selectedNode.value
   const requestUpdate = useRequestUpdate()
+
   useEffect(() => {
-    const handleUpdate = (appCtx: AppContext) => {
-      if (appCtx !== selectedApp) return
+    const handleUpdate = (_app: AppContext) => {
+      if (_app !== app) return
       requestUpdate()
     }
     kaiokenGlobal?.on("update", handleUpdate)
@@ -48,8 +47,8 @@ export function AppTabView() {
       }
       const { app, node } = window.__devtoolsSelection
       window.__devtoolsSelection = null
-      setSelectedApp(app)
-      setSelectedNode(node as any)
+      selectedApp.value = app
+      selectedNode.value = node as any
       inspectComponent.value = node
       toggleElementToVnode.value = false
     }
@@ -63,17 +62,17 @@ export function AppTabView() {
         <div className="flex items-center gap-4">
           <select
             className="px-2 py-1 bg-neutral-800 text-neutral-100 rounded border border-white border-opacity-10"
-            value={selectedApp?.name ?? ""}
+            value={app?.name ?? ""}
             onchange={(e) =>
-              setSelectedApp(
-                apps.find((a) => a.name === e.target.value) ?? null
-              )
+              (selectedApp.value =
+                mountedApps.peek().find((a) => a.name === e.target.value) ??
+                null)
             }
           >
             <option value="" disabled>
               Select App
             </option>
-            {apps.map((app) => (
+            {mountedApps.value.map((app) => (
               <option key={app.id} value={app.name}>
                 {app.name}
               </option>
@@ -91,12 +90,12 @@ export function AppTabView() {
         </div>
       </div>
       <FiftyFiftySplitter>
-        {selectedApp && <AppVDomView />}
-        {selectedNode && selectedApp && (
+        {app && <AppVDomView />}
+        {node && app && (
           <SelectedNodeView
-            selectedApp={selectedApp}
-            selectedNode={selectedNode}
-            setSelectedNode={setSelectedNode}
+            selectedApp={app}
+            selectedNode={node}
+            setSelectedNode={(n) => (selectedNode.value = n)}
             kaiokenGlobal={kaiokenGlobal}
           />
         )}

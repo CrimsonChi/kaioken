@@ -12,6 +12,7 @@ import { StoresTabView } from "./tabs/StoresTabView"
 import { SettingsEditor } from "devtools-shared/src/Settings"
 import { ProfilingTabView } from "./tabs/ProfilingTabView"
 import { SWRTabView } from "./tabs/SWRTabView"
+import { selectedNode } from "./state"
 
 type TabViewProps = { active: boolean; children: JSX.Element }
 
@@ -50,6 +51,14 @@ const APP_TABS = {
 }
 
 const selectedTab = signal<keyof typeof APP_TABS>("Apps")
+
+let prevSelectedNode = selectedNode.peek()
+selectedNode.subscribe((node) => {
+  if (node !== prevSelectedNode && node !== null) {
+    selectedTab.value = "Apps"
+  }
+  prevSelectedNode = node
+})
 
 export function App() {
   return (
