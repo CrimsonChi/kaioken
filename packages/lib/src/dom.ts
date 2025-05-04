@@ -286,8 +286,16 @@ function setSignalProp(
 
   let cleanup: () => void | undefined
   let evtName = ""
+  /**
+   * the 'timeupdate' event is fired when the currentTime property is
+   * set (from code OR playback), so we need to prevent unnecessary
+   * signal updates to avoid a feedback loop when there are multiple
+   * elements with the same signal bound to 'currentTime'
+   */
+  const preventNeedlessSigSet = attr === "currentTime"
 
   const setSigFromElement = (val: any) => {
+    if (preventNeedlessSigSet && signal.peek() === val) return
     signal.sneak(val)
     signal.notify({ filter: (sub) => sub !== subscriberFn })
   }

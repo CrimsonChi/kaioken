@@ -49,7 +49,12 @@ function MultipleSelect() {
 function TextInput() {
   const text = useSignal("")
   useWatch(() => console.log("Input", text.value))
-  return <input type="text" bind:value={text} />
+  return (
+    <>
+      <input type="text" bind:value={text} />
+      <input type="text" bind:value={text} />
+    </>
+  )
 }
 
 function RangeInput() {
@@ -100,12 +105,15 @@ function Dialog() {
   const open = useSignal(true)
   useWatch(() => console.log("Dialog", open.value))
   return (
-    <dialog bind:open={open} className="bg-neutral-300 text-neutral-800 p-4">
-      <p>Greetings, one and all!</p>
-      <form method="dialog">
-        <button>OK</button>
-      </form>
-    </dialog>
+    <>
+      <button onclick={() => (open.value = !open.value)}>toggle dialog</button>
+      <dialog bind:open={open} className="bg-neutral-300 text-neutral-800 p-4">
+        <p>Greetings, one and all!</p>
+        <form method="dialog">
+          <button>OK</button>
+        </form>
+      </dialog>
+    </>
   )
 }
 
@@ -117,14 +125,24 @@ function Audio() {
   useWatch(() => console.log("Audio.currentTime", currentTime.value))
   useWatch(() => console.log("Audio.playbackRate", playbackRate.value))
   return (
-    <audio
-      bind:volume={volume}
-      bind:currentTime={currentTime}
-      bind:playbackRate={playbackRate}
-      src="/doo-diddily-doo.mp3"
-      controls
-      loop
-    />
+    <>
+      <audio
+        bind:volume={volume}
+        bind:currentTime={currentTime}
+        bind:playbackRate={playbackRate}
+        src="/doo-diddily-doo.mp3"
+        controls
+        loop
+      />
+      <audio
+        bind:volume={volume}
+        bind:currentTime={currentTime}
+        bind:playbackRate={playbackRate}
+        src="/doo-diddily-doo.mp3"
+        controls
+        loop
+      />
+    </>
   )
 }
 
@@ -134,12 +152,21 @@ function Video() {
   useWatch(() => console.log("Video.currentTime", currentTime.value))
   useWatch(() => console.log("Video.playbackRate", playbackRate.value))
   return (
-    <video
-      bind:currentTime={currentTime}
-      bind:playbackRate={playbackRate}
-      src="/flower.webm"
-      controls
-      loop
-    />
+    <>
+      <video
+        bind:currentTime={currentTime}
+        bind:playbackRate={playbackRate}
+        src="/flower.webm"
+        controls
+        loop
+      />
+      <video
+        bind:currentTime={currentTime}
+        bind:playbackRate={playbackRate}
+        src="/flower.webm"
+        controls
+        loop
+      />
+    </>
   )
 }
