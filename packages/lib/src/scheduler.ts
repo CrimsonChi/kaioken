@@ -96,6 +96,9 @@ export class Scheduler {
     }
 
     if (node.current === vNode) {
+      if (__DEV__) {
+        window.__kaioken?.profilingContext?.emit("updateDirtied", this.appCtx)
+      }
       this.isRenderDirtied = true
       return
     }
