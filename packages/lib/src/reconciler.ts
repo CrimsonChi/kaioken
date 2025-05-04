@@ -9,6 +9,16 @@ import { ctx } from "./globals.js"
 
 type VNode = Kaioken.VNode
 
+function emitUpdateNode() {
+  if (!("window" in globalThis)) return
+  window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
+}
+
+function emitCreateNode() {
+  if (!("window" in globalThis)) return
+  window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+}
+
 export function reconcileChildren(
   appCtx: AppContext,
   vNode: VNode,
@@ -206,15 +216,18 @@ function updateTextNode(
   oldNode: VNode | null,
   content: string | Signal<JSX.PrimitiveChild>
 ) {
-  if (__DEV__) {
-    window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
-  }
   if (oldNode === null || oldNode.type !== ELEMENT_TYPE.text) {
+    if (__DEV__) {
+      emitCreateNode()
+    }
     const newNode = createElement(ELEMENT_TYPE.text, { nodeValue: content })
     newNode.parent = parent
     newNode.depth = parent.depth! + 1
     return newNode
   } else {
+    if (__DEV__) {
+      emitUpdateNode()
+    }
     const newNode = oldNode
     newNode.props.nodeValue = content
     newNode.flags = flags.set(newNode.flags, FLAG.UPDATE)
@@ -238,7 +251,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   }
   if (oldNode?.type === nodeType) {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
+      emitUpdateNode()
     }
     oldNode.index = 0
     oldNode.props = newNode.props
@@ -248,7 +261,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     return oldNode
   }
   if (__DEV__) {
-    window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+    emitCreateNode()
   }
   const created = createElement(nodeType, newNode.props)
   created.parent = parent
@@ -264,7 +277,7 @@ function updateFragment(
 ) {
   if (oldNode === null || oldNode.type !== $FRAGMENT) {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+      emitCreateNode()
     }
     const el = createElement($FRAGMENT, { children, ...newProps })
     el.parent = parent
@@ -272,7 +285,7 @@ function updateFragment(
     return el
   }
   if (__DEV__) {
-    window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
+    emitUpdateNode()
   }
   oldNode.props = { ...oldNode.props, ...newProps, children }
   oldNode.flags = flags.set(oldNode.flags, FLAG.UPDATE)
@@ -287,7 +300,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     typeof child === "bigint"
   ) {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+      emitCreateNode()
     }
     const el = createElement(ELEMENT_TYPE.text, {
       nodeValue: "" + child,
@@ -299,7 +312,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (Signal.isSignal(child)) {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+      emitCreateNode()
     }
     const el = createElement(ELEMENT_TYPE.text, {
       nodeValue: child,
@@ -311,7 +324,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (isVNode(child)) {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+      emitCreateNode()
     }
     const newNode = createElement(child.type, child.props)
     newNode.parent = parent
@@ -323,7 +336,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (Array.isArray(child)) {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+      emitCreateNode()
     }
     const el = Fragment({ children: child })
     el.parent = parent
@@ -384,7 +397,7 @@ function updateFromMap(
     }
 
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+      emitCreateNode()
     }
     const n = createElement(ELEMENT_TYPE.text, {
       nodeValue: newChild,
@@ -402,7 +415,7 @@ function updateFromMap(
     )
     if (oldChild) {
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
+        emitUpdateNode()
       }
       oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props = newChild.props
@@ -413,7 +426,7 @@ function updateFromMap(
       return oldChild
     } else {
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+        emitCreateNode()
       }
       const n = createElement(newChild.type, newChild.props)
       n.parent = parent
@@ -428,14 +441,14 @@ function updateFromMap(
     const oldChild = existingChildren.get(index)
     if (oldChild) {
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
+        emitUpdateNode()
       }
       oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props.children = newChild
       return oldChild
     } else {
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+        emitCreateNode()
       }
       const n = Fragment({ children: newChild })
       n.parent = parent
