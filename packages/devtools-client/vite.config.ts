@@ -29,23 +29,20 @@ export default defineConfig({
       useRecommendedBuildConfig: false,
     }),
     {
+      name: "dt-client:post-build",
       enforce: "post",
-      buildEnd: (err) => {
-        if (err) return
-        ;(async () => {
-          await new Promise((res) => setTimeout(res, 1000))
-          const html = await fs.promises.readFile("dist/index.html", "utf-8")
-          fs.rmSync("dist", { recursive: true, force: true })
-          fs.mkdirSync("dist")
-          fs.writeFileSync(
-            "dist/index.js",
-            `export default \`${html.replace(/[`\\$]/g, "\\$&")}\``,
-            {
-              encoding: "utf-8",
-            }
-          )
-        })()
+      closeBundle(error) {
+        console.log("[devtools-client]: Build complete!", error)
+        if (error) return
+        const html = fs.readFileSync("dist/index.html", "utf-8")
+        fs.rmSync("dist", { recursive: true, force: true })
+        fs.mkdirSync("dist")
+        fs.writeFileSync(
+          "dist/index.js",
+          `export default \`${html.replace(/[`\\$]/g, "\\$&")}\``,
+          { encoding: "utf-8" }
+        )
       },
-    } as PluginOption,
+    } satisfies PluginOption,
   ],
 })

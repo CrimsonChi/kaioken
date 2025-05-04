@@ -4,6 +4,7 @@ Development monorepo for **Kaioken**.
 
 Kaioken is a lightweight rendering library that aims to provide a familiar development experience for those with HTML and Javascript experience.
 
+
 ## Structure
 
 - `.github`
@@ -24,4 +25,5 @@ Kaioken is a lightweight rendering library that aims to provide a familiar devel
 ## Tasks
 
 - Use `make build` to recursively run the build script in each package
+- Use `make dev` to recursively run the dev script in each package
 - Use `make test` to recursively run the test script in each package
