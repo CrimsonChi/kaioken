@@ -4,7 +4,4 @@ import { mount } from "kaioken"
 
 mount(App, {
   root: document.getElementById("app")!,
-  debug: {
-    flashElementOnDiff: true,
-  },
 })

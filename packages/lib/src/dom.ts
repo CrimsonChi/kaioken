@@ -54,34 +54,6 @@ function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
   ;(ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
 }
 
-let debug_setOutline: (dom: SomeDom, color: string) => void
-if (__DEV__) {
-  const pendingRemovals = new Map<HTMLElement | SVGElement, string>()
-  let isQueued = false
-  debug_setOutline = (dom, color) => {
-    if (dom instanceof Text) return
-    if (!ctx.current.options?.debug?.flashElementOnDiff) {
-      return
-    }
-    if (!pendingRemovals.has(dom)) {
-      pendingRemovals.set(dom, dom.style.outline)
-    }
-    dom.style.outline = `2px solid ${color}`
-    if (!isQueued) {
-      isQueued = true
-      ctx.current.scheduler?.nextIdle(() => {
-        setTimeout(() => {
-          isQueued = false
-          pendingRemovals.forEach((prevOutline, dom) => {
-            dom.style.outline = prevOutline
-          })
-          pendingRemovals.clear()
-        }, 150)
-      })
-    }
-  }
-}
-
 function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
   const dom =
@@ -90,9 +62,6 @@ function createDom(vNode: VNode): SomeDom {
       : svgTags.includes(t)
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
       : document.createElement(t)
-  if (__DEV__) {
-    debug_setOutline(dom, "green")
-  }
   return dom
 }
 function createTextNode(vNode: VNode): Text {
@@ -167,11 +136,6 @@ function updateDom(vNode: VNode) {
   const dom = vNode.dom as SomeDom
   const prevProps: Record<string, any> = vNode.prev?.props ?? {}
   const nextProps: Record<string, any> = vNode.props ?? {}
-
-  if (__DEV__) {
-    if (vNode.prev) debug_setOutline(dom, "blue")
-  }
-
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
@@ -765,9 +729,15 @@ function commitDeletion(vNode: VNode) {
     while (subs?.length) Signal.unsubscribe(node, subs.pop()!)
     if (cleanups) Object.values(cleanups).forEach((c) => c())
 
+    if (__DEV__) {
+      window.__kaioken?.profilingContext?.emit("removeNode", ctx.current)
+    }
+
     if (dom) {
       if (ref) setDomRef(ref as Kaioken.Ref<SomeDom>, null)
-      if (dom.isConnected && !isPortal(node)) dom.remove()
+      if (dom.isConnected && !isPortal(node)) {
+        dom.remove()
+      }
       delete node.dom
     }
   })

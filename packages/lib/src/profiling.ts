@@ -2,11 +2,25 @@ import type { AppContext } from "./appContext"
 
 const MAX_TICKS = 100
 
+export const ProfilerEvents = {
+  UpdateNode: "updateNode",
+  CreateNode: "createNode",
+  RemoveNode: "removeNode",
+  Update: "update",
+  UpdateDirtied: "updateDirtied",
+} as const
+
+export type ProfilerEvent = (typeof ProfilerEvents)[keyof typeof ProfilerEvents]
+
 type TickTS = {
   start: number
   end: number
 }
+
+type ProfilerEventListener = (app: AppContext) => void
+
 export function createProfilingContext() {
+  const eventListeners = new Map<ProfilerEvent, Set<ProfilerEventListener>>()
   const appStats: Map<
     AppContext,
     {
@@ -17,6 +31,25 @@ export function createProfilingContext() {
   > = new Map()
   return {
     appStats,
+    emit: (event: ProfilerEvent, app: AppContext) => {
+      eventListeners.get(event)?.forEach((listener) => listener(app))
+    },
+    addEventListener: (
+      event: ProfilerEvent,
+      listener: ProfilerEventListener
+    ) => {
+      if (!eventListeners.has(event)) {
+        eventListeners.set(event, new Set())
+      }
+      eventListeners.get(event)!.add(listener)
+    },
+    removeEventListener: (
+      event: ProfilerEvent,
+      listener: ProfilerEventListener
+    ) => {
+      if (!eventListeners.has(event)) return
+      eventListeners.get(event)!.delete(listener)
+    },
     mountDuration: (app: AppContext) => {
       const stats = appStats.get(app)
       if (!stats) return 0
@@ -42,7 +75,7 @@ export function createProfilingContext() {
         completeTicks.length
       )
     },
-    start: (app: AppContext) => {
+    beginTick: (app: AppContext) => {
       if (!appStats.has(app)) {
         appStats.set(app, {
           mountDuration: Infinity,
@@ -54,7 +87,7 @@ export function createProfilingContext() {
       stats.totalTicks++
       stats.timestamps.push({ start: performance.now(), end: Infinity })
     },
-    stop: (app: AppContext) => {
+    endTick: (app: AppContext) => {
       if (!appStats.has(app)) return
       const stats = appStats.get(app)!
 

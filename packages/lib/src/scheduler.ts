@@ -197,7 +197,7 @@ export class Scheduler {
 
   private workLoop(deadline?: IdleDeadline): void {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.start(this.appCtx)
+      window.__kaioken?.profilingContext?.beginTick(this.appCtx)
     }
     ctx.current = this.appCtx
     while (this.nextUnitOfWork) {
@@ -229,7 +229,8 @@ export class Scheduler {
         this.immediateEffectDirtiedRender = false
         this.consecutiveDirtyCount++
         if (__DEV__) {
-          window.__kaioken?.profilingContext?.stop(this.appCtx)
+          window.__kaioken?.profilingContext?.endTick(this.appCtx)
+          window.__kaioken?.profilingContext?.emit("updateDirtied", this.appCtx)
         }
         return this.workLoop()
       }
@@ -237,6 +238,9 @@ export class Scheduler {
 
       this.flushEffects(this.effectCallbacks.post)
       window.__kaioken!.emit("update", this.appCtx)
+      if (__DEV__) {
+        window.__kaioken?.profilingContext?.emit("update", this.appCtx)
+      }
     }
 
     if (!this.nextUnitOfWork) {
@@ -245,7 +249,7 @@ export class Scheduler {
         this.nextIdleEffects.shift()!(this)
       }
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.stop(this.appCtx)
+        window.__kaioken?.profilingContext?.endTick(this.appCtx)
       }
       return
     }

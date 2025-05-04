@@ -25,7 +25,6 @@ export interface AppContextOptions {
   useRuntimeHookInvalidation?: boolean
   name?: string
   debug?: {
-    flashElementOnDiff?: boolean
     onRequestUpdate?: (vNode: VNode) => void
   }
 }
