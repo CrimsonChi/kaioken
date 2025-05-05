@@ -12,10 +12,10 @@ import path from "node:path"
 import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
-  jsxInject: `import * as kaioken from "kaioken"`,
+  jsxInject: `import { createElement as _jsx, Fragment as _jsxFragment } from "kaioken"`,
   jsx: "transform",
-  jsxFactory: "kaioken.createElement",
-  jsxFragment: "kaioken.Fragment",
+  jsxFactory: "_jsx",
+  jsxFragment: "_jsxFragment",
   loader: "tsx",
   include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
 }
