@@ -6,12 +6,8 @@ import {
   useSignal,
 } from "kaioken"
 import { kaiokenGlobal } from "../state"
-import {
-  isDevtoolsApp,
-  LineChart,
-  LineChartData,
-  typedMapEntries,
-} from "devtools-shared"
+import { isDevtoolsApp, typedMapEntries } from "devtools-shared"
+import { LineChart, LineChartData } from "../components/LineChart"
 
 export function ProfilingTabView() {
   const requestUpdate = useRequestUpdate()

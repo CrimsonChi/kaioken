@@ -1,4 +1,12 @@
-import Chart, { type PointStyle } from "chart.js/auto"
+import {
+  Chart,
+  type PointStyle,
+  LinearScale,
+  LineController,
+  CategoryScale,
+  PointElement,
+  LineElement,
+} from "chart.js"
 import zoomPlugin from "chartjs-plugin-zoom"
 
 import { type ElementProps, type Signal, useEffect, useRef } from "kaioken"
@@ -23,7 +31,14 @@ export function LineChart({ data, ...props }: LineChartProps) {
   const chartInstance = useRef<Chart | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
-    Chart.register(zoomPlugin)
+    Chart.register(
+      zoomPlugin,
+      LinearScale,
+      LineController,
+      CategoryScale,
+      PointElement,
+      LineElement
+    )
     const canvas = canvasRef.current!
     const chart = (chartInstance.current = new Chart(canvas, {
       type: "line",

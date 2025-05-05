@@ -20,7 +20,9 @@
     "vite-plugin-singlefile": "^2.0.3"
   },
   "dependencies": {
-    "devtools-shared": "workspace:^"
+    "devtools-shared": "workspace:^",
+    "chart.js": "^4.4.9",
+    "chartjs-plugin-zoom": "^2.2.0"
   },
   "peerDependencies": {
     "kaioken": "workspace:^"
