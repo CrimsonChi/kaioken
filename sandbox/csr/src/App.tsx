@@ -1,68 +1,44 @@
-import {
-  useRef,
-  useCallback,
-  useComputed,
-  useSignal,
-  signal,
-  watch,
-  useWatch,
-  computed,
-} from "kaioken"
+import { useSignal, useComputed, For, Derive } from "kaioken"
 import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
 
-function Counter() {
-  const count = useSignal(1)
-  const countRef = useRef<HTMLDivElement>(null)
-  const animRef = useRef<Animation>()
-
-  const handleClick = useCallback(() => {
-    count.value++
-
-    animRef.current?.finish()
-    animRef.current = countRef.current?.animate(
-      [{ transform: "scale(2.5)" }, { transform: "scale(1)" }],
-      {
-        duration: 300,
-        iterations: 1,
-      }
-    )
-  }, [])
-
-  return (
-    <div className="flex flex-col gap-8 justify-center items-center">
-      <button type="button" onclick={handleClick} className="cursor-pointer ">
-        Increment
-      </button>
-      <span ref={countRef} className="text-4xl font-medium select-none">
-        {count}
-      </span>
-    </div>
-  )
-}
-const count = signal(1)
-const triple = computed(() => count.value * 3)
-watch(() => console.log("count", count.value))
-watch(() => console.log("triple", triple.value))
-
 const Home: Kaioken.FC = () => {
-  const double = useComputed(() => count.value * 32)
-  useWatch(() => console.log("inner triple b", triple.value))
+  const items = useSignal([0, 1, 2, 3, 4])
+  const doubledItems = useComputed(() => items.value.map((i) => i * 2))
+
+  const name = useSignal("bob")
+  const age = useSignal(42)
+  const person = useComputed(() => ({ name: name.value, age: age.value }))
 
   return (
     <div>
-      <h1>Home </h1>
+      <ul>
+        <For each={doubledItems}>{(item) => <li>{item}</li>}</For>
+      </ul>
       <button
-        className="bg-primary hover:bg-primary-light text-white font-bold text-sm py-2 px-4 rounded"
-        onclick={() => count.value++}
+        onclick={() => (items.value = [...items.value, items.value.length])}
       >
-        Count: {count}
-        <br />
-        Double: {double}
+        Add
       </button>
-      <Counter />
+
+      <SomeOtherComponent />
+
+      <Derive from={person}>
+        {(person) => (
+          <div>
+            {person.name} is {person.age} years old
+          </div>
+        )}
+      </Derive>
+      <input bind:value={name} />
+      <input type="number" bind:value={age} />
     </div>
   )
+}
+
+const SomeOtherComponent: Kaioken.FC = () => {
+  console.log("SomeOtherComponent")
+  return <div>SomeOtherComponent</div>
 }
 
 function Nav() {
