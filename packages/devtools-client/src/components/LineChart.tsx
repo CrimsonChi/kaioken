@@ -6,6 +6,8 @@ import {
   CategoryScale,
   PointElement,
   LineElement,
+  Legend,
+  Tooltip,
 } from "chart.js"
 import zoomPlugin from "chartjs-plugin-zoom"
 
@@ -37,7 +39,9 @@ export function LineChart({ data, ...props }: LineChartProps) {
       LineController,
       CategoryScale,
       PointElement,
-      LineElement
+      LineElement,
+      Legend,
+      Tooltip
     )
     const canvas = canvasRef.current!
     const chart = (chartInstance.current = new Chart(canvas, {

@@ -52,7 +52,6 @@ const createLineChartDatasets = (
       fill: false,
       borderColor: "#ad981f",
       tension: 0.1,
-      pointStyle: false,
     },
     {
       label: "updateDirtied",
@@ -60,7 +59,6 @@ const createLineChartDatasets = (
       fill: false,
       borderColor: "#b21f3a",
       tension: 0.1,
-      pointStyle: false,
     },
     {
       label: "createNode",
@@ -68,7 +66,6 @@ const createLineChartDatasets = (
       fill: false,
       borderColor: "#198019",
       tension: 0.1,
-      pointStyle: false,
     },
     {
       label: "removeNode",
@@ -76,7 +73,6 @@ const createLineChartDatasets = (
       fill: false,
       borderColor: "#5F3691",
       tension: 0.1,
-      pointStyle: false,
     },
     {
       label: "updateNode",
@@ -84,7 +80,6 @@ const createLineChartDatasets = (
       fill: false,
       borderColor: "#2f2f9d",
       tension: 0.1,
-      pointStyle: false,
     },
   ]
 }
@@ -198,7 +193,7 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
   return (
     <div className="flex flex-col gap-2 border border-white border-opacity-10 rounded bg-neutral-400 bg-opacity-5 text-neutral-400 p-2">
       <div
-        className="grid items-start"
+        className="grid items-start gap-2"
         style="grid-template-columns: 1fr max-content;"
       >
         <div className="flex flex-col gap-2">
