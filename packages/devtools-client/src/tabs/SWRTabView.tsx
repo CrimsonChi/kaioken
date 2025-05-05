@@ -109,19 +109,19 @@ function SWRCacheEntryView({ key, entry }: SWRCacheEntryViewProps) {
         />
       </button>
       {expanded && (
-        <ValueEditor
-          data={{
-            resource: entry.resource.peek(),
-            isMutating: entry.isMutating.peek(),
-            isValidating: entry.isValidating.peek(),
-          }}
-          border={false}
-          mutable={false}
-          objectRefAcc={[]}
-          keys={[]}
-          onChange={() => {}}
-          className="border border-white border-opacity-10 rounded-b"
-        />
+        <div className="flex flex-col gap-2 p-2 border border-white border-opacity-10">
+          <ValueEditor
+            data={{
+              resource: entry.resource.peek(),
+              isMutating: entry.isMutating.peek(),
+              isValidating: entry.isValidating.peek(),
+            }}
+            mutable={false}
+            objectRefAcc={[]}
+            keys={[]}
+            onChange={() => {}}
+          />
+        </div>
       )}
     </div>
   )

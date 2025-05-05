@@ -57,7 +57,7 @@ export function ValueEditor({
             <div
               key={path}
               data-key={path}
-              className="flex flex-col items-start w-full gap-2 pl-2 py-1 pr-1 border-b border-neutral-700"
+              className="flex flex-col items-start w-full gap-2 pl-2 py-1 pr-1 border-b border-neutral-700 last:border-b-0"
             >
               <ValueFieldEditor
                 value={data[key]}

@@ -205,7 +205,7 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
         className="grid items-start"
         style="grid-template-columns: 1fr max-content;"
       >
-        <div>
+        <div className="flex flex-col gap-2">
           <span>{app.name}</span>
           <LineChart
             data={lineChartData}

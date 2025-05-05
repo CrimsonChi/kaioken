@@ -90,7 +90,7 @@ function StoreView({ name, store }: StoreViewProps) {
   }, [expanded])
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col">
       <button
         onclick={handleToggle}
         className={
@@ -109,7 +109,7 @@ function StoreView({ name, store }: StoreViewProps) {
         </div>
       </button>
       {expanded && (
-        <>
+        <div className="flex flex-col gap-2 p-2 border border-white border-opacity-10">
           <ValueEditor
             data={{ value }}
             mutable={true}
@@ -121,7 +121,7 @@ function StoreView({ name, store }: StoreViewProps) {
             }}
           />
           <StoreSubscribers store={store} />
-        </>
+        </div>
       )}
     </div>
   )
