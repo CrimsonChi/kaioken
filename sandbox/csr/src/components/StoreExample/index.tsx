@@ -3,7 +3,8 @@ import { useTodosStore } from "./store"
 export default function StoreExample() {
   const { value: todoIds } = useTodosStore(
     (store) => store.map((item) => item.id),
-    (prev, next) => prev.length === next.length
+    (prev, next) =>
+      prev.length === next.length && prev.every((id) => next.includes(id))
   )
   console.log("parent component")
 
