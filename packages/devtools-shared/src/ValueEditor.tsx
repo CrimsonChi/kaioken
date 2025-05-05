@@ -285,11 +285,11 @@ function ValueFieldEditor({
                 {value.map((item, idx) => (
                   <ValueFieldEditor
                     value={item}
-                    onChange={noop}
+                    onChange={onChange}
                     keys={[...keys, idx.toString()]}
                     path={path.concat(".", idx.toString())}
                     label={idx.toString()}
-                    mutable={false}
+                    mutable={mutable}
                     objectRefAcc={objectRefAcc}
                   />
                 ))}

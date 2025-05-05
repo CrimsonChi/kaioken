@@ -11,6 +11,7 @@ import {
 } from "kaioken"
 import { kaiokenGlobal, mountedApps } from "../state"
 import {
+  applyObjectChangeFromKeys,
   ChevronIcon,
   FileLink,
   Filter,
@@ -73,6 +74,7 @@ type StoreViewProps = {
 function StoreView({ name, store }: StoreViewProps) {
   const expanded = expandedItems.value.includes(store)
   const requestUpdate = useRequestUpdate()
+  const { value } = getStoreInternals(store)
 
   useLayoutEffect(() => {
     const unsubscribe = store.subscribe(() => requestUpdate())
@@ -88,7 +90,7 @@ function StoreView({ name, store }: StoreViewProps) {
   }, [expanded])
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-2">
       <button
         onclick={handleToggle}
         className={
@@ -106,7 +108,21 @@ function StoreView({ name, store }: StoreViewProps) {
           />
         </div>
       </button>
-      {expanded && <StoreSubscribers store={store} />}
+      {expanded && (
+        <>
+          <ValueEditor
+            data={{ value }}
+            mutable={true}
+            objectRefAcc={[]}
+            onChange={(keys, changedValue) => {
+              const next = structuredClone({ value })
+              applyObjectChangeFromKeys(next, keys, changedValue)
+              store.setState(next.value)
+            }}
+          />
+          <StoreSubscribers store={store} />
+        </>
+      )}
     </div>
   )
 }
@@ -162,7 +178,7 @@ function StoreSubscriberAppTree({
   app: AppContext
 }) {
   const requestUpdate = useRequestUpdate()
-  const { subscribers, nodeStateMap, value } = getStoreInternals(store)
+  const { subscribers, nodeStateMap } = getStoreInternals(store)
   const root = app.rootNode!.child
 
   useEffect(() => {
@@ -183,12 +199,6 @@ function StoreSubscriberAppTree({
   return (
     <div className="flex flex-col gap-2 p-2 rounded-b border border-white border-opacity-10">
       <b>{app.name}</b>
-      <ValueEditor
-        data={{ value }}
-        mutable={false}
-        objectRefAcc={[]}
-        onChange={() => {}}
-      />
       {clonedTree && (
         <ul className="pl-8">
           <TreeNodeView node={clonedTree} nodeStateMap={nodeStateMap} />

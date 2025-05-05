@@ -50,22 +50,6 @@ export const nodeContainsNode = (
   return false
 }
 
-export function applyObjectChangeFromKeys(
-  obj: Record<string, any>,
-  keys: string[],
-  value: unknown
-) {
-  let o = obj
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i]
-    if (i === keys.length - 1) {
-      o[key] = value
-    } else {
-      o = o[key]
-    }
-  }
-}
-
 interface TreeNode {
   sibling?: TreeNode
   child?: TreeNode
