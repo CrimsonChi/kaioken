@@ -1,26 +1,39 @@
 import {
   AppContext,
   Store,
+  computed,
   signal,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRequestUpdate,
   useState,
 } from "kaioken"
 import { kaiokenGlobal, mountedApps } from "../state"
-import { ChevronIcon, FileLink, getNodeName } from "devtools-shared"
+import { ChevronIcon, FileLink, Filter, getNodeName } from "devtools-shared"
 import { HMRAccept } from "../../../lib/dist/hmr"
 import { cloneTree } from "../utils"
 import { ValueEditor } from "devtools-shared/src/ValueEditor"
 
-type StoreSelection = {
-  name: string
-  store: Store<any, any>
-}
 const stores = signal<Record<string, Store<any, any>>>({})
+const expandedItems = signal<Store<any, any>[]>([])
 kaiokenGlobal?.stores.subscribe((newStores) => {
   stores.value = newStores
+  expandedItems.value = expandedItems.value.filter((s) =>
+    Object.values(stores.value).includes(s)
+  )
 })
+
+const filterValue = signal("")
+const filterTerms = computed(() =>
+  filterValue.value
+    .toLowerCase()
+    .split(" ")
+    .filter((t) => t.length > 0)
+)
+function keyMatchesFilter(key: string) {
+  return filterTerms.value.every((term) => key.toLowerCase().includes(term))
+}
 
 export function StoresTabView() {
   const storeEntries = Object.entries(stores.value)
@@ -32,28 +45,45 @@ export function StoresTabView() {
     )
   }
   return (
-    <div className="flex flex-col items-start">
+    <div className="flex flex-col gap-2 items-start">
+      <Filter value={filterValue} className="sticky top-0" />
       <div className="flex flex-col gap-2 w-full">
-        {storeEntries.map(([name, store]) => (
-          <StoreView key={name} selection={{ name, store }} />
-        ))}
+        {storeEntries
+          .filter(([name]) => keyMatchesFilter(name))
+          .map(([name, store]) => (
+            <StoreView key={name} name={name} store={store} />
+          ))}
       </div>
     </div>
   )
 }
 
-function StoreView({ selection }: { selection: StoreSelection }) {
-  const [expanded, setExpanded] = useState(false)
+type StoreViewProps = {
+  name: string
+  store: Store<any, any>
+}
+
+function StoreView({ name, store }: StoreViewProps) {
+  const expanded = expandedItems.value.includes(store)
   const requestUpdate = useRequestUpdate()
+
   useLayoutEffect(() => {
-    const unsubscribe = selection.store.subscribe(() => requestUpdate())
+    const unsubscribe = store.subscribe(() => requestUpdate())
     return () => unsubscribe()
   }, [])
 
+  const handleToggle = useCallback(() => {
+    if (expanded) {
+      expandedItems.value = expandedItems.value.filter((s) => s !== store)
+    } else {
+      expandedItems.value = [...expandedItems.value, store]
+    }
+  }, [expanded])
+
   return (
     <div className="flex flex-col">
-      <div
-        onclick={() => setExpanded(!expanded)}
+      <button
+        onclick={handleToggle}
         className={
           "flex items-center gap-2 justify-between p-2 border border-white border-opacity-10 cursor-pointer" +
           (expanded
@@ -61,15 +91,15 @@ function StoreView({ selection }: { selection: StoreSelection }) {
             : " hover:bg-white hover:bg-opacity-10 text-neutral-400 rounded")
         }
       >
-        {selection.name}
+        {name}
         <div className="flex gap-2">
-          <FileLink fn={selection.store} onclick={(e) => e.stopPropagation()} />
+          <FileLink fn={store} onclick={(e) => e.stopPropagation()} />
           <ChevronIcon
             className={`transition-all` + (expanded ? " rotate-90" : "")}
           />
         </div>
-      </div>
-      {expanded && <StoreSubscribers store={selection.store} />}
+      </button>
+      {expanded && <StoreSubscribers store={store} />}
     </div>
   )
 }
@@ -189,7 +219,7 @@ function TreeNodeView({
               : " hover:bg-white hover:bg-opacity-10 text-neutral-400")
           }
         >
-          <div
+          <button
             onclick={() => setExpanded(!expanded)}
             className="flex gap-2 p-2 justify-between cursor-pointer"
           >
@@ -203,7 +233,7 @@ function TreeNodeView({
                 className={`transition-all` + (expanded ? " rotate-90" : "")}
               />
             </div>
-          </div>
+          </button>
           {expanded && (
             <div className="flex flex-col gap-2 p-2 bg-[#1a1a1a]">
               {sliceComputations.length === 0 && (

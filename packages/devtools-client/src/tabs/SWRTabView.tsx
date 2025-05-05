@@ -1,8 +1,33 @@
-import { AppContext, useEffect, useRequestUpdate, useState } from "kaioken"
+import {
+  AppContext,
+  computed,
+  signal,
+  useCallback,
+  useEffect,
+  useRequestUpdate,
+} from "kaioken"
 import { SWRCache, SWRCacheEntry } from "kaioken/swr"
 import { kaiokenGlobal } from "../state"
-import { ChevronIcon, isDevtoolsApp, typedMapEntries } from "devtools-shared"
+import {
+  ChevronIcon,
+  Filter,
+  isDevtoolsApp,
+  typedMapEntries,
+} from "devtools-shared"
 import { ValueEditor } from "devtools-shared/src/ValueEditor"
+
+const expandedItems = signal<string[]>([])
+
+const filterValue = signal("")
+const filterTerms = computed(() =>
+  filterValue.value
+    .toLowerCase()
+    .split(" ")
+    .filter((t) => t.length > 0)
+)
+function keyMatchesFilter(key: string) {
+  return filterTerms.value.every((term) => key.toLowerCase().includes(term))
+}
 
 export function SWRTabView() {
   const requestUpdate = useRequestUpdate()
@@ -26,10 +51,15 @@ export function SWRTabView() {
     )
   }
   return (
-    <div className="flex flex-col gap-2">
-      {typedMapEntries(SWR_GLOBAL_CACHE).map(([key, entry]) => (
-        <SWRCacheEntryView key={key} entry={entry} />
-      ))}
+    <div className="flex flex-col gap-2 items-start">
+      <Filter value={filterValue} className="sticky top-0" />
+      <div className="flex flex-col gap-2 w-full">
+        {typedMapEntries(SWR_GLOBAL_CACHE)
+          .filter(([key]) => keyMatchesFilter(key))
+          .map(([key, entry]) => (
+            <SWRCacheEntryView key={key} entry={entry} />
+          ))}
+      </div>
     </div>
   )
 }
@@ -40,7 +70,7 @@ type SWRCacheEntryViewProps = {
 }
 
 function SWRCacheEntryView({ key, entry }: SWRCacheEntryViewProps) {
-  const [expanded, setExpanded] = useState(false)
+  const expanded = expandedItems.value.includes(key)
   const requestUpdate = useRequestUpdate()
   useEffect(() => {
     const { resource, isValidating, isMutating } = entry
@@ -51,10 +81,19 @@ function SWRCacheEntryView({ key, entry }: SWRCacheEntryViewProps) {
     ]
     return () => subs.forEach((sub) => sub())
   }, [])
+
+  const handleToggle = useCallback(() => {
+    if (expanded) {
+      expandedItems.value = expandedItems.value.filter((s) => s !== key)
+    } else {
+      expandedItems.value = [...expandedItems.value, key]
+    }
+  }, [expanded])
+
   return (
     <div className="flex flex-col">
-      <div
-        onclick={() => setExpanded(!expanded)}
+      <button
+        onclick={handleToggle}
         className={
           "flex items-center gap-2 justify-between p-2 border border-white border-opacity-10 cursor-pointer" +
           (expanded
@@ -66,7 +105,7 @@ function SWRCacheEntryView({ key, entry }: SWRCacheEntryViewProps) {
         <ChevronIcon
           className={`transition-all` + (expanded ? " rotate-90" : "")}
         />
-      </div>
+      </button>
       {expanded && (
         <ValueEditor
           data={{
