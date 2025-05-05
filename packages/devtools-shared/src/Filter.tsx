@@ -8,7 +8,7 @@ export function Filter({ value, className, ...props }: FilterProps) {
     <div
       className={[
         "w-full p-2 z-10",
-        "bg-[#1d1d1d] border border-neutral-400 border-opacity-5 rounded",
+        "bg-[#1d1d1d] border border-white border-opacity-10 rounded",
         unwrap(className),
       ]}
       {...props}

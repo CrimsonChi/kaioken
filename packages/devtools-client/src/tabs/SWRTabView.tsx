@@ -12,6 +12,7 @@ import {
   ChevronIcon,
   Filter,
   isDevtoolsApp,
+  TriangleAlertIcon,
   typedMapEntries,
 } from "devtools-shared"
 import { ValueEditor } from "devtools-shared/src/ValueEditor"
@@ -45,8 +46,9 @@ export function SWRTabView() {
 
   if (SWR_GLOBAL_CACHE.size === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-lg italic text-neutral-400">No SWR detected</h2>
+      <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+        <TriangleAlertIcon />
+        <h2 className="text-lg italic">No SWR detected</h2>
       </div>
     )
   }

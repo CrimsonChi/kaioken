@@ -10,7 +10,13 @@ import {
   useState,
 } from "kaioken"
 import { kaiokenGlobal, mountedApps } from "../state"
-import { ChevronIcon, FileLink, Filter, getNodeName } from "devtools-shared"
+import {
+  ChevronIcon,
+  FileLink,
+  Filter,
+  getNodeName,
+  TriangleAlertIcon,
+} from "devtools-shared"
 import { HMRAccept } from "../../../lib/dist/hmr"
 import { cloneTree } from "../utils"
 import { ValueEditor } from "devtools-shared/src/ValueEditor"
@@ -39,8 +45,9 @@ export function StoresTabView() {
   const storeEntries = Object.entries(stores.value)
   if (storeEntries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-lg italic text-neutral-400">No stores detected</h2>
+      <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+        <TriangleAlertIcon />
+        <h2 className="text-lg italic">No stores detected</h2>
       </div>
     )
   }

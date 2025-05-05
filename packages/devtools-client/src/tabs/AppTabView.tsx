@@ -58,7 +58,7 @@ export function AppTabView() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
+      <div className="flex items-center justify-between gap-4 p-2 bg-neutral-400 bg-opacity-5 border border-white border-opacity-10 rounded">
         <div className="flex items-center gap-4">
           <select
             className="px-2 py-1 bg-neutral-800 text-neutral-100 rounded border border-white border-opacity-10"

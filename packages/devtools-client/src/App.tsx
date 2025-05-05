@@ -63,7 +63,7 @@ selectedNode.subscribe((node) => {
 export function App() {
   return (
     <SettingsProvider>
-      <nav className="flex flex-col gap-2 justify-between p-2 bg-neutral-400 bg-opacity-5 border border-neutral-400 border-opacity-5 rounded">
+      <nav className="flex flex-col gap-2 justify-between p-2 bg-neutral-400 bg-opacity-5 border border-white border-opacity-10 rounded">
         <div className="flex flex-col gap-2">
           {Object.keys(APP_TABS).map((key) => (
             <TabButton key={key} title={key as keyof typeof APP_TABS} />

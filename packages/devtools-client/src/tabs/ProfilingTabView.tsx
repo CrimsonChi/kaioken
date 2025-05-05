@@ -209,7 +209,7 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
           <span>{app.name}</span>
           <LineChart
             data={lineChartData}
-            className="w-full max-w-full min-h-20"
+            className="w-full max-w-full min-h-20 bg-black bg-opacity-30"
             onmouseenter={() => (chartHovered.value = true)}
             onmouseleave={() => (chartHovered.value = false)}
           />
