@@ -1,4 +1,4 @@
-import type { Signal } from "."
+import { Signal } from "./base.js"
 
 type ForProps<T extends Signal<any[]>> = {
   each: T
@@ -15,13 +15,26 @@ export function For<T extends Signal<any[]>>({ each, children }: ForProps<T>) {
   return each.value.map((v, i) => children(v, i))
 }
 
-export type DeriveProps<T extends Signal<any>> = {
-  from: T
-  children: (value: T extends Signal<infer U> ? U : never) => JSX.Children
+type InferSignalValues<T extends readonly Signal<any>[]> = {
+  [I in keyof T]: T[I] extends Signal<infer V> ? V : never
 }
-export function Derive<T extends Signal<any>>({
+
+type DeriveChildrenArgs<T extends Signal<any> | Signal<any>[]> =
+  T extends Signal<any>[]
+    ? InferSignalValues<T>
+    : [T extends Signal<infer V> ? V : never]
+
+export type DeriveProps<T extends Signal<any> | Signal<any>[]> = {
+  from: T
+  children: (...values: DeriveChildrenArgs<T>) => JSX.Children
+}
+
+export function Derive<const T extends Signal<any> | Signal<any>[]>({
   from,
   children,
 }: DeriveProps<T>) {
-  return children(from.value)
+  const args = (Array.isArray(from) ? from : [from]).map(
+    (s) => s.value
+  ) as DeriveChildrenArgs<T>
+  return children(...args)
 }
