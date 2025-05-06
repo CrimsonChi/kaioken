@@ -1,13 +1,11 @@
 import { ElementProps } from "kaioken"
 
-export interface InputProps extends ElementProps<"input"> {}
-
 export function Input({
   className = "",
   type = "text",
   ref,
   ...props
-}: InputProps) {
+}: ElementProps<"input">) {
   return (
     <input
       type={type}
