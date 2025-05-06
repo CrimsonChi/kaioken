@@ -4,6 +4,7 @@ import type { HMRAccept } from "../hmr.js"
 import {
   getVNodeAppContext,
   latest,
+  addUnique,
   safeStringify,
   sideEffectsEnabled,
 } from "../utils.js"
@@ -51,32 +52,52 @@ export class Signal<T> {
   }
 
   get value() {
-    const tgt = latest(this)
-    Signal.entangle(tgt)
-    return tgt.$value
+    if (__DEV__) {
+      const tgt = latest(this)
+      Signal.entangle(tgt)
+      return tgt.$value
+    }
+    Signal.entangle(this)
+    return this.$value
   }
 
   set value(next: T) {
-    const tgt = latest(this)
-    if (Object.is(tgt.$value, next)) return
-    tgt.$value = next
-    tgt.notify()
+    if (__DEV__) {
+      const tgt = latest(this)
+      if (Object.is(tgt.$value, next)) return
+      tgt.$value = next
+      tgt.notify()
+      return
+    }
+    if (Object.is(this.$value, next)) return
+    this.$value = next
+    this.notify()
   }
 
   peek() {
-    const tgt = latest(this)
-    return tgt.$value
+    if (__DEV__) {
+      return latest(this).$value
+    }
+    return this.$value
   }
 
   sneak(newValue: T) {
-    const tgt = latest(this)
-    tgt.$value = newValue
+    if (__DEV__) {
+      const tgt = latest(this)
+      tgt.$value = newValue
+      return
+    }
+    this.$value = newValue
   }
 
   toString() {
-    const tgt = latest(this)
-    Signal.entangle(tgt)
-    return `${tgt.$value}`
+    if (__DEV__) {
+      const tgt = latest(this)
+      Signal.entangle(tgt)
+      return `${tgt.$value}`
+    }
+    Signal.entangle(this)
+    return `${this.$value}`
   }
 
   subscribe(cb: (state: T) => void): () => void {
@@ -86,11 +107,14 @@ export class Signal<T> {
   }
 
   notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
-    const tgt = latest(this)
     signalSubsMap.get(this.$id)?.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
       if (typeof sub === "function") {
-        return sub(tgt.$value)
+        if (__DEV__) {
+          const value = latest(this).$value
+          return sub(value)
+        }
+        return sub(this.$value)
       }
       getVNodeAppContext(sub).requestUpdate(sub)
     })
@@ -149,9 +173,7 @@ export class Signal<T> {
     }
     if (node.current) {
       if (!sideEffectsEnabled()) return
-      if (!node.current.subs) node.current.subs = [signal.$id]
-      else if (node.current.subs.indexOf(signal.$id) === -1)
-        node.current.subs.push(signal.$id)
+      addUnique((node.current.subs ??= []), signal.$id)
       Signal.subscribers(signal).add(node.current)
     }
   }

@@ -238,8 +238,10 @@ function updateTextNode(
 
 function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
   let nodeType = newNode.type
-  if (typeof nodeType === "function") {
-    nodeType = latest(nodeType)
+  if (__DEV__) {
+    if (typeof nodeType === "function") {
+      nodeType = latest(nodeType)
+    }
   }
   if (nodeType === $FRAGMENT) {
     return updateFragment(

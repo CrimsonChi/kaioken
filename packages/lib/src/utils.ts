@@ -31,6 +31,7 @@ export {
   sideEffectsEnabled,
   encodeHtmlEntities,
   noop,
+  addUnique,
   latest,
   propFilters,
   selfClosingTags,
@@ -42,6 +43,8 @@ export {
 type VNode = Kaioken.VNode
 
 const noop: () => void = Object.freeze(() => {})
+
+const addUnique = <T>(arr: T[], val: T) => arr.includes(val) || arr.push(val)
 
 /**
  * This is a no-op in production. It is used to get the latest
