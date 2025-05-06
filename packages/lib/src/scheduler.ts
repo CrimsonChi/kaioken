@@ -11,6 +11,7 @@ import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { isExoticVNode, latest, traverseApply, vNodeContains } from "./utils.js"
 import { isMemoFn } from "./memo.js"
+import { Signal } from "./signals/base.js"
 
 type VNode = Kaioken.VNode
 
@@ -336,12 +337,12 @@ export class Scheduler {
   }
 
   private updateFunctionComponent(vNode: FunctionVNode) {
-    const { type, props } = vNode
+    const { type, props, subs, prev, child: prevChild = null } = vNode
     if (isMemoFn(type)) {
       vNode.memoizedProps = props
       if (
-        vNode.prev?.memoizedProps &&
-        type[$MEMO].arePropsEqual(vNode.prev.memoizedProps, props) &&
+        prev?.memoizedProps &&
+        type[$MEMO].arePropsEqual(prev.memoizedProps, props) &&
         !vNode.hmrUpdated
       ) {
         return false
@@ -355,26 +356,32 @@ export class Scheduler {
       do {
         this.isRenderDirtied = false
         this.appCtx.hookIndex = 0
-        newChildren = latest(type)(props)
+
+        /**
+         * remove previous signal subscriptions (if any) every render.
+         * this prevents no-longer-observed signals from triggering updates
+         * in components that are not currently using them.
+         */
+        while (subs?.length) Signal.unsubscribe(vNode, subs.pop()!)
+
         if (__DEV__) {
+          newChildren = latest(type)(props)
           delete vNode.hmrUpdated
+          if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
+            throw new KaiokenError({
+              message:
+                "Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop.",
+              fatal: true,
+              vNode,
+            })
+          }
+          continue
         }
-        if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
-          throw new KaiokenError({
-            message:
-              "Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop.",
-            fatal: true,
-            vNode,
-          })
-        }
+        newChildren = type(props)
       } while (this.isRenderDirtied)
       vNode.child =
-        reconcileChildren(
-          this.appCtx,
-          vNode,
-          vNode.child || null,
-          newChildren
-        ) || undefined
+        reconcileChildren(this.appCtx, vNode, prevChild, newChildren) ||
+        undefined
       return true
     } finally {
       node.current = undefined
@@ -382,6 +389,7 @@ export class Scheduler {
   }
 
   private updateHostComponent(vNode: VNode) {
+    const { props, child: prevChild = null } = vNode
     try {
       node.current = vNode
       assertValidElementProps(vNode)
@@ -398,12 +406,8 @@ export class Scheduler {
       }
 
       vNode.child =
-        reconcileChildren(
-          this.appCtx,
-          vNode,
-          vNode.child || null,
-          vNode.props.children
-        ) || undefined
+        reconcileChildren(this.appCtx, vNode, prevChild, props.children) ||
+        undefined
 
       if (vNode.child && renderMode.current === "hydrate") {
         hydrationStack.push(vNode.dom!)
