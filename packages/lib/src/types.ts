@@ -10,10 +10,13 @@ import type {
   SvgGlobalAttributes,
   StyleObject,
   HtmlElementBindableProps,
+  ClassNameArray,
 } from "./types.dom"
 import { Signalable, SomeDom } from "./types.utils"
 
-export type { ElementProps, StyleObject }
+export type { ElementProps, ClassNameArray, ClassNameAttribute, StyleObject }
+
+type ClassNameAttribute = Signalable<string | ClassNameArray | undefined>
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
@@ -27,8 +30,6 @@ type SVGTagToElement<T extends keyof SvgElementAttributes> =
 
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
   JSX.IntrinsicElements[T]
-
-type WebComponentTag = `${string}-${string}`
 
 type SignalableHtmlElementAttributes<Tag extends keyof HtmlElementAttributes> =
   {
@@ -77,7 +78,7 @@ type ElementMap = {
         | SignalClass<SVGTagToElement<Tag> | null>
     }
 } & {
-  [Tag in WebComponentTag]: Record<string, any>
+  [Tag in `${string}-${string}`]: Record<string, any>
 }
 
 declare global {
