@@ -161,7 +161,7 @@ export function createHMRContext() {
                 }
                 for (let i = 0; i < hooksToReset.length; i++) {
                   const hook = vNode.hooks[hooksToReset[i]]
-                  if (hook.dev?.reinitUponRawArgsChanged) {
+                  if (hook.dev?.onRawArgsChanged === "persist") {
                     // @ts-ignore
                     hook.dev.rawArgsChanged = true
                   } else {

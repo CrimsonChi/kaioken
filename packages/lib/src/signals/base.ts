@@ -172,7 +172,7 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
     ({ hook, isInit }) => {
       if (__DEV__) {
         hook.dev = {
-          reinitUponRawArgsChanged: true,
+          onRawArgsChanged: "persist",
           devtools: {
             get: () => ({
               displayName: hook.signal.displayName,

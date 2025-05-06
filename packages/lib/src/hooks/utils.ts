@@ -37,7 +37,7 @@ let nextHookDevInvalidationValue: string | undefined
  * Used to mark a hook as invalidated on HMR.
  * Arguments passed to this function will be used to
  * determine if the hook should be re-initialized.
- * @deprecated - Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the `hook.debug.reinitUponRawArgsChanged` option.
+ * @deprecated - Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the `hook.debug.persistWhenRawArgsChanged` option.
 If reinitialized in this way, the `hook.rawArgsChanged` property will be set to true.
 
 To continue using this behavior, enable the `useRuntimeHookInvalidation` option when initializing your app context.
@@ -47,7 +47,7 @@ const useHookHMRInvalidation = (...values: unknown[]) => {
   if (__DEV__) {
     console.warn(
       `[kaioken]: useHookHMRInvalidation is deprecated and will be removed in a future release.
-Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the \`hook.debug.reinitUponRawArgsChanged\` option.
+Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the \`hook.debug.persistWhenRawArgsChanged\` option.
 If reinitialized in this way, the \`hook.rawArgsChanged\` property will be set to true.
       `
     )
@@ -118,7 +118,7 @@ type HookCallbackContext<T> = {
   hook: HookState<T>
   /**
    * Indicates if this is the first time the hook has been initialized,
-   * or if `state.dev.reinitUponRawArgsChanged` has been set to `true`
+   * or if `state.dev.persistWhenRawArgsChanged` has been set to `true`
    * and its raw arguments were changed.
    */
   isInit: boolean
@@ -229,7 +229,8 @@ function useHook<
 
     try {
       const dev = hook.dev ?? {}
-      const shouldReinit = dev?.rawArgsChanged && dev?.reinitUponRawArgsChanged
+      const shouldReinit =
+        dev?.rawArgsChanged && dev?.onRawArgsChanged === "persist"
       const res = (callback as HookCallback<T>)({
         hook,
         isInit: Boolean(!oldHook || hmrRuntimeInvalidated || shouldReinit),

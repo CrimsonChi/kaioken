@@ -152,12 +152,11 @@ declare global {
       dev?: {
         devtools?: HookDevtoolsProvisions<any>
         /**
-         * If true, during development, when the raw arguments of the hook change,
-         * the hook will persist instead of being recreated.
-         * During the next render, `isInit` will be set to `true`, indicating
-         * that the hook should be reinitialized.
+         * If set to `"persist"`, during development the hook will persist
+         * instead of being recreated when the raw arguments of the hook change.
+         * During the next render, `isInit` and `rawArgsChanged` will be set to `true`.
          */
-        reinitUponRawArgsChanged?: boolean
+        onRawArgsChanged?: "persist"
         readonly rawArgsChanged?: boolean
       }
     }
