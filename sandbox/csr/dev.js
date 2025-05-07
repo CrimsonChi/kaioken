@@ -24,20 +24,12 @@ if (process.argv.includes("--child")) {
    * Could probably tack on an actual timeout duration but this seems to work well.
    */
   let restartTimeout = null
-  const restart = () => {
+  watch(pluginPath, () => {
     if (restartTimeout) clearTimeout(restartTimeout)
     restartTimeout = setTimeout(() => {
       console.log("Restarting server due to plugin change...")
       child.kill()
       child = createChild()
     })
-  }
-
-  const watcher = watch(pluginPath, restart)
-
-  process.on("SIGINT", () => {
-    watcher.close()
-    child.kill()
-    process.exit()
   })
 }
