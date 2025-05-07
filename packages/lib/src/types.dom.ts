@@ -774,6 +774,17 @@ interface SvgColorInterpolation {
   colorInterpolation?: "auto" | "sRGB" | "linearRGB"
 }
 
+/** [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncR) */
+interface FeFuncAttributes {
+  type?: string
+  tableValues?: string
+  amplitude?: string | number
+  exponent?: string | number
+  offset?: string | number
+  slope?: string | number
+  intercept?: string | number
+}
+
 interface SvgElementAttributes {
   animateTransform: {
     begin?: string
@@ -818,6 +829,15 @@ interface SvgElementAttributes {
     opacity?: string | number
     pathLength?: string | number
   }
+  feComponentTransfer: {
+    in?: string
+    in2?: string
+    result?: string
+  }
+  feFuncR: FeFuncAttributes
+  feFuncG: FeFuncAttributes
+  feFuncB: FeFuncAttributes
+  feFuncA: FeFuncAttributes
   feSpotLight: SvgColorInterpolationFilters & {
     result?: string
   }
@@ -832,10 +852,26 @@ interface SvgElementAttributes {
     mode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten"
     result?: string
   }
+  feDisplacementMap: SvgColorInterpolationFilters & {
+    in?: string
+    in2?: string
+    scale?: string | number
+    xChannelSelector?: "R" | "G" | "B" | "A"
+    yChannelSelector?: "R" | "G" | "B" | "A"
+    result?: string
+  }
   feGaussianBlur: SvgColorInterpolationFilters & {
     in?: string
     stdDeviation?: string | number
     edgeMode?: "duplicate" | "wrap" | "none"
+    result?: string
+  }
+  feTurbulence: SvgColorInterpolationFilters & {
+    type: "fractalNoise" | "turbulence"
+    baseFrequency?: string
+    numOctaves?: string | number
+    seed?: string | number
+    stitchTiles?: "stitch" | "noStitch"
     result?: string
   }
   filter: SvgColorInterpolationFilters &
@@ -851,6 +887,18 @@ interface SvgElementAttributes {
     clipPath?: string
     mask?: string
     opacity?: string | number
+  }
+  image: {
+    x?: string | number
+    y?: string | number
+    width?: string | number
+    height?: string | number
+    mask?: string
+    opacity?: string | number
+    pathLength?: string | number
+    preserveAspectRatio?: string
+    href?: string
+    filter?: string
   }
   line: SvgStrokeAttributes & {
     x1?: string | number
