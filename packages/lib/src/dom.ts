@@ -59,7 +59,7 @@ function createDom(vNode: VNode): SomeDom {
   const dom =
     t == ELEMENT_TYPE.text
       ? createTextNode(vNode)
-      : svgTags.includes(t)
+      : svgTags.has(t)
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
       : document.createElement(t)
   return dom
@@ -333,7 +333,7 @@ function hydrateDom(vNode: VNode) {
       vNode,
     })
   let nodeName = dom.nodeName
-  if (svgTags.indexOf(nodeName) === -1) {
+  if (!svgTags.has(nodeName)) {
     nodeName = nodeName.toLowerCase()
   }
   if ((vNode.type as string) !== nodeName) {
