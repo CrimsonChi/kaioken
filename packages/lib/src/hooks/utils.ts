@@ -1,7 +1,7 @@
 import { KaiokenError } from "../error.js"
 import { __DEV__ } from "../env.js"
 import { node, nodeToCtxMap } from "../globals.js"
-import { getVNodeAppContext, noop, safeStringify } from "../utils.js"
+import { getVNodeAppContext, noop } from "../utils.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
@@ -10,7 +10,6 @@ export {
   useVNode,
   useAppContext,
   useHookDebugGroup,
-  useHookHMRInvalidation,
   useRequestUpdate,
   HookDebugGroupAction,
   HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
@@ -24,38 +23,6 @@ type HookState<T> = Kaioken.Hook<T>
 const $HOOK_INVALIDATED = Symbol.for("kaioken.hookInvalidated")
 const HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY: HookState<any> = {
   [$HOOK_INVALIDATED]: true,
-}
-
-type DevHook<T> = HookState<T> & {
-  devInvalidationValue?: string
-}
-
-let nextHookDevInvalidationValue: string | undefined
-/**
- * **dev only - this is a no-op in production.**
- *
- * Used to mark a hook as invalidated on HMR.
- * Arguments passed to this function will be used to
- * determine if the hook should be re-initialized.
- * @deprecated - Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the `hook.debug.persistWhenRawArgsChanged` option.
-If reinitialized in this way, the `hook.rawArgsChanged` property will be set to true.
-
-To continue using this behavior, enable the `useRuntimeHookInvalidation` option when initializing your app context.
- *
- */
-const useHookHMRInvalidation = (...values: unknown[]) => {
-  if (__DEV__) {
-    console.warn(
-      `[kaioken]: useHookHMRInvalidation is deprecated and will be removed in a future release.
-Hooks are now automatically reinitialized when devtools detect that the arguments changed, and can be persisted in this case with the \`hook.debug.persistWhenRawArgsChanged\` option.
-If reinitialized in this way, the \`hook.rawArgsChanged\` property will be set to true.
-      `
-    )
-    const ctx = getVNodeAppContext(node.current!)
-    if (ctx.options?.useRuntimeHookInvalidation) {
-      nextHookDevInvalidationValue = safeStringify(values)
-    }
-  }
 }
 
 enum HookDebugGroupAction {
@@ -223,17 +190,13 @@ function useHook<
     vNode.hooks ??= []
     vNode.hooks[index] = hook
 
-    const hmrRuntimeInvalidated =
-      ctx.options?.useRuntimeHookInvalidation &&
-      doRuntimeHookInvalidation(vNode, hook, oldHook)
-
     try {
       const dev = hook.dev ?? {}
       const shouldReinit =
         dev?.rawArgsChanged && dev?.onRawArgsChanged === "persist"
       const res = (callback as HookCallback<T>)({
         hook,
-        isInit: Boolean(!oldHook || hmrRuntimeInvalidated || shouldReinit),
+        isInit: Boolean(!oldHook || shouldReinit),
         update: () => ctx.requestUpdate(vNode),
         queueEffect,
         vNode,
@@ -244,7 +207,6 @@ function useHook<
       throw error
     } finally {
       currentHookName = null
-      nextHookDevInvalidationValue = undefined
       if (hook.dev) {
         // @ts-ignore - Reset the rawArgsChanged flag
         hook.dev.rawArgsChanged = false
@@ -282,32 +244,6 @@ function useHook<
   } catch (error) {
     throw error
   }
-}
-
-function doRuntimeHookInvalidation<T>(
-  vNode: Kaioken.VNode,
-  hook: HookState<T>,
-  oldHook: HookState<T> | undefined
-): boolean {
-  if (nextHookDevInvalidationValue === undefined) return false
-
-  let hmrInvalid = false
-  const oldAsDevHook = oldHook as DevHook<T> | undefined
-  const asDevHook = hook as DevHook<T>
-
-  if (!oldAsDevHook) {
-    asDevHook.devInvalidationValue = nextHookDevInvalidationValue // store our initial 'devInvalidationValue'
-  } else if (
-    vNode.hmrUpdated &&
-    (oldAsDevHook.devInvalidationValue !== nextHookDevInvalidationValue ||
-      // handle cases where we just call 'useHookHMRInvalidation()', like in `useWatch`
-      (oldAsDevHook.devInvalidationValue === "[]" &&
-        nextHookDevInvalidationValue === "[]"))
-  ) {
-    asDevHook.devInvalidationValue = nextHookDevInvalidationValue
-    hmrInvalid = true
-  }
-  return hmrInvalid
 }
 
 function error_hookMustBeCalledTopLevel(hookName: string): never {

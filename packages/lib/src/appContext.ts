@@ -17,12 +17,6 @@ export interface AppContextOptions {
    * @default 50
    */
   maxFrameMs?: number
-  /**
-   * Enables runtime hook invalidation
-   * @deprecated
-   * @default false
-   */
-  useRuntimeHookInvalidation?: boolean
   name?: string
   debug?: {
     onRequestUpdate?: (vNode: VNode) => void
