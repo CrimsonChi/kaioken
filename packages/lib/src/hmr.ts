@@ -148,24 +148,23 @@ export function createHMRContext() {
               if (vNode.prev) {
                 vNode.prev.type = newEntry.value as any
               }
-              if (!ctx.options?.useRuntimeHookInvalidation && vNode.hooks) {
-                if (maxHookLen !== null) {
-                  for (let i = maxHookLen; i < vNode.hooks.length; i++) {
-                    vNode.hooks[i].cleanup?.()
-                  }
-                  vNode.hooks.length = maxHookLen
+              if (!vNode.hooks) return
+              if (maxHookLen !== null) {
+                for (let i = maxHookLen; i < vNode.hooks.length; i++) {
+                  vNode.hooks[i].cleanup?.()
                 }
-                for (let i = 0; i < hooksToReset.length; i++) {
-                  const hook = vNode.hooks[hooksToReset[i]]
-                  if (hook.dev?.onRawArgsChanged === "persist") {
-                    // @ts-ignore
-                    hook.dev.rawArgsChanged = true
-                  } else {
-                    hook.cleanup?.()
-                    // replace it with our 'invalidate' sentinel. This will cause `useHook` to recreate the hookState from scratch.
-                    vNode.hooks[hooksToReset[i]] =
-                      HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY
-                  }
+                vNode.hooks.length = maxHookLen
+              }
+              for (let i = 0; i < hooksToReset.length; i++) {
+                const hook = vNode.hooks[hooksToReset[i]]
+                if (hook.dev?.onRawArgsChanged === "persist") {
+                  // @ts-ignore
+                  hook.dev.rawArgsChanged = true
+                } else {
+                  hook.cleanup?.()
+                  // replace it with our 'invalidate' sentinel. This will cause `useHook` to recreate the hookState from scratch.
+                  vNode.hooks[hooksToReset[i]] =
+                    HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY
                 }
               }
             }
