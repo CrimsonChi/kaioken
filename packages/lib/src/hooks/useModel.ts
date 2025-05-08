@@ -35,6 +35,14 @@ type UseModelState<
 }
 
 /**
+ * @deprecated
+ * `useModel` will be removed in a future release.
+ *
+ * `useModel` was introduced before signals and their related APIs, which fit its intended purpose much better.
+ * It is recommended to use `useSignal` instead, and then use `useWatch` to listen to changes: https://kaioken.dev/docs/api/signal#two-way-binding
+ *
+ * For more complex form-related scenarios, consider using the [Form API](https://kaioken.dev/docs/api/form).
+ *
  * Similar to [useRef](https://kaioken.dev/docs/hooks/useRef), but creates a ref specifically to
  * be used with an HTMLInputElement, HTMLTextAreaElement, or HTMLSelectElement.
  * Automatically binds change listeners to the element.
