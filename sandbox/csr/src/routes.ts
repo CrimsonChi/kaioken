@@ -28,6 +28,9 @@ const UseSyncExternalStoreExample = lazy(
 const UseFormExample = lazy(() => import("./components/UseFormExample"))
 
 const SWRExample = lazy(() => import("./components/SWRExample"))
+const WebComponentExample = lazy(
+  () => import("./components/WebComponentExample")
+)
 
 export const ROUTES: Record<string, AppRoute> = {
   "/keyed-list-example": {
@@ -91,5 +94,9 @@ export const ROUTES: Record<string, AppRoute> = {
   "/use-form-example": {
     title: "useForm",
     component: UseFormExample,
+  },
+  "/web-component-example": {
+    title: "Web Components",
+    component: WebComponentExample,
   },
 }
