@@ -56,19 +56,14 @@ function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
 
 function createDom(vNode: VNode): SomeDom {
   const t = vNode.type as string
-  try {
-    const dom =
-      t == ELEMENT_TYPE.text
-        ? createTextNode(vNode)
-        : svgTags.has(t)
-        ? document.createElementNS("http://www.w3.org/2000/svg", t)
-        : document.createElement(t)
+  const dom =
+    t == ELEMENT_TYPE.text
+      ? createTextNode(vNode)
+      : svgTags.has(t)
+      ? document.createElementNS("http://www.w3.org/2000/svg", t)
+      : document.createElement(t)
 
-    return dom
-  } catch (error) {
-    debugger
-    throw error
-  }
+  return dom
 }
 function createTextNode(vNode: VNode): Text {
   const prop = vNode.props.nodeValue
