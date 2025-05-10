@@ -1,5 +1,5 @@
 import { Signal, useSignal } from "kaioken"
-import { defineElement, html } from "x-templ"
+import { $reactive, defineElement, html } from "x-templ"
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -23,15 +23,17 @@ export default function WebComponentExample() {
 
 defineElement("x-app", {
   observedAttributes: ["greeting"],
-  render: function () {
-    const toggled = this.$state(false)
-    const count = this.$state(0)
-    const greeting = this.$attribute("greeting")
+  state: () => ({
+    count: $reactive(0),
+    toggled: $reactive(false),
+  }),
+  render() {
+    const { count, toggled } = this.$state()
 
-    const increment = () => count.set(count.get() + 1)
+    const increment = () => count.set((prev) => prev + 1)
 
     return html`
-      <h1 class="text-xl">${greeting}</h1>
+      <h1 class="text-xl">${this.getAttribute("greeting")!}</h1>
       <button onclick="${() => toggled.set(!toggled.get())}">Toggle</button>
       ${toggled.get()
         ? html`<x-nested onIncrement="${increment}" count="${count.get()}" />`
@@ -42,10 +44,10 @@ defineElement("x-app", {
 
 defineElement("x-nested", {
   observedAttributes: ["count"],
-  render: function () {
+  render() {
     return html`
       <button onclick="${() => this.$emit("increment")}">
-        Nested Counter: ${this.$attribute("count")}
+        Nested Counter: ${this.getAttribute("count")!}
       </button>
       <x-nested-again />
     `
@@ -53,10 +55,11 @@ defineElement("x-nested", {
 })
 
 defineElement("x-nested-again", {
-  render: function () {
-    const count = this.$state(0)
+  state: () => ({ count: $reactive(0) }),
+  render() {
+    const { count } = this.$state()
     return html`
-      <button onclick="${() => count.set(count.get() + 1)}">
+      <button onclick="${() => count.set((prev) => prev + 1)}">
         Nested Again: ${count.get()}
       </button>
     `
