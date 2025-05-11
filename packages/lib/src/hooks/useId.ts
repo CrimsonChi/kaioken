@@ -7,7 +7,7 @@ import { HookCallback, useHook } from "./utils.js"
  *
  * @see https://kaioken.dev/docs/hooks/useId
  */
-export function useId() {
+export function useId(): string {
   return useHook("useId", createUseIdState, useIdCallback)
 }
 
