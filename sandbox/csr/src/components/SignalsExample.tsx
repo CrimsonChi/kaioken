@@ -1,4 +1,12 @@
-import { signal, computed, watch, useComputed, useSignal } from "kaioken"
+import {
+  signal,
+  computed,
+  watch,
+  useComputed,
+  useSignal,
+  For,
+  Derive,
+} from "kaioken"
 import { Route, Router, Link } from "kaioken/router"
 
 const count = signal(0, "coussdsdnt")
@@ -32,10 +40,13 @@ export default function SignalsExample() {
           Local
         </Link>
       </nav>
-      <Router>
-        <Route path="/" element={<GlobalComputedExample />} />
-        <Route path="/local" element={<LocalComputedExample />} />
-      </Router>
+      <div className="flex flex-col gap-2">
+        <Router>
+          <Route path="/" element={<GlobalComputedExample />} />
+          <Route path="/local" element={<LocalComputedExample />} />
+        </Router>
+        <SignalExoticComponents />
+      </div>
     </div>
   )
 }
@@ -110,6 +121,52 @@ const LocalComputedExample = () => {
       <button className="text-left" onclick={onSwitch}>
         Switch tracking
       </button>
+    </div>
+  )
+}
+
+function SignalExoticComponents() {
+  return (
+    <>
+      <h1 className="text-2xl">Signal Exotics</h1>
+      <ForExample />
+      <DeriveExample />
+    </>
+  )
+}
+
+function ForExample() {
+  const items = useSignal([0, 1, 2, 3, 4])
+  const doubledItems = useComputed(() => items.value.map((i) => i * 2))
+  return (
+    <>
+      <ul>
+        <For each={doubledItems}>{(item) => <li>{item}</li>}</For>
+      </ul>
+      <button
+        onclick={() => (items.value = [...items.value, items.value.length])}
+      >
+        Add
+      </button>
+    </>
+  )
+}
+
+function DeriveExample() {
+  const name = useSignal("bob")
+  const age = useSignal(42)
+  const person = useComputed(() => ({ name: name.value, age: age.value }))
+  return (
+    <div>
+      <input bind:value={name} />
+      <input type="number" bind:value={age} />
+      <Derive from={person}>
+        {(person) => (
+          <div>
+            {person.name} is {person.age} years old
+          </div>
+        )}
+      </Derive>
     </div>
   )
 }
