@@ -16,7 +16,7 @@ export type DomVNode = VNode & { dom: SomeDom }
 
 export type ContextProviderNode<T> = Kaioken.VNode & {
   type: typeof $CONTEXT_PROVIDER
-  props: { value: T; ctx: Kaioken.Context<T> }
+  props: { value: T; ctx: Kaioken.Context<T>; dependents: Set<Kaioken.VNode> }
 }
 
 export type Prettify<T> = {

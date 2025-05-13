@@ -1,7 +1,11 @@
 import type { AppContext } from "./appContext"
-import type { FunctionVNode } from "./types.utils"
+import type { ContextProviderNode, FunctionVNode } from "./types.utils"
 import { flags } from "./flags.js"
-import { CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
+import {
+  $CONTEXT_PROVIDER,
+  CONSECUTIVE_DIRTY_LIMIT,
+  FLAG,
+} from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
@@ -9,7 +13,13 @@ import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { isExoticVNode, latest, traverseApply, vNodeContains } from "./utils.js"
+import {
+  willMemoBlockUpdate,
+  isExoticVNode,
+  latest,
+  traverseApply,
+  vNodeContains,
+} from "./utils.js"
 import { Signal } from "./signals/base.js"
 
 type VNode = Kaioken.VNode
@@ -275,6 +285,35 @@ export class Scheduler {
       if (typeof type === "function") {
         renderChild = this.updateFunctionComponent(vNode as FunctionVNode)
       } else if (isExoticVNode(vNode)) {
+        if (vNode.type === $CONTEXT_PROVIDER) {
+          const asProvider = vNode as ContextProviderNode<any>
+          const { dependents, value } = asProvider.props
+          if (
+            dependents.size &&
+            asProvider.prev &&
+            asProvider.prev.props.value !== value
+          ) {
+            const jobRoots: VNode[] = []
+            dependents.forEach((dep) => {
+              if (!willMemoBlockUpdate(vNode, dep)) return
+
+              const depDepth = dep.depth
+              for (let i = 0; i < jobRoots.length; i++) {
+                const root = jobRoots[i]
+                const rootDepth = root.depth
+                if (depDepth > rootDepth && vNodeContains(root, dep)) {
+                  return
+                }
+                if (depDepth < rootDepth && vNodeContains(dep, root)) {
+                  jobRoots[i] = dep
+                  return
+                }
+              }
+              jobRoots.push(dep)
+            })
+            this.treesInProgress.push(...jobRoots)
+          }
+        }
         vNode.child =
           reconcileChildren(
             this.appCtx,

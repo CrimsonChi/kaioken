@@ -47,9 +47,12 @@ const useContextCallback = <T>({
     while (n) {
       if (n.type === $CONTEXT_PROVIDER) {
         const ctxNode = n as ContextProviderNode<T>
-        if (ctxNode.props.ctx === hook.context) {
+        const { ctx, value, dependents } = ctxNode.props
+        if (ctx === hook.context) {
+          dependents.add(vNode)
+          hook.cleanup = () => dependents.delete(vNode)
           hook.ctxNode = ctxNode
-          return hook.ctxNode.props.value
+          return value
         }
       }
       n = n.parent

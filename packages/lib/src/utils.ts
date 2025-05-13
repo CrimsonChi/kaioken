@@ -11,11 +11,12 @@ export {
   isVNode,
   isFragment,
   isLazy,
+  isMemo,
   isContextProvider,
   isExoticVNode,
   isVNodeDeleted,
   vNodeContains,
-  isBehindMemoBoundaryThatWillBlockUpdate,
+  willMemoBlockUpdate,
   getCurrentVNode,
   getVNodeAppContext,
   commitSnapshot,
@@ -95,6 +96,14 @@ function isLazy(vNode: VNode): boolean {
   )
 }
 
+function isMemo(vNode: Kaioken.VNode): boolean {
+  return (
+    typeof vNode.type === "function" &&
+    "displayName" in vNode.type &&
+    vNode.type.displayName === "Kaioken.memo"
+  )
+}
+
 function isContextProvider(
   thing: unknown
 ): thing is VNode & { type: typeof $CONTEXT_PROVIDER } {
@@ -134,26 +143,22 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
   return false
 }
 
-function isBehindMemoBoundaryThatWillBlockUpdate(
-  root: VNode,
-  target: VNode
-): boolean {
-  let node: VNode | null = target
+function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
+  let node: VNode | undefined = target
 
-  // Fast path: bail immediately if target or ancestors have no isMemoized flag
+  if (!flags.get(target.flags, FLAG.HAS_MEMO_ANCESTOR)) return false
+
   while (node && node !== root) {
-    const parent: VNode | undefined = node.parent
-    if (!parent) break
-
+    const parent = node.parent
     if (
-      parent.isMemoized &&
+      parent?.isMemoized &&
       parent.prev?.memoizedProps &&
       parent.arePropsEqual!(parent.prev.memoizedProps, parent.props)
     ) {
       return true
     }
 
-    node = parent
+    node = node.parent
   }
 
   return false
