@@ -205,7 +205,11 @@ declare global {
       prevStyleObj?: StyleObject
       hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
-      boundAttrs?: Record<string, any>
+      isMemoized?: boolean
+      arePropsEqual?: (
+        prev: Record<string, any>,
+        next: Record<string, any>
+      ) => boolean
     }
   }
 

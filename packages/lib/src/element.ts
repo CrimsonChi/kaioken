@@ -1,4 +1,5 @@
-import { $FRAGMENT } from "./constants.js"
+import { $FRAGMENT, $MEMO } from "./constants.js"
+import { isMemoFn } from "./memo.js"
 import { isValidElementKeyProp, isValidElementRefProp } from "./props.js"
 
 export function createElement<T extends Kaioken.VNode["type"]>(
@@ -15,6 +16,10 @@ export function createElement<T extends Kaioken.VNode["type"]>(
     index: 0,
     depth: 0,
     props: {},
+  }
+  if (isMemoFn(type)) {
+    node.isMemoized = true
+    node.arePropsEqual = type[$MEMO].arePropsEqual
   }
 
   if (props !== null) {

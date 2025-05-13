@@ -1,4 +1,4 @@
-import { isFragment, isLazy } from "../../lib/dist/utils.js"
+import { isFragment, isLazy, isMemo } from "../../lib/dist/utils.js"
 
 export function getNodeName(node: Kaioken.VNode) {
   return (
@@ -15,7 +15,12 @@ export function searchMatchesItem(terms: string[], item: string) {
 export function isComponent(
   node: Kaioken.VNode
 ): node is Kaioken.VNode & { type: Function } {
-  return typeof node.type === "function" && !isFragment(node) && !isLazy(node)
+  return (
+    typeof node.type === "function" &&
+    !isFragment(node) &&
+    !isLazy(node) &&
+    !isMemo(node)
+  )
 }
 
 export function nodeContainsComponent(node: Kaioken.VNode) {

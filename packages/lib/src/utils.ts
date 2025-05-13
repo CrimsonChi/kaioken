@@ -11,10 +11,12 @@ export {
   isVNode,
   isFragment,
   isLazy,
+  isMemo,
   isContextProvider,
   isExoticVNode,
   isVNodeDeleted,
   vNodeContains,
+  willMemoBlockUpdate,
   getCurrentVNode,
   getVNodeAppContext,
   commitSnapshot,
@@ -94,6 +96,14 @@ function isLazy(vNode: VNode): boolean {
   )
 }
 
+function isMemo(vNode: Kaioken.VNode): boolean {
+  return (
+    typeof vNode.type === "function" &&
+    "displayName" in vNode.type &&
+    vNode.type.displayName === "Kaioken.memo"
+  )
+}
+
 function isContextProvider(
   thing: unknown
 ): thing is VNode & { type: typeof $CONTEXT_PROVIDER } {
@@ -116,7 +126,7 @@ function getVNodeAppContext(vNode: VNode): AppContext {
 
 function commitSnapshot(vNode: VNode): void {
   vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
-  vNode.flags = 0
+  vNode.flags = flags.unsetRange(vNode.flags, FLAG.UPDATE, FLAG.DELETION)
 }
 
 function vNodeContains(haystack: VNode, needle: VNode): boolean {
@@ -130,6 +140,27 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
     checkSiblings && n.sibling && stack.push(n.sibling)
     checkSiblings = true
   }
+  return false
+}
+
+function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
+  let node: VNode | undefined = target
+
+  if (!flags.get(target.flags, FLAG.HAS_MEMO_ANCESTOR)) return false
+
+  while (node && node !== root) {
+    const parent = node.parent
+    if (
+      parent?.isMemoized &&
+      parent.prev?.memoizedProps &&
+      parent.arePropsEqual!(parent.prev.memoizedProps, parent.props)
+    ) {
+      return true
+    }
+
+    node = node.parent
+  }
+
   return false
 }
 

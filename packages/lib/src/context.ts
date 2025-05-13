@@ -2,15 +2,17 @@ import { $CONTEXT, $CONTEXT_PROVIDER, $HMR_ACCEPT } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 import { GenericHMRAcceptor } from "./hmr.js"
+import { useState } from "./hooks/useState.js"
 import { traverseApply } from "./utils.js"
 
 export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
   const ctx: Kaioken.Context<T> = {
     [$CONTEXT]: true,
     Provider: ({ value, children }: Kaioken.ProviderProps<T>) => {
+      const [dependents] = useState(() => new Set<Kaioken.VNode>())
       return createElement(
         $CONTEXT_PROVIDER,
-        { value, ctx },
+        { value, ctx, dependents },
         typeof children === "function" ? children(value) : children
       )
     },

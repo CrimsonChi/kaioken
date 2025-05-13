@@ -30,6 +30,6 @@ if (process.argv.includes("--child")) {
       console.log("Restarting server due to plugin change...")
       child.kill()
       child = createChild()
-    })
+    }, 50)
   })
 }
