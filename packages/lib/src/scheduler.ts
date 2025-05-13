@@ -98,13 +98,12 @@ export class Scheduler {
   }
 
   queueUpdate(vNode: VNode) {
-    if (vNode.prev?.memoizedProps) {
-      delete vNode.prev.memoizedProps
-    }
+    // In immediate effect mode (useLayoutEffect), immediately mark the render as dirty
     if (this.isImmediateEffectsMode) {
       this.immediateEffectDirtiedRender = true
     }
 
+    // If this node is currently being rendered, just mark it dirty
     if (node.current === vNode) {
       if (__DEV__) {
         window.__kaioken?.profilingContext?.emit("updateDirtied", this.appCtx)
@@ -113,6 +112,7 @@ export class Scheduler {
       return
     }
 
+    // If it's already the next unit of work, no need to queue again
     if (this.nextUnitOfWork === vNode) {
       return
     }
@@ -123,13 +123,15 @@ export class Scheduler {
       return this.wake()
     }
 
+    // Check if the node is already in the treesInProgress queue
     const treeIdx = this.treesInProgress.indexOf(vNode)
-    // handle node as queued tree
     if (treeIdx !== -1) {
       if (treeIdx === this.currentTreeIndex) {
-        this.treesInProgress[this.currentTreeIndex] = vNode
+        // Replace current node if it's being worked on now
+        this.treesInProgress[treeIdx] = vNode
         this.nextUnitOfWork = vNode
       } else if (treeIdx < this.currentTreeIndex) {
+        // It was already processed; requeue it to the end
         this.currentTreeIndex--
         this.treesInProgress.splice(treeIdx, 1)
         this.treesInProgress.push(vNode)
@@ -137,62 +139,71 @@ export class Scheduler {
       return
     }
 
-    const nodeDepth = vNode.depth!
-    // handle node as child of queued trees
+    const nodeDepth = vNode.depth
+
+    // Check if this node is a descendant of any trees already queued
     for (let i = 0; i < this.treesInProgress.length; i++) {
-      const treeDepth = this.treesInProgress[i].depth!
-      if (treeDepth > nodeDepth) continue
-      if (vNodeContains(this.treesInProgress[i], vNode)) {
-        if (i === this.currentTreeIndex) {
-          // if req node is child of work node we can skip
-          if (vNodeContains(this.nextUnitOfWork, vNode)) return
-          // otherwise work node is a child of req node so we need to cancel & replace it
-          this.nextUnitOfWork = vNode // jump back up the tree
-        } else if (i < this.currentTreeIndex) {
-          // already processed tree, create new tree with the node
-          this.treesInProgress.push(vNode)
-        }
-        return
+      const tree = this.treesInProgress[i]
+      if (tree.depth > nodeDepth) continue // Can't be an ancestor
+      if (!vNodeContains(tree, vNode)) continue
+
+      if (i === this.currentTreeIndex) {
+        // It's a child of the currently worked-on tree
+        // If it's deeper within the same tree, we can skip
+        if (vNodeContains(this.nextUnitOfWork, vNode)) return
+        // If it's not in the current work subtree, move back up to it
+        this.nextUnitOfWork = vNode
+      } else if (i < this.currentTreeIndex) {
+        // It's a descendant of an already processed tree; treat as a new update
+        this.treesInProgress.push(vNode)
       }
+
+      return
     }
 
-    let didNodeUsurp = false
-    for (let i = 0; i < this.treesInProgress.length; i++) {
-      // does node contain tree?
-      const treeDepth = this.treesInProgress[i].depth!
-      if (treeDepth < nodeDepth) continue
+    // Check if this node contains any of the currently queued trees
+    let didReplaceTree = false
+    let shouldQueueAtEnd = false
+    for (let i = 0; i < this.treesInProgress.length; ) {
+      const tree = this.treesInProgress[i]
+      if (tree.depth < nodeDepth || !vNodeContains(vNode, tree)) {
+        i++
+        continue
+      }
+      // This node contains another update root, replace it
 
-      if (vNodeContains(vNode, this.treesInProgress[i])) {
-        // TODO: continue consuming trees in progress of the req node contains them!
-        if (i === this.currentTreeIndex) {
-          // node contains current tree, replace it
-          if (!didNodeUsurp) {
-            this.treesInProgress.splice(i, 1, vNode)
-            this.nextUnitOfWork = vNode
-            didNodeUsurp = true
-          } else {
-            this.treesInProgress.splice(i, 1)
-          }
-        } else if (i < this.currentTreeIndex) {
-          // node contains a tree that has already been processed
-          this.currentTreeIndex--
-          this.treesInProgress.splice(i, 1)
-          if (!didNodeUsurp) {
-            this.treesInProgress.push(vNode)
-          }
+      if (i === this.currentTreeIndex) {
+        if (!didReplaceTree) {
+          this.treesInProgress.splice(i, 1, vNode)
+          this.nextUnitOfWork = vNode
+          didReplaceTree = true
+          i++ // advance past replaced node
         } else {
-          // node contains a tree that has not yet been processed, 'usurp' the tree
-          if (!didNodeUsurp) {
-            this.treesInProgress.splice(i, 1, vNode)
-            didNodeUsurp = true
-          } else {
-            this.treesInProgress.splice(i, 1)
-          }
+          this.treesInProgress.splice(i, 1)
+          // no increment
         }
+      } else if (i < this.currentTreeIndex) {
+        this.currentTreeIndex--
+        this.treesInProgress.splice(i, 1)
+        if (!didReplaceTree) {
+          shouldQueueAtEnd = true
+          didReplaceTree = true
+        }
+        // no increment
+      } else {
+        // i > currentTreeIndex
+        this.treesInProgress.splice(i, 1)
+        if (!didReplaceTree) {
+          shouldQueueAtEnd = true
+          didReplaceTree = true
+        }
+        // no increment
       }
     }
-    if (didNodeUsurp) return
-    // node is not a child or parent of any queued trees, queue new tree
+    if (!shouldQueueAtEnd && didReplaceTree) {
+      return
+    }
+    // If it doesn't overlap with any queued tree, queue as new independent update root
     this.treesInProgress.push(vNode)
   }
 
