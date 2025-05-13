@@ -12,6 +12,7 @@ export const FLAG = {
   UPDATE: 1,
   PLACEMENT: 2,
   DELETION: 3,
+  HAS_MEMO_ANCESTOR: 4,
 } as const
 
 export const ELEMENT_TYPE = {

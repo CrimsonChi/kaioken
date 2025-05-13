@@ -7,6 +7,14 @@ import { createElement, Fragment } from "./element.js"
 import { flags } from "./flags.js"
 import { ctx } from "./globals.js"
 
+function setParent(node: Kaioken.VNode, parent: Kaioken.VNode) {
+  node.parent = parent
+  node.depth = parent.depth + 1
+  if (parent.isMemoized || flags.get(parent.flags, FLAG.HAS_MEMO_ANCESTOR)) {
+    node.flags = flags.set(node.flags, FLAG.HAS_MEMO_ANCESTOR)
+  }
+}
+
 type VNode = Kaioken.VNode
 
 function emitUpdateNode() {
@@ -221,8 +229,7 @@ function updateTextNode(
       emitCreateNode()
     }
     const newNode = createElement(ELEMENT_TYPE.text, { nodeValue: content })
-    newNode.parent = parent
-    newNode.depth = parent.depth! + 1
+    setParent(newNode, parent)
     return newNode
   } else {
     if (__DEV__) {
@@ -266,8 +273,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     emitCreateNode()
   }
   const created = createElement(nodeType, newNode.props)
-  created.parent = parent
-  created.depth = parent.depth + 1
+  setParent(created, parent)
   return created
 }
 
@@ -282,8 +288,7 @@ function updateFragment(
       emitCreateNode()
     }
     const el = createElement($FRAGMENT, { children, ...newProps })
-    el.parent = parent
-    el.depth = parent.depth + 1
+    setParent(el, parent)
     return el
   }
   if (__DEV__) {
@@ -307,8 +312,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     const el = createElement(ELEMENT_TYPE.text, {
       nodeValue: "" + child,
     })
-    el.parent = parent
-    el.depth = parent.depth + 1
+    setParent(el, parent)
     return el
   }
 
@@ -319,8 +323,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     const el = createElement(ELEMENT_TYPE.text, {
       nodeValue: child,
     })
-    el.parent = parent
-    el.depth = parent.depth + 1
+    setParent(el, parent)
     return el
   }
 
@@ -329,8 +332,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
       emitCreateNode()
     }
     const newNode = createElement(child.type, child.props)
-    newNode.parent = parent
-    newNode.depth = parent.depth! + 1
+    setParent(newNode, parent)
     newNode.flags = flags.set(newNode.flags, FLAG.PLACEMENT)
     if ("memoizedProps" in child) newNode.memoizedProps = child.memoizedProps
     return newNode
@@ -341,8 +343,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
       emitCreateNode()
     }
     const el = Fragment({ children: child })
-    el.parent = parent
-    el.depth = parent.depth + 1
+    setParent(el, parent)
     return el
   }
 
@@ -404,8 +405,7 @@ function updateFromMap(
     const n = createElement(ELEMENT_TYPE.text, {
       nodeValue: newChild,
     })
-    n.parent = parent
-    n.depth = parent.depth + 1
+    setParent(n, parent)
     n.flags = flags.set(n.flags, FLAG.PLACEMENT)
     n.index = index
     return n
@@ -431,8 +431,7 @@ function updateFromMap(
         emitCreateNode()
       }
       const n = createElement(newChild.type, newChild.props)
-      n.parent = parent
-      n.depth = parent.depth + 1
+      setParent(n, parent)
       n.flags = flags.set(n.flags, FLAG.PLACEMENT)
       n.index = index
       return n
@@ -453,8 +452,7 @@ function updateFromMap(
         emitCreateNode()
       }
       const n = Fragment({ children: newChild })
-      n.parent = parent
-      n.depth = parent.depth + 1
+      setParent(n, parent)
       n.flags = flags.set(n.flags, FLAG.PLACEMENT)
       n.index = index
       return n

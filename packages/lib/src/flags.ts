@@ -7,4 +7,9 @@ export const flags = {
   get(field: number, n: number): boolean {
     return (field & (1 << n)) !== 0
   },
+  // Unset all flags between `start` and `end`
+  unsetRange(field: number, start: number, end: number): number {
+    const mask = ((1 << (end - start + 1)) - 1) << start
+    return field & ~mask
+  },
 } as const

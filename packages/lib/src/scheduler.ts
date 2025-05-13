@@ -1,7 +1,7 @@
 import type { AppContext } from "./appContext"
 import type { FunctionVNode } from "./types.utils"
 import { flags } from "./flags.js"
-import { $MEMO, CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
+import { CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
@@ -10,7 +10,6 @@ import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import { isExoticVNode, latest, traverseApply, vNodeContains } from "./utils.js"
-import { isMemoFn } from "./memo.js"
 import { Signal } from "./signals/base.js"
 
 type VNode = Kaioken.VNode
@@ -337,12 +336,19 @@ export class Scheduler {
   }
 
   private updateFunctionComponent(vNode: FunctionVNode) {
-    const { type, props, subs, prev, child: prevChild = null } = vNode
-    if (isMemoFn(type)) {
+    const {
+      type,
+      props,
+      subs,
+      prev,
+      child: prevChild = null,
+      isMemoized,
+    } = vNode
+    if (isMemoized) {
       vNode.memoizedProps = props
       if (
         prev?.memoizedProps &&
-        type[$MEMO].arePropsEqual(prev.memoizedProps, props) &&
+        vNode.arePropsEqual!(prev.memoizedProps, props) &&
         !vNode.hmrUpdated
       ) {
         return false

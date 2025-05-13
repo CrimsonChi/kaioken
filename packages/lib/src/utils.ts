@@ -15,6 +15,7 @@ export {
   isExoticVNode,
   isVNodeDeleted,
   vNodeContains,
+  isBehindMemoBoundaryThatWillBlockUpdate,
   getCurrentVNode,
   getVNodeAppContext,
   commitSnapshot,
@@ -116,7 +117,7 @@ function getVNodeAppContext(vNode: VNode): AppContext {
 
 function commitSnapshot(vNode: VNode): void {
   vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
-  vNode.flags = 0
+  vNode.flags = flags.unsetRange(vNode.flags, FLAG.UPDATE, FLAG.DELETION)
 }
 
 function vNodeContains(haystack: VNode, needle: VNode): boolean {
@@ -130,6 +131,31 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
     checkSiblings && n.sibling && stack.push(n.sibling)
     checkSiblings = true
   }
+  return false
+}
+
+function isBehindMemoBoundaryThatWillBlockUpdate(
+  root: VNode,
+  target: VNode
+): boolean {
+  let node: VNode | null = target
+
+  // Fast path: bail immediately if target or ancestors have no isMemoized flag
+  while (node && node !== root) {
+    const parent: VNode | undefined = node.parent
+    if (!parent) break
+
+    if (
+      parent.isMemoized &&
+      parent.prev?.memoizedProps &&
+      parent.arePropsEqual!(parent.prev.memoizedProps, parent.props)
+    ) {
+      return true
+    }
+
+    node = parent
+  }
+
   return false
 }
 
