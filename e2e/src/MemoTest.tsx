@@ -78,15 +78,13 @@ const memoNodeRenders = new Map<number, number>([
 ])
 const MemoNode: Kaioken.FC<{ depth: number }> = memo(
   function MemoNode({ children, depth }) {
-    memoNodeRenders.set(depth, memoNodeRenders.get(depth)! + 1)
+    const renders = memoNodeRenders.get(depth)! + 1
+    memoNodeRenders.set(depth, renders)
     return (
-      <div
-        data-memo-depth={depth}
-        data-memo-renders={memoNodeRenders.get(depth)!}
-      >
+      <div data-memo-depth={depth} data-renders={renders}>
         {children}
       </div>
     )
-  }
-  //() => true
+  },
+  () => true
 )

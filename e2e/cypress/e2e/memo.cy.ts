@@ -22,6 +22,34 @@ describe("component memoization", () => {
     )
   })
 
+  it("allows deep context consumers that are memoized to rerender", () => {
+    cy.get("main #memo div[data-memo-depth]").each((element) => {
+      cy.wrap(element).should("have.attr", "data-renders", "1")
+    })
+    cy.get("main #memo #memo-deep-context-consumer span").should(
+      "have.text",
+      "Render Count: 1"
+    )
+    cy.get("main #memo > button").click().click()
+    cy.get("main #memo #memo-deep-context-consumer span").should(
+      "have.text",
+      "Render Count: 3"
+    )
+    cy.get("main #memo div[data-memo-depth]").each((element) => {
+      cy.wrap(element).should("have.attr", "data-renders", "1")
+    })
+    // cy.get("main #memo div[data-memo-depth='1']").should(
+    //   "have.attr",
+    //   "data-memo-renders",
+    //   "1"
+    // )
+    // cy.get("main #memo div[data-memo-depth='2']").should(
+    //   "have.attr",
+    //   "data-memo-renders",
+    //   "1"
+    // )
+  })
+
   it("will render as per normal when included / excluded from the vDom tree", () => {
     cy.get("main #memo #memo-dynamic > span:first-child").should(
       "have.text",
