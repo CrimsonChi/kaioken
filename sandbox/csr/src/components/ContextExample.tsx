@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "kaioken"
+import { createContext, memo, useContext, useState } from "kaioken"
 
 const ThemeContext = createContext<"light" | "dark">("dark")
 ThemeContext.displayName = "ThemeContext"
@@ -34,9 +34,10 @@ export default function ContextExample() {
     </div>
   )
 }
-
-function ThemeButton() {
+// When a component uses a context, the provider is registered as a dependency.
+// This allows us to ensure that even despite being memoized, the component will re-render when the context changes.
+const ThemeButton = memo(function ThemeButton() {
   const theme = useContext(ThemeContext)
   const dispatch = useContext(ThemeContextDispatcher)
   return <button onclick={() => dispatch()}>{theme}</button>
-}
+})
