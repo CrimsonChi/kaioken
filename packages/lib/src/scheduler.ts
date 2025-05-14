@@ -39,6 +39,7 @@ export class Scheduler {
   private immediateEffectDirtiedRender = false
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
+  private pendingContextChanges = new Set<ContextProviderNode<any>>()
   private effectCallbacks = {
     pre: [] as Function[],
     post: [] as Function[],
@@ -227,7 +228,8 @@ export class Scheduler {
     while (this.nextUnitOfWork) {
       this.nextUnitOfWork =
         this.performUnitOfWork(this.nextUnitOfWork) ??
-        this.treesInProgress[++this.currentTreeIndex]
+        this.treesInProgress[++this.currentTreeIndex] ??
+        this.queueBlockedContextDependencyRoots()
 
       if ((deadline?.timeRemaining() ?? 1) < 1) break
     }
@@ -289,6 +291,41 @@ export class Scheduler {
     })
   }
 
+  private queueBlockedContextDependencyRoots(): VNode | undefined {
+    if (this.pendingContextChanges.size === 0) return
+
+    // TODO: it's possible that a 'job' created by this process is
+    // blocked by a parent memo after a queueUpdate -> replaceTree action.
+    // To prevent this, we might need to add these to a distinct queue.
+    const jobRoots: VNode[] = []
+    this.pendingContextChanges.forEach((provider) => {
+      provider.props.dependents.forEach((dep) => {
+        if (!willMemoBlockUpdate(provider, dep)) return
+        const depDepth = dep.depth
+        for (let i = 0; i < jobRoots.length; i++) {
+          const root = jobRoots[i]
+          const rootDepth = root.depth
+          if (depDepth > rootDepth && vNodeContains(root, dep)) {
+            if (willMemoBlockUpdate(root, dep)) {
+              // root is a parent of dep and there's a memo between them, prevent consolidation and queue as new root
+              break
+            }
+            return
+          }
+          if (depDepth < rootDepth && vNodeContains(dep, root)) {
+            jobRoots[i] = dep
+            return
+          }
+        }
+        jobRoots.push(dep)
+      })
+    })
+
+    this.pendingContextChanges.clear()
+    this.treesInProgress.push(...jobRoots)
+    return jobRoots[0]
+  }
+
   private performUnitOfWork(vNode: VNode): VNode | void {
     let renderChild = true
     try {
@@ -304,25 +341,7 @@ export class Scheduler {
             asProvider.prev &&
             asProvider.prev.props.value !== value
           ) {
-            const jobRoots: VNode[] = []
-            dependents.forEach((dep) => {
-              if (!willMemoBlockUpdate(vNode, dep)) return
-
-              const depDepth = dep.depth
-              for (let i = 0; i < jobRoots.length; i++) {
-                const root = jobRoots[i]
-                const rootDepth = root.depth
-                if (depDepth > rootDepth && vNodeContains(root, dep)) {
-                  return
-                }
-                if (depDepth < rootDepth && vNodeContains(dep, root)) {
-                  jobRoots[i] = dep
-                  return
-                }
-              }
-              jobRoots.push(dep)
-            })
-            this.treesInProgress.push(...jobRoots)
+            this.pendingContextChanges.add(asProvider)
           }
         }
         vNode.child =

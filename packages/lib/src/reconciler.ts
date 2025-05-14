@@ -334,7 +334,6 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     const newNode = createElement(child.type, child.props)
     setParent(newNode, parent)
     newNode.flags = flags.set(newNode.flags, FLAG.PLACEMENT)
-    if ("memoizedProps" in child) newNode.memoizedProps = child.memoizedProps
     return newNode
   }
 
@@ -421,8 +420,6 @@ function updateFromMap(
       }
       oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props = newChild.props
-      if ("memoizedProps" in newChild)
-        oldChild.memoizedProps = newChild.memoizedProps
       oldChild.sibling = undefined
       oldChild.index = index
       return oldChild

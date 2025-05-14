@@ -4,7 +4,7 @@ import { __DEV__ } from "../env.js"
 import { $CONTEXT_PROVIDER } from "../constants.js"
 
 type UseContextHookState<T> = {
-  ctxNode: ContextProviderNode<T> | undefined
+  provider: ContextProviderNode<T> | undefined
   context: Kaioken.Context<T>
   warnIfNotFound: boolean
 }
@@ -20,7 +20,7 @@ export function useContext<T>(
 ): T {
   return useHook(
     "useContext",
-    { ctxNode: undefined, context, warnIfNotFound },
+    { provider: undefined, context, warnIfNotFound },
     useContextCallback as typeof useContextCallback<T>
   )
 }
@@ -35,8 +35,8 @@ const useContextCallback = <T>({
       devtools: {
         get: () => ({
           contextName: hook.context.Provider.displayName || "",
-          value: hook.ctxNode
-            ? hook.ctxNode.props.value
+          value: hook.provider
+            ? hook.provider.props.value
             : hook.context.default(),
         }),
       },
@@ -46,25 +46,25 @@ const useContextCallback = <T>({
     let n = vNode.parent
     while (n) {
       if (n.type === $CONTEXT_PROVIDER) {
-        const ctxNode = n as ContextProviderNode<T>
-        const { ctx, value, dependents } = ctxNode.props
+        const provider = n as ContextProviderNode<T>
+        const { ctx, value, dependents } = provider.props
         if (ctx === hook.context) {
           dependents.add(vNode)
           hook.cleanup = () => dependents.delete(vNode)
-          hook.ctxNode = ctxNode
+          hook.provider = provider
           return value
         }
       }
       n = n.parent
     }
   }
-  if (!hook.ctxNode) {
+  if (!hook.provider) {
     if (__DEV__) {
       hook.warnIfNotFound && warnProviderNotFound(hook.context)
     }
     return hook.context.default()
   }
-  return hook.ctxNode.props.value
+  return hook.provider.props.value
 }
 
 const contextsNotFound = new Set<Kaioken.Context<any>>()

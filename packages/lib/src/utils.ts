@@ -146,9 +146,11 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
 function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
   let node: VNode | undefined = target
 
-  if (!flags.get(target.flags, FLAG.HAS_MEMO_ANCESTOR)) return false
-
-  while (node && node !== root) {
+  while (
+    node &&
+    node !== root &&
+    flags.get(node.flags, FLAG.HAS_MEMO_ANCESTOR)
+  ) {
     const parent = node.parent
     if (
       parent?.isMemoized &&
