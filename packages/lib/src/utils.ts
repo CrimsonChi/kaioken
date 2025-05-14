@@ -201,8 +201,8 @@ function postOrderApply(
   while (branch) {
     let c = branch
     while (c) {
-      callbacks.onDescent?.(c)
       if (!c.child) break
+      callbacks.onDescent?.(c)
       c = c.child
     }
 

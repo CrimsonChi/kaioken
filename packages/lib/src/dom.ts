@@ -632,9 +632,7 @@ function commitWork(vNode: VNode) {
 
   postOrderApply(vNode, {
     onDescent: (node) => {
-      if (!node.child) return
       if (node.dom) {
-        // if (node.props["data-test"]) debugger
         // collect host nodes as we go
         currentHostNode = { node: node as ElementVNode }
         hostNodes.push(currentHostNode)
