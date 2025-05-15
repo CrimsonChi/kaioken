@@ -227,24 +227,30 @@ function setSignalProp(
   signal: Signal<any>,
   prevValue: unknown
 ) {
+  const _ctx = ctx.current
   if (!key.startsWith("bind:")) {
-    const unsub = signal.subscribe((value) => {
+    ;(vNode.cleanups ??= {})[key] = signal.subscribe((value) => {
       setProp(vNode, dom, key, value, null)
+      if (__DEV__) {
+        window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
+      }
     })
-    ;(vNode.cleanups ??= {})[key] = unsub
 
     return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
   }
 
   const attr = key.substring(5)
-  const subscriberFn =
+  const setAttr =
     dom instanceof HTMLSelectElement
-      ? (value: any) => {
-          setSelectElementValue(dom, value)
-        }
-      : (value: any) => {
-          ;(dom as any)[attr] = value
-        }
+      ? (value: any) => setSelectElementValue(dom, value)
+      : (value: any) => ((dom as any)[attr] = value)
+
+  const subscriberFn = (value: any) => {
+    setAttr(value)
+    if (__DEV__) {
+      window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
+    }
+  }
   const unsub = signal.subscribe(subscriberFn)
   const addEvt = dom.addEventListener.bind(dom)
   const rmEvt = dom.removeEventListener.bind(dom)
@@ -321,8 +327,12 @@ function setSignalProp(
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
-  ;(vNode.cleanups ??= {})["nodeValue"] = signal.subscribe((v) => {
+  const _ctx = ctx.current
+  ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((v) => {
     textNode.nodeValue = v
+    if (__DEV__) {
+      window.__kaioken?.profilingContext?.emit("signalTextUpdate", _ctx)
+    }
   })
 }
 

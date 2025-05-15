@@ -2,25 +2,27 @@ import type { AppContext } from "./appContext"
 
 const MAX_TICKS = 100
 
-export const ProfilerEvents = {
-  UpdateNode: "updateNode",
-  CreateNode: "createNode",
-  RemoveNode: "removeNode",
-  Update: "update",
-  UpdateDirtied: "updateDirtied",
-} as const
+const ProfilingEvents = [
+  "updateNode",
+  "createNode",
+  "removeNode",
+  "update",
+  "updateDirtied",
+  "signalTextUpdate",
+  "signalAttrUpdate",
+] as const
 
-export type ProfilerEvent = (typeof ProfilerEvents)[keyof typeof ProfilerEvents]
+export type ProfilingEvent = (typeof ProfilingEvents)[number]
 
 type TickTS = {
   start: number
   end: number
 }
 
-type ProfilerEventListener = (app: AppContext) => void
+type ProfilingEventListener = (app: AppContext) => void
 
 export function createProfilingContext() {
-  const eventListeners = new Map<ProfilerEvent, Set<ProfilerEventListener>>()
+  const eventListeners = new Map<ProfilingEvent, Set<ProfilingEventListener>>()
   const appStats: Map<
     AppContext,
     {
@@ -31,12 +33,12 @@ export function createProfilingContext() {
   > = new Map()
   return {
     appStats,
-    emit: (event: ProfilerEvent, app: AppContext) => {
+    emit: (event: ProfilingEvent, app: AppContext) => {
       eventListeners.get(event)?.forEach((listener) => listener(app))
     },
     addEventListener: (
-      event: ProfilerEvent,
-      listener: ProfilerEventListener
+      event: ProfilingEvent,
+      listener: ProfilingEventListener
     ) => {
       if (!eventListeners.has(event)) {
         eventListeners.set(event, new Set())
@@ -44,8 +46,8 @@ export function createProfilingContext() {
       eventListeners.get(event)!.add(listener)
     },
     removeEventListener: (
-      event: ProfilerEvent,
-      listener: ProfilerEventListener
+      event: ProfilingEvent,
+      listener: ProfilingEventListener
     ) => {
       if (!eventListeners.has(event)) return
       eventListeners.get(event)!.delete(listener)
