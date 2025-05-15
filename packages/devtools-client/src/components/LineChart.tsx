@@ -79,17 +79,7 @@ export function LineChart({ data, ...props }: LineChartProps) {
     }))
 
     const unsub = data.subscribe((newData) => {
-      for (const dataset of newData.datasets) {
-        const existing = chart.data.datasets.find(
-          (d) => d.label === dataset.label
-        )
-        if (existing) {
-          existing.data.splice(0, existing.data.length)
-          existing.data.push(...dataset.data)
-        }
-      }
-      chart.data.labels!.splice(0, chart.data.labels!.length)
-      chart.data.labels!.push(...newData.labels)
+      chart.data = newData
       chart.update()
     })
 

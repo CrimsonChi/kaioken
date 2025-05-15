@@ -8,6 +8,7 @@ import {
 import { kaiokenGlobal } from "../state"
 import { isDevtoolsApp, typedMapEntries } from "devtools-shared"
 import { LineChart, LineChartData } from "../components/LineChart"
+import type { ProfilingEvent } from "../../../lib/dist/profiling"
 
 export function ProfilingTabView() {
   const requestUpdate = useRequestUpdate()
@@ -39,72 +40,56 @@ export function ProfilingTabView() {
 const MAX_TICKS = 100
 
 const createLineChartDatasets = (
-  updates: number[],
-  updateDirtied: number[],
-  createNode: number[],
-  updateNode: number[],
-  removeNode: number[]
+  events: EventStateMap
 ): LineChartData["datasets"] => {
-  return [
-    {
-      label: "update",
-      data: updates,
-      fill: false,
-      borderColor: "#ad981f",
-      tension: 0.1,
-    },
-    {
-      label: "updateDirtied",
-      data: updateDirtied,
-      fill: false,
-      borderColor: "#b21f3a",
-      tension: 0.1,
-    },
-    {
-      label: "createNode",
-      data: createNode,
-      fill: false,
-      borderColor: "#198019",
-      tension: 0.1,
-    },
-    {
-      label: "removeNode",
-      data: removeNode,
-      fill: false,
-      borderColor: "#5F3691",
-      tension: 0.1,
-    },
-    {
-      label: "updateNode",
-      data: updateNode,
-      fill: false,
-      borderColor: "#2f2f9d",
-      tension: 0.1,
-    },
-  ]
+  return Object.entries(events).map(([event, { values, color }]) => ({
+    label: event,
+    data: values,
+    fill: false,
+    borderColor: color,
+    tension: 0.1,
+  }))
 }
-
-const initialLineChartDatasets = createLineChartDatasets(
-  [0],
-  [0],
-  [0],
-  [0],
-  [0]
-)
 
 type AppProfilingViewProps = {
   app: AppContext
 }
+type EventStateMap = Record<ProfilingEvent, { values: number[]; color: string }>
 function AppProfilingView({ app }: AppProfilingViewProps) {
   const requestUpdate = useRequestUpdate()
-  const updateEvents = useRef<number[]>([0])
-  const updateDirtiedEvents = useRef<number[]>([0])
-  const createNodeEvents = useRef<number[]>([0])
-  const removeNodeEvents = useRef<number[]>([0])
-  const diffNodeEvents = useRef<number[]>([0])
+  const events = useRef<EventStateMap>({
+    update: {
+      values: [0],
+      color: "#ad981f",
+    },
+    updateDirtied: {
+      values: [0],
+      color: "#b21f3a",
+    },
+    createNode: {
+      values: [0],
+      color: "#198019",
+    },
+    removeNode: {
+      values: [0],
+      color: "#5F3691",
+    },
+    updateNode: {
+      values: [0],
+      color: "#2f2f9d",
+    },
+    signalAttrUpdate: {
+      values: [0],
+      color: "#28888f",
+    },
+    signalTextUpdate: {
+      values: [0],
+      color: "#9b3b98",
+    },
+  })
   const lineChartData = useSignal<LineChartData>({
     labels: [(performance.now() / 1000).toFixed(2)],
-    datasets: initialLineChartDatasets,
+    datasets: createLineChartDatasets(events.current),
   })
   const chartHovered = useSignal(false)
   const profilingContext = kaiokenGlobal?.profilingContext!
@@ -119,49 +104,23 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
   }, [])
 
   useEffect(() => {
-    const onUpdate = (_app: AppContext) => {
-      if (_app.id !== app.id) return
-      const arr = updateEvents.current
-      arr[arr.length - 1]++
-    }
-    const onUpdateDirtied = (_app: AppContext) => {
-      if (_app.id !== app.id) return
-      const arr = updateDirtiedEvents.current
-      arr[arr.length - 1]++
-    }
-    const onCreateNode = (_app: AppContext) => {
-      if (_app.id !== app.id) return
-      const arr = createNodeEvents.current
-      arr[arr.length - 1]++
-    }
-    const onUpdateNode = (_app: AppContext) => {
-      if (_app.id !== app.id) return
-      const arr = diffNodeEvents.current
-      arr[arr.length - 1]++
-    }
-    const onRemoveNode = (_app: AppContext) => {
-      if (_app.id !== app.id) return
-      const arr = removeNodeEvents.current
-      arr[arr.length - 1]++
-    }
-    profilingContext.addEventListener("update", onUpdate)
-    profilingContext.addEventListener("updateDirtied", onUpdateDirtied)
-    profilingContext.addEventListener("createNode", onCreateNode)
-    profilingContext.addEventListener("updateNode", onUpdateNode)
-    profilingContext.addEventListener("removeNode", onRemoveNode)
+    const cleanups: (() => void)[] = []
+    Object.entries(events.current).forEach(([event, { values }]) => {
+      const listener = (_app: AppContext) => {
+        if (_app.id !== app.id) return
+        values[values.length - 1]++
+      }
+      const e = event as ProfilingEvent
+      profilingContext.addEventListener(e, listener)
+      cleanups.push(() => profilingContext.removeEventListener(e, listener))
+    })
 
     const updateInterval = setInterval(() => {
       const newLabels = [...lineChartData.value.labels]
-      ;[
-        updateEvents.current,
-        updateDirtiedEvents.current,
-        createNodeEvents.current,
-        diffNodeEvents.current,
-        removeNodeEvents.current,
-      ].forEach((arr) => {
-        arr.push(0)
-        if (arr.length > MAX_TICKS) {
-          arr.shift()
+      Object.values(events.current).forEach((evt) => {
+        evt.values.push(0)
+        if (evt.values.length > MAX_TICKS) {
+          evt.values.shift()
         }
       })
       newLabels.push((performance.now() / 1000).toFixed(2))
@@ -171,21 +130,12 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
       if (chartHovered.peek() === true) return
       lineChartData.value = {
         labels: newLabels,
-        datasets: createLineChartDatasets(
-          updateEvents.current,
-          updateDirtiedEvents.current,
-          createNodeEvents.current,
-          diffNodeEvents.current,
-          removeNodeEvents.current
-        ),
+        datasets: createLineChartDatasets(events.current),
       }
     }, 100)
 
     return () => {
-      profilingContext.removeEventListener("update", onUpdate)
-      profilingContext.removeEventListener("updateDirtied", onUpdateDirtied)
-      profilingContext.removeEventListener("createNode", onCreateNode)
-      profilingContext.removeEventListener("updateNode", onUpdateNode)
+      cleanups.forEach((cleanup) => cleanup())
       clearInterval(updateInterval)
     }
   }, [])
