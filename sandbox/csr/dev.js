@@ -2,9 +2,19 @@ import { fileURLToPath } from "node:url"
 import { dirname, join } from "node:path"
 import { watch } from "node:fs"
 import { spawn } from "node:child_process"
+import { createServer } from "vite"
 
 if (process.argv.includes("--child")) {
-  spawn("sh", ["-c", "vite"], { stdio: "inherit" })
+  const server = await createServer({
+    root: process.cwd(),
+    customLogger: console,
+  })
+  await server.listen()
+  const { https, host, port } = server.config.server
+  console.log(
+    "Vite server started at " +
+      `http${https ? "s" : ""}://${host ?? "localhost"}:${port}`
+  )
 } else {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = dirname(__filename)
@@ -30,6 +40,6 @@ if (process.argv.includes("--child")) {
       console.log("Restarting server due to plugin change...")
       child.kill()
       child = createChild()
-    }, 50)
+    })
   })
 }
