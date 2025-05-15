@@ -1,8 +1,8 @@
-import { Fragment, useAppContext, useState } from "kaioken"
+import { Fragment, useState, useViewTransition } from "kaioken"
 import { Button } from "./atoms/Button"
 
 export default function KeyedListExample() {
-  const appCtx = useAppContext()
+  const transition = useViewTransition()
   const [counters, setCounters] = useState<number[]>([1, 2, 3, 4, 5])
 
   function move(id: number, dist: number) {
@@ -11,17 +11,11 @@ export default function KeyedListExample() {
     const newCounters = [...counters]
     newCounters.splice(idx, 1)
     newCounters.splice(idx + dist, 0, id)
-    document.startViewTransition(() => {
-      setCounters(newCounters)
-      appCtx.flushSync()
-    })
+    transition(() => setCounters(newCounters))
   }
 
   function remove(id: number) {
-    document.startViewTransition(() => {
-      setCounters(counters.filter((c) => c !== id))
-      appCtx.flushSync()
-    })
+    transition(() => setCounters(counters.filter((c) => c !== id)))
   }
 
   return (
