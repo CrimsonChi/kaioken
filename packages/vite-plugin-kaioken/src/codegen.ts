@@ -230,10 +230,11 @@ export function prepareHydrationBoundaries(
                   code.remove(minStart, maxEnd)
                   let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
                   for (const importedIdentifier of entry.dependencies) {
-                    code.remove(
-                      importedIdentifier.start,
-                      importedIdentifier.end
-                    )
+                    // code.remove(
+                    //   importedIdentifier.start,
+                    //   importedIdentifier.end
+                    // )
+
                     console.log(
                       "injecting dependecy import",
                       importedIdentifier.specifiers!.map((s) => s.local?.name),
@@ -245,14 +246,17 @@ export function prepareHydrationBoundaries(
                       )
                     if (defaultSpecifier) {
                       moduleCode += `import ${defaultSpecifier.local?.name}`
+                    } else {
+                      moduleCode += `import `
                     }
                     if (importedIdentifier.specifiers!.length > 1) {
-                      moduleCode += `{`
-                      for (const specifier of importedIdentifier.specifiers!) {
-                        if (specifier === defaultSpecifier) continue
-                        moduleCode += `${specifier.local?.name}, `
-                      }
-                      moduleCode += `}`
+                      moduleCode += `, {`
+                      let internals = importedIdentifier
+                        .specifiers!.filter((s) => s !== defaultSpecifier)
+                        .map((s) => s.local?.name)
+                        .join(", ")
+
+                      moduleCode += `${internals} }`
                     }
                     moduleCode += ` from "${path
                       .resolve(folderPath, importedIdentifier.source!.value)
