@@ -93,4 +93,10 @@ export function lazy<T extends LazyImportValue>(
   return LazyComponent
 }
 
-const cleanFnStr = (fnStr: string) => fnStr.replace(/\?[^"]*/, "")
+const queryStrRegex = /\?[^"]*/
+/**
+ * removes the query string from a function - prevents
+ * vite-modified imports (eg. () => import("./Counter.tsx?t=123456"))
+ * from causing issues
+ */
+const cleanFnStr = (fnStr: string) => fnStr.replace(queryStrRegex, "")

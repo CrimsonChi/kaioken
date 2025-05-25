@@ -6,7 +6,10 @@ import type {
 } from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import devtoolsHostBuild from "kaioken-devtools-host"
-import { injectHMRContextPreamble } from "./codegen.js"
+import {
+  injectHMRContextPreamble,
+  prepareHydrationBoundaries,
+} from "./codegen.js"
 import MagicString from "magic-string"
 import path from "node:path"
 import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
@@ -40,8 +43,22 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
 
   let _config: UserConfig | null = null
 
+  const virtualModules: Record<string, string> = {}
+
   return {
     name: "vite-plugin-kaioken",
+    // @ts-ignore
+    resolveId(id) {
+      if (virtualModules[id]) {
+        return id
+      }
+    },
+    // @ts-ignore
+    load(id) {
+      if (virtualModules[id]) {
+        return virtualModules[id]
+      }
+    },
     buildStart: async function () {
       // transform 'devtoolsHostBuild' to use the correct path for kaioken imports
       const kaiokenPath = await this.resolve("kaioken")
@@ -92,8 +109,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         res.end(transformedDtClientBuild)
       })
     },
-    transform(code, id) {
-      if (isProduction || isBuild) return
+    transform(code, id, options) {
+      if (options?.ssr) {
+        console.log("vite-plugin-kaioken: ssr", id)
+      }
       if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
       const projectRoot = path.resolve(_config?.root ?? process.cwd())
       const filePath = path.resolve(id)
@@ -101,22 +120,26 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         return { code }
       }
       const ast = this.parse(code)
-      const transformed: MagicString | null = injectHMRContextPreamble(
-        new MagicString(code),
-        ast,
-        fileLinkFormatter,
-        id
-      )
-      if (transformed === null) return { code }
-
-      const map = transformed.generateMap({
+      const includeHMR = isProduction || isBuild
+      const asMagicStr = new MagicString(code)
+      if (includeHMR) {
+        // early return if no components or hotVars are found
+        if (!injectHMRContextPreamble(asMagicStr, ast, fileLinkFormatter, id)) {
+          return { code }
+        }
+      }
+      const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
+      for (const key in extraModules) {
+        virtualModules[key] = extraModules[key]
+      }
+      const map = asMagicStr.generateMap({
         source: id,
         file: `${id}.map`,
         includeContent: true,
       })
 
       return {
-        code: transformed.toString(),
+        code: asMagicStr.toString(),
         map: map.toString(),
       }
     },

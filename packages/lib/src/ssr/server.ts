@@ -7,9 +7,10 @@ import {
   encodeHtmlEntities,
   propsToElementAttributes,
   selfClosingTags,
+  isExoticType,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
-import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "../constants.js"
+import { ELEMENT_TYPE } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
@@ -80,7 +81,7 @@ function renderToStream_internal(
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
-  if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
+  if (isExoticType(type)) {
     if (!Array.isArray(children))
       return renderToStream_internal(state, children, el, idx)
     return children.forEach((c, i) => renderToStream_internal(state, c, el, i))

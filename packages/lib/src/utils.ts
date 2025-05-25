@@ -1,5 +1,11 @@
 import { node, nodeToCtxMap, renderMode } from "./globals.js"
-import { $CONTEXT_PROVIDER, $FRAGMENT, FLAG, REGEX_UNIT } from "./constants.js"
+import {
+  $CONTEXT_PROVIDER,
+  $FRAGMENT,
+  $HYDRATION_BOUNDARY,
+  FLAG,
+  REGEX_UNIT,
+} from "./constants.js"
 import { unwrap } from "./signals/utils.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
@@ -14,6 +20,7 @@ export {
   isMemo,
   isContextProvider,
   isExoticVNode,
+  isExoticType,
   isVNodeDeleted,
   vNodeContains,
   willMemoBlockUpdate,
@@ -78,9 +85,14 @@ function isVNode(thing: unknown): thing is VNode {
 }
 
 function isExoticVNode(thing: unknown): thing is ExoticVNode {
+  return isVNode(thing) && isExoticType(thing.type)
+}
+
+function isExoticType(type: VNode["type"]): type is ExoticVNode["type"] {
   return (
-    isVNode(thing) &&
-    (thing.type === $FRAGMENT || thing.type === $CONTEXT_PROVIDER)
+    type === $FRAGMENT ||
+    type === $CONTEXT_PROVIDER ||
+    type === $HYDRATION_BOUNDARY
   )
 }
 

@@ -1,5 +1,10 @@
 import type { ReadonlySignal, Signal as SignalClass } from "./signals"
-import type { $CONTEXT, $CONTEXT_PROVIDER, $FRAGMENT } from "./constants"
+import type {
+  $CONTEXT,
+  $CONTEXT_PROVIDER,
+  $FRAGMENT,
+  $HYDRATION_BOUNDARY,
+} from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
@@ -142,9 +147,9 @@ declare global {
     type FCProps<T = {}> = T & { children?: JSX.Children }
     type InferProps<T> = T extends Kaioken.FC<infer P> ? P : never
 
-    interface HookDevtoolsProvisions<T extends Record<string, any>> {
+    type HookDevtoolsProvisions<T extends Record<string, any>> = {
       get: () => T
-      set?: (value: ReturnType<this["get"]>) => void
+      set?: (value: T) => void
     }
     type Hook<T> = T & {
       cleanup?: () => void
@@ -178,7 +183,10 @@ declare global {
 
     type Signal<T> = SignalClass<T> | ReadonlySignal<T>
 
-    type ExoticSymbol = typeof $FRAGMENT | typeof $CONTEXT_PROVIDER
+    type ExoticSymbol =
+      | typeof $FRAGMENT
+      | typeof $CONTEXT_PROVIDER
+      | typeof $HYDRATION_BOUNDARY
 
     type VNode = {
       type: string | Function | ExoticSymbol
