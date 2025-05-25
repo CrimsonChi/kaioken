@@ -9,8 +9,9 @@ import {
   isExoticType,
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
-import { ELEMENT_TYPE } from "./constants.js"
+import { $HYDRATION_BOUNDARY, ELEMENT_TYPE } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
+import { HYDRATION_BOUNDARY_MARKER } from "./ssr/hydrationBoundary.js"
 
 export function renderToString<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
@@ -54,9 +55,15 @@ function renderToString_internal(
   if (type === ELEMENT_TYPE.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
   if (isExoticType(type)) {
-    if (!Array.isArray(children))
-      return renderToString_internal(children, el, idx)
-    return children.map((c, i) => renderToString_internal(c, el, i)).join("")
+    if (type === $HYDRATION_BOUNDARY) {
+      return `<!--${HYDRATION_BOUNDARY_MARKER}-->${renderToString_internal(
+        children,
+        el,
+        idx
+      )}<!--/${HYDRATION_BOUNDARY_MARKER}-->`
+    }
+
+    return renderToString_internal(children, el, idx)
   }
 
   if (typeof type !== "string") {

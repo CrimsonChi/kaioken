@@ -110,9 +110,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       })
     },
     transform(code, id, options) {
-      if (options?.ssr) {
-        console.log("vite-plugin-kaioken: ssr", id)
-      }
       if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
       const projectRoot = path.resolve(_config?.root ?? process.cwd())
       const filePath = path.resolve(id)
@@ -128,9 +125,11 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
           return { code }
         }
       }
-      const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
-      for (const key in extraModules) {
-        virtualModules[key] = extraModules[key]
+      if (!options?.ssr) {
+        const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
+        for (const key in extraModules) {
+          virtualModules[key] = extraModules[key]
+        }
       }
       const map = asMagicStr.generateMap({
         source: id,

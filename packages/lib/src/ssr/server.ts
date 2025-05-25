@@ -10,8 +10,9 @@ import {
   isExoticType,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
-import { ELEMENT_TYPE } from "../constants.js"
+import { $HYDRATION_BOUNDARY, ELEMENT_TYPE } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
+import { HYDRATION_BOUNDARY_MARKER } from "./hydrationBoundary.js"
 
 type RequestState = {
   stream: Readable
@@ -82,9 +83,13 @@ function renderToStream_internal(
     return
   }
   if (isExoticType(type)) {
-    if (!Array.isArray(children))
-      return renderToStream_internal(state, children, el, idx)
-    return children.forEach((c, i) => renderToStream_internal(state, c, el, i))
+    if (type === $HYDRATION_BOUNDARY) {
+      state.stream.push(`<!--${HYDRATION_BOUNDARY_MARKER}-->`)
+      renderToStream_internal(state, children, el, idx)
+      state.stream.push(`<!--/${HYDRATION_BOUNDARY_MARKER}-->`)
+      return
+    }
+    return renderToStream_internal(state, children, el, idx)
   }
 
   if (typeof type !== "string") {

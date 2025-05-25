@@ -1,9 +1,16 @@
 import { $HMR_ACCEPT } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
-import { renderMode } from "./globals.js"
+import { KaiokenError } from "./error.js"
+import { node, renderMode } from "./globals.js"
 import { HMRAccept } from "./hmr.js"
-import { useRequestUpdate } from "./hooks/utils.js"
+import { useContext } from "./hooks/useContext.js"
+import { useAppContext, useRequestUpdate } from "./hooks/utils.js"
+import { hydrationStack } from "./hydration.js"
+import {
+  HYDRATION_BOUNDARY_MARKER,
+  HydrationBoundaryContext,
+} from "./ssr/hydrationBoundary.js"
 import { traverseApply } from "./utils.js"
 
 type FCModule = { default: Kaioken.FC<any> }
@@ -27,10 +34,61 @@ const lazyCache: Map<string, LazyState> =
       (window.__KAIOKEN_LAZY_CACHE ??= new Map<string, LazyState>())
     : new Map<string, LazyState>()
 
+function consumeHydrationBoundaryChildren(): {
+  parent: HTMLElement
+  childNodes: Node[]
+  startIndex: number
+} {
+  const boundaryStart = hydrationStack.currentChild()
+  if (
+    boundaryStart?.nodeType !== Node.COMMENT_NODE ||
+    boundaryStart.nodeValue !== HYDRATION_BOUNDARY_MARKER
+  ) {
+    throw new KaiokenError({
+      message:
+        "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
+      fatal: true,
+      vNode: node.current,
+    })
+  }
+  const parent = boundaryStart.parentElement!
+  const childNodes: Node[] = []
+  const isBoundaryEnd = (n: Node) => {
+    return (
+      n.nodeType === Node.COMMENT_NODE &&
+      n.nodeValue === "/" + HYDRATION_BOUNDARY_MARKER
+    )
+  }
+  let n = boundaryStart.nextSibling
+  boundaryStart.remove()
+  const startIndex =
+    hydrationStack.childIdxStack[hydrationStack.childIdxStack.length - 1]
+  while (n && !isBoundaryEnd(n)) {
+    childNodes.push(n)
+    hydrationStack.bumpChildIndex()
+    n = n.nextSibling
+  }
+  const boundaryEnd = hydrationStack.currentChild()
+  if (!isBoundaryEnd(boundaryEnd)) {
+    throw new KaiokenError({
+      message:
+        "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
+      fatal: true,
+      vNode: node.current,
+    })
+  }
+  boundaryEnd.remove()
+  return { parent, childNodes, startIndex }
+}
+
+const interactionEvents = ["pointerdown", "keydown", "focus", "input"]
+
 export function lazy<T extends LazyImportValue>(
   componentPromiseFn: () => Promise<T>
 ): Kaioken.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
+    const appCtx = useAppContext()
+    const hydrationCtx = useContext(HydrationBoundaryContext, false)
     const { fallback = null, ...rest } = props
     const requestUpdate = useRequestUpdate()
     if (renderMode.current === "string" || renderMode.current === "stream") {
@@ -47,14 +105,86 @@ export function lazy<T extends LazyImportValue>(
         result: null,
       }
       lazyCache.set(asStr, state)
-      promise.then((componentOrModule) => {
-        state.result =
-          typeof componentOrModule === "function"
-            ? componentOrModule
-            : componentOrModule.default
-        requestUpdate()
-      })
-      return fallback
+      if (hydrationCtx && renderMode.current === "hydrate") {
+        const { parent, childNodes, startIndex } =
+          consumeHydrationBoundaryChildren()
+        for (const child of childNodes) {
+          if (child instanceof Element) {
+            hydrationStack.captureEvents(child)
+          }
+        }
+
+        const ready = promise.then((componentOrModule) => {
+          state.result =
+            typeof componentOrModule === "function"
+              ? componentOrModule
+              : componentOrModule.default
+        })
+
+        const hydrate = () => {
+          appCtx.scheduler?.nextIdle(() => {
+            hydrationStack.push(parent)
+            hydrationStack.childIdxStack[
+              hydrationStack.childIdxStack.length - 1
+            ] = startIndex
+            const prev = renderMode.current
+            requestUpdate()
+            renderMode.current = "hydrate"
+            appCtx.flushSync()
+            renderMode.current = prev
+            for (const child of childNodes) {
+              if (child instanceof Element) {
+                hydrationStack.releaseEvents(child)
+              }
+            }
+          })
+        }
+
+        /**
+         * once the promise resolves, we need to act according
+         * to the HydrationBoundaryContext 'mode'.
+         *
+         * - with 'eager', we just hydrate the children immediately
+         * - with 'lazy', we'll wait for user interaction before hydrating
+         */
+
+        if (hydrationCtx.mode === "eager") {
+          ready.then(hydrate)
+        } else {
+          const eventIsFromChild = (e: Event) => {
+            if (!(e.target instanceof Element)) {
+              return false
+            }
+            return childNodes.some((child) =>
+              child.contains(e.target as Element)
+            )
+          }
+          const onInteraction = (e: Event) => {
+            if (eventIsFromChild(e)) {
+              ready.then(() => {
+                hydrate()
+                interactionEvents.forEach((event) => {
+                  window.removeEventListener(event, onInteraction)
+                })
+              })
+            }
+          }
+          interactionEvents.forEach((event) => {
+            window.addEventListener(event, onInteraction)
+          })
+        }
+
+        return null
+      } else {
+        promise.then((componentOrModule) => {
+          state.result =
+            typeof componentOrModule === "function"
+              ? componentOrModule
+              : componentOrModule.default
+          requestUpdate()
+        })
+        return fallback
+      }
     }
 
     if (cachedState.result === null) {

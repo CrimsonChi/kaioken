@@ -144,10 +144,6 @@ export function prepareHydrationBoundaries(
     .split("/")
     .filter(Boolean)
     .join("_")
-  console.log(
-    "[vite-plugin-kaioken]: preparing hydration boundaries...",
-    modulePrefix
-  )
   const extraModules: Record<string, string> = {}
   const bodyNodes = ast.body as AstNode[]
   const hydrationBoundaryAliasHandler = createAliasHandler(
@@ -208,7 +204,6 @@ export function prepareHydrationBoundaries(
               hydrationBoundaryAliasHandler.aliases.has(n.arguments[0].name)
             ) {
               const idx = index++
-              console.log("new hydration boundary", name, idx)
               const entry = {
                 id: `@boundaries/${modulePrefix}/${name}_${idx}`,
                 dependencies: new Set<AstNode>(),
@@ -218,11 +213,6 @@ export function prepareHydrationBoundaries(
               return () => {
                 const childArgs = n.arguments?.slice(2)
                 if (entry.dependencies.size && childArgs?.length) {
-                  console.log(
-                    "hydrationboundary children",
-                    childArgs,
-                    entry.dependencies
-                  )
                   // create virtual modules
                   const minStart = Math.min(...childArgs.map((n) => n.start!))
                   const maxEnd = Math.max(...childArgs.map((n) => n.end!))
@@ -230,16 +220,6 @@ export function prepareHydrationBoundaries(
                   code.remove(minStart, maxEnd)
                   let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
                   for (const importedIdentifier of entry.dependencies) {
-                    // code.remove(
-                    //   importedIdentifier.start,
-                    //   importedIdentifier.end
-                    // )
-
-                    console.log(
-                      "injecting dependecy import",
-                      importedIdentifier.specifiers!.map((s) => s.local?.name),
-                      path.resolve(filePath, importedIdentifier.source!.value)
-                    )
                     const defaultSpecifier =
                       importedIdentifier.specifiers!.find(
                         (s) => s.type === "ImportDefaultSpecifier"
@@ -263,7 +243,6 @@ export function prepareHydrationBoundaries(
                       .replace(/\\/g, "/")}";`
                   }
                   moduleCode += `\n\nexport default function BoundaryChildren${idx}() {
-console.log(${idx});
 return _jsx(_jsxFragment, null, ${childrenExpr})
 }`
                   const boundaryChildrenName = `BoundaryChildren_${name}_${idx}`
@@ -297,7 +276,6 @@ export default lazy(() => import("${entry.id}"));`
                   }
                 }
               })
-              console.log("hydration boundary child", n, boundaryMapEntry)
             }
             return
           },
@@ -330,7 +308,7 @@ function createHMRRegistrationBlurb(
     }`
     }
     if (!componentHookArgs[name]) {
-      console.log(
+      console.error(
         "[vite-plugin-kaioken]: failed to parse component hooks",
         name
       )
