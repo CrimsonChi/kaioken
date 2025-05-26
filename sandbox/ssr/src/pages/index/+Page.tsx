@@ -6,7 +6,7 @@ export function Page() {
     <HydrationBoundary mode="lazy">
       <div className="p-6">
         <h1>Hello, world!</h1>
-        <Counter />
+        <Counter test={789} />
       </div>
     </HydrationBoundary>
   )

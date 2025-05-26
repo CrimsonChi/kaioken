@@ -3,6 +3,7 @@ import type {
   IndexHtmlTransformResult,
   Plugin,
   UserConfig,
+  ViteDevServer,
 } from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import devtoolsHostBuild from "kaioken-devtools-host"
@@ -43,7 +44,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
 
   let _config: UserConfig | null = null
   const virtualModules: Record<string, string> = {}
-
+  const virtualModuleDependents: Record<string, Set<string>> = {}
+  let devServer: ViteDevServer | null = null
   return {
     name: "vite-plugin-kaioken",
     // @ts-ignore
@@ -95,6 +97,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       isBuild = config.command === "build"
     },
     configureServer(server) {
+      devServer = server
       if (isProduction || isBuild || opts?.devtools === false) return
       server.middlewares.use(dtHostScriptPath, (_, res) => {
         res.setHeader("Content-Type", "application/javascript")
@@ -103,6 +106,9 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       server.middlewares.use(dtClientPathname, (_, res) => {
         res.end(transformedDtClientBuild)
       })
+    },
+    handleHotUpdate(ctx) {
+      console.log("handleHotUpdate", ctx.file)
     },
     transform(code, id, options) {
       const isVirtual = !!virtualModules[id]
@@ -115,6 +121,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
           return { code }
         }
       }
+
+      console.log("transform", id)
 
       const ast = this.parse(code)
       const asMagicStr = new MagicString(code)
@@ -137,7 +145,30 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       if (!options?.ssr) {
         const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
         for (const key in extraModules) {
+          //const didExist = !!virtualModules[key]
+          const didExist = !!virtualModules[key]
           virtualModules[key] = extraModules[key]
+          if (didExist && !key.endsWith("_loader")) {
+            const module = devServer!.moduleGraph.getModuleById(key)!
+            devServer!.reloadModule(module)
+          }
+          // virtualModuleDependents[id] ??= new Set()
+          // virtualModuleDependents[id].add(key)
+
+          // if (didExist) {
+          //   console.log("updating virtual module", key)
+          //   const module = devServer?.moduleGraph.getModuleById(key)
+          //   if (module) {
+          //     devServer?.moduleGraph.invalidateModule(
+          //       module,
+          //       undefined,
+          //       undefined,
+          //       true
+          //     )
+          //   } else {
+          //     console.log("module not found", key)
+          //   }
+          // }
         }
       }
 

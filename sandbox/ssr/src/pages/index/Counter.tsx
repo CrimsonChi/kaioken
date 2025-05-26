@@ -1,11 +1,12 @@
 import { useSignal } from "kaioken"
 
-export const test = 123
+type CounterProps = {
+  test: number
+}
+export default function Counter(props: CounterProps) {
+  const count = useSignal(0)
 
-export default function Counter() {
-  const count = useSignal(123)
-
-  console.log("Counter")
+  console.log("Counter", props.test)
 
   return (
     <>

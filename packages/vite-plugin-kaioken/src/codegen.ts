@@ -167,8 +167,8 @@ export function prepareHydrationBoundaries(
     }
 
     if (isComponent(node, bodyNodes)) {
-      const name = findNodeName(node)
-      if (name === null) {
+      const componentName = findNodeName(node)
+      if (componentName === null) {
         console.error(
           "[vite-plugin-kaioken]: unable to prepare hydration boundaries (failed to find component name)",
           node.type,
@@ -177,13 +177,18 @@ export function prepareHydrationBoundaries(
         continue
       }
       let index = 0
-      const componentBodyNodes = findFunctionBodyNodes(node, name, bodyNodes)
+      const componentBodyNodes = findFunctionBodyNodes(
+        node,
+        componentName,
+        bodyNodes
+      )
       const boundaryMap: Map<
         AstNode,
         { id: string; dependencies: Set<AstNode> }
       > = new Map()
       const boundaryStack: AstNode[] = []
 
+      // TODO: implement variable/prop passing
       // TODO: handle variable shadowing
 
       // const blockScopes: { variables: AstNode[] }[] = [
@@ -210,7 +215,7 @@ export function prepareHydrationBoundaries(
             ) {
               const idx = index++
               const entry = {
-                id: `@boundaries/${modulePrefix}/${name}_${idx}`,
+                id: `@boundaries/${modulePrefix}/${componentName}_${idx}`,
                 dependencies: new Set<AstNode>(),
               }
               boundaryMap.set(n, entry)
@@ -222,7 +227,9 @@ export function prepareHydrationBoundaries(
                   const minStart = Math.min(...childArgs.map((n) => n.start!))
                   const maxEnd = Math.max(...childArgs.map((n) => n.end!))
                   const childrenExpr = code.original.substring(minStart, maxEnd)
+                  console.log("childrenExpr", childrenExpr)
                   code.remove(minStart, maxEnd)
+
                   let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
                   for (const importedIdentifier of entry.dependencies) {
                     const defaultSpecifier =
@@ -250,7 +257,7 @@ export function prepareHydrationBoundaries(
                   moduleCode += `\n\nexport default function BoundaryChildren${idx}() {
 return _jsx(_jsxFragment, null, ${childrenExpr})
 }`
-                  const boundaryChildrenName = `BoundaryChildren_${name}_${idx}`
+                  const boundaryChildrenName = `BoundaryChildren_${componentName}_${idx}`
                   code.prepend(
                     `\nimport ${boundaryChildrenName} from "${
                       entry.id + "_loader"

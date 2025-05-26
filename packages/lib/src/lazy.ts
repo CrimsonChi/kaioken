@@ -5,6 +5,7 @@ import { KaiokenError } from "./error.js"
 import { node, renderMode } from "./globals.js"
 import { HMRAccept } from "./hmr.js"
 import { useContext } from "./hooks/useContext.js"
+import { useRef } from "./hooks/useRef.js"
 import { useAppContext, useRequestUpdate } from "./hooks/utils.js"
 import { hydrationStack } from "./hydration.js"
 import {
@@ -87,9 +88,13 @@ export function lazy<T extends LazyImportValue>(
   componentPromiseFn: () => Promise<T>
 ): Kaioken.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
+    const { fallback = null, ...rest } = props
+    const hydration = useRef({
+      required: false,
+      done: false,
+    })
     const appCtx = useAppContext()
     const hydrationCtx = useContext(HydrationBoundaryContext, false)
-    const { fallback = null, ...rest } = props
     const requestUpdate = useRequestUpdate()
     if (renderMode.current === "string" || renderMode.current === "stream") {
       return fallback
@@ -97,8 +102,9 @@ export function lazy<T extends LazyImportValue>(
 
     const asStr = cleanFnStr(componentPromiseFn.toString())
     const cachedState = lazyCache.get(asStr)
-
+    console.log("lazy", hydration.current)
     if (!cachedState) {
+      console.log("lazy - no cache state", asStr)
       const promise = componentPromiseFn()
       const state: LazyState = {
         promise,
@@ -106,6 +112,8 @@ export function lazy<T extends LazyImportValue>(
       }
       lazyCache.set(asStr, state)
       if (hydrationCtx && renderMode.current === "hydrate") {
+        hydration.current.required = true
+        console.log("lazy - hydration required", asStr)
         const { parent, childNodes, startIndex } =
           consumeHydrationBoundaryChildren()
         for (const child of childNodes) {
@@ -137,6 +145,8 @@ export function lazy<T extends LazyImportValue>(
                 hydrationStack.releaseEvents(child)
               }
             }
+            hydration.current.done = true
+            console.log("lazy - hydration done", asStr)
           })
         }
 
@@ -197,29 +207,29 @@ export function lazy<T extends LazyImportValue>(
     return createElement(cachedState.result, rest)
   }
   LazyComponent.displayName = "Kaioken.lazy"
-  if (__DEV__) {
-    return Object.assign(LazyComponent, {
-      [$HMR_ACCEPT]: {
-        inject: (prev) => {
-          window.__kaioken!.apps.forEach((ctx) => {
-            if (!ctx.mounted || !ctx.rootNode) return
-            traverseApply(ctx.rootNode, (vNode) => {
-              if (vNode.type === prev) {
-                vNode.type = LazyComponent
-                vNode.hmrUpdated = true
-                if (vNode.prev) {
-                  vNode.prev.type = LazyComponent
-                }
-                ctx.requestUpdate(vNode)
-              }
-            })
-          })
-        },
-        destroy: () => {},
-        provide: () => LazyComponent,
-      } satisfies HMRAccept<Function>,
-    })
-  }
+  // if (__DEV__) {
+  //   return Object.assign(LazyComponent, {
+  //     [$HMR_ACCEPT]: {
+  //       inject: (prev) => {
+  //         window.__kaioken!.apps.forEach((ctx) => {
+  //           if (!ctx.mounted || !ctx.rootNode) return
+  //           traverseApply(ctx.rootNode, (vNode) => {
+  //             if (vNode.type === prev) {
+  //               vNode.type = LazyComponent
+  //               vNode.hmrUpdated = true
+  //               if (vNode.prev) {
+  //                 vNode.prev.type = LazyComponent
+  //               }
+  //               ctx.requestUpdate(vNode)
+  //             }
+  //           })
+  //         })
+  //       },
+  //       destroy: () => {},
+  //       provide: () => LazyComponent,
+  //     } satisfies HMRAccept<Function>,
+  //   })
+  // }
   return LazyComponent
 }
 
