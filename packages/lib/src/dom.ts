@@ -6,7 +6,6 @@ import {
   propToHtmlAttr,
   svgTags,
   postOrderApply,
-  classNamePropToString,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
 import { ELEMENT_TYPE, FLAG } from "./constants.js"
@@ -475,11 +474,11 @@ function setInnerHTML(element: SomeElement, value: unknown) {
 }
 
 function setClassName(element: SomeElement, value: unknown) {
-  if (value === null || value === undefined || typeof value === "boolean") {
-    element.removeAttribute("class")
-    return
+  const val = unwrap(value)
+  if (!val) {
+    return element.removeAttribute("class")
   }
-  element.setAttribute("class", classNamePropToString(value))
+  element.setAttribute("class", val as string)
 }
 
 function setStyleProp(

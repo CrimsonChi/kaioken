@@ -10,13 +10,10 @@ import type {
   SvgGlobalAttributes,
   StyleObject,
   HtmlElementBindableProps,
-  ClassNameArray,
 } from "./types.dom"
 import { Signalable, SomeDom } from "./types.utils"
 
-export type { ElementProps, ClassNameArray, ClassNameAttribute, StyleObject }
-
-type ClassNameAttribute = Signalable<string | ClassNameArray | undefined>
+export type { ElementProps, StyleObject }
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap

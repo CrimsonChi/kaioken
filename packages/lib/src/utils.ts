@@ -12,6 +12,7 @@ export {
   isFragment,
   isLazy,
   isMemo,
+  className,
   isContextProvider,
   isExoticVNode,
   isVNodeDeleted,
@@ -23,7 +24,6 @@ export {
   traverseApply,
   postOrderApply,
   findParent,
-  classNamePropToString,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   propsToElementAttributes,
@@ -46,7 +46,13 @@ type VNode = Kaioken.VNode
 
 const noop: () => void = Object.freeze(() => {})
 
-const addUnique = <T>(arr: T[], val: T) => arr.includes(val) || arr.push(val)
+function className(...classes: (string | false | undefined)[]): string {
+  return classes.filter(Boolean).join(" ")
+}
+
+function addUnique<T>(arr: T[], val: T) {
+  arr.includes(val) || arr.push(val)
+}
 
 /**
  * This is a no-op in production. It is used to get the latest
@@ -605,13 +611,6 @@ function styleObjectToString(obj: Partial<CSSStyleDeclaration>): string {
   return cssString
 }
 
-function classNamePropToString(className: unknown): string {
-  if (typeof className === "string") return className
-  if (Array.isArray(className))
-    return className.flat().filter(Boolean).join(" ")
-  return ""
-}
-
 function stylePropToString(style: unknown) {
   if (typeof style === "string") return style
   if (typeof style === "object" && !!style) return styleObjectToString(style)
@@ -627,10 +626,12 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
   const attrs: string[] = []
   const { className, style, ...rest } = props
   if (className) {
-    attrs.push(`class="${classNamePropToString(unwrap(className))}"`)
+    const val = unwrap(className)
+    if (!!val) attrs.push(`class="${val}"`)
   }
   if (style) {
-    attrs.push(`style="${stylePropToString(unwrap(style))}"`)
+    const val = unwrap(style)
+    if (!!val) attrs.push(`style="${stylePropToString(val)}"`)
   }
 
   const keys = Object.keys(rest).filter(propFilters.isProperty)

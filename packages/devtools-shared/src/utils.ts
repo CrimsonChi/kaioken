@@ -1,5 +1,9 @@
 import type { AppContext } from "kaioken"
 
+export function className(...classes: (string | false | undefined)[]) {
+  return classes.filter(Boolean).join(" ")
+}
+
 export function applyObjectChangeFromKeys(
   obj: Record<string, any>,
   keys: string[],

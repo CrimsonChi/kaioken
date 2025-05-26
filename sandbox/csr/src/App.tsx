@@ -1,10 +1,31 @@
 import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
+import { ElementProps, useSignal } from "kaioken"
+import { className as cls } from "kaioken/utils"
 
 const Home: Kaioken.FC = () => {
+  const divClass = useSignal("text-2xl")
+  console.log("Home")
   return (
     <div>
       <h1>Home</h1>
+      <button
+        onclick={() =>
+          (divClass.value =
+            divClass.value === "text-2xl" ? "text-4xl" : "text-2xl")
+        }
+      >
+        toggle
+      </button>
+      <SpecialDiv className={divClass}>test</SpecialDiv>
+    </div>
+  )
+}
+
+function SpecialDiv({ className, ...props }: ElementProps<"div">) {
+  return (
+    <div className={cls("font-bold", className?.toString())} {...props}>
+      test
     </div>
   )
 }
