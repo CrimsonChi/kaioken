@@ -42,7 +42,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let transformedDtClientBuild = ""
 
   let _config: UserConfig | null = null
-
   const virtualModules: Record<string, string> = {}
 
   return {
@@ -53,14 +52,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         return id
       }
     },
-    // @ts-ignore
     load(id) {
-      if (virtualModules[id]) {
-        return virtualModules[id]
-      }
+      return virtualModules[id]
     },
-    buildStart: async function () {
-      // transform 'devtoolsHostBuild' to use the correct path for kaioken imports
+    async buildStart() {
       const kaiokenPath = await this.resolve("kaioken")
       transformedDtHostBuild = devtoolsHostBuild.replaceAll(
         'from "kaioken"',
@@ -110,27 +105,42 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       })
     },
     transform(code, id, options) {
-      if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
-      const projectRoot = path.resolve(_config?.root ?? process.cwd())
-      const filePath = path.resolve(id)
-      if (!filePath.startsWith(projectRoot)) {
-        return { code }
-      }
-      const ast = this.parse(code)
-      const includeHMR = isProduction || isBuild
-      const asMagicStr = new MagicString(code)
-      if (includeHMR) {
-        // early return if no components or hotVars are found
-        if (!injectHMRContextPreamble(asMagicStr, ast, fileLinkFormatter, id)) {
+      const isVirtual = !!virtualModules[id]
+      if (isVirtual) {
+      } else {
+        if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
+        const projectRoot = path.resolve(_config?.root ?? process.cwd())
+        const filePath = path.resolve(id)
+        if (!filePath.startsWith(projectRoot)) {
           return { code }
         }
       }
+
+      const ast = this.parse(code)
+      const asMagicStr = new MagicString(code)
+
+      if (!isProduction && !isBuild) {
+        // early return if no components or hotVars are found
+        if (
+          !injectHMRContextPreamble(
+            asMagicStr,
+            ast,
+            fileLinkFormatter,
+            id,
+            isVirtual
+          )
+        ) {
+          return { code }
+        }
+      }
+
       if (!options?.ssr) {
         const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
         for (const key in extraModules) {
           virtualModules[key] = extraModules[key]
         }
       }
+
       const map = asMagicStr.generateMap({
         source: id,
         file: `${id}.map`,

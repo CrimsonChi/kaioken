@@ -75,7 +75,8 @@ export function injectHMRContextPreamble(
   code: MagicString,
   ast: ProgramNode,
   fileLinkFormatter: FileLinkFormatter,
-  filePath: string
+  filePath: string,
+  isVirtualModule: boolean
 ): boolean {
   try {
     const srcInsertCtx: SrcInsertionContext = {
@@ -106,12 +107,16 @@ if (import.meta.hot && "window" in globalThis) {
     code.append(`
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
-  ${createHMRRegistrationBlurb(
-    hotVars,
-    componentNamesToHookArgs,
-    fileLinkFormatter,
-    filePath
-  )}
+  ${
+    isVirtualModule
+      ? ""
+      : createHMRRegistrationBlurb(
+          hotVars,
+          componentNamesToHookArgs,
+          fileLinkFormatter,
+          filePath
+        )
+  }
 }
 `)
 

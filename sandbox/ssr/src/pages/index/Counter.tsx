@@ -3,7 +3,9 @@ import { useSignal } from "kaioken"
 export const test = 123
 
 export default function Counter() {
-  const count = useSignal(0)
+  const count = useSignal(123)
+
+  console.log("Counter")
 
   return (
     <>
