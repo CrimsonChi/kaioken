@@ -3,7 +3,6 @@ import { $CONTEXT_PROVIDER, $FRAGMENT, FLAG, REGEX_UNIT } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
-import type { ExoticVNode } from "./types.utils"
 import { __DEV__ } from "./env.js"
 import { flags } from "./flags.js"
 
@@ -14,7 +13,7 @@ export {
   isMemo,
   className,
   isContextProvider,
-  isExoticVNode,
+  isExoticType,
   isVNodeDeleted,
   vNodeContains,
   willMemoBlockUpdate,
@@ -83,11 +82,8 @@ function isVNode(thing: unknown): thing is VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
-function isExoticVNode(thing: unknown): thing is ExoticVNode {
-  return (
-    isVNode(thing) &&
-    (thing.type === $FRAGMENT || thing.type === $CONTEXT_PROVIDER)
-  )
+function isExoticType(type: VNode["type"]): type is Kaioken.ExoticSymbol {
+  return type === $FRAGMENT || type === $CONTEXT_PROVIDER
 }
 
 function isFragment(vNode: VNode): vNode is VNode & { type: typeof $FRAGMENT } {
@@ -116,7 +112,7 @@ function isContextProvider(
   return isVNode(thing) && thing.type === $CONTEXT_PROVIDER
 }
 
-function getCurrentVNode(): VNode | undefined {
+function getCurrentVNode(): VNode | null {
   return node.current
 }
 
@@ -131,7 +127,7 @@ function getVNodeAppContext(vNode: VNode): AppContext {
 }
 
 function commitSnapshot(vNode: VNode): void {
-  vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
+  vNode.prev = { ...vNode, props: { ...vNode.props }, prev: null }
   vNode.flags = flags.unsetRange(vNode.flags, FLAG.UPDATE, FLAG.DELETION)
 }
 
@@ -150,7 +146,7 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
 }
 
 function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
-  let node: VNode | undefined = target
+  let node: VNode | null = target
 
   while (
     node &&
@@ -231,12 +227,12 @@ function findParent(
   vNode: Kaioken.VNode,
   predicate: (n: Kaioken.VNode) => boolean
 ) {
-  let n: Kaioken.VNode | undefined = vNode.parent
+  let n: Kaioken.VNode | null = vNode.parent
   while (n) {
     if (predicate(n)) return n
     n = n.parent
   }
-  return undefined
+  return null
 }
 
 function compare<T>(a: T, b: T, deep = false): boolean {

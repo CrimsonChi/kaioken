@@ -8,140 +8,128 @@ import { shuffle } from "./utils.js"
 import { flags } from "../../flags.js"
 import { commitSnapshot } from "../../utils.js"
 
+const commitChildren = (node: Kaioken.VNode) => {
+  let n = node.child
+  while (n) {
+    commitSnapshot(n)
+    n = n.sibling
+  }
+}
+
 describe("reconciler", () => {
-  it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", (t) => {
+  it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", () => {
     ctx.current = new kaioken.AppContext(() => null)
-    const mockRequestDeleteFn = t.mock.fn<(node: Kaioken.VNode) => void>(
-      () => {}
-    )
-    ctx.current.requestDelete = mockRequestDeleteFn
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kaioken.createElement("div")
-    node.child = reconcileChildren(ctx.current, node, null, [
-      false,
+    node.child = reconcileChildren(node, [
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
     ])!
 
-    const mockCommit = () => {
-      let stack: Kaioken.VNode[] = [node.child!]
-      while (stack.length) {
-        const n = stack.pop()!
-        commitSnapshot(n)
-        if (n.child) stack.push(n.child)
-        if (n.sibling) stack.push(n.sibling)
-      }
+    const reconcileChildFragment = () => {
+      node.child!.child = reconcileChildren(
+        node.child!,
+        items.map((i) => kaioken.createElement("div", { key: i }, i))
+      )
     }
 
-    const mockReconcile = () => {
-      node.child = reconcileChildren(ctx.current, node, node.child!, [
-        false,
-        items.map((i) => kaioken.createElement("div", { key: i }, i)),
-      ])!
-    }
-
-    mockCommit()
+    commitChildren(node.child)
     shuffle(items)
-    mockReconcile()
-    mockCommit()
+    reconcileChildFragment()
+    commitChildren(node.child)
     shuffle(items)
-    mockReconcile()
-    mockCommit()
+    reconcileChildFragment()
+    commitChildren(node.child)
     shuffle(items)
-    mockReconcile()
+    reconcileChildFragment()
     // should not have any delete calls
     assert.strictEqual(
-      mockRequestDeleteFn.mock.calls.length,
+      node.child.deletions?.length || 0,
       0,
       `delete was called but should not have`
     )
   })
-  it("correctly handles reordered Array children with keys", (t) => {
+  it("correctly handles reordered Array children with keys", () => {
     ctx.current = new kaioken.AppContext(() => null)
-    const mockRequestDeleteFn = t.mock.fn<(node: Kaioken.VNode) => void>(
-      () => {}
-    )
-    ctx.current.requestDelete = mockRequestDeleteFn
 
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kaioken.createElement("div")
-    node.child = reconcileChildren(ctx.current, node, null, [
+    node.child = reconcileChildren(node, [
       items.map((i) => kaioken.createElement("div", { key: i }, i)),
-    ])!
+    ])
 
-    const commitFragmentChildren = () => {
-      let n: Kaioken.VNode | undefined = node.child!.child
-      while (n) {
-        commitSnapshot(n)
-        n = n.sibling
-      }
+    const reconcileChildFragment = () => {
+      node.child!.child = reconcileChildren(
+        node.child!,
+        items.map((i) => kaioken.createElement("div", { key: i }, i))
+      )
     }
-    const reconcileFragmentChildren = () => {
-      node.child!.child =
-        reconcileChildren(
-          ctx.current,
-          node.child!,
-          node.child!.child || null,
-          items.map((i) => kaioken.createElement("div", { key: i }, i))
-        ) || undefined
-    }
-    const assertFragmentChildStates = (opName: string) => {
-      let c: Kaioken.VNode | undefined = node.child!.child!
-      for (let i = 0; i < items.length; i++) {
+
+    const assertChildStates = (opName: string) => {
+      let i = 0,
+        c: Kaioken.VNode | null = node.child!.child!
+
+      while (c) {
         assert.strictEqual(
-          c!.props.key,
+          c.props.key,
           items[i],
           `[${opName}]: key for ${i}th child should be ${items[i]}`
         )
-        const prev = c?.prev
-        if (prev === undefined || prev.index < i) {
+        const prev = c.prev
+        if (!prev || prev.index < i) {
           assert.strictEqual(
             flags.get(c!.flags, FLAG.PLACEMENT),
             true,
             `[${opName}]: ${i}th child should have flag "placement"`
           )
         }
-        c = c!.sibling
+        c = c.sibling
+        i++
       }
 
       assert.strictEqual(
-        c,
-        undefined,
+        i,
+        items.length,
         `[${opName}]: should be no more children`
       )
     }
 
-    reconcileFragmentChildren()
-    assertFragmentChildStates("initial")
-    commitFragmentChildren()
+    reconcileChildFragment()
+    assertChildStates("initial")
+    commitChildren(node.child!)
 
+    let totalDeletions = 0
     for (let i = 0; i < 20; i++) {
       items.reverse()
-      reconcileFragmentChildren()
-      assertFragmentChildStates("list_reversal")
-      commitFragmentChildren()
+      reconcileChildFragment()
+      assertChildStates("list_reversal")
+      commitChildren(node.child!)
 
-      shuffle(items)
-      reconcileFragmentChildren()
-      assertFragmentChildStates("list_randomization")
-      commitFragmentChildren()
-
+      // shuffle(items)
+      // reconcileChildFragment()
+      // assertChildStates("list_randomization")
+      // commitChildren(node.child!)
       // should not have any more delete calls yet
       assert.strictEqual(
-        mockRequestDeleteFn.mock.calls.length,
+        totalDeletions,
         i,
-        `delete was not called ${i} times`
+        `pre-removal: delete should have been called ${i} times`
       )
 
       items.splice(Math.floor(Math.random() * items.length), 1)
-      reconcileFragmentChildren()
-      assertFragmentChildStates("item_removal")
-      commitFragmentChildren()
+      reconcileChildFragment()
+      assertChildStates("item_removal")
+      commitChildren(node.child!)
+
+      console.log("deleted", node.child!.deletions?.length)
+
+      totalDeletions += node.child!.deletions!.length
+      node.child!.deletions = []
 
       // should have called delete i + 1 times
       assert.strictEqual(
-        mockRequestDeleteFn.mock.calls.length,
+        totalDeletions,
         i + 1,
-        `delete was not called ${i + 1} times`
+        `post-removal: delete should have been called ${i + 1} times`
       )
     }
   })

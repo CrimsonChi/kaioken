@@ -77,7 +77,7 @@ export const useComputed = <T>(getter: () => T, displayName?: string) => {
   return useHook(
     "useComputedSignal",
     {
-      signal: undefined as any as ComputedSignal<T>,
+      signal: null! as ComputedSignal<T>,
     },
     ({ hook, isInit, vNode }) => {
       if (__DEV__) {

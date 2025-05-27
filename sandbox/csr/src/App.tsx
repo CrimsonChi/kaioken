@@ -1,31 +1,42 @@
 import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
-import { ElementProps, useSignal } from "kaioken"
-import { className as cls } from "kaioken/utils"
+import { For, useSignal } from "kaioken"
+
+function shuffle(array: Array<any>) {
+  let currentIndex = array.length
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex)
+    currentIndex--
+
+    // And swap it with the current element.
+    ;[array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ]
+  }
+}
+
+function spliceRandom(array: Array<any>) {
+  const idx = Math.floor(Math.random() * array.length)
+  array.splice(idx, 1)
+}
 
 const Home: Kaioken.FC = () => {
-  const divClass = useSignal("text-2xl")
+  const items = useSignal("abcdefghijklmnopqrstuvwxyz".split(""))
   console.log("Home")
   return (
     <div>
       <h1>Home</h1>
-      <button
-        onclick={() =>
-          (divClass.value =
-            divClass.value === "text-2xl" ? "text-4xl" : "text-2xl")
-        }
-      >
-        toggle
+      <For each={items}>{(item) => <div key={item}>{item}</div>}</For>
+      <button onclick={() => (shuffle(items.value), items.notify())}>
+        Shuffle
       </button>
-      <SpecialDiv className={divClass}>test</SpecialDiv>
-    </div>
-  )
-}
-
-function SpecialDiv({ className, ...props }: ElementProps<"div">) {
-  return (
-    <div className={cls("font-bold", className?.toString())} {...props}>
-      test
+      <button onclick={() => (spliceRandom(items.value), items.notify())}>
+        Splice
+      </button>
     </div>
   )
 }

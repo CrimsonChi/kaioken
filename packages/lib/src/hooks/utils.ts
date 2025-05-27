@@ -145,7 +145,7 @@ function useHook<
       nestedHookWarnings.add(hookName + currentHookName)
       throw new KaiokenError({
         message: `Nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange will most certainly happen.`,
-        vNode: node.current,
+        vNode,
       })
     }
   }

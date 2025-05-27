@@ -8,7 +8,7 @@ import {
   selfClosingTags,
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
-import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "./constants.js"
+import { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
 
 export function renderToString<T extends Record<string, unknown>>(
@@ -50,8 +50,7 @@ function renderToString_internal(
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
-  if (type === ELEMENT_TYPE.text)
-    return encodeHtmlEntities(props.nodeValue ?? "")
+  if (type === "#text") return encodeHtmlEntities(props.nodeValue ?? "")
   if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
     if (!Array.isArray(children))
       return renderToString_internal(children, el, idx)
@@ -62,7 +61,7 @@ function renderToString_internal(
     nodeToCtxMap.set(el, ctx.current)
     node.current = el
     const res = type(props)
-    node.current = undefined
+    node.current = null
     return renderToString_internal(res, el, idx)
   }
 
@@ -74,9 +73,11 @@ function renderToString_internal(
         ? props.innerHTML.peek()
         : props.innerHTML
       : Array.isArray(children)
-        ? children.map((c, i) => renderToString_internal(c, el, i)).join("")
-        : renderToString_internal(children, el, 0)
+      ? children.map((c, i) => renderToString_internal(c, el, i)).join("")
+      : renderToString_internal(children, el, 0)
 
   const isSelfClosing = selfClosingTags.includes(type)
-  return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
+  return `<${type}${attrs.length ? " " + attrs : ""}${
+    isSelfClosing ? "/>" : `>${inner}</${type}>`
+  }`
 }

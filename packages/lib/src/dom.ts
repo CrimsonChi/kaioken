@@ -8,7 +8,7 @@ import {
   postOrderApply,
 } from "./utils.js"
 import { cleanupHook } from "./hooks/utils.js"
-import { ELEMENT_TYPE, FLAG } from "./constants.js"
+import { FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
@@ -53,10 +53,10 @@ function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
   ;(ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
 }
 
-function createDom(vNode: VNode): SomeDom {
-  const t = vNode.type as string
+function createDom(vNode: DomVNode): SomeDom {
+  const t = vNode.type
   const dom =
-    t == ELEMENT_TYPE.text
+    t == "#text"
       ? createTextNode(vNode)
       : svgTags.has(t)
       ? document.createElementNS("http://www.w3.org/2000/svg", t)
@@ -353,7 +353,7 @@ function hydrateDom(vNode: VNode) {
     })
   }
   vNode.dom = dom
-  if (vNode.type !== ELEMENT_TYPE.text) {
+  if (vNode.type !== "#text") {
     updateDom(vNode)
     return
   }
@@ -363,7 +363,7 @@ function hydrateDom(vNode: VNode) {
 
   let prev = vNode
   let sibling = vNode.sibling
-  while (sibling && sibling.type === ELEMENT_TYPE.text) {
+  while (sibling && sibling.type === "#text") {
     const sib = sibling
     hydrationStack.bumpChildIndex()
     const prevText = String(unwrap(prev.props.nodeValue) ?? "")
@@ -523,7 +523,7 @@ function setStyleProp(
 }
 
 function getDomParent(vNode: VNode): ElementVNode {
-  let parentNode: VNode | undefined = vNode.parent ?? vNode.prev?.parent
+  let parentNode: VNode | null = vNode.parent
   let parentNodeElement = parentNode?.dom
   while (parentNode && !parentNodeElement) {
     parentNode = parentNode.parent

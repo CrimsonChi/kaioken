@@ -9,7 +9,7 @@ import {
   selfClosingTags,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
-import { $CONTEXT_PROVIDER, ELEMENT_TYPE, $FRAGMENT } from "../constants.js"
+import { $CONTEXT_PROVIDER, $FRAGMENT } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 type RequestState = {
@@ -76,7 +76,7 @@ function renderToStream_internal(
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
-  if (type === ELEMENT_TYPE.text) {
+  if (type === "#text") {
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
@@ -90,7 +90,7 @@ function renderToStream_internal(
     nodeToCtxMap.set(el, state.ctx)
     node.current = el
     const res = type(props)
-    node.current = undefined
+    node.current = null
     return renderToStream_internal(state, res, parent, idx)
   }
 

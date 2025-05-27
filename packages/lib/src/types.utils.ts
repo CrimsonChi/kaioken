@@ -7,12 +7,20 @@ export type MaybeDom = SomeDom | undefined
 
 type VNode = Kaioken.VNode
 
-export type FunctionVNode = VNode & { type: (...args: any) => any }
-export type ExoticVNode = VNode & {
+export type FunctionVNode = Omit<VNode, "type"> & {
+  type: (...args: any) => any
+}
+export type ExoticVNode = Omit<VNode, "type"> & {
   type: Kaioken.ExoticSymbol
 }
-export type ElementVNode = VNode & { dom: SomeElement }
-export type DomVNode = VNode & { dom: SomeDom }
+export type ElementVNode = Omit<VNode, "dom" | "type"> & {
+  dom: SomeElement
+  type: string
+}
+export type DomVNode = Omit<VNode, "dom" | "type"> & {
+  dom: SomeDom
+  type: "#text" | (string & {})
+}
 
 export type ContextProviderNode<T> = Kaioken.VNode & {
   type: typeof $CONTEXT_PROVIDER

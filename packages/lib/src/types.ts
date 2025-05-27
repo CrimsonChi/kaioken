@@ -178,8 +178,7 @@ declare global {
     type ExoticSymbol = typeof $FRAGMENT | typeof $CONTEXT_PROVIDER
 
     type VNode = {
-      type: string | Function | ExoticSymbol
-      dom?: SomeDom
+      type: Function | ExoticSymbol | "#text" | (string & {})
       props: {
         [key: string]: any
         children?: unknown
@@ -188,14 +187,16 @@ declare global {
       }
       index: number
       depth: number
+      parent: VNode | null
+      child: VNode | null
+      sibling: VNode | null
+      prev: VNode | null
+      deletions: VNode[] | null
+      flags: number
+      dom?: SomeDom
       hooks?: Hook<unknown>[]
       subs?: string[]
       cleanups?: Record<string, Function>
-      parent?: VNode
-      child?: VNode
-      sibling?: VNode
-      prev?: VNode
-      flags: number
       effects?: Array<Function>
       immediateEffects?: Array<Function>
       prevStyleStr?: string
