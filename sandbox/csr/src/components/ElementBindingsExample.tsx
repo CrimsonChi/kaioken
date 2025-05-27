@@ -23,7 +23,7 @@ function Select() {
   const selected = useSignal("A")
   useWatch(() => console.log("Select", selected.value))
   return (
-    <select value={selected}>
+    <select bind:value={selected}>
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>
@@ -35,7 +35,7 @@ function MultipleSelect() {
   const values = useSignal(["A", "B"])
   useWatch(() => console.log("MultipleSelect", values.value))
   return (
-    <select multiple value={values}>
+    <select multiple bind:value={values}>
       <option value="A">A</option>
       <option value="B">B</option>
       <option value="C">C</option>

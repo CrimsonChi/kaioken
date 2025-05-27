@@ -210,6 +210,7 @@ function deriveSelectElementValue(dom: HTMLSelectElement) {
 }
 
 function setSelectElementValue(dom: HTMLSelectElement, value: any) {
+  console.log("setSelectElementValue", value)
   if (!dom.multiple || value === undefined || value === null || value === "") {
     dom.value = value
     return
@@ -219,6 +220,16 @@ function setSelectElementValue(dom: HTMLSelectElement, value: any) {
   })
 }
 
+const bindAttrToEventMap: Record<string, string> = {
+  value: "input",
+  checked: "change",
+  open: "toggle",
+  volume: "volumechange",
+  playbackRate: "ratechange",
+  currentTime: "timeupdate",
+}
+const numericValueElements = ["progress", "meter", "number", "range"]
+
 function setSignalProp(
   vNode: VNode,
   dom: Exclude<SomeDom, Text>,
@@ -227,8 +238,9 @@ function setSignalProp(
   prevValue: unknown
 ) {
   const _ctx = ctx.current
+  const cleanups = (vNode.cleanups ??= {})
   if (!key.startsWith("bind:")) {
-    ;(vNode.cleanups ??= {})[key] = signal.subscribe((value) => {
+    cleanups[key] = signal.subscribe((value) => {
       setProp(vNode, dom, key, value, null)
       if (__DEV__) {
         window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
@@ -239,89 +251,68 @@ function setSignalProp(
   }
 
   const attr = key.substring(5)
-  const setAttr =
-    dom instanceof HTMLSelectElement
-      ? (value: any) => setSelectElementValue(dom, value)
-      : (value: any) => ((dom as any)[attr] = value)
+  const evtName = bindAttrToEventMap[attr]
+  if (!evtName) {
+    if (__DEV__) {
+      console.error(
+        `[kaioken]: ${attr} is not a valid element binding attribute.`
+      )
+    }
+    return
+  }
 
-  const subscriberFn = (value: any) => {
+  const isSelect = dom instanceof HTMLSelectElement
+  const setAttr = isSelect
+    ? (value: any) => setSelectElementValue(dom, value)
+    : (value: any) => ((dom as any)[attr] = value)
+
+  const signalUpdateCallback = (value: any) => {
     setAttr(value)
     if (__DEV__) {
       window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
     }
   }
-  const unsub = signal.subscribe(subscriberFn)
-  const addEvt = dom.addEventListener.bind(dom)
-  const rmEvt = dom.removeEventListener.bind(dom)
-
-  let cleanup: () => void | undefined
-  let evtName = ""
-  /**
-   * the 'timeupdate' event is fired when the currentTime property is
-   * set (from code OR playback), so we need to prevent unnecessary
-   * signal updates to avoid a feedback loop when there are multiple
-   * elements with the same signal bound to 'currentTime'
-   */
-  const preventNeedlessSigSet = attr === "currentTime"
 
   const setSigFromElement = (val: any) => {
-    if (preventNeedlessSigSet && signal.peek() === val) return
     signal.sneak(val)
-    signal.notify({ filter: (sub) => sub !== subscriberFn })
+    signal.notify({ filter: (sub) => sub !== signalUpdateCallback })
   }
 
-  switch (attr) {
-    case "value": {
-      const handleInput = (e: Event) => {
-        const target = e.target as HTMLInputElement | HTMLSelectElement
-        let val: any = target.value
-        if (target instanceof HTMLSelectElement) {
-          val = deriveSelectElementValue(target)
-        } else if (
-          typeof signal.peek() === "number" &&
-          ["progress", "meter", "number", "range"].indexOf(target.type) !== -1
-        ) {
-          val = target.valueAsNumber
-        }
-        setSigFromElement(val)
+  let evtHandler: (evt: Event) => void
+  if (attr === "value") {
+    const useNumericValue =
+      numericValueElements.indexOf((dom as HTMLInputElement).type) !== -1
+    evtHandler = () => {
+      let val: any = (dom as HTMLInputElement | HTMLSelectElement).value
+      if (isSelect) {
+        val = deriveSelectElementValue(dom)
+      } else if (typeof signal.peek() === "number" && useNumericValue) {
+        val = (dom as HTMLInputElement).valueAsNumber
       }
-      addEvt("input", handleInput)
-      cleanup = () => rmEvt("input", handleInput)
-      break
-    }
-    case "checked": {
-      evtName = "change"
-      break
-    }
-    case "open": {
-      evtName = "toggle"
-      break
-    }
-    case "volume": {
-      evtName = "volumechange"
-      break
-    }
-    case "playbackRate": {
-      evtName = "ratechange"
-      break
-    }
-    case "currentTime": {
-      evtName = "timeupdate"
-      break
-    }
-  }
-  if (evtName) {
-    const handleChange = (e: Event) => {
-      const val = (e.target as any)[attr]
       setSigFromElement(val)
     }
-    addEvt(evtName, handleChange)
-    cleanup = () => rmEvt(evtName, handleChange)
+  } else {
+    evtHandler = (e: Event) => {
+      const val = (e.target as any)[attr]
+      /**
+       * the 'timeupdate' event is fired when the currentTime property is
+       * set (from code OR playback), so we need to prevent unnecessary
+       * signal updates to avoid a feedback loop when there are multiple
+       * elements with the same signal bound to 'currentTime'
+       */
+      if (attr === "currentTime" && signal.peek() === val) return
+      setSigFromElement(val)
+    }
   }
-  ;(vNode.cleanups ??= {})[key] = () => {
+
+  dom.addEventListener(evtName, evtHandler)
+  const unsub = signal.subscribe(signalUpdateCallback)
+
+  cleanups[key] = () => {
+    dom.removeEventListener(evtName, evtHandler)
     unsub()
-    cleanup?.()
   }
+
   return setProp(vNode, dom, attr, signal.peek(), unwrap(prevValue))
 }
 
