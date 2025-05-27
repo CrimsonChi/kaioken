@@ -13,7 +13,7 @@ import {
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
-import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
+import { ctx, hookIndex, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
@@ -422,7 +422,7 @@ export class Scheduler {
       let renderTryCount = 0
       do {
         this.isRenderDirtied = false
-        this.appCtx.hookIndex = 0
+        hookIndex.current = 0
 
         /**
          * remove previous signal subscriptions (if any) every render.
@@ -456,31 +456,28 @@ export class Scheduler {
 
   private updateHostComponent(vNode: DomVNode) {
     const { props } = vNode
-    try {
-      //node.current = vNode
+    if (__DEV__) {
       assertValidElementProps(vNode)
-      if (!vNode.dom) {
-        if (renderMode.current === "hydrate") {
-          hydrateDom(vNode)
-        } else {
-          vNode.dom = createDom(vNode)
-        }
-        if (__DEV__) {
-          // @ts-expect-error we apply vNode to the dom node
-          vNode.dom.__kaiokenNode = vNode
-        }
+    }
+    if (!vNode.dom) {
+      if (renderMode.current === "hydrate") {
+        hydrateDom(vNode)
+      } else {
+        vNode.dom = createDom(vNode)
       }
-      // text should _never_ have children
-      if (vNode.type !== "#text") {
-        vNode.child = reconcileChildren(vNode, props.children)
-        vNode.deletions?.forEach((d) => this.queueDelete(d))
+      if (__DEV__) {
+        // @ts-expect-error we apply vNode to the dom node
+        vNode.dom.__kaiokenNode = vNode
       }
+    }
+    // text should _never_ have children
+    if (vNode.type !== "#text") {
+      vNode.child = reconcileChildren(vNode, props.children)
+      vNode.deletions?.forEach((d) => this.queueDelete(d))
+    }
 
-      if (vNode.child && renderMode.current === "hydrate") {
-        hydrationStack.push(vNode.dom!)
-      }
-    } finally {
-      //node.current = null
+    if (vNode.child && renderMode.current === "hydrate") {
+      hydrationStack.push(vNode.dom!)
     }
   }
 

@@ -1,6 +1,6 @@
 import { KaiokenError } from "../error.js"
 import { __DEV__ } from "../env.js"
-import { node, nodeToCtxMap } from "../globals.js"
+import { ctx, hookIndex, node, nodeToCtxMap } from "../globals.js"
 import { getVNodeAppContext, noop } from "../utils.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
@@ -150,7 +150,6 @@ function useHook<
     }
   }
 
-  const ctx = getVNodeAppContext(vNode)
   const queueEffect = (callback: Function, opts?: { immediate?: boolean }) => {
     if (opts?.immediate) {
       ;(vNode.immediateEffects ??= []).push(callback)
@@ -159,12 +158,14 @@ function useHook<
     ;(vNode.effects ??= []).push(callback)
   }
 
-  const index = ctx.hookIndex++
+  const appCtx = ctx.current
+  const index = hookIndex.current++
+
+  let oldHook = (
+    vNode.prev ? vNode.prev.hooks?.at(index) : vNode.hooks?.at(index)
+  ) as HookState<T> | undefined
 
   if (__DEV__) {
-    let oldHook = (
-      vNode.prev ? vNode.prev.hooks?.at(index) : vNode.hooks?.at(index)
-    ) as HookState<T> | undefined
     if (oldHook && $HOOK_INVALIDATED in oldHook) {
       oldHook = undefined
     }
@@ -197,7 +198,7 @@ function useHook<
       const res = (callback as HookCallback<T>)({
         hook,
         isInit: Boolean(!oldHook || shouldReinit),
-        update: () => ctx.requestUpdate(vNode),
+        update: () => appCtx.requestUpdate(vNode),
         queueEffect,
         vNode,
         index,
@@ -215,19 +216,11 @@ function useHook<
   }
 
   try {
-    const oldHook = (
-      vNode.prev ? vNode.prev.hooks?.at(index) : vNode.hooks?.at(index)
-    ) as HookState<T> | undefined
-
-    let hook: HookState<T>
-    if (!oldHook) {
-      hook =
-        typeof hookDataOrInitializer === "function"
-          ? hookDataOrInitializer()
-          : { ...hookDataOrInitializer }
-    } else {
-      hook = oldHook
-    }
+    const hook: HookState<T> =
+      oldHook ??
+      (typeof hookDataOrInitializer === "function"
+        ? hookDataOrInitializer()
+        : { ...hookDataOrInitializer })
 
     vNode.hooks ??= []
     vNode.hooks[index] = hook
@@ -235,7 +228,7 @@ function useHook<
     const res = (callback as HookCallback<T>)({
       hook,
       isInit: !oldHook,
-      update: () => ctx.requestUpdate(vNode),
+      update: () => appCtx.requestUpdate(vNode),
       queueEffect,
       vNode,
       index,

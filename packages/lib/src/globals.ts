@@ -1,9 +1,13 @@
 import type { AppContext } from "./appContext"
 
-export { ctx, node, renderMode, nodeToCtxMap }
+export { node, hookIndex, ctx, renderMode, nodeToCtxMap }
 
 const node = {
   current: null as Kaioken.VNode | null,
+}
+
+const hookIndex = {
+  current: 0,
 }
 
 const ctx = {

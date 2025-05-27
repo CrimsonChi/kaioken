@@ -10,6 +10,7 @@ import {
 import { Signal } from "./signals/base.js"
 import { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
+import { __DEV__ } from "./env.js"
 
 export function renderToString<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
@@ -65,7 +66,9 @@ function renderToString_internal(
     return renderToString_internal(res, el, idx)
   }
 
-  assertValidElementProps(el)
+  if (__DEV__) {
+    assertValidElementProps(el)
+  }
   const attrs = propsToElementAttributes(props)
   const inner =
     "innerHTML" in props

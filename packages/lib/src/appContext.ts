@@ -28,14 +28,13 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   name: string
   scheduler?: Scheduler
   rootNode?: VNode
-  hookIndex = 0
   root?: HTMLElement
   mounted = false
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
     private appProps = {},
-    public options?: AppContextOptions
+    private options?: AppContextOptions
   ) {
     this.id = generateRandomID()
     this.name = options?.name ?? "App-" + this.id

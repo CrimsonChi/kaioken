@@ -11,6 +11,7 @@ import {
 import { Signal } from "../signals/base.js"
 import { $CONTEXT_PROVIDER, $FRAGMENT } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
+import { __DEV__ } from "../env.js"
 
 type RequestState = {
   stream: Readable
@@ -94,7 +95,9 @@ function renderToStream_internal(
     return renderToStream_internal(state, res, parent, idx)
   }
 
-  assertValidElementProps(el)
+  if (__DEV__) {
+    assertValidElementProps(el)
+  }
   const attrs = propsToElementAttributes(props)
   const isSelfClosing = selfClosingTags.includes(type)
   state.stream.push(
