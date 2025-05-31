@@ -108,6 +108,7 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
     Object.entries(events.current).forEach(([event, { values }]) => {
       const listener = (_app: AppContext) => {
         if (_app.id !== app.id) return
+        if (chartHovered.peek() === true) return
         values[values.length - 1]++
       }
       const e = event as ProfilingEvent
@@ -116,6 +117,7 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
     })
 
     const updateInterval = setInterval(() => {
+      if (chartHovered.peek() === true) return
       const newLabels = [...lineChartData.value.labels]
       Object.values(events.current).forEach((evt) => {
         evt.values.push(0)
@@ -127,7 +129,7 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
       if (newLabels.length > MAX_TICKS) {
         newLabels.shift()
       }
-      if (chartHovered.peek() === true) return
+
       lineChartData.value = {
         labels: newLabels,
         datasets: createLineChartDatasets(events.current),
