@@ -4,19 +4,6 @@ import MagicString from "magic-string"
 import fs from "node:fs"
 import path from "node:path"
 
-type SrcInsertion = {
-  content: string
-  offset: number
-}
-type SrcReplacement = {
-  content: string
-  start: number
-  end: number
-}
-type SrcInsertionContext = {
-  code: MagicString
-  inserts: SrcInsertion[]
-}
 interface AstNodeId {
   type: string
   name: string
@@ -88,24 +75,16 @@ export function injectHMRContextPreamble(
   isVirtualModule: boolean
 ): boolean {
   try {
-    const srcInsertCtx: SrcInsertionContext = {
-      code: code,
-      inserts: [],
-    }
-    createUnnamedWatchInserts(srcInsertCtx, ast.body as AstNode[])
+    createUnnamedWatchInserts(code, ast.body as AstNode[])
 
     const hotVars = findHotVars(ast.body as AstNode[], filePath)
-
-    if (hotVars.size === 0 && srcInsertCtx.inserts.length === 0) return false
+    if (hotVars.size === 0 && !code.hasChanged()) return false
 
     code.prepend(`
 if (import.meta.hot && "window" in globalThis) {
   window.__kaioken.HMRContext?.prepare("${filePath}");
 }
 `)
-    for (const insert of srcInsertCtx.inserts) {
-      code.appendRight(insert.offset, insert.content)
-    }
 
     const componentNamesToHookArgs = getComponentHookArgs(
       ast.body as AstNode[],
@@ -233,6 +212,19 @@ export function prepareHydrationBoundaries(
           ["*"]: (n) => {
             // ensure we've entered a JSX block inside a boundary
             if (!currentBoundary?.hasJsxChildren) return
+
+            // const parent = stack[stack.length - 1]
+            // const grandParent = stack[stack.length - 2]
+            // if (
+            //   parent?.type === "ObjectExpression" &&
+            //   grandParent?.type === "CallExpression" &&
+            //   grandParent.callee?.type === "Identifier" &&
+            //   grandParent.callee.name === "_jsx"
+            // ) {
+            //   log("~~~~~ here", { n, parent, grandParent })
+            // } else {
+            //   return
+            // }
 
             // log("node", n)
 
@@ -812,7 +804,7 @@ function argsToString(args: AstNode[], code: string) {
   return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
 }
 
-function createUnnamedWatchInserts(ctx: SrcInsertionContext, nodes: AstNode[]) {
+function createUnnamedWatchInserts(code: MagicString, nodes: AstNode[]) {
   const watchAliasHandler = createAliasHandler("watch")
 
   for (const node of nodes) {
@@ -824,10 +816,7 @@ function createUnnamedWatchInserts(ctx: SrcInsertionContext, nodes: AstNode[]) {
       const nameSet = new Set<any>()
       addHotVarDesc(node, nameSet, "unnamedWatch")
       if (nameSet.size === 0) {
-        ctx.inserts.push({
-          content: UNNAMED_WATCH_PREAMBLE,
-          offset: node.start,
-        })
+        code.appendRight(node.start, UNNAMED_WATCH_PREAMBLE)
       }
     }
   }
@@ -839,19 +828,24 @@ function findNode(
 ): AstNode | null {
   let res: AstNode | null = null
   walk(node, {
-    "*": (node, exit) => {
+    "*": (node, ctx) => {
       if (predicate(node)) {
         res = node
-        exit()
+        ctx.exit()
       }
     },
   })
   return res
 }
+type VisitorCTX = {
+  stack: AstNode[]
+  exit: () => never
+}
 type VisitorNodeCallback = (
   node: AstNode,
-  exit: () => void
+  ctx: VisitorCTX
 ) => void | (() => void)
+
 type AstVisitor = {
   [key in AstNode["type"]]?: VisitorNodeCallback
 } & {
@@ -859,8 +853,12 @@ type AstVisitor = {
 }
 
 function walk(node: AstNode, visitor: AstVisitor) {
+  const ctx: VisitorCTX = {
+    stack: [],
+    exit: exitWalk,
+  }
   try {
-    walk_impl(node, visitor)
+    walk_impl(node, visitor, ctx)
   } catch (error) {
     if (error === "walk:exit") return
     throw error
@@ -870,52 +868,56 @@ function walk(node: AstNode, visitor: AstVisitor) {
 const exitWalk = () => {
   throw "walk:exit"
 }
-function walk_impl(node: AstNode, visitor: AstVisitor) {
+function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
   const onExitCallbacks = [
-    visitor[node.type]?.(node, exitWalk),
-    visitor["*"]?.(node, exitWalk),
+    visitor[node.type]?.(node, ctx),
+    visitor["*"]?.(node, ctx),
   ].filter(Boolean) as (() => void)[]
+  ctx.stack.push(node)
+
   if (node.body && Array.isArray(node.body)) {
     for (const child of node.body) {
-      walk(child, visitor)
+      walk_impl(child, visitor, ctx)
     }
   } else if (node.body) {
-    walk(node.body, visitor)
+    walk_impl(node.body, visitor, ctx)
   }
 
   if (node.consequent && Array.isArray(node.consequent)) {
     for (const child of node.consequent) {
-      walk(child, visitor)
+      walk_impl(child, visitor, ctx)
     }
   } else if (node.consequent) {
-    walk(node.consequent, visitor)
+    walk_impl(node.consequent, visitor, ctx)
   }
 
-  node.init && walk(node.init, visitor)
-  node.argument && walk(node.argument, visitor)
+  node.init && walk_impl(node.init, visitor, ctx)
+  node.argument && walk_impl(node.argument, visitor, ctx)
   node.arguments &&
     node.arguments.forEach((c) => {
-      walk(c, visitor)
+      walk_impl(c, visitor, ctx)
     })
-  node.alternate && walk(node.alternate, visitor)
-  node.callee && walk(node.callee, visitor)
-  node.declaration && walk(node.declaration, visitor)
+  node.alternate && walk_impl(node.alternate, visitor, ctx)
+  node.callee && walk_impl(node.callee, visitor, ctx)
+  node.declaration && walk_impl(node.declaration, visitor, ctx)
   node.declarations &&
     node.declarations.forEach((c) => {
-      walk(c, visitor)
+      walk_impl(c, visitor, ctx)
     })
-  node.expression && walk(node.expression, visitor)
+  node.expression && walk_impl(node.expression, visitor, ctx)
   node.cases &&
     node.cases.forEach((c) => {
-      walk(c, visitor)
+      walk_impl(c, visitor, ctx)
     })
   node.properties &&
     node.properties.forEach((c) => {
-      walk(c, visitor)
+      walk_impl(c, visitor, ctx)
     })
   node.type === "Property" &&
     node.value &&
     typeof node.value === "object" &&
-    walk(node.value as AstNode, visitor)
+    walk_impl(node.value as AstNode, visitor, ctx)
+
+  ctx.stack.pop()
   onExitCallbacks.forEach((c) => c())
 }
