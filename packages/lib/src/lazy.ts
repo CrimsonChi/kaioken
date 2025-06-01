@@ -1,9 +1,7 @@
-import { $HMR_ACCEPT } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { node, renderMode } from "./globals.js"
-import { HMRAccept } from "./hmr.js"
 import { useContext } from "./hooks/useContext.js"
 import { useRef } from "./hooks/useRef.js"
 import { useAppContext, useRequestUpdate } from "./hooks/utils.js"
@@ -12,7 +10,6 @@ import {
   HYDRATION_BOUNDARY_MARKER,
   HydrationBoundaryContext,
 } from "./ssr/hydrationBoundary.js"
-import { traverseApply } from "./utils.js"
 
 type FCModule = { default: Kaioken.FC<any> }
 type LazyImportValue = Kaioken.FC<any> | FCModule
@@ -120,6 +117,19 @@ export function lazy<T extends LazyImportValue>(
           if (child instanceof Element) {
             hydrationStack.captureEvents(child)
           }
+        }
+
+        if (__DEV__) {
+          window.__kaioken?.HMRContext?.onHmr(() => {
+            if (!hydration.current.done) {
+              for (const child of childNodes) {
+                if (child instanceof Element) {
+                  hydrationStack.releaseEvents(child)
+                }
+                child.parentNode?.removeChild(child)
+              }
+            }
+          })
         }
 
         const ready = promise.then((componentOrModule) => {

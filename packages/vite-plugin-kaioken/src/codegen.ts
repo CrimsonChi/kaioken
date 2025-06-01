@@ -8,6 +8,11 @@ type SrcInsertion = {
   content: string
   offset: number
 }
+type SrcReplacement = {
+  content: string
+  start: number
+  end: number
+}
 type SrcInsertionContext = {
   code: MagicString
   inserts: SrcInsertion[]
@@ -21,6 +26,7 @@ const types = [
   "ImportDefaultSpecifier",
   "ExportNamedDeclaration",
   "FunctionDeclaration",
+  "FunctionExpression",
   "BlockStatement",
   "ReturnStatement",
   "CallExpression",
@@ -36,6 +42,7 @@ const types = [
   "AssignmentExpression",
   "ArrayExpression",
   "ObjectExpression",
+  "Property",
 ] as const
 
 interface AstNode {
@@ -63,7 +70,9 @@ interface AstNode {
   local?: AstNode & { name: string }
   imported?: AstNode & { name: string }
   source?: AstNode & { value: string }
+  key?: AstNode
   value?: unknown
+  shorthand?: boolean
 }
 
 const UNNAMED_WATCH_PREAMBLE = `\n
@@ -176,17 +185,24 @@ export function prepareHydrationBoundaries(
         )
         continue
       }
-      let index = 0
       const componentBodyNodes = findFunctionBodyNodes(
         node,
         componentName,
         bodyNodes
       )
-      const boundaryMap: Map<
-        AstNode,
-        { id: string; dependencies: Set<AstNode> }
-      > = new Map()
-      const boundaryStack: AstNode[] = []
+      type ExpressionEntry = {
+        node: AstNode
+        property: AstNode | null
+      }
+      let currentBoundary: {
+        id: string
+        node: AstNode
+        deps: {
+          imports: Set<AstNode>
+          expressions: Array<ExpressionEntry>
+        }
+        hasJsxChildren: boolean
+      } | null = null
 
       // TODO: implement variable/prop passing
       // TODO: handle variable shadowing
@@ -196,8 +212,17 @@ export function prepareHydrationBoundaries(
       //   { variables: [] }, // function scope
       // ]
 
+      const log = filePath.includes("index/+Page.tsx") ? console.log : () => {}
+
+      let fnExprs: AstNode[] = []
+      let index = 0
+      let property: AstNode | null = null
       componentBodyNodes?.forEach((node) => {
         walk(node, {
+          Property: (n) => {
+            property = n
+            return () => (property = null)
+          },
           // VariableDeclaration: (n) => {
           //   blockScopes[blockScopes.length - 1].variables.push(n)
           // },
@@ -205,33 +230,106 @@ export function prepareHydrationBoundaries(
           //   blockScopes.push({ variables: [] })
           //   return () => blockScopes.pop()
           // },
+          ["*"]: (n) => {
+            // ensure we've entered a JSX block inside a boundary
+            if (!currentBoundary?.hasJsxChildren) return
+
+            // log("node", n)
+
+            switch (n.type) {
+              case "Identifier": {
+                // skip identifiers inside function expressions, the fn expression will be hoisted
+                if (fnExprs.length) return
+                // skip jsx identifiers
+                if (n.name === "_jsx") return
+                const importNode = importNodes.find((importNode) =>
+                  importNode.specifiers?.some((s) => s.local?.name === n.name)
+                )
+                if (importNode) {
+                  currentBoundary.deps.imports.add(importNode)
+                } else {
+                  currentBoundary.deps.expressions.push({ node: n, property })
+                }
+                break
+              }
+              case "ArrowFunctionExpression":
+              case "FunctionExpression": {
+                fnExprs.push(n)
+                currentBoundary.deps.expressions.push({ node: n, property })
+                return () => fnExprs.pop()
+              }
+            }
+            return
+          },
           CallExpression: (n) => {
-            if (n.callee?.type !== "Identifier" || n.callee.name !== "_jsx")
+            if (n.callee?.type !== "Identifier" || n.callee.name !== "_jsx") {
               return
+            }
+            if (currentBoundary) {
+              currentBoundary.hasJsxChildren = true
+              return
+            }
+
+            const [nodeType, _, ...children] = n.arguments!
+
             if (
-              n.arguments?.[0]?.type === "Identifier" &&
-              n.arguments?.[0]?.name &&
-              hydrationBoundaryAliasHandler.aliases.has(n.arguments[0].name)
+              nodeType.type === "Identifier" &&
+              nodeType.name &&
+              hydrationBoundaryAliasHandler.aliases.has(nodeType.name)
             ) {
               const idx = index++
-              const entry = {
+              const boundary = (currentBoundary = {
                 id: `@boundaries/${modulePrefix}/${componentName}_${idx}`,
-                dependencies: new Set<AstNode>(),
-              }
-              boundaryMap.set(n, entry)
-              boundaryStack.push(n)
+                node: n,
+                deps: {
+                  imports: new Set<AstNode>(),
+                  expressions: [] as ExpressionEntry[],
+                },
+                hasJsxChildren: false,
+              })
               return () => {
-                const childArgs = n.arguments?.slice(2)
-                if (entry.dependencies.size && childArgs?.length) {
-                  // create virtual modules
-                  const minStart = Math.min(...childArgs.map((n) => n.start!))
-                  const maxEnd = Math.max(...childArgs.map((n) => n.end!))
-                  const childrenExpr = code.original.substring(minStart, maxEnd)
-                  console.log("childrenExpr", childrenExpr)
-                  code.remove(minStart, maxEnd)
+                if (!boundary.hasJsxChildren) return
+                //console.log("boundary", JSON.stringify(boundary, null, 2))
+                log("boundary", boundary.deps.expressions)
+                /**
+                 * TODO: we need to scan childArgs to find jsx expressions and hoist them
+                 * into props for the children loader
+                 */
+                // hoist props
 
-                  let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
-                  for (const importedIdentifier of entry.dependencies) {
+                // create virtual modules
+                const minStart = Math.min(...children.map((n) => n.start!))
+                const maxEnd = Math.max(...children.map((n) => n.end!))
+                const childrenExpr = new MagicString(
+                  code.original.substring(minStart, maxEnd)
+                )
+                log("childrenExpr: before", childrenExpr.toString())
+
+                transformChildExpression: {
+                  for (let i = 0; i < boundary.deps.expressions.length; i++) {
+                    const { node: expr, property } =
+                      boundary.deps.expressions[i]
+                    const start = expr.start! - minStart
+                    const end = expr.end! - minStart
+                    if (!property) {
+                      childrenExpr.update(start, end, `_props[${i}]`)
+                      continue
+                    }
+                    if (!property.shorthand) {
+                      // just replace rhs
+                      childrenExpr.update(start, end, `_props[${i}]`)
+                      continue
+                    }
+                    childrenExpr.appendLeft(end, `: _props[${i}]`)
+                  }
+                }
+                console.log("childrenExpr:after", childrenExpr.toString())
+
+                code.remove(minStart, maxEnd)
+
+                let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
+                copyImports: {
+                  for (const importedIdentifier of boundary.deps.imports) {
                     const defaultSpecifier =
                       importedIdentifier.specifiers!.find(
                         (s) => s.type === "ImportDefaultSpecifier"
@@ -254,40 +352,34 @@ export function prepareHydrationBoundaries(
                       .resolve(folderPath, importedIdentifier.source!.value)
                       .replace(/\\/g, "/")}";`
                   }
-                  moduleCode += `\n\nexport default function BoundaryChildren${idx}() {
+                }
+
+                moduleCode += `\n\nexport default function BoundaryChildren${idx}({_props}) {
 return _jsx(_jsxFragment, null, ${childrenExpr})
 }`
-                  const boundaryChildrenName = `BoundaryChildren_${componentName}_${idx}`
-                  code.prepend(
-                    `\nimport ${boundaryChildrenName} from "${
-                      entry.id + "_loader"
-                    }";\n`
+                const boundaryChildrenName = `BoundaryChildren_${componentName}_${idx}`
+                code.prepend(
+                  `\nimport ${boundaryChildrenName} from "${
+                    boundary.id + "_loader"
+                  }";\n`
+                )
+                const props = boundary.deps.expressions
+                  .map((expr) =>
+                    code.original.slice(expr.node.start!, expr.node.end!)
                   )
-                  code.prependRight(minStart, `_jsx(${boundaryChildrenName})`)
+                  .join(",")
+                code.prependRight(
+                  minStart,
+                  `_jsx(${boundaryChildrenName}, { _props: [${props}] })`
+                )
 
-                  extraModules[entry.id] = moduleCode
-                  extraModules[
-                    entry.id + "_loader"
-                  ] = `import {lazy} from "kaioken";
-export default lazy(() => import("${entry.id}"));`
-                }
-                boundaryStack.pop()
+                extraModules[boundary.id] = moduleCode
+                extraModules[
+                  boundary.id + "_loader"
+                ] = `import {lazy} from "kaioken";
+export default lazy(() => import("${boundary.id}"));`
+                currentBoundary = null
               }
-            }
-
-            if (boundaryStack.length) {
-              const currentBoundary = boundaryStack[boundaryStack.length - 1]
-              const boundaryMapEntry = boundaryMap.get(currentBoundary)!
-              n.arguments?.forEach((arg) => {
-                if (arg.type === "Identifier") {
-                  const importNode = importNodes.find((n) =>
-                    n.specifiers?.some((s) => s.local?.name === arg.name)
-                  )
-                  if (importNode) {
-                    boundaryMapEntry.dependencies.add(importNode)
-                  }
-                }
-              })
             }
             return
           },
@@ -780,8 +872,8 @@ const exitWalk = () => {
 }
 function walk_impl(node: AstNode, visitor: AstVisitor) {
   const onExitCallbacks = [
-    visitor["*"]?.(node, exitWalk),
     visitor[node.type]?.(node, exitWalk),
+    visitor["*"]?.(node, exitWalk),
   ].filter(Boolean) as (() => void)[]
   if (node.body && Array.isArray(node.body)) {
     for (const child of node.body) {
@@ -817,5 +909,13 @@ function walk_impl(node: AstNode, visitor: AstVisitor) {
     node.cases.forEach((c) => {
       walk(c, visitor)
     })
+  node.properties &&
+    node.properties.forEach((c) => {
+      walk(c, visitor)
+    })
+  node.type === "Property" &&
+    node.value &&
+    typeof node.value === "object" &&
+    walk(node.value as AstNode, visitor)
   onExitCallbacks.forEach((c) => c())
 }

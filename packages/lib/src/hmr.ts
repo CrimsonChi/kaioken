@@ -58,6 +58,11 @@ export function createHMRContext() {
   let isWaitingForNextWatchCall = false
   let tmpUnnamedWatchers: WatchEffect[] = []
 
+  const onHmrCallbacks: Array<() => void> = []
+  const onHmr = (callback: () => void) => {
+    onHmrCallbacks.push(callback)
+  }
+
   const prepare = (filePath: string) => {
     let mod = moduleMap.get(filePath)
     isModuleReplacementExecution = !!mod
@@ -67,6 +72,8 @@ export function createHMRContext() {
         unnamedWatchers: [],
       }
       moduleMap.set(filePath, mod)
+    } else {
+      while (onHmrCallbacks.length) onHmrCallbacks.shift()!()
     }
     currentModuleMemory = mod!
   }
@@ -213,5 +220,6 @@ export function createHMRContext() {
     prepare,
     isReplacement,
     signals,
+    onHmr,
   }
 }

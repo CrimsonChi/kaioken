@@ -1,18 +1,16 @@
-import { useSignal } from "kaioken"
+import type { Signal } from "kaioken"
 
 type CounterProps = {
-  test: number
+  count: Signal<number>
+  onIncrement: () => void
 }
 export default function Counter(props: CounterProps) {
-  const count = useSignal(0)
-
-  console.log("Counter", props.test)
-
+  console.log("Counter")
   return (
     <>
-      <span>Count: {count}</span>{" "}
+      <span>Count: {props.count}</span>{" "}
       <button
-        onclick={() => count.value++}
+        onclick={props.onIncrement}
         className="bg-primary hover:bg-primary-light text-white font-bold text-sm py-2 px-4 rounded"
       >
         Increment
