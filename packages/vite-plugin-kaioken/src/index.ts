@@ -44,7 +44,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
 
   let _config: UserConfig | null = null
   const virtualModules: Record<string, string> = {}
-  const virtualModuleDependents: Record<string, Set<string>> = {}
   let devServer: ViteDevServer | null = null
   return {
     name: "vite-plugin-kaioken",

@@ -6,15 +6,19 @@ import { createContext, useSignal } from "kaioken"
 // <ThemeContext.Provider value="dark">
 // {(value) => <div>{value}</div>}
 // </ThemeContext.Provider>
-const a = 123
+const a = () => 123
 export function Page() {
   const count = useSignal(0)
   const greeting = useSignal("Hello world!")
-  const a = 456
+  const a = () => 456
+  /**
+   * todo: the 'a' function is being passed and called inside the generated component.
+   * need to ensure it is called at the top level instead.
+   */
   return (
     <HydrationBoundary mode="lazy">
       <div className="p-6">
-        <h1>{a}</h1>
+        <h1>{a()}</h1>
         <Counter
           count={true ? count.value : count.value + 2}
           onIncrement={function () {
