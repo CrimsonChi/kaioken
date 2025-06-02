@@ -36,6 +36,9 @@ export const hydrationStack = {
     toggleEvtListeners(element, true)
     this.eventDeferrals.set(element, [])
   },
+  resetEvents: function (element: Element) {
+    this.eventDeferrals.delete(element)
+  },
   releaseEvents: function (element: Element) {
     toggleEvtListeners(element, false)
     const events = this.eventDeferrals.get(element)

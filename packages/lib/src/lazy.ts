@@ -86,12 +86,11 @@ export function lazy<T extends LazyImportValue>(
 ): Kaioken.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
     const { fallback = null, ...rest } = props
-    const hydration = useRef({
-      required: false,
-      done: false,
-    })
     const appCtx = useAppContext()
     const hydrationCtx = useContext(HydrationBoundaryContext, false)
+    const isPendingHydration = useRef(
+      hydrationCtx && renderMode.current === "hydrate"
+    )
     const requestUpdate = useRequestUpdate()
     if (renderMode.current === "string" || renderMode.current === "stream") {
       return fallback
@@ -99,147 +98,111 @@ export function lazy<T extends LazyImportValue>(
 
     const asStr = cleanFnStr(componentPromiseFn.toString())
     const cachedState = lazyCache.get(asStr)
-    console.log("lazy", hydration.current)
     if (!cachedState) {
-      console.log("lazy - no cache state", asStr)
       const promise = componentPromiseFn()
       const state: LazyState = {
         promise,
         result: null,
       }
       lazyCache.set(asStr, state)
-      if (hydrationCtx && renderMode.current === "hydrate") {
-        hydration.current.required = true
-        console.log("lazy - hydration required", asStr)
-        const { parent, childNodes, startIndex } =
-          consumeHydrationBoundaryChildren()
-        for (const child of childNodes) {
-          if (child instanceof Element) {
-            hydrationStack.captureEvents(child)
-          }
-        }
 
-        if (__DEV__) {
-          window.__kaioken?.HMRContext?.onHmr(() => {
-            if (!hydration.current.done) {
-              for (const child of childNodes) {
-                if (child instanceof Element) {
-                  hydrationStack.releaseEvents(child)
-                }
-                child.parentNode?.removeChild(child)
-              }
-            }
-          })
-        }
+      const ready = promise.then((componentOrModule) => {
+        state.result =
+          typeof componentOrModule === "function"
+            ? componentOrModule
+            : componentOrModule.default
+      })
 
-        const ready = promise.then((componentOrModule) => {
-          state.result =
-            typeof componentOrModule === "function"
-              ? componentOrModule
-              : componentOrModule.default
-        })
-
-        const hydrate = () => {
-          appCtx.scheduler?.nextIdle(() => {
-            hydrationStack.push(parent)
-            hydrationStack.childIdxStack[
-              hydrationStack.childIdxStack.length - 1
-            ] = startIndex
-            const prev = renderMode.current
-            requestUpdate()
-            renderMode.current = "hydrate"
-            appCtx.flushSync()
-            renderMode.current = prev
-            for (const child of childNodes) {
-              if (child instanceof Element) {
-                hydrationStack.releaseEvents(child)
-              }
-            }
-            hydration.current.done = true
-            console.log("lazy - hydration done", asStr)
-          })
-        }
-
-        /**
-         * once the promise resolves, we need to act according
-         * to the HydrationBoundaryContext 'mode'.
-         *
-         * - with 'eager', we just hydrate the children immediately
-         * - with 'lazy', we'll wait for user interaction before hydrating
-         */
-
-        if (hydrationCtx.mode === "eager") {
-          ready.then(hydrate)
-        } else {
-          const eventIsFromChild = (e: Event) => {
-            if (!(e.target instanceof Element)) {
-              return false
-            }
-            return childNodes.some((child) =>
-              child.contains(e.target as Element)
-            )
-          }
-          const onInteraction = (e: Event) => {
-            if (eventIsFromChild(e)) {
-              ready.then(() => {
-                hydrate()
-                interactionEvents.forEach((event) => {
-                  window.removeEventListener(event, onInteraction)
-                })
-              })
-            }
-          }
-          interactionEvents.forEach((event) => {
-            window.addEventListener(event, onInteraction)
-          })
-        }
-
-        return null
-      } else {
-        promise.then((componentOrModule) => {
-          state.result =
-            typeof componentOrModule === "function"
-              ? componentOrModule
-              : componentOrModule.default
-          requestUpdate()
-        })
+      if (!isPendingHydration) {
+        ready.then(() => requestUpdate())
         return fallback
       }
+
+      if (__DEV__) {
+        window.__kaioken?.HMRContext?.onHmr(() => {
+          if (isPendingHydration.current) {
+            for (const child of childNodes) {
+              if (child instanceof Element) {
+                hydrationStack.resetEvents(child)
+              }
+              child.parentNode?.removeChild(child)
+            }
+          }
+        })
+      }
+
+      const { parent, childNodes, startIndex } =
+        consumeHydrationBoundaryChildren()
+      for (const child of childNodes) {
+        if (child instanceof Element) {
+          hydrationStack.captureEvents(child)
+        }
+      }
+      const hydrate = () => {
+        if (isPendingHydration.current === false) return
+        appCtx.scheduler?.nextIdle(() => {
+          isPendingHydration.current = false
+          hydrationStack.push(parent)
+          hydrationStack.childIdxStack[
+            hydrationStack.childIdxStack.length - 1
+          ] = startIndex
+          const prev = renderMode.current
+          /**
+           * must call requestUpdate before setting renderMode
+           * to hydrate, otherwise the update will be postponed
+           * and flushSync will have no effect
+           */
+          requestUpdate()
+          renderMode.current = "hydrate"
+          appCtx.flushSync()
+          renderMode.current = prev
+          for (const child of childNodes) {
+            if (child instanceof Element) {
+              hydrationStack.releaseEvents(child)
+            }
+          }
+        })
+      }
+
+      /**
+       * once the promise resolves, we need to act according
+       * to the HydrationBoundaryContext 'mode'.
+       *
+       * - with 'eager', we just hydrate the children immediately
+       * - with 'lazy', we'll wait for user interaction before hydrating
+       */
+
+      if (hydrationCtx.mode === "eager") {
+        ready.then(hydrate)
+        return null
+      }
+
+      const onInteraction = (e: Event) => {
+        const tgt = e.target
+        if (
+          tgt instanceof Element &&
+          childNodes.some((child) => child.contains(tgt))
+        ) {
+          interactionEvents.forEach((evtName) => {
+            window.removeEventListener(evtName, onInteraction)
+          })
+          ready.then(hydrate)
+        }
+      }
+      interactionEvents.forEach((evtName) => {
+        window.addEventListener(evtName, onInteraction)
+      })
+
+      return null
     }
 
     if (cachedState.result === null) {
       cachedState.promise.then(requestUpdate)
       return fallback
     }
-    if (__DEV__) {
-      return createElement(cachedState.result, rest)
-    }
     return createElement(cachedState.result, rest)
   }
   LazyComponent.displayName = "Kaioken.lazy"
-  // if (__DEV__) {
-  //   return Object.assign(LazyComponent, {
-  //     [$HMR_ACCEPT]: {
-  //       inject: (prev) => {
-  //         window.__kaioken!.apps.forEach((ctx) => {
-  //           if (!ctx.mounted || !ctx.rootNode) return
-  //           traverseApply(ctx.rootNode, (vNode) => {
-  //             if (vNode.type === prev) {
-  //               vNode.type = LazyComponent
-  //               vNode.hmrUpdated = true
-  //               if (vNode.prev) {
-  //                 vNode.prev.type = LazyComponent
-  //               }
-  //               ctx.requestUpdate(vNode)
-  //             }
-  //           })
-  //         })
-  //       },
-  //       destroy: () => {},
-  //       provide: () => LazyComponent,
-  //     } satisfies HMRAccept<Function>,
-  //   })
-  // }
   return LazyComponent
 }
 
