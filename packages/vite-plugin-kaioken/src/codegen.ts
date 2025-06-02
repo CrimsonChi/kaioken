@@ -351,8 +351,6 @@ export function prepareHydrationBoundaries(
               }
               log("childrenExpr:after", childrenExpr.toString())
 
-              code.remove(childExprStart, childExprEnd)
-
               let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
               copyImports: {
                 for (const importedIdentifier of boundary.deps.imports) {
@@ -403,8 +401,10 @@ export function prepareHydrationBoundaries(
                     code.original.slice(expr.node.start!, expr.node.end!)
                   )
                   .join(",")
-                code.prependRight(
+
+                code.update(
                   childExprStart,
+                  childExprEnd,
                   `_jsx(${boundaryChildrenName}, { _props: [${props}] })`
                 )
 
