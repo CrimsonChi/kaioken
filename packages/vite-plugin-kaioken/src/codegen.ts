@@ -221,6 +221,14 @@ export function prepareHydrationBoundaries(
         },
         BinaryExpression: (n, ctx) => {
           if (!currentBoundary) return
+          const isHoistRequired = AST.findNode(
+            n,
+            (node) =>
+              node !== n &&
+              node.type !== "Literal" &&
+              node.type !== "BinaryExpression"
+          )
+          if (!isHoistRequired) return
           // TODO: if there are only literals, do nothing
           currentBoundary.deps.expressions.push({
             node: n,

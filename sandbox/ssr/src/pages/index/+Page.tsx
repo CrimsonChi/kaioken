@@ -25,7 +25,7 @@ export function Page() {
     <HydrationBoundary mode="lazy">
       <WebComponentExample />
       <StoreExample />
-
+      {1 + (1 - 14) - a()}
       <test.ThemeContext.Provider value="dark">
         {(value) => <div>{value}</div>}
       </test.ThemeContext.Provider>
