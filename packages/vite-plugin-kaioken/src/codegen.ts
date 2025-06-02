@@ -195,6 +195,8 @@ export function prepareHydrationBoundaries(
           const isParentJSX =
             parent.type === "CallExpression" && parent.callee?.name === "_jsx"
           if (!isParentJSX) return
+          // prevent operating on boundary props
+          if (parent === currentBoundary?.node) return
 
           const nonLiteralProperties =
             n.properties?.filter(

@@ -3,23 +3,53 @@ import { $HYDRATION_BOUNDARY } from "../constants.js"
 import { createElement, Fragment } from "../element.js"
 import { renderMode } from "../globals.js"
 
-export const HYDRATION_BOUNDARY_MARKER = "kaioken:h-boundary"
+type EventsArray = (keyof GlobalEventHandlersEventMap)[]
 
-export type HydrationBoundaryMode = "eager" | "lazy"
-export type HydrationBoundaryProps = {
-  /* @default "eager" */
-  mode?: HydrationBoundaryMode
+export const HYDRATION_BOUNDARY_MARKER = "kaioken:h-boundary"
+export const DEFAULT_INTERACTION_EVENTS = [
+  "pointerdown",
+  "keydown",
+  "focus",
+  "input",
+] as const satisfies EventsArray
+
+export type HydrationBoundaryMode = "eager" | "interaction"
+export type HydrationBoundaryProps<T extends HydrationBoundaryMode> = {
+  /**
+   * Determines the strategy to use when hydrating the boundary.
+   * - `eager`: hydrate immediately.
+   * - `interaction`: hydrate upon the first user interaction.
+   * @default "eager"
+   */
+  mode?: T
   children: JSX.Children
-}
+} & (T extends "interaction"
+  ? {
+      /**
+       * List of events that will trigger the hydration.
+       * @default ["pointerdown", "keydown", "focus", "input"]
+       */
+      events?: EventsArray
+    }
+  : {})
 
 export const HydrationBoundaryContext = createContext<{
   mode: HydrationBoundaryMode
+  events: string[]
 }>(null!)
 
-export function HydrationBoundary(props: HydrationBoundaryProps) {
+export function HydrationBoundary<T extends HydrationBoundaryMode>(
+  props: HydrationBoundaryProps<T>
+) {
   const provider = createElement(
     HydrationBoundaryContext.Provider,
-    { value: { mode: props.mode || "eager" } },
+    {
+      value: {
+        mode: props.mode || "eager",
+        // @ts-expect-error this is fine
+        events: props.events ?? DEFAULT_INTERACTION_EVENTS,
+      },
+    },
     createElement($HYDRATION_BOUNDARY, props)
   )
   if (renderMode.current === "string" || renderMode.current === "stream") {

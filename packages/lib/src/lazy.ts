@@ -79,8 +79,6 @@ function consumeHydrationBoundaryChildren(): {
   return { parent, childNodes, startIndex }
 }
 
-const interactionEvents = ["pointerdown", "keydown", "focus", "input"]
-
 export function lazy<T extends LazyImportValue>(
   componentPromiseFn: () => Promise<T>
 ): Kaioken.FC<LazyComponentProps<T>> {
@@ -176,7 +174,7 @@ export function lazy<T extends LazyImportValue>(
         ready.then(hydrate)
         return null
       }
-
+      const interactionEvents = hydrationCtx.events
       const onInteraction = (e: Event) => {
         const tgt = e.target
         if (

@@ -26,10 +26,12 @@ export function Page() {
     items.value.push(items.value.length + 1), items.notify()
   )
   return (
-    <HydrationBoundary mode="lazy">
+    <HydrationBoundary
+      mode="interaction"
+      events={["pointerdown", "keydown", "focus", "input", "mousemove"]}
+    >
       <WebComponentExample />
       <StoreExample />
-      {foo.bar}
       {(1 + (1 - 14) - a(), 456)}
       <test.ThemeContext.Provider value="dark">
         {(value) => <div>{value}</div>}
@@ -42,7 +44,7 @@ export function Page() {
           {(items) => (
             <div>
               {items.map((item) => (
-                <div>{item}</div>
+                <div data-test={foo.bar}>{item}</div>
               ))}
             </div>
           )}
