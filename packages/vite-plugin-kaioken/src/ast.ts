@@ -74,6 +74,7 @@ export function findNode(
 type VisitorCTX = {
   stack: AstNode[]
   exit: () => never
+  exitBranch: () => never
 }
 type VisitorNodeCallback = (
   node: AstNode,
@@ -90,6 +91,7 @@ export function walk(node: AstNode, visitor: AstVisitor) {
   const ctx: VisitorCTX = {
     stack: [],
     exit: exitWalk,
+    exitBranch: exitBranch,
   }
   try {
     walk_impl(node, visitor, ctx)
@@ -102,12 +104,24 @@ export function walk(node: AstNode, visitor: AstVisitor) {
 const exitWalk = () => {
   throw "walk:exit"
 }
+const exitBranch = () => {
+  throw "walk:exit-branch"
+}
+
 function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
   // Call visitor before children traversal
-  const onExitCallbacks = [
-    visitor[node.type]?.(node, ctx),
-    visitor["*"]?.(node, ctx),
-  ].filter(Boolean) as (() => void)[]
+  const onExitCallbacks: (() => void)[] = []
+  try {
+    onExitCallbacks.push(visitor[node.type]?.(node, ctx) as () => void)
+    onExitCallbacks.push(visitor["*"]?.(node, ctx) as () => void)
+  } catch (error) {
+    if (error === "walk:exit-branch") {
+      onExitCallbacks.filter(Boolean).forEach((c) => c())
+      console.log("walk:exit-branch")
+      return
+    }
+    throw error
+  }
 
   ctx.stack.push(node)
 
@@ -151,5 +165,5 @@ function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
   }
 
   ctx.stack.pop()
-  onExitCallbacks.forEach((c) => c())
+  onExitCallbacks.filter(Boolean).forEach((c) => c())
 }

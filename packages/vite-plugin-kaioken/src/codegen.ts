@@ -128,13 +128,21 @@ export function prepareHydrationBoundaries(
         hasJsxChildren: boolean
       } | null = null
 
-      // TODO: implement variable/prop passing
-      // TODO: handle variable shadowing
-
-      // const blockScopes: { variables: AstNode[] }[] = [
-      //   { variables: importNodes }, // global scope
-      //   { variables: [] }, // function scope
-      // ]
+      type BlockScope = { variables: Map<string, AstNode> }
+      const globalVars = new Map<string, AstNode>(
+        importNodes.reduce<Array<[string, AstNode]>>((acc, item) => {
+          const entries: Array<[string, AstNode]> = item.specifiers!.map(
+            (s) => [s.local!.name, s]
+          )
+          return [...acc, ...entries]
+        }, [])
+      )
+      const blockScopes: BlockScope[] = [
+        // global scope
+        { variables: globalVars },
+        // function scope
+        { variables: new Map(globalVars) },
+      ]
 
       const enableLog = filePath.includes("index/+Page.tsx")
       const log = enableLog ? console.log : () => {}
@@ -143,11 +151,22 @@ export function prepareHydrationBoundaries(
       const fnExprs: AstNode[] = []
       componentBodyNodes?.forEach((node) => {
         AST.walk(node, {
+          // capture variables encountered outside of boundary scopes
+          VariableDeclarator: (n) => {
+            if (currentBoundary) return
+            blockScopes[blockScopes.length - 1].variables.set(n.id?.name!, n)
+          },
+          BlockStatement: () => {
+            if (currentBoundary) return
+            const parentScope = blockScopes[blockScopes.length - 1]
+            blockScopes.push({ variables: new Map(parentScope.variables) })
+            return () => blockScopes.pop()
+          },
           // find jsx props, hoist non-literal values
-          ObjectExpression: (n, { stack }) => {
+          ObjectExpression: (n, ctx) => {
             const boundary = currentBoundary
             if (!boundary) return
-            const parent = stack[stack.length - 1]
+            const parent = ctx.stack[ctx.stack.length - 1]
             const isParentJSX =
               parent.type === "CallExpression" && parent.callee?.name === "_jsx"
             if (!isParentJSX) return
@@ -165,14 +184,25 @@ export function prepareHydrationBoundaries(
                 property: p,
               })
             })
+            ctx.exitBranch() // prevent touching anything further here
           },
-          // VariableDeclaration: (n) => {
-          //   blockScopes[blockScopes.length - 1].variables.push(n)
-          // },
-          // BlockStatement: () => {
-          //   blockScopes.push({ variables: [] })
-          //   return () => blockScopes.pop()
-          // },
+          MemberExpression: (n) => {
+            if (!currentBoundary) return
+            const parentScope = blockScopes[blockScopes.length - 1]
+            const variableFromParentScope = parentScope.variables.get(
+              n.object?.name ?? ""
+            )
+            if (variableFromParentScope) {
+              console.log(
+                "MemberExpression - adding scope variable reference",
+                n
+              )
+              currentBoundary.deps.expressions.push({
+                node: n,
+                property: null,
+              })
+            }
+          },
           ["*"]: (n) => {
             // ensure we've entered a JSX block inside a boundary
             if (!currentBoundary?.hasJsxChildren) return
@@ -180,6 +210,11 @@ export function prepareHydrationBoundaries(
             // log("node", n)
 
             switch (n.type) {
+              case "ArrowFunctionExpression":
+              case "FunctionExpression": {
+                fnExprs.push(n)
+                return () => fnExprs.pop()
+              }
               case "Identifier": {
                 // skip identifiers inside function expressions, the fn expression will be hoisted
                 if (fnExprs.length) return
@@ -197,11 +232,6 @@ export function prepareHydrationBoundaries(
                   })
                 }
                 break
-              }
-              case "ArrowFunctionExpression":
-              case "FunctionExpression": {
-                fnExprs.push(n)
-                return () => fnExprs.pop()
               }
             }
             return

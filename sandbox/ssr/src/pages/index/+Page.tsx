@@ -1,16 +1,22 @@
 import { HydrationBoundary } from "kaioken/ssr"
 import Counter from "./Counter"
-import { useSignal } from "kaioken"
+import { createContext, useSignal } from "kaioken"
 
+// const ThemeContext = createContext<"light" | "dark">("dark")
+// <ThemeContext.Provider value="dark">
+// {(value) => <div>{value}</div>}
+// </ThemeContext.Provider>
+const a = 123
 export function Page() {
   const count = useSignal(0)
   const greeting = useSignal("Hello world!")
+  const a = 456
   return (
     <HydrationBoundary mode="lazy">
       <div className="p-6">
-        <h1>{greeting}</h1>
+        <h1>{a}</h1>
         <Counter
-          count={count.value}
+          count={true ? count.value : count.value + 2}
           onIncrement={function () {
             count.value++
           }}
