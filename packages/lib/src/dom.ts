@@ -111,20 +111,27 @@ function handlePostPlacementFocusPersistence() {
   persistingFocus = false
 }
 
-function wrapFocusEventHandler(callback: (event: FocusEvent) => void) {
-  return (event: FocusEvent) => {
+function wrapFocusEventHandler(
+  vNode: VNode,
+  evtName: "focus" | "blur",
+  callback: (event: FocusEvent) => void
+) {
+  const wrappedHandlers = vNodeToWrappedFocusEventHandlersMap.get(vNode) ?? {}
+  const handler = (wrappedHandlers[evtName] = (event: FocusEvent) => {
     if (persistingFocus) {
       event.preventDefault()
       event.stopPropagation()
       return
     }
     callback(event)
-  }
+  })
+  vNodeToWrappedFocusEventHandlersMap.set(vNode, wrappedHandlers)
+  return handler
 }
 
 type WrappedFocusEventMap = {
-  onfocus?: (event: FocusEvent) => void
-  onblur?: (event: FocusEvent) => void
+  focus?: (event: FocusEvent) => void
+  blur?: (event: FocusEvent) => void
 }
 
 const vNodeToWrappedFocusEventHandlersMap = new WeakMap<
@@ -156,24 +163,21 @@ function updateDom(vNode: VNode) {
 
     if (propFilters.isEvent(key)) {
       if (prev !== next || renderMode.current === "hydrate") {
-        const eventType = key.toLowerCase().substring(2)
+        const evtName = key.toLowerCase().substring(2)
+        const isFocusEvent = evtName === "focus" || evtName === "blur"
         if (key in prevProps) {
-          let cb = prev
-          if (key === "onfocus" || key === "onblur") {
-            cb = vNodeToWrappedFocusEventHandlersMap.get(vNode)?.[key]
-          }
-          dom.removeEventListener(eventType, cb)
+          dom.removeEventListener(
+            evtName,
+            isFocusEvent
+              ? vNodeToWrappedFocusEventHandlersMap.get(vNode)?.[evtName]
+              : prev
+          )
         }
         if (key in nextProps) {
-          let cb = next
-          if (key === "onfocus" || key === "onblur") {
-            cb = wrapFocusEventHandler(cb)
-            const wrappedHandlers =
-              vNodeToWrappedFocusEventHandlersMap.get(vNode) ?? {}
-            wrappedHandlers[key] = cb
-            vNodeToWrappedFocusEventHandlersMap.set(vNode, wrappedHandlers)
-          }
-          dom.addEventListener(eventType, cb)
+          dom.addEventListener(
+            evtName,
+            isFocusEvent ? wrapFocusEventHandler(vNode, evtName, next) : next
+          )
         }
       }
       return
