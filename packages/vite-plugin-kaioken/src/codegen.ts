@@ -216,7 +216,6 @@ export function prepareHydrationBoundaries(
           const parentScope = blockScopes[blockScopes.length - 1]
           const variableFromParentScope = parentScope.get(n.object.name)
           if (variableFromParentScope) {
-            log("variableFromParentScope", variableFromParentScope)
             currentBoundary.deps.expressions.push({
               node: n,
               property: null,
@@ -226,8 +225,6 @@ export function prepareHydrationBoundaries(
         ["*"]: (n, ctx) => {
           // ensure we've entered a JSX block inside a boundary
           if (!currentBoundary?.hasJsxChildren) return
-
-          // log("node", n)
 
           switch (n.type) {
             case "ArrowFunctionExpression":
@@ -290,9 +287,6 @@ export function prepareHydrationBoundaries(
         },
         CallExpression: (n) => {
           if (n.callee?.type !== "Identifier" || n.callee.name !== "_jsx") {
-            if (currentBoundary) {
-              log("boundary - call", n)
-            }
             return
           }
           if (currentBoundary) {
