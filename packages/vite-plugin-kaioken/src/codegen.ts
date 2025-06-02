@@ -40,23 +40,13 @@ if (import.meta.hot && "window" in globalThis) {
     code.append(`
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
-  ${
+  ${createHMRRegistrationBlurb(
+    hotVars,
+    componentNamesToHookArgs,
+    fileLinkFormatter,
+    filePath,
     isVirtualModule
-      ? `
-window.__kaioken.HMRContext?.register({
-  BoundaryChildren: {
-    type: "component",
-    value: BoundaryChildren,
-    hooks: [],
-  }
-})`
-      : createHMRRegistrationBlurb(
-          hotVars,
-          componentNamesToHookArgs,
-          fileLinkFormatter,
-          filePath
-        )
-  }
+  )}
 }
 `)
 
@@ -419,8 +409,8 @@ export function prepareHydrationBoundaries(
                 extraModules[
                   boundary.id + "_loader"
                 ] = `import {lazy} from "kaioken";
-const BoundaryChildren = lazy(() => import("${boundary.id}"));
-export default BoundaryChildren;`
+const BoundaryChildrenLoader = lazy(() => import("${boundary.id}"));
+export default BoundaryChildrenLoader;`
                 currentBoundary = null
               }
             }
@@ -442,34 +432,54 @@ function createHMRRegistrationBlurb(
   hotVars: Set<HotVarDesc>,
   componentHookArgs: Record<string, HookToArgs[]>,
   fileLinkFormatter: FileLinkFormatter,
-  filePath: string
+  filePath: string,
+  isVirtualModule: boolean
 ) {
-  const src = fs.readFileSync(filePath, "utf-8")
-  const entries = Array.from(hotVars).map(({ name, type }) => {
-    const line = findHotVarLineInSrc(src, name)
-    if (type !== "component") {
+  let entries: string[] = []
+  if (isVirtualModule) {
+    entries = Array.from(hotVars).map(({ name, type }) => {
+      if (type !== "component") {
+        return `    ${name}: {
+      type: "${type}",
+      value: ${name}
+    }`
+      }
+
       return `    ${name}: {
+        type: "component",
+        value: ${name},
+        hooks: [],
+      }`
+    })
+  } else {
+    const src = fs.readFileSync(filePath, "utf-8")
+    entries = Array.from(hotVars).map(({ name, type }) => {
+      const line = findHotVarLineInSrc(src, name)
+      if (type !== "component") {
+        return `    ${name}: {
       type: "${type}",
       value: ${name},
       link: "${fileLinkFormatter(filePath, line)}"
     }`
-    }
-    if (!componentHookArgs[name]) {
-      console.error(
-        "[vite-plugin-kaioken]: failed to parse component hooks",
-        name
-      )
-    }
-    const args = componentHookArgs[name].map(([name, args]) => {
-      return `{ name: "${name}", args: "${args}" }`
-    })
-    return `    ${name}: {
+      }
+      if (!componentHookArgs[name]) {
+        console.error(
+          "[vite-plugin-kaioken]: failed to parse component hooks",
+          name
+        )
+      }
+      const args = componentHookArgs[name].map(([name, args]) => {
+        return `{ name: "${name}", args: "${args}" }`
+      })
+      return `    ${name}: {
       type: "component",
       value: ${name},
       hooks: [${args.join(",")}],
       link: "${fileLinkFormatter(filePath, line)}"
     }`
-  })
+    })
+  }
+
   return `
   window.__kaioken.HMRContext?.register({
 ${entries.join(",\n")}
