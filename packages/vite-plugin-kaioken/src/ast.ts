@@ -138,6 +138,7 @@ function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
     node.arguments,
     node.declarations,
     node.properties,
+    node.property,
     node.cases,
     node.body,
     node.consequent,

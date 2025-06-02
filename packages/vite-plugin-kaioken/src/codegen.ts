@@ -168,6 +168,7 @@ export function prepareHydrationBoundaries(
           const boundary = currentBoundary
           if (!boundary) return
           const parent = ctx.stack[ctx.stack.length - 1]
+
           const isParentJSX =
             parent.type === "CallExpression" && parent.callee?.name === "_jsx"
           if (!isParentJSX) return
@@ -216,14 +217,21 @@ export function prepareHydrationBoundaries(
               // skip jsx identifiers
               if (n.name === "_jsx") return
 
-              const parent = ctx.stack[ctx.stack.length - 1]
+              let parentCallExpression: AstNode | null = null
+              for (let i = ctx.stack.length - 1; i >= 0; i--) {
+                if (ctx.stack[i].type === "CallExpression") {
+                  parentCallExpression = ctx.stack[i]
+                  break
+                }
+              }
+
               if (
-                parent.type === "CallExpression" &&
-                parent.callee?.name !== "_jsx"
+                parentCallExpression &&
+                parentCallExpression.callee?.name !== "_jsx"
               ) {
                 // add the call expr instead of the identifier
                 currentBoundary.deps.expressions.push({
-                  node: parent,
+                  node: parentCallExpression,
                   property: null,
                 })
                 return
@@ -247,6 +255,9 @@ export function prepareHydrationBoundaries(
         },
         CallExpression: (n) => {
           if (n.callee?.type !== "Identifier" || n.callee.name !== "_jsx") {
+            if (currentBoundary) {
+              log("boundary - call", n)
+            }
             return
           }
           if (currentBoundary) {

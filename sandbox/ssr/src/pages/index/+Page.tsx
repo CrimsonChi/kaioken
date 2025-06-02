@@ -11,6 +11,7 @@ export function Page() {
   const count = useSignal(0)
   const greeting = useSignal("Hello world!")
   const a = () => 456
+  const items = useSignal([1, 2, 3])
   /**
    * todo: the 'a' function is being passed and called inside the generated component.
    * need to ensure it is called at the top level instead.
@@ -19,6 +20,9 @@ export function Page() {
     <HydrationBoundary mode="lazy">
       <div className="p-6">
         <h1>{a()}</h1>
+        {items.value.map((item) => (
+          <div>{item}</div>
+        ))}
         <Counter
           count={true ? count.value : count.value + 2}
           onIncrement={function () {
