@@ -166,7 +166,7 @@ export function prepareHydrationBoundaries(
     ]
 
     const enableLog = filePath.includes("index/+Page.tsx")
-    const log = false && enableLog ? console.log : () => {}
+    const log = enableLog ? console.log : () => {}
 
     let index = 0
     const fnExprs: AstNode[] = []
@@ -219,6 +219,15 @@ export function prepareHydrationBoundaries(
             })
           }
         },
+        BinaryExpression: (n, ctx) => {
+          if (!currentBoundary) return
+          // TODO: if there are only literals, do nothing
+          currentBoundary.deps.expressions.push({
+            node: n,
+            property: null,
+          })
+          ctx.exitBranch()
+        },
         ["*"]: (n, ctx) => {
           // ensure we've entered a JSX block inside a boundary
           if (!currentBoundary?.hasJsxChildren) return
@@ -234,6 +243,8 @@ export function prepareHydrationBoundaries(
               if (fnExprs.length) return
               // skip jsx identifiers
               if (n.name === "_jsx") return
+
+              console.log("identifier", n.name)
 
               const parentCallExpression = findFirstParentOfType(
                 ctx.stack,
@@ -258,7 +269,6 @@ export function prepareHydrationBoundaries(
                   "MemberExpression"
                 )
                 if (exprRoot?.type !== "MemberExpression") return
-                // add the call expr instead of the identifier
                 currentBoundary.deps.expressions.push({
                   node: exprRoot,
                   property: null,

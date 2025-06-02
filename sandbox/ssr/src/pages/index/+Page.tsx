@@ -1,6 +1,7 @@
 import { HydrationBoundary } from "kaioken/ssr"
 import Counter from "./Counter"
-import { createContext, Derive, For, useId, useSignal } from "kaioken"
+import { createContext, Derive, For, useSignal } from "kaioken"
+import ElementBindingsExample from "shared/src/ElementBindingsExample"
 import WebComponentExample from "shared/src/WebComponentExample"
 import StoreExample from "shared/src/StoreExample"
 
@@ -10,8 +11,6 @@ const test = {
 
 const a = () => 123
 export function Page() {
-  const id = useId()
-  console.log("page", id)
   const greeting = useSignal("Hello world!")
   const a = () => 456
   const items = useSignal([1, 2, 3])

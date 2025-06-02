@@ -4,6 +4,7 @@ interface AstNodeId {
 }
 
 const types = [
+  "BinaryExpression",
   "ImportDefaultSpecifier",
   "ExportNamedDeclaration",
   "FunctionDeclaration",
@@ -54,6 +55,8 @@ export interface AstNode {
   key?: AstNode
   value?: unknown
   shorthand?: boolean
+  left?: AstNode
+  right?: AstNode
 }
 
 export function findNode(
@@ -148,6 +151,8 @@ function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
     node.callee,
     node.declaration,
     node.expression,
+    node.left,
+    node.right,
   ]
     .filter(Boolean)
     .forEach((a) => {
