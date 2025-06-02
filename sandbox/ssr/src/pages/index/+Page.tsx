@@ -1,6 +1,6 @@
 import { HydrationBoundary } from "kaioken/ssr"
 import Counter from "./Counter"
-import { createContext, useSignal } from "kaioken"
+import { createContext, For, useSignal } from "kaioken"
 
 // const ThemeContext = createContext<"light" | "dark">("dark")
 // <ThemeContext.Provider value="dark">
@@ -20,9 +20,17 @@ export function Page() {
     <HydrationBoundary mode="lazy">
       <div className="p-6">
         <h1>{a()}</h1>
-        {items.value.map((item) => (
+        <button
+          onclick={() => (
+            items.value.push(items.value.length + 1), items.notify()
+          )}
+        >
+          add item
+        </button>
+        <For each={items}>{(item) => <div>{item}</div>}</For>
+        {/* {items.value.map((item) => (
           <div>{item}</div>
-        ))}
+        ))} */}
         <Counter
           count={true ? count.value : count.value + 2}
           onIncrement={function () {

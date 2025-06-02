@@ -336,7 +336,7 @@ export function prepareHydrationBoundaries(
                     moduleCode += `import `
                   }
                   if (importedIdentifier.specifiers!.length > 1) {
-                    moduleCode += `, {`
+                    moduleCode += defaultSpecifier ? `, {` : `{`
                     let internals = importedIdentifier
                       .specifiers!.filter((s) => s !== defaultSpecifier)
                       .map((s) => s.local?.name)
@@ -344,9 +344,15 @@ export function prepareHydrationBoundaries(
 
                     moduleCode += `${internals} }`
                   }
-                  moduleCode += ` from "${path
-                    .resolve(folderPath, importedIdentifier.source!.value)
-                    .replace(/\\/g, "/")}";`
+                  const raw = importedIdentifier.source!.value
+                  const isRelative = raw.startsWith(".") || raw.startsWith("/")
+                  if (isRelative) {
+                    moduleCode += ` from "${path
+                      .resolve(folderPath, importedIdentifier.source!.value)
+                      .replace(/\\/g, "/")}";`
+                  } else {
+                    moduleCode += ` from "${raw}";`
+                  }
                 }
               }
 
