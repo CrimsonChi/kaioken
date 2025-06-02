@@ -140,33 +140,32 @@ function updateDom(vNode: VNode) {
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
+    const prev = prevProps[key],
+      next = nextProps[key]
     if (propFilters.internalProps.includes(key) && key !== "innerHTML") {
-      if (key === "ref" && prevProps[key] !== nextProps[key]) {
-        if (prevProps[key]) {
-          setDomRef(prevProps[key], null)
+      if (key === "ref" && prev !== next) {
+        if (prev) {
+          setDomRef(prev, null)
         }
-        if (nextProps[key]) {
-          setDomRef(nextProps[key], dom)
+        if (next) {
+          setDomRef(next, dom)
         }
       }
       return
     }
 
     if (propFilters.isEvent(key)) {
-      if (
-        prevProps[key] !== nextProps[key] ||
-        renderMode.current === "hydrate"
-      ) {
+      if (prev !== next || renderMode.current === "hydrate") {
         const eventType = key.toLowerCase().substring(2)
         if (key in prevProps) {
-          let cb = prevProps[key]
+          let cb = prev
           if (key === "onfocus" || key === "onblur") {
             cb = vNodeToWrappedFocusEventHandlersMap.get(vNode)?.[key]
           }
           dom.removeEventListener(eventType, cb)
         }
         if (key in nextProps) {
-          let cb = nextProps[key]
+          let cb = next
           if (key === "onfocus" || key === "onblur") {
             cb = wrapFocusEventHandler(cb)
             const wrappedHandlers =
@@ -181,29 +180,30 @@ function updateDom(vNode: VNode) {
     }
 
     if (!(dom instanceof Text)) {
-      if (prevProps[key] === nextProps[key]) return
       if (
-        renderMode.current === "hydrate" &&
-        dom.getAttribute(key) === nextProps[key]
-      )
+        prev === next ||
+        (renderMode.current === "hydrate" && dom.getAttribute(key) === next)
+      ) {
         return
-      if (Signal.isSignal(prevProps[key]) && vNode.cleanups) {
-        vNode.cleanups[key] &&
-          (vNode.cleanups[key](), delete vNode.cleanups[key])
       }
-      if (Signal.isSignal(nextProps[key])) {
-        return setSignalProp(vNode, dom, key, nextProps[key], prevProps[key])
+
+      if (Signal.isSignal(prev) && vNode.cleanups) {
+        const v = vNode.cleanups[key]
+        v && (v(), delete vNode.cleanups[key])
       }
-      setProp(vNode, dom, key, nextProps[key], prevProps[key])
+      if (Signal.isSignal(next)) {
+        return setSignalProp(vNode, dom, key, next, prev)
+      }
+      setProp(vNode, dom, key, next, prev)
       return
     }
-    if (Signal.isSignal(nextProps[key])) {
+    if (Signal.isSignal(next)) {
       // signal textNodes are handled via 'subTextNode'.
       return
     }
-    const nodeVal = nextProps[key]
-    if (dom.nodeValue !== nodeVal) {
-      dom.nodeValue = nodeVal
+    // text node
+    if (dom.nodeValue !== next) {
+      dom.nodeValue = next
     }
   })
 }
