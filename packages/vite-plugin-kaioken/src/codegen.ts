@@ -169,7 +169,7 @@ export function prepareHydrationBoundaries(
     ]
 
     const enableLog = filePath.includes("index/+Page.tsx")
-    const log = enableLog ? console.log : () => {}
+    const log = false && enableLog ? console.log : () => {}
 
     let index = 0
     const fnExprs: AstNode[] = []

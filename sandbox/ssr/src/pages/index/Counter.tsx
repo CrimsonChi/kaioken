@@ -1,8 +1,9 @@
-import { useSignal } from "kaioken"
+import { useId, useSignal } from "kaioken"
 
 export default function Counter() {
+  const id = useId()
   const count = useSignal(0)
-  console.log("ran Counter component")
+  console.log("ran Counter component", id)
   return (
     <>
       <span>Count: {count}</span>{" "}

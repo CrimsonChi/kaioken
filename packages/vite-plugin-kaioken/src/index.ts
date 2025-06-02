@@ -121,8 +121,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         }
       }
 
-      console.log("transform", id)
-
       const ast = this.parse(code)
       const asMagicStr = new MagicString(code)
 
