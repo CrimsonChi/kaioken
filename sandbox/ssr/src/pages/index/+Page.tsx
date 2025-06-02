@@ -1,6 +1,6 @@
 import { HydrationBoundary } from "kaioken/ssr"
 import Counter from "./Counter"
-import { createContext, For, useSignal } from "kaioken"
+import { createContext, Derive, For, useSignal } from "kaioken"
 
 // const ThemeContext = createContext<"light" | "dark">("dark")
 // <ThemeContext.Provider value="dark">
@@ -8,7 +8,6 @@ import { createContext, For, useSignal } from "kaioken"
 // </ThemeContext.Provider>
 const a = () => 123
 export function Page() {
-  const count = useSignal(0)
   const greeting = useSignal("Hello world!")
   const a = () => 456
   const items = useSignal([1, 2, 3])
@@ -16,28 +15,32 @@ export function Page() {
    * todo: the 'a' function is being passed and called inside the generated component.
    * need to ensure it is called at the top level instead.
    */
+  const addItem = () => (
+    items.value.push(items.value.length + 1), items.notify()
+  )
   return (
     <HydrationBoundary mode="lazy">
       <div className="p-6">
         <h1>{a()}</h1>
-        <button
-          onclick={() => (
-            items.value.push(items.value.length + 1), items.notify()
+        <h2>{greeting}</h2>
+        <button onclick={addItem}>add item</button>
+        <Derive from={items}>
+          {(items) => (
+            <div>
+              {items.map((item) => (
+                <div>{item}</div>
+              ))}
+            </div>
           )}
-        >
-          add item
-        </button>
+        </Derive>
+        ~~~~~~~~~~~~~~~~~~
         <For each={items}>{(item) => <div>{item}</div>}</For>
-        {/* {items.value.map((item) => (
+        ~~~~~~~~~~~~~~~~~~
+        {items.value.map((item) => (
           <div>{item}</div>
-        ))} */}
-        <Counter
-          count={true ? count.value : count.value + 2}
-          onIncrement={function () {
-            count.value++
-          }}
-        />
+        ))}
       </div>
+      <Counter />
     </HydrationBoundary>
   )
 }
