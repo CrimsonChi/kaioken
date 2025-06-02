@@ -182,6 +182,11 @@ function updateDom(vNode: VNode) {
 
     if (!(dom instanceof Text)) {
       if (prevProps[key] === nextProps[key]) return
+      if (
+        renderMode.current === "hydrate" &&
+        dom.getAttribute(key) === nextProps[key]
+      )
+        return
       if (Signal.isSignal(prevProps[key]) && vNode.cleanups) {
         vNode.cleanups[key] &&
           (vNode.cleanups[key](), delete vNode.cleanups[key])
