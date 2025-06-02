@@ -2,10 +2,10 @@ import { HydrationBoundary } from "kaioken/ssr"
 import Counter from "./Counter"
 import { createContext, Derive, For, useSignal } from "kaioken"
 
-// const ThemeContext = createContext<"light" | "dark">("dark")
-// <ThemeContext.Provider value="dark">
-// {(value) => <div>{value}</div>}
-// </ThemeContext.Provider>
+const test = {
+  ThemeContext: createContext<"light" | "dark">("dark"),
+}
+
 const a = () => 123
 export function Page() {
   const greeting = useSignal("Hello world!")
@@ -20,6 +20,9 @@ export function Page() {
   )
   return (
     <HydrationBoundary mode="lazy">
+      <test.ThemeContext.Provider value="dark">
+        {(value) => <div>{value}</div>}
+      </test.ThemeContext.Provider>
       <div className="p-6">
         <h1>{a()}</h1>
         <h2>{greeting}</h2>

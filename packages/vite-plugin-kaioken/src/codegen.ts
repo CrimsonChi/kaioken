@@ -60,6 +60,29 @@ if (import.meta.hot && "window" in globalThis) {
   }
 }
 
+function findFirstParentOfType(stack: AstNode[], type: AstNode["type"]) {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (stack[i].type === type) {
+      return stack[i]
+    }
+  }
+  return null
+}
+
+function findLastConsecutiveParentOfType(
+  stack: AstNode[],
+  type: AstNode["type"]
+) {
+  let last: AstNode | null = null
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (stack[i].type !== type) {
+      return last
+    }
+    last = stack[i]
+  }
+  return last
+}
+
 export function prepareHydrationBoundaries(
   code: MagicString,
   ast: ProgramNode,
@@ -193,6 +216,7 @@ export function prepareHydrationBoundaries(
           const parentScope = blockScopes[blockScopes.length - 1]
           const variableFromParentScope = parentScope.get(n.object.name)
           if (variableFromParentScope) {
+            log("variableFromParentScope", variableFromParentScope)
             currentBoundary.deps.expressions.push({
               node: n,
               property: null,
@@ -217,13 +241,10 @@ export function prepareHydrationBoundaries(
               // skip jsx identifiers
               if (n.name === "_jsx") return
 
-              let parentCallExpression: AstNode | null = null
-              for (let i = ctx.stack.length - 1; i >= 0; i--) {
-                if (ctx.stack[i].type === "CallExpression") {
-                  parentCallExpression = ctx.stack[i]
-                  break
-                }
-              }
+              const parentCallExpression = findFirstParentOfType(
+                ctx.stack,
+                "CallExpression"
+              )
 
               if (
                 parentCallExpression &&
@@ -232,6 +253,20 @@ export function prepareHydrationBoundaries(
                 // add the call expr instead of the identifier
                 currentBoundary.deps.expressions.push({
                   node: parentCallExpression,
+                  property: null,
+                })
+                return
+              }
+
+              if (ctx.stack[ctx.stack.length - 1].type === "MemberExpression") {
+                const exprRoot = findLastConsecutiveParentOfType(
+                  ctx.stack,
+                  "MemberExpression"
+                )
+                if (exprRoot?.type !== "MemberExpression") return
+                // add the call expr instead of the identifier
+                currentBoundary.deps.expressions.push({
+                  node: exprRoot,
                   property: null,
                 })
                 return
