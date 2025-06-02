@@ -139,14 +139,32 @@ export function prepareHydrationBoundaries(
       const enableLog = filePath.includes("index/+Page.tsx")
       const log = enableLog ? console.log : () => {}
 
-      let fnExprs: AstNode[] = []
       let index = 0
-      let property: AstNode | null = null
+      const fnExprs: AstNode[] = []
       componentBodyNodes?.forEach((node) => {
         AST.walk(node, {
-          Property: (n) => {
-            property = n
-            return () => (property = null)
+          // find jsx props, hoist non-literal values
+          ObjectExpression: (n, { stack }) => {
+            const boundary = currentBoundary
+            if (!boundary) return
+            const parent = stack[stack.length - 1]
+            const isParentJSX =
+              parent.type === "CallExpression" && parent.callee?.name === "_jsx"
+            if (!isParentJSX) return
+
+            const nonLiteralProperties =
+              n.properties?.filter(
+                (p) =>
+                  typeof p.value === "object" &&
+                  (p.value as AstNode).type !== "Literal"
+              ) ?? []
+
+            nonLiteralProperties.forEach((p) => {
+              boundary.deps.expressions.push({
+                node: (p.value as AstNode)!,
+                property: p,
+              })
+            })
           },
           // VariableDeclaration: (n) => {
           //   blockScopes[blockScopes.length - 1].variables.push(n)
@@ -173,14 +191,16 @@ export function prepareHydrationBoundaries(
                 if (importNode) {
                   currentBoundary.deps.imports.add(importNode)
                 } else {
-                  currentBoundary.deps.expressions.push({ node: n, property })
+                  currentBoundary.deps.expressions.push({
+                    node: n,
+                    property: null,
+                  })
                 }
                 break
               }
               case "ArrowFunctionExpression":
               case "FunctionExpression": {
                 fnExprs.push(n)
-                currentBoundary.deps.expressions.push({ node: n, property })
                 return () => fnExprs.pop()
               }
             }
@@ -215,7 +235,11 @@ export function prepareHydrationBoundaries(
               return () => {
                 if (!boundary.hasJsxChildren) return
                 //console.log("boundary", JSON.stringify(boundary, null, 2))
-                log("boundary", boundary.deps.expressions)
+                log(
+                  "boundary - finalization",
+                  boundary.deps.expressions,
+                  boundary.deps.imports
+                )
                 /**
                  * TODO: we need to scan childArgs to find jsx expressions and hoist them
                  * into props for the children loader

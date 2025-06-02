@@ -10,7 +10,7 @@ export function Page() {
       <div className="p-6">
         <h1>{greeting}</h1>
         <Counter
-          count={count}
+          count={count.value}
           onIncrement={function () {
             count.value++
           }}
