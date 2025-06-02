@@ -234,6 +234,7 @@ export function prepareHydrationBoundaries(
         },
         CallExpression: (n) => {
           if (n.callee?.type !== "Identifier" || n.callee.name !== "_jsx") {
+            log("CallExpression - not jsx", n)
             return
           }
           if (currentBoundary) {

@@ -108,25 +108,32 @@ const exitBranch = () => {
   throw "walk:exit-branch"
 }
 
+const flushCallbacks = (callbacks: (() => void)[]) => {
+  while (callbacks.length) {
+    callbacks.pop()!()
+  }
+}
+
 function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
-  // Call visitor before children traversal
   const onExitCallbacks: (() => void)[] = []
   try {
-    onExitCallbacks.push(visitor[node.type]?.(node, ctx) as () => void)
-    onExitCallbacks.push(visitor["*"]?.(node, ctx) as () => void)
+    {
+      const cb = visitor[node.type]?.(node, ctx)
+      if (cb instanceof Function) onExitCallbacks.push(cb)
+    }
+    {
+      const cb = visitor["*"]?.(node, ctx)
+      if (cb instanceof Function) onExitCallbacks.push(cb)
+    }
   } catch (error) {
     if (error === "walk:exit-branch") {
-      onExitCallbacks.filter(Boolean).forEach((c) => c())
-      console.log("walk:exit-branch")
+      flushCallbacks(onExitCallbacks)
       return
     }
     throw error
   }
 
   ctx.stack.push(node)
-
-  // Traverse children arrays or single nodes
-  // For each array, pass the array and index so we track siblings[
   ;[
     node.arguments,
     node.declarations,
@@ -165,5 +172,5 @@ function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
   }
 
   ctx.stack.pop()
-  onExitCallbacks.filter(Boolean).forEach((c) => c())
+  flushCallbacks(onExitCallbacks)
 }
