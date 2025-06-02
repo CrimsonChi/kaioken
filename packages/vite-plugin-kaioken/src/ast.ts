@@ -103,54 +103,52 @@ const exitWalk = () => {
   throw "walk:exit"
 }
 function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
+  // Call visitor before children traversal
   const onExitCallbacks = [
     visitor[node.type]?.(node, ctx),
     visitor["*"]?.(node, ctx),
   ].filter(Boolean) as (() => void)[]
+
   ctx.stack.push(node)
 
-  if (node.body && Array.isArray(node.body)) {
-    for (const child of node.body) {
-      walk_impl(child, visitor, ctx)
-    }
-  } else if (node.body) {
-    walk_impl(node.body, visitor, ctx)
-  }
+  // Traverse children arrays or single nodes
+  // For each array, pass the array and index so we track siblings[
+  ;[
+    node.arguments,
+    node.declarations,
+    node.properties,
+    node.cases,
+    node.body,
+    node.consequent,
+    node.init,
+    node.argument,
+    node.alternate,
+    node.callee,
+    node.declaration,
+    node.expression,
+  ]
+    .filter(Boolean)
+    .forEach((a) => {
+      if (Array.isArray(a)) {
+        for (let i = 0; i < a.length; i++) {
+          walk_impl(a![i], visitor, ctx)
+        }
+        return
+      }
+      if (typeof a === "object" && "type" in a) {
+        walk_impl(a as AstNode, visitor, ctx)
+        return
+      }
+    })
 
-  if (node.consequent && Array.isArray(node.consequent)) {
-    for (const child of node.consequent) {
-      walk_impl(child, visitor, ctx)
-    }
-  } else if (node.consequent) {
-    walk_impl(node.consequent, visitor, ctx)
-  }
-
-  node.init && walk_impl(node.init, visitor, ctx)
-  node.argument && walk_impl(node.argument, visitor, ctx)
-  node.arguments &&
-    node.arguments.forEach((c) => {
-      walk_impl(c, visitor, ctx)
-    })
-  node.alternate && walk_impl(node.alternate, visitor, ctx)
-  node.callee && walk_impl(node.callee, visitor, ctx)
-  node.declaration && walk_impl(node.declaration, visitor, ctx)
-  node.declarations &&
-    node.declarations.forEach((c) => {
-      walk_impl(c, visitor, ctx)
-    })
-  node.expression && walk_impl(node.expression, visitor, ctx)
-  node.cases &&
-    node.cases.forEach((c) => {
-      walk_impl(c, visitor, ctx)
-    })
-  node.properties &&
-    node.properties.forEach((c) => {
-      walk_impl(c, visitor, ctx)
-    })
-  node.type === "Property" &&
+  // only walk 'value' of Property nodes
+  if (
+    node.type === "Property" &&
     node.value &&
-    typeof node.value === "object" &&
+    typeof node.value === "object"
+  ) {
     walk_impl(node.value as AstNode, visitor, ctx)
+  }
 
   ctx.stack.pop()
   onExitCallbacks.forEach((c) => c())

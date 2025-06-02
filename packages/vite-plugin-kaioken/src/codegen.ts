@@ -3,7 +3,9 @@ import { FileLinkFormatter } from "./types"
 import MagicString from "magic-string"
 import fs from "node:fs"
 import path from "node:path"
-import { AstNode, findNode, walk } from "./ast"
+
+import * as AST from "./ast"
+type AstNode = AST.AstNode
 
 const UNNAMED_WATCH_PREAMBLE = `\n
 if (import.meta.hot && "window" in globalThis) {
@@ -134,13 +136,14 @@ export function prepareHydrationBoundaries(
       //   { variables: [] }, // function scope
       // ]
 
-      const log = filePath.includes("index/+Page.tsx") ? console.log : () => {}
+      const enableLog = filePath.includes("index/+Page.tsx")
+      const log = enableLog ? console.log : () => {}
 
       let fnExprs: AstNode[] = []
       let index = 0
       let property: AstNode | null = null
       componentBodyNodes?.forEach((node) => {
-        walk(node, {
+        AST.walk(node, {
           Property: (n) => {
             property = n
             return () => (property = null)
@@ -155,19 +158,6 @@ export function prepareHydrationBoundaries(
           ["*"]: (n) => {
             // ensure we've entered a JSX block inside a boundary
             if (!currentBoundary?.hasJsxChildren) return
-
-            // const parent = stack[stack.length - 1]
-            // const grandParent = stack[stack.length - 2]
-            // if (
-            //   parent?.type === "ObjectExpression" &&
-            //   grandParent?.type === "CallExpression" &&
-            //   grandParent.callee?.type === "Identifier" &&
-            //   grandParent.callee.name === "_jsx"
-            // ) {
-            //   log("~~~~~ here", { n, parent, grandParent })
-            // } else {
-            //   return
-            // }
 
             // log("node", n)
 
@@ -464,7 +454,7 @@ function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
     }
 
     for (const aliasHandler of aliasHandlers) {
-      if (findNode(node, aliasHandler.nodeContainsAliasCall)) {
+      if (AST.findNode(node, aliasHandler.nodeContainsAliasCall)) {
         addHotVarDesc(node, hotVars, aliasHandler.name)
         break
       }
@@ -496,7 +486,7 @@ function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
       if (node.declaration) {
         return isFuncDecOrExpr(node.declaration)
       } else if (node.declarations) {
-        return !!findNode(node, isFuncDecOrExpr)
+        return !!AST.findNode(node, isFuncDecOrExpr)
       }
       const name = findNodeName(node)
       if (name === null) return false
@@ -755,7 +745,7 @@ function createUnnamedWatchInserts(code: MagicString, nodes: AstNode[]) {
       watchAliasHandler.addAliases(node)
       continue
     }
-    if (findNode(node, watchAliasHandler.nodeContainsAliasCall)) {
+    if (AST.findNode(node, watchAliasHandler.nodeContainsAliasCall)) {
       const nameSet = new Set<any>()
       addHotVarDesc(node, nameSet, "unnamedWatch")
       if (nameSet.size === 0) {

@@ -10,7 +10,7 @@ export function Page() {
       <div className="p-6">
         <h1>{greeting}</h1>
         <Counter
-          count={count.value}
+          count={count}
           onIncrement={function () {
             count.value++
           }}
@@ -38,16 +38,15 @@ export function Page() {
 //   )
 // }
 
-// HydrationBoundaryChildrenLoader = lazy(() => ActualChildren)
+// // loader
+// export default lazy(() => ActualChildren)
 
+// // separate module
 // ActualChildren = ({ _props }) => {
 //   return (
 //     <div className="p-6">
 //       <h1>{_props[0]}</h1>
-//       <Counter
-//         count={_props[1]}
-//         onIncrement={_props[2]}
-//       />
+//       <Counter count={_props[1]} onIncrement={_props[2]} />
 //     </div>
 //   )
 // }

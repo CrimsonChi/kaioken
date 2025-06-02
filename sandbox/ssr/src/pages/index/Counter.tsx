@@ -1,7 +1,7 @@
 import type { Signal } from "kaioken"
 
 type CounterProps = {
-  count: number
+  count: Signal<number>
   onIncrement: () => void
 }
 export default function Counter(props: CounterProps) {
