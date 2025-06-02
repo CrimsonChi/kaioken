@@ -8,6 +8,9 @@ export default defineConfig({
       "top-level-await": true, //browsers can handle top-level-await features
     },
   },
+  server: {
+    watch: {},
+  },
   plugins: [
     kaioken({
       devtools: {
