@@ -42,7 +42,14 @@ if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
   ${
     isVirtualModule
-      ? ""
+      ? `
+window.__kaioken.HMRContext?.register({
+  BoundaryChildren: {
+    type: "component",
+    value: BoundaryChildren,
+    hooks: [],
+  }
+})`
       : createHMRRegistrationBlurb(
           hotVars,
           componentNamesToHookArgs,
@@ -387,7 +394,7 @@ export function prepareHydrationBoundaries(
               }
 
               addModules: {
-                moduleCode += `\n\nexport default function BoundaryChildren${idx}({_props}) {
+                moduleCode += `\n\nexport default function BoundaryChildren({_props}) {
                   return _jsx(_jsxFragment, null, ${childrenExpr})
                   }`
                 const boundaryChildrenName = `BoundaryChildren_${componentName}_${idx}`
@@ -412,7 +419,8 @@ export function prepareHydrationBoundaries(
                 extraModules[
                   boundary.id + "_loader"
                 ] = `import {lazy} from "kaioken";
-                  export default lazy(() => import("${boundary.id}"));`
+const BoundaryChildren = lazy(() => import("${boundary.id}"));
+export default BoundaryChildren;`
                 currentBoundary = null
               }
             }

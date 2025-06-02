@@ -106,13 +106,9 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         res.end(transformedDtClientBuild)
       })
     },
-    handleHotUpdate(ctx) {
-      console.log("handleHotUpdate", ctx.file)
-    },
     transform(code, id, options) {
       const isVirtual = !!virtualModules[id]
-      if (isVirtual) {
-      } else {
+      if (!isVirtual) {
         if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
         const projectRoot = path.resolve(_config?.root ?? process.cwd())
         const filePath = path.resolve(id)
@@ -142,30 +138,13 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       if (!options?.ssr) {
         const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
         for (const key in extraModules) {
-          //const didExist = !!virtualModules[key]
           const didExist = !!virtualModules[key]
           virtualModules[key] = extraModules[key]
           if (didExist && !key.endsWith("_loader")) {
             const module = devServer!.moduleGraph.getModuleById(key)!
             devServer!.reloadModule(module)
+            // _loader module should automatically be reloaded due to its dependency
           }
-          // virtualModuleDependents[id] ??= new Set()
-          // virtualModuleDependents[id].add(key)
-
-          // if (didExist) {
-          //   console.log("updating virtual module", key)
-          //   const module = devServer?.moduleGraph.getModuleById(key)
-          //   if (module) {
-          //     devServer?.moduleGraph.invalidateModule(
-          //       module,
-          //       undefined,
-          //       undefined,
-          //       true
-          //     )
-          //   } else {
-          //     console.log("module not found", key)
-          //   }
-          // }
         }
       }
 
