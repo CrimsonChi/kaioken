@@ -9,6 +9,10 @@ const test = {
   ThemeContext: createContext<"light" | "dark">("dark"),
 }
 
+const foo = {
+  bar: 123,
+}
+
 const a = () => 123
 export function Page() {
   const greeting = useSignal("Hello world!")
@@ -25,7 +29,8 @@ export function Page() {
     <HydrationBoundary mode="lazy">
       <WebComponentExample />
       <StoreExample />
-      {1 + (1 - 14) - a()}
+      {foo.bar}
+      {(1 + (1 - 14) - a(), 456)}
       <test.ThemeContext.Provider value="dark">
         {(value) => <div>{value}</div>}
       </test.ThemeContext.Provider>

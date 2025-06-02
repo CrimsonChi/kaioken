@@ -172,6 +172,9 @@ export function prepareHydrationBoundaries(
     const fnExprs: AstNode[] = []
     componentBodyNodes?.forEach((node) => {
       AST.walk(node, {
+        // ReturnStatement: (n) => {
+        //   log(JSON.stringify(n, null, 2))
+        // },
         // capture variables encountered outside of boundary scopes
         VariableDeclarator: (n) => {
           if (currentBoundary) return

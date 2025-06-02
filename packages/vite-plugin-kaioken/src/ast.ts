@@ -24,6 +24,7 @@ const types = [
   "AssignmentExpression",
   "ArrayExpression",
   "ObjectExpression",
+  "SequenceExpression",
   "Property",
 ] as const
 
@@ -35,6 +36,7 @@ export interface AstNode {
   declaration?: AstNode
   declarations?: AstNode[]
   expression?: AstNode
+  expressions?: AstNode[]
   id?: AstNodeId
   init?: AstNode
   object?: AstNodeId
@@ -151,6 +153,7 @@ function walk_impl(node: AstNode, visitor: AstVisitor, ctx: VisitorCTX) {
     node.callee,
     node.declaration,
     node.expression,
+    node.expressions,
     node.left,
     node.right,
   ]
