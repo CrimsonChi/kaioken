@@ -356,32 +356,35 @@ export function prepareHydrationBoundaries(
               let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
               copyImports: {
                 for (const importedIdentifier of boundary.deps.imports) {
+                  let importStr = "import "
                   const defaultSpecifier = importedIdentifier.specifiers!.find(
                     (s) => s.type === "ImportDefaultSpecifier"
                   )
                   if (defaultSpecifier) {
-                    moduleCode += `import ${defaultSpecifier.local?.name}`
-                  } else {
-                    moduleCode += `import `
+                    importStr += defaultSpecifier.local?.name
                   }
                   if (importedIdentifier.specifiers!.length > 1) {
-                    moduleCode += defaultSpecifier ? `, {` : `{`
-                    let internals = importedIdentifier
+                    importStr += defaultSpecifier ? `, {` : `{`
+
+                    const internals = importedIdentifier
                       .specifiers!.filter((s) => s !== defaultSpecifier)
                       .map((s) => s.local?.name)
                       .join(", ")
 
-                    moduleCode += `${internals} }`
+                    importStr += `${internals} }`
                   }
-                  const raw = importedIdentifier.source!.value
-                  const isRelative = raw.startsWith(".") || raw.startsWith("/")
+                  const importPath = importedIdentifier.source!.value
+                  const isRelative =
+                    importPath[0] === "." || importPath[0] === "/"
                   if (isRelative) {
-                    moduleCode += ` from "${path
-                      .resolve(folderPath, importedIdentifier.source!.value)
+                    importStr += ` from "${path
+                      .resolve(folderPath, importPath)
                       .replace(/\\/g, "/")}";`
                   } else {
-                    moduleCode += ` from "${raw}";`
+                    importStr += ` from "${importPath}";`
                   }
+
+                  moduleCode += `${importStr}\n`
                 }
               }
 
