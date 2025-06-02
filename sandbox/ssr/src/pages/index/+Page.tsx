@@ -33,12 +33,17 @@ export function Page() {
 // export function _Page() {
 //   const count = useSignal(0)
 //   const greeting = useSignal("Hello world!")
+//   const a = () => 456
+//   /**
+//    * todo: the 'a' function is being passed and called inside the generated component.
+//    * need to ensure it is called at the top level instead.
+//    */
 //   return (
 //     <HydrationBoundary mode="lazy">
-//       <HydrationBoundaryChildrenLoader
+//       <HydrationBoundaryLoader
 //         _props={[
-//           count,
-//           greeting,
+//           a(),
+//           true ? count.value : count.value + 2,
 //           function () {
 //             count.value++
 //           },

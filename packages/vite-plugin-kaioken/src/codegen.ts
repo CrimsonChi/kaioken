@@ -188,18 +188,17 @@ export function prepareHydrationBoundaries(
           ctx.exitBranch() // prevent touching anything further here
         },
         MemberExpression: (n) => {
-          if (!currentBoundary) return
+          if (!currentBoundary || !n.object?.name) return
           const parentScope = blockScopes[blockScopes.length - 1]
-          const variableFromParentScope = parentScope.get(n.object?.name ?? "")
+          const variableFromParentScope = parentScope.get(n.object.name)
           if (variableFromParentScope) {
-            console.log("MemberExpression - adding scope variable reference", n)
             currentBoundary.deps.expressions.push({
               node: n,
               property: null,
             })
           }
         },
-        ["*"]: (n) => {
+        ["*"]: (n, ctx) => {
           // ensure we've entered a JSX block inside a boundary
           if (!currentBoundary?.hasJsxChildren) return
 
@@ -216,6 +215,20 @@ export function prepareHydrationBoundaries(
               if (fnExprs.length) return
               // skip jsx identifiers
               if (n.name === "_jsx") return
+
+              const parent = ctx.stack[ctx.stack.length - 1]
+              if (
+                parent.type === "CallExpression" &&
+                parent.callee?.name !== "_jsx"
+              ) {
+                // add the call expr instead of the identifier
+                currentBoundary.deps.expressions.push({
+                  node: parent,
+                  property: null,
+                })
+                return
+              }
+
               const importNode = importNodes.find((importNode) =>
                 importNode.specifiers?.some((s) => s.local?.name === n.name)
               )
@@ -227,14 +240,13 @@ export function prepareHydrationBoundaries(
                   property: null,
                 })
               }
-              break
+              return
             }
           }
           return
         },
         CallExpression: (n) => {
           if (n.callee?.type !== "Identifier" || n.callee.name !== "_jsx") {
-            log("CallExpression - not jsx", n)
             return
           }
           if (currentBoundary) {
@@ -261,7 +273,6 @@ export function prepareHydrationBoundaries(
             })
             return () => {
               if (!boundary.hasJsxChildren) return
-              //console.log("boundary", JSON.stringify(boundary, null, 2))
               log(
                 "boundary - finalization",
                 boundary.deps.expressions,
@@ -274,18 +285,18 @@ export function prepareHydrationBoundaries(
               // hoist props
 
               // create virtual modules
-              const minStart = Math.min(...children.map((n) => n.start!))
-              const maxEnd = Math.max(...children.map((n) => n.end!))
+              const childExprStart = Math.min(...children.map((n) => n.start!))
+              const childExprEnd = Math.max(...children.map((n) => n.end!))
               const childrenExpr = new MagicString(
-                code.original.substring(minStart, maxEnd)
+                code.original.substring(childExprStart, childExprEnd)
               )
               log("childrenExpr: before", childrenExpr.toString())
 
               transformChildExpression: {
                 for (let i = 0; i < boundary.deps.expressions.length; i++) {
                   const { node: expr, property } = boundary.deps.expressions[i]
-                  const start = expr.start! - minStart
-                  const end = expr.end! - minStart
+                  const start = expr.start! - childExprStart
+                  const end = expr.end! - childExprStart
                   if (!property) {
                     childrenExpr.update(start, end, `_props[${i}]`)
                     continue
@@ -298,9 +309,9 @@ export function prepareHydrationBoundaries(
                   childrenExpr.appendLeft(end, `: _props[${i}]`)
                 }
               }
-              console.log("childrenExpr:after", childrenExpr.toString())
+              log("childrenExpr:after", childrenExpr.toString())
 
-              code.remove(minStart, maxEnd)
+              code.remove(childExprStart, childExprEnd)
 
               let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
               copyImports: {
@@ -328,31 +339,33 @@ export function prepareHydrationBoundaries(
                 }
               }
 
-              moduleCode += `\n\nexport default function BoundaryChildren${idx}({_props}) {
-return _jsx(_jsxFragment, null, ${childrenExpr})
-}`
-              const boundaryChildrenName = `BoundaryChildren_${componentName}_${idx}`
-              code.prepend(
-                `\nimport ${boundaryChildrenName} from "${
-                  boundary.id + "_loader"
-                }";\n`
-              )
-              const props = boundary.deps.expressions
-                .map((expr) =>
-                  code.original.slice(expr.node.start!, expr.node.end!)
+              addModules: {
+                moduleCode += `\n\nexport default function BoundaryChildren${idx}({_props}) {
+                  return _jsx(_jsxFragment, null, ${childrenExpr})
+                  }`
+                const boundaryChildrenName = `BoundaryChildren_${componentName}_${idx}`
+                code.prepend(
+                  `\nimport ${boundaryChildrenName} from "${
+                    boundary.id + "_loader"
+                  }";\n`
                 )
-                .join(",")
-              code.prependRight(
-                minStart,
-                `_jsx(${boundaryChildrenName}, { _props: [${props}] })`
-              )
+                const props = boundary.deps.expressions
+                  .map((expr) =>
+                    code.original.slice(expr.node.start!, expr.node.end!)
+                  )
+                  .join(",")
+                code.prependRight(
+                  childExprStart,
+                  `_jsx(${boundaryChildrenName}, { _props: [${props}] })`
+                )
 
-              extraModules[boundary.id] = moduleCode
-              extraModules[
-                boundary.id + "_loader"
-              ] = `import {lazy} from "kaioken";
-export default lazy(() => import("${boundary.id}"));`
-              currentBoundary = null
+                extraModules[boundary.id] = moduleCode
+                extraModules[
+                  boundary.id + "_loader"
+                ] = `import {lazy} from "kaioken";
+                  export default lazy(() => import("${boundary.id}"));`
+                currentBoundary = null
+              }
             }
           }
           return
