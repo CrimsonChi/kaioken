@@ -191,6 +191,7 @@ declare global {
     type VNode = {
       type: string | Function | ExoticSymbol
       dom?: SomeDom
+      lastChildDom?: SomeDom
       props: {
         [key: string]: any
         children?: unknown

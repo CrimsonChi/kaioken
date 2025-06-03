@@ -165,7 +165,7 @@ export function prepareHydrationBoundaries(
       new Map(globalVars),
     ]
 
-    const enableLog = filePath.includes("index/+Page.tsx")
+    const enableLog = false && filePath.includes("index/+Page.tsx")
     const log = enableLog ? console.log : () => {}
 
     let index = 0
@@ -257,7 +257,7 @@ export function prepareHydrationBoundaries(
               // skip jsx identifiers
               if (n.name === "_jsx") return
 
-              console.log("identifier", n.name)
+              log("identifier", n.name)
 
               const parentCallExpression = findFirstParentOfType(
                 ctx.stack,
@@ -420,7 +420,7 @@ export function prepareHydrationBoundaries(
                   .map((expr) =>
                     code.original.slice(expr.node.start!, expr.node.end!)
                   )
-                  .join(",")
+                  .join(",\n")
 
                 code.update(
                   childExprStart,

@@ -1,9 +1,8 @@
-import type {
-  ESBuildOptions,
-  IndexHtmlTransformResult,
-  Plugin,
-  UserConfig,
-  ViteDevServer,
+import {
+  type ESBuildOptions,
+  type IndexHtmlTransformResult,
+  type Plugin,
+  type UserConfig,
 } from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import devtoolsHostBuild from "kaioken-devtools-host"
@@ -44,7 +43,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
 
   let _config: UserConfig | null = null
   const virtualModules: Record<string, string> = {}
-  let devServer: ViteDevServer | null = null
+  const fileToVirtualModules: Record<string, Set<string>> = {}
+
   return {
     name: "vite-plugin-kaioken",
     // @ts-ignore
@@ -96,14 +96,33 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       isBuild = config.command === "build"
     },
     configureServer(server) {
-      devServer = server
-      if (isProduction || isBuild || opts?.devtools === false) return
-      server.middlewares.use(dtHostScriptPath, (_, res) => {
-        res.setHeader("Content-Type", "application/javascript")
-        res.end(transformedDtHostBuild, "utf-8")
-      })
-      server.middlewares.use(dtClientPathname, (_, res) => {
-        res.end(transformedDtClientBuild)
+      if (isProduction || isBuild) return
+      if (opts?.devtools !== false) {
+        server.middlewares.use(dtHostScriptPath, (_, res) => {
+          res.setHeader("Content-Type", "application/javascript")
+          res.end(transformedDtHostBuild, "utf-8")
+        })
+        server.middlewares.use(dtClientPathname, (_, res) => {
+          res.end(transformedDtClientBuild)
+        })
+      }
+      server.watcher.on("change", (file) => {
+        const affectedVirtualModules =
+          fileToVirtualModules[file.replace(/\\/g, "/")]
+        if (affectedVirtualModules) {
+          for (const virtualModId of affectedVirtualModules) {
+            const mod = server.moduleGraph.getModuleById(virtualModId)
+            if (mod) {
+              server.moduleGraph.invalidateModule(
+                mod,
+                undefined,
+                undefined,
+                true
+              )
+              virtualModules[virtualModId] = "" // clear stale content
+            }
+          }
+        }
       })
     },
     transform(code, id, options) {
@@ -138,13 +157,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       if (!options?.ssr) {
         const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
         for (const key in extraModules) {
-          const didExist = !!virtualModules[key]
+          ;(fileToVirtualModules[id] ??= new Set()).add(key)
           virtualModules[key] = extraModules[key]
-          if (didExist && !key.endsWith("_loader")) {
-            const module = devServer!.moduleGraph.getModuleById(key)!
-            devServer!.reloadModule(module)
-            // _loader module should automatically be reloaded due to its dependency
-          }
         }
       }
 

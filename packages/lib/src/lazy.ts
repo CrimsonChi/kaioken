@@ -10,6 +10,7 @@ import {
   HYDRATION_BOUNDARY_MARKER,
   HydrationBoundaryContext,
 } from "./ssr/hydrationBoundary.js"
+import type { SomeDom } from "./types.utils"
 
 type FCModule = { default: Kaioken.FC<any> }
 type LazyImportValue = Kaioken.FC<any> | FCModule
@@ -94,7 +95,12 @@ export function lazy<T extends LazyImportValue>(
       return fallback
     }
 
-    const asStr = cleanFnStr(componentPromiseFn.toString())
+    console.log(
+      "lazy - mounting",
+      isPendingHydration.current ? "(pending hydration)" : ""
+    )
+
+    const asStr = componentPromiseFn.toString()
     const cachedState = lazyCache.get(asStr)
     if (!cachedState) {
       const promise = componentPromiseFn()
@@ -111,13 +117,17 @@ export function lazy<T extends LazyImportValue>(
             : componentOrModule.default
       })
 
-      if (!isPendingHydration) {
+      if (!isPendingHydration.current) {
+        console.log("lazy - queued requestUpdate")
         ready.then(() => requestUpdate())
         return fallback
       }
 
+      const thisNode = node.current
+
       if (__DEV__) {
         window.__kaioken?.HMRContext?.onHmr(() => {
+          console.log("lazy - onHmr cleanup")
           if (isPendingHydration.current) {
             for (const child of childNodes) {
               if (child instanceof Element) {
@@ -125,20 +135,29 @@ export function lazy<T extends LazyImportValue>(
               }
               child.parentNode?.removeChild(child)
             }
+            isPendingHydration.current = false
+            delete thisNode!.lastChildDom
           }
         })
       }
 
       const { parent, childNodes, startIndex } =
         consumeHydrationBoundaryChildren()
+
+      thisNode!.lastChildDom = childNodes[childNodes.length - 1] as SomeDom
+
       for (const child of childNodes) {
         if (child instanceof Element) {
           hydrationStack.captureEvents(child)
         }
       }
       const hydrate = () => {
+        console.log("lazy - hydrate")
         if (isPendingHydration.current === false) return
+
         appCtx.scheduler?.nextIdle(() => {
+          console.log("lazy - performing syncHydrate")
+          delete thisNode!.lastChildDom
           isPendingHydration.current = false
           hydrationStack.push(parent)
           hydrationStack.childIdxStack[
@@ -159,7 +178,9 @@ export function lazy<T extends LazyImportValue>(
               hydrationStack.releaseEvents(child)
             }
           }
+          console.log("lazy - performed syncHydrate")
         })
+        console.log("lazy - queued syncHydrate")
       }
 
       /**
@@ -195,6 +216,7 @@ export function lazy<T extends LazyImportValue>(
     }
 
     if (cachedState.result === null) {
+      console.log("lazy - queued requestUpdate")
       cachedState.promise.then(requestUpdate)
       return fallback
     }
@@ -204,10 +226,10 @@ export function lazy<T extends LazyImportValue>(
   return LazyComponent
 }
 
-const queryStrRegex = /\?[^"]*/
-/**
- * removes the query string from a function - prevents
- * vite-modified imports (eg. () => import("./Counter.tsx?t=123456"))
- * from causing issues
- */
-const cleanFnStr = (fnStr: string) => fnStr.replace(queryStrRegex, "")
+// const queryStrRegex = /\?[^"]*/
+// /**
+//  * removes the query string from a function - prevents
+//  * vite-modified imports (eg. () => import("./Counter.tsx?t=123456"))
+//  * from causing issues
+//  */
+// const cleanFnStr = (fnStr: string) => fnStr.replace(queryStrRegex, "")

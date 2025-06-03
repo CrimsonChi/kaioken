@@ -600,7 +600,7 @@ function placeDom(
     // downwards traversal
     if (!isPortal(child) && dBounds.indexOf(child) === -1) {
       dBounds.push(child)
-      const dom = child.dom
+      const dom = child.dom ?? child.lastChildDom
       // traverse downwards if no dom for this child
       if (!dom && child.child) {
         currentParent = child
