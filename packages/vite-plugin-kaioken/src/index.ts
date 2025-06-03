@@ -1,4 +1,5 @@
 import {
+  ViteDevServer,
   type ESBuildOptions,
   type IndexHtmlTransformResult,
   type Plugin,
@@ -44,6 +45,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let _config: UserConfig | null = null
   const virtualModules: Record<string, string> = {}
   const fileToVirtualModules: Record<string, Set<string>> = {}
+  let devServer: ViteDevServer | null = null
 
   return {
     name: "vite-plugin-kaioken",
@@ -106,24 +108,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
           res.end(transformedDtClientBuild)
         })
       }
-      server.watcher.on("change", (file) => {
-        const affectedVirtualModules =
-          fileToVirtualModules[file.replace(/\\/g, "/")]
-        if (affectedVirtualModules) {
-          for (const virtualModId of affectedVirtualModules) {
-            const mod = server.moduleGraph.getModuleById(virtualModId)
-            if (mod) {
-              server.moduleGraph.invalidateModule(
-                mod,
-                undefined,
-                undefined,
-                true
-              )
-              virtualModules[virtualModId] = "" // clear stale content
-            }
-          }
-        }
-      })
+      devServer = server
     },
     transform(code, id, options) {
       const isVirtual = !!virtualModules[id]
@@ -158,6 +143,15 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         const { extraModules } = prepareHydrationBoundaries(asMagicStr, ast, id)
         for (const key in extraModules) {
           ;(fileToVirtualModules[id] ??= new Set()).add(key)
+          const mod = devServer!.moduleGraph.getModuleById(key)
+          if (mod) {
+            devServer!.moduleGraph.invalidateModule(
+              mod,
+              undefined,
+              undefined,
+              true
+            )
+          }
           virtualModules[key] = extraModules[key]
         }
       }

@@ -36,7 +36,7 @@ export function Page() {
       <test.ThemeContext.Provider value="dark">
         {(value) => <div>{value}</div>}
       </test.ThemeContext.Provider>
-      <div className="p-6" style={{ color: "red" }}>
+      <div className="p-6">
         <h1>{a()}</h1>
         <h2>{greeting}</h2>
         <button onclick={addItem}>add item</button>
