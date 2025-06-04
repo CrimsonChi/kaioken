@@ -28,6 +28,7 @@ export function injectHMRContextPreamble(
     code.prepend(`
 if (import.meta.hot && "window" in globalThis) {
   window.__kaioken.HMRContext?.prepare("${filePath}");
+  console.log("prepared ${filePath}");
 }
 `)
 
@@ -371,26 +372,33 @@ export function prepareHydrationBoundaries(
               let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
               copyImports: {
                 for (const importedIdentifier of boundary.deps.imports) {
-                  let importStr = "import "
-                  const defaultSpecifier = importedIdentifier.specifiers!.find(
-                    (s) => s.type === "ImportDefaultSpecifier"
-                  )
-                  if (defaultSpecifier) {
-                    importStr += defaultSpecifier.local?.name
-                  }
-                  if (importedIdentifier.specifiers!.length > 1) {
-                    importStr += defaultSpecifier ? `, {` : `{`
-
-                    const internals = importedIdentifier
-                      .specifiers!.filter((s) => s !== defaultSpecifier)
-                      .map((s) => s.local?.name)
-                      .join(", ")
-
-                    importStr += `${internals} }`
-                  }
                   const importPath = importedIdentifier.source!.value
                   const isRelative =
                     importPath[0] === "." || importPath[0] === "/"
+
+                  const defaultSpecifier = importedIdentifier.specifiers!.find(
+                    (s) => s.type === "ImportDefaultSpecifier"
+                  )
+                  const nonDefaults = importedIdentifier.specifiers!.filter(
+                    (s) => s !== defaultSpecifier
+                  )
+
+                  let importStr = "import "
+
+                  if (defaultSpecifier) {
+                    importStr += defaultSpecifier.local?.name
+                  }
+
+                  if (nonDefaults.length) {
+                    if (defaultSpecifier) {
+                      importStr += ", "
+                    }
+                    const names = nonDefaults
+                      .map((s) => s.local?.name)
+                      .join(", ")
+                    importStr += `{ ${names} }`
+                  }
+
                   if (isRelative) {
                     importStr += ` from "${path
                       .resolve(folderPath, importPath)

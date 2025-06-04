@@ -100,6 +100,7 @@ export function lazy<T extends LazyImportValue>(
     const withoutQuery = removeQueryString(fn)
     const cachedState = lazyCache.get(withoutQuery)
     if (!cachedState || cachedState.fn !== fn) {
+      console.log("lazy - loading", fn === cachedState?.fn)
       const promise = componentPromiseFn()
       const state: LazyState = {
         fn,

@@ -4,6 +4,7 @@ import { createContext, Derive, For, useSignal } from "kaioken"
 import ElementBindingsExample from "shared/src/ElementBindingsExample"
 import WebComponentExample from "shared/src/WebComponentExample"
 import StoreExample from "shared/src/StoreExample"
+import { Num } from "./test"
 
 const test = {
   ThemeContext: createContext<"light" | "dark">("dark"),
@@ -16,8 +17,8 @@ const foo = {
 const a = () => 123
 export function Page() {
   const greeting = useSignal("Hello world!")
-  const a = () => 456
   const items = useSignal([1, 2, 3])
+  const toggled = useSignal(true)
   /**
    * todo: the 'a' function is being passed and called inside the generated component.
    * need to ensure it is called at the top level instead.
@@ -25,40 +26,19 @@ export function Page() {
   const addItem = () => (
     items.value.push(items.value.length + 1), items.notify()
   )
+
+  console.log("page render", Num)
+  const a = () => 456
   return (
     <>
+      <button onclick={() => (toggled.value = !toggled.value)}>toggle</button>
+      <Num />
       <HydrationBoundary
         mode="interaction"
         events={["pointerdown", "keydown", "focus", "input", "mousemove"]}
       >
-        <WebComponentExample />
-        <StoreExample />
-        {(1 + (1 - 14) - a(), 456)}
-        <test.ThemeContext.Provider value="dark">
-          {(value) => <div>{value}</div>}
-        </test.ThemeContext.Provider>
-        <div className="p-6" style={{ color: "red" }}>
-          <h1>{a()}</h1>
-          <h2>{greeting}</h2>
-          <button onclick={addItem}>add item</button>
-          <Derive from={items}>
-            {(items) => (
-              <div>
-                {items.map((item) => (
-                  <div data-test={foo.bar}>{item}</div>
-                ))}
-              </div>
-            )}
-          </Derive>
-          ~~~~~~~~~~~~~~~~~~
-          <For each={items}>{(item) => <div>{item}</div>}</For>
-          ~~~~~~~~~~~~~~~~~~
-          {items.value.map((item) => (
-            <div>{item}</div>
-          ))}
-        </div>
+        {toggled.value && <Counter />}
       </HydrationBoundary>
-      <Counter />
     </>
   )
 }

@@ -42,7 +42,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
 
   const virtualModules: Record<string, string> = {}
   const fileToVirtualModules: Record<string, Set<string>> = {}
-  let devServer: ViteDevServer | null = null
   let projectRoot = process.cwd().replace(/\\/g, "/")
   let includedPaths: string[] = []
 
@@ -116,7 +115,40 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
           res.end(transformedDtClientBuild)
         })
       }
-      devServer = server
+      server.watcher.on("change", (file) => {
+        const affectedVirtualModules = fileToVirtualModules[file]
+        if (affectedVirtualModules) {
+          for (const modId of affectedVirtualModules) {
+            const mod = server.moduleGraph.getModuleById(modId)
+            if (mod) {
+              server!.moduleGraph.invalidateModule(
+                mod,
+                undefined,
+                undefined,
+                true
+              )
+              // virtualModules[modId] = "" // optional: clear stale content
+            }
+          }
+        }
+
+        // find & invalidate virtual modules that import this
+        // to be investigated: do we also need to invalidate
+        // the file that the virtual is derived from?
+        const mod = server.moduleGraph.getModuleById(file)
+        if (mod) {
+          mod.importers.forEach((importer) => {
+            if (importer.id && virtualModules[importer.id]) {
+              server!.moduleGraph.invalidateModule(
+                importer,
+                undefined,
+                undefined,
+                true
+              )
+            }
+          })
+        }
+      })
     },
     transform(src, id, options) {
       const isVirtual = !!virtualModules[id]
@@ -155,15 +187,15 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         const { extraModules } = prepareHydrationBoundaries(code, ast, id)
         for (const key in extraModules) {
           ;(fileToVirtualModules[id] ??= new Set()).add(key)
-          const mod = devServer!.moduleGraph.getModuleById(key)
-          if (mod) {
-            devServer!.moduleGraph.invalidateModule(
-              mod,
-              undefined,
-              undefined,
-              true
-            )
-          }
+          // const mod = devServer!.moduleGraph.getModuleById(key)
+          // if (mod) {
+          //   devServer!.moduleGraph.invalidateModule(
+          //     mod,
+          //     undefined,
+          //     undefined,
+          //     true
+          //   )
+          // }
           virtualModules[key] = extraModules[key]
         }
       }
