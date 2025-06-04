@@ -24,6 +24,12 @@ export interface KaiokenPluginOptions {
    */
   devtools?: boolean | DevtoolsOptions
 
+  /**
+   * Specifies extra paths to be included in the build
+   * @example ['../path/to/components/']
+   */
+  include?: string[]
+
   formatFileLink?: FileLinkFormatter
 }
 

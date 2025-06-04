@@ -26,38 +26,40 @@ export function Page() {
     items.value.push(items.value.length + 1), items.notify()
   )
   return (
-    <HydrationBoundary
-      mode="interaction"
-      events={["pointerdown", "keydown", "focus", "input", "mousemove"]}
-    >
-      <WebComponentExample />
-      <StoreExample />
-      {(1 + (1 - 14) - a(), 456)}
-      <test.ThemeContext.Provider value="dark">
-        {(value) => <div>{value}</div>}
-      </test.ThemeContext.Provider>
-      <div className="p-6">
-        <h1>{a()}</h1>
-        <h2>{greeting}</h2>
-        <button onclick={addItem}>add item</button>
-        <Derive from={items}>
-          {(items) => (
-            <div>
-              {items.map((item) => (
-                <div data-test={foo.bar}>{item}</div>
-              ))}
-            </div>
-          )}
-        </Derive>
-        ~~~~~~~~~~~~~~~~~~
-        <For each={items}>{(item) => <div>{item}</div>}</For>
-        ~~~~~~~~~~~~~~~~~~
-        {items.value.map((item) => (
-          <div>{item}</div>
-        ))}
-      </div>
+    <>
+      <HydrationBoundary
+        mode="interaction"
+        events={["pointerdown", "keydown", "focus", "input", "mousemove"]}
+      >
+        <WebComponentExample />
+        <StoreExample />
+        {(1 + (1 - 14) - a(), 456)}
+        <test.ThemeContext.Provider value="dark">
+          {(value) => <div>{value}</div>}
+        </test.ThemeContext.Provider>
+        <div className="p-6" style={{ color: "red" }}>
+          <h1>{a()}</h1>
+          <h2>{greeting}</h2>
+          <button onclick={addItem}>add item</button>
+          <Derive from={items}>
+            {(items) => (
+              <div>
+                {items.map((item) => (
+                  <div data-test={foo.bar}>{item}</div>
+                ))}
+              </div>
+            )}
+          </Derive>
+          ~~~~~~~~~~~~~~~~~~
+          <For each={items}>{(item) => <div>{item}</div>}</For>
+          ~~~~~~~~~~~~~~~~~~
+          {items.value.map((item) => (
+            <div>{item}</div>
+          ))}
+        </div>
+      </HydrationBoundary>
       <Counter />
-    </HydrationBoundary>
+    </>
   )
 }
 

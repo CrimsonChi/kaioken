@@ -18,12 +18,12 @@ export function injectHMRContextPreamble(
   fileLinkFormatter: FileLinkFormatter,
   filePath: string,
   isVirtualModule: boolean
-): boolean {
+) {
   try {
     createUnnamedWatchInserts(code, ast.body as AstNode[])
 
     const hotVars = findHotVars(ast.body as AstNode[], filePath)
-    if (hotVars.size === 0 && !code.hasChanged()) return false
+    if (hotVars.size === 0 && !code.hasChanged()) return
 
     code.prepend(`
 if (import.meta.hot && "window" in globalThis) {
@@ -49,11 +49,8 @@ if (import.meta.hot && "window" in globalThis) {
   )}
 }
 `)
-
-    return true
   } catch (error) {
     console.error(error)
-    return false
   }
 }
 

@@ -15,5 +15,5 @@ export default defineConfig({
       $: path.join(__dirname, "src"),
     },
   },
-  plugins: [ssr(), kaioken({ devtools: true })],
+  plugins: [ssr(), kaioken({ include: ["../shared/"] })],
 })

@@ -19,6 +19,7 @@ type InferLazyImportProps<T extends LazyImportValue> = T extends FCModule
   : Kaioken.InferProps<T>
 
 type LazyState = {
+  fn: string
   promise: Promise<LazyImportValue>
   result: Kaioken.FC | null
 }
@@ -95,20 +96,17 @@ export function lazy<T extends LazyImportValue>(
       return fallback
     }
 
-    console.log(
-      "lazy - mounting",
-      isPendingHydration.current ? "(pending hydration)" : ""
-    )
-
-    const asStr = componentPromiseFn.toString()
-    const cachedState = lazyCache.get(asStr)
-    if (!cachedState) {
+    const fn = componentPromiseFn.toString()
+    const withoutQuery = removeQueryString(fn)
+    const cachedState = lazyCache.get(withoutQuery)
+    if (!cachedState || cachedState.fn !== fn) {
       const promise = componentPromiseFn()
       const state: LazyState = {
+        fn,
         promise,
         result: null,
       }
-      lazyCache.set(asStr, state)
+      lazyCache.set(withoutQuery, state)
 
       const ready = promise.then((componentOrModule) => {
         state.result =
@@ -127,7 +125,6 @@ export function lazy<T extends LazyImportValue>(
 
       if (__DEV__) {
         window.__kaioken?.HMRContext?.onHmr(() => {
-          console.log("lazy - onHmr cleanup")
           if (isPendingHydration.current) {
             for (const child of childNodes) {
               if (child instanceof Element) {
@@ -152,11 +149,9 @@ export function lazy<T extends LazyImportValue>(
         }
       }
       const hydrate = () => {
-        console.log("lazy - hydrate")
         if (isPendingHydration.current === false) return
 
         appCtx.scheduler?.nextIdle(() => {
-          console.log("lazy - performing syncHydrate")
           delete thisNode!.lastChildDom
           isPendingHydration.current = false
           hydrationStack.push(parent)
@@ -216,7 +211,6 @@ export function lazy<T extends LazyImportValue>(
     }
 
     if (cachedState.result === null) {
-      console.log("lazy - queued requestUpdate")
       cachedState.promise.then(requestUpdate)
       return fallback
     }
@@ -226,10 +220,13 @@ export function lazy<T extends LazyImportValue>(
   return LazyComponent
 }
 
-// const queryStrRegex = /\?[^"]*/
-// /**
-//  * removes the query string from a function - prevents
-//  * vite-modified imports (eg. () => import("./Counter.tsx?t=123456"))
-//  * from causing issues
-//  */
-// const cleanFnStr = (fnStr: string) => fnStr.replace(queryStrRegex, "")
+/**
+ * removes the query string from a function - prevents
+ * vite-modified imports (eg. () => import("./Counter.tsx?t=123456"))
+ * from causing issues
+ */
+const removeQueryString = (fnStr: string): string =>
+  fnStr.replace(
+    /import\((["'])([^?"']+)\?[^)"']*\1\)/g,
+    (_, quote, path) => `import(${quote}${path}${quote})`
+  )
