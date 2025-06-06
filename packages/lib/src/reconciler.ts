@@ -396,7 +396,7 @@ function updateFromMap(
     const oldChild = existingChildren.get(
       child.props.key === undefined ? index : child.props.key
     )
-    if (oldChild) {
+    if (oldChild?.type === child.type) {
       if (__DEV__) {
         emitUpdateNode()
       }
