@@ -37,6 +37,7 @@ export function Page() {
         mode="interaction"
         events={["pointerdown", "keydown", "focus", "input", "mousemove"]}
       >
+        123
         {toggled.value && <Counter />}
       </HydrationBoundary>
     </>

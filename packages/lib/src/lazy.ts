@@ -11,6 +11,7 @@ import {
   HydrationBoundaryContext,
 } from "./ssr/hydrationBoundary.js"
 import type { SomeDom } from "./types.utils"
+import { noop } from "./utils.js"
 
 type FCModule = { default: Kaioken.FC<any> }
 type LazyImportValue = Kaioken.FC<any> | FCModule
@@ -88,9 +89,11 @@ export function lazy<T extends LazyImportValue>(
     const { fallback = null, ...rest } = props
     const appCtx = useAppContext()
     const hydrationCtx = useContext(HydrationBoundaryContext, false)
-    const isPendingHydration = useRef(
+    const needsHydration = useRef(
       hydrationCtx && renderMode.current === "hydrate"
     )
+    const abortHydration = useRef(noop)
+    console.log("LazyComponent - needsHydration", needsHydration.current)
     const requestUpdate = useRequestUpdate()
     if (renderMode.current === "string" || renderMode.current === "stream") {
       return fallback
@@ -116,7 +119,7 @@ export function lazy<T extends LazyImportValue>(
             : componentOrModule.default
       })
 
-      if (!isPendingHydration.current) {
+      if (!needsHydration.current) {
         console.log("lazy - queued requestUpdate")
         ready.then(() => requestUpdate())
         return fallback
@@ -124,17 +127,21 @@ export function lazy<T extends LazyImportValue>(
 
       const thisNode = node.current
 
+      abortHydration.current = () => {
+        for (const child of childNodes) {
+          if (child instanceof Element) {
+            hydrationStack.resetEvents(child)
+          }
+          child.parentNode?.removeChild(child)
+        }
+        needsHydration.current = false
+        delete thisNode!.lastChildDom
+      }
+
       if (__DEV__) {
         window.__kaioken?.HMRContext?.onHmr(() => {
-          if (isPendingHydration.current) {
-            for (const child of childNodes) {
-              if (child instanceof Element) {
-                hydrationStack.resetEvents(child)
-              }
-              child.parentNode?.removeChild(child)
-            }
-            isPendingHydration.current = false
-            delete thisNode!.lastChildDom
+          if (needsHydration.current) {
+            abortHydration.current()
           }
         })
       }
@@ -150,11 +157,11 @@ export function lazy<T extends LazyImportValue>(
         }
       }
       const hydrate = () => {
-        if (isPendingHydration.current === false) return
+        if (needsHydration.current === false) return
 
         appCtx.scheduler?.nextIdle(() => {
           delete thisNode!.lastChildDom
-          isPendingHydration.current = false
+          needsHydration.current = false
           hydrationStack.push(parent)
           hydrationStack.childIdxStack[
             hydrationStack.childIdxStack.length - 1
@@ -214,6 +221,9 @@ export function lazy<T extends LazyImportValue>(
     if (cachedState.result === null) {
       cachedState.promise.then(requestUpdate)
       return fallback
+    }
+    if (needsHydration.current) {
+      abortHydration.current()
     }
     return createElement(cachedState.result, rest)
   }

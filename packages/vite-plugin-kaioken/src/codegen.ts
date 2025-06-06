@@ -28,7 +28,6 @@ export function injectHMRContextPreamble(
     code.prepend(`
 if (import.meta.hot && "window" in globalThis) {
   window.__kaioken.HMRContext?.prepare("${filePath}");
-  console.log("prepared ${filePath}");
 }
 `)
 
