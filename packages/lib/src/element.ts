@@ -16,6 +16,11 @@ export function createElement<T extends Kaioken.VNode["type"]>(
     index: 0,
     depth: 0,
     props: {},
+    parent: null,
+    sibling: null,
+    child: null,
+    prev: null,
+    deletions: null,
   }
   if (isMemoFn(type)) {
     node.isMemoized = true

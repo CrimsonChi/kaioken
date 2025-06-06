@@ -55,7 +55,7 @@ function captureErrorStack(vNode: Kaioken.VNode) {
     typeof vNode.type === "function"
       ? vNode
       : findParent(vNode, (n) => typeof n.type === "function")
-  ) as (Kaioken.VNode & { type: Function }) | undefined
+  ) as (Kaioken.VNode & { type: Function }) | null
   return `The above error occurred in the <${getFunctionName(
     componentNode?.type || noop
   )}> component:

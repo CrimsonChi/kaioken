@@ -9,9 +9,10 @@ import {
   isExoticType,
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
-import { $HYDRATION_BOUNDARY, ELEMENT_TYPE } from "./constants.js"
+import { $HYDRATION_BOUNDARY } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
 import { HYDRATION_BOUNDARY_MARKER } from "./ssr/hydrationBoundary.js"
+import { __DEV__ } from "./env.js"
 
 export function renderToString<T extends Record<string, unknown>>(
   appFunc: (props: T) => JSX.Element,
@@ -50,10 +51,10 @@ function renderToString_internal(
   el.depth = parent!.depth + 1
   el.index = idx
   const props = el.props ?? {}
-  const children = props.children
   const type = el.type
-  if (type === ELEMENT_TYPE.text)
-    return encodeHtmlEntities(props.nodeValue ?? "")
+  if (type === "#text") return encodeHtmlEntities(props.nodeValue ?? "")
+
+  const children = props.children
   if (isExoticType(type)) {
     if (type === $HYDRATION_BOUNDARY) {
       return `<!--${HYDRATION_BOUNDARY_MARKER}-->${renderToString_internal(
@@ -70,11 +71,13 @@ function renderToString_internal(
     nodeToCtxMap.set(el, ctx.current)
     node.current = el
     const res = type(props)
-    node.current = undefined
+    node.current = null
     return renderToString_internal(res, el, idx)
   }
 
-  assertValidElementProps(el)
+  if (__DEV__) {
+    assertValidElementProps(el)
+  }
   const attrs = propsToElementAttributes(props)
   const inner =
     "innerHTML" in props

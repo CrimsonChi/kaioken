@@ -10,9 +10,10 @@ import {
   isExoticType,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
-import { $HYDRATION_BOUNDARY, ELEMENT_TYPE } from "../constants.js"
+import { $HYDRATION_BOUNDARY } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 import { HYDRATION_BOUNDARY_MARKER } from "./hydrationBoundary.js"
+import { __DEV__ } from "../env.js"
 
 type RequestState = {
   stream: Readable
@@ -78,7 +79,7 @@ function renderToStream_internal(
   const props = el.props ?? {}
   const children = props.children
   const type = el.type
-  if (type === ELEMENT_TYPE.text) {
+  if (type === "#text") {
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
@@ -96,11 +97,13 @@ function renderToStream_internal(
     nodeToCtxMap.set(el, state.ctx)
     node.current = el
     const res = type(props)
-    node.current = undefined
+    node.current = null
     return renderToStream_internal(state, res, parent, idx)
   }
 
-  assertValidElementProps(el)
+  if (__DEV__) {
+    assertValidElementProps(el)
+  }
   const attrs = propsToElementAttributes(props)
   const isSelfClosing = selfClosingTags.includes(type)
   state.stream.push(

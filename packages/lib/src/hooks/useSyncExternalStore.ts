@@ -20,7 +20,7 @@ export function useSyncExternalStore<T>(
       throw new KaiokenError({
         message:
           "useSyncExternalStore must receive a getServerSnapshot function if the component is rendered on the server.",
-        vNode: node.current,
+        vNode: node.current!,
       })
     }
     return getServerState()
@@ -29,7 +29,7 @@ export function useSyncExternalStore<T>(
   return useHook(
     "useSyncExternalStore",
     {
-      state: undefined as T,
+      state: null as T,
       unsubscribe: noop as () => void,
     },
     ({ hook, isInit, update }) => {

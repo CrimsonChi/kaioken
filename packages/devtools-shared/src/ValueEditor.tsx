@@ -1,6 +1,7 @@
 import { ElementProps, unwrap, useMemo, useState } from "kaioken"
 import { useSettings } from "./Settings"
 import { ChevronIcon } from "./icons"
+import { className as cls } from "./utils"
 
 const noop = Object.freeze(() => {})
 
@@ -44,11 +45,11 @@ export function ValueEditor({
   return (
     <>
       <div
-        className={[
+        className={cls(
           "flex flex-col items-start w-full",
           border && "border border-neutral-700",
-          unwrap(className),
-        ]}
+          unwrap(className)
+        )}
       >
         {objectKeys.map((key) => {
           const _keys = keys.concat(key)

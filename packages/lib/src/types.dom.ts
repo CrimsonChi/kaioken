@@ -10,10 +10,7 @@ export type {
   GlobalEventAttributes,
   EventAttributes,
   StyleObject,
-  ClassNameArray,
 }
-
-type ClassNameArray = Array<string | false | undefined | ClassNameArray>
 
 type StyleObject = Prettify<
   Partial<
@@ -209,7 +206,7 @@ type ErrorableElementTags = "img" | "iframe" | "link" | "script" | "source"
 type GlobalAttributes = {
   accessKey?: string
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters"
-  className?: string | ClassNameArray
+  className?: string
   contentEditable?: boolean
   dir?: Direction
   draggable?: boolean | "auto"

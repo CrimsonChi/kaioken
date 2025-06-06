@@ -16,10 +16,6 @@ export const FLAG = {
   HAS_MEMO_ANCESTOR: 4,
 } as const
 
-export const ELEMENT_TYPE = {
-  text: "#text",
-} as const
-
 export const REGEX_UNIT = {
   AMP_G: /&/g,
   LT_G: /</g,

@@ -30,7 +30,7 @@ const useIdCallback: HookCallback<UseIdState> = ({ hook, isInit, vNode }) => {
   if (isInit || vNode.index !== hook.idx) {
     hook.idx = vNode.index
     const accumulator: number[] = []
-    let n: Kaioken.VNode | undefined = vNode
+    let n: Kaioken.VNode | null = vNode
     while (n) {
       accumulator.push(n.index)
       accumulator.push(n.depth)

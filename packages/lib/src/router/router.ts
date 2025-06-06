@@ -81,7 +81,6 @@ const RouterContext = createContext<RouterCtx>({
   params: {},
   query: {},
   routePath: "/",
-  basePath: undefined,
   isDefault: true,
 })
 RouterContext.displayName = "Router"
@@ -161,7 +160,7 @@ export function Router(props: RouterProps) {
   const syncNavCallback = useRef<(() => void) | null>(null)
   const parentRouterContext = useContext(RouterContext, false)
   const dynamicParentPath = parentRouterContext.isDefault
-    ? undefined
+    ? null
     : parentRouterContext.routePath
   const dynamicParentPathSegments = useMemo(
     () => dynamicParentPath?.split("/").filter(Boolean) || [],

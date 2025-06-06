@@ -15,13 +15,10 @@ import type {
   SvgGlobalAttributes,
   StyleObject,
   HtmlElementBindableProps,
-  ClassNameArray,
 } from "./types.dom"
 import { Signalable, SomeDom } from "./types.utils"
 
-export type { ElementProps, ClassNameArray, ClassNameAttribute, StyleObject }
-
-type ClassNameAttribute = Signalable<string | ClassNameArray | undefined>
+export type { ElementProps, StyleObject }
 
 type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
   T extends keyof HTMLElementTagNameMap
@@ -189,9 +186,9 @@ declare global {
       | typeof $HYDRATION_BOUNDARY
 
     type VNode = {
-      type: string | Function | ExoticSymbol
       dom?: SomeDom
       lastChildDom?: SomeDom
+      type: Function | ExoticSymbol | "#text" | (string & {})
       props: {
         [key: string]: any
         children?: unknown
@@ -200,14 +197,15 @@ declare global {
       }
       index: number
       depth: number
+      parent: VNode | null
+      child: VNode | null
+      sibling: VNode | null
+      prev: VNode | null
+      deletions: VNode[] | null
+      flags: number
       hooks?: Hook<unknown>[]
       subs?: string[]
       cleanups?: Record<string, Function>
-      parent?: VNode
-      child?: VNode
-      sibling?: VNode
-      prev?: VNode
-      flags: number
       effects?: Array<Function>
       immediateEffects?: Array<Function>
       prevStyleStr?: string

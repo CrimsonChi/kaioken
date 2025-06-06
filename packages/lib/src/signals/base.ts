@@ -190,7 +190,7 @@ export const signal = <T>(initial: T, displayName?: string) => {
 export const useSignal = <T>(initial: T, displayName?: string) => {
   return useHook(
     "useSignal",
-    { signal: undefined as any as Signal<T> },
+    { signal: null! as Signal<T> },
     ({ hook, isInit }) => {
       if (__DEV__) {
         hook.dev = {

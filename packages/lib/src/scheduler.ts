@@ -1,5 +1,9 @@
 import type { AppContext } from "./appContext"
-import type { ContextProviderNode, FunctionVNode } from "./types.utils"
+import type {
+  ContextProviderNode,
+  DomVNode,
+  FunctionVNode,
+} from "./types.utils"
 import { flags } from "./flags.js"
 import {
   $CONTEXT_PROVIDER,
@@ -9,30 +13,30 @@ import {
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
-import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
+import { ctx, hookIndex, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import {
   willMemoBlockUpdate,
-  isExoticVNode,
   latest,
   traverseApply,
   vNodeContains,
+  isExoticType,
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
 
 type VNode = Kaioken.VNode
 
 export class Scheduler {
-  private nextUnitOfWork: VNode | undefined = undefined
+  private nextUnitOfWork: VNode | null = null
   private treesInProgress: VNode[] = []
   private currentTreeIndex = 0
   private isRunning = false
   private nextIdleEffects: ((scheduler: this) => void)[] = []
   private deletions: VNode[] = []
   private frameDeadline = 0
-  private pendingCallback: IdleRequestCallback | undefined
+  private pendingCallback: IdleRequestCallback | null = null
   private channel: MessageChannel
   private frameHandle: number | null = null
   private isImmediateEffectsMode = false
@@ -60,14 +64,14 @@ export class Scheduler {
   }
 
   clear() {
-    this.nextUnitOfWork = undefined
+    this.nextUnitOfWork = null
     this.treesInProgress = []
     this.currentTreeIndex = 0
     this.nextIdleEffects = []
     this.deletions = []
     this.effectCallbacks = { pre: [], post: [] }
     this.frameDeadline = 0
-    this.pendingCallback = undefined
+    this.pendingCallback = null
     this.sleep()
   }
 
@@ -118,7 +122,7 @@ export class Scheduler {
       return
     }
 
-    if (this.nextUnitOfWork === undefined) {
+    if (this.nextUnitOfWork === null) {
       this.treesInProgress.push(vNode)
       this.nextUnitOfWork = vNode
       return this.wake()
@@ -291,8 +295,8 @@ export class Scheduler {
     })
   }
 
-  private queueBlockedContextDependencyRoots(): VNode | undefined {
-    if (this.pendingContextChanges.size === 0) return
+  private queueBlockedContextDependencyRoots(): VNode | null {
+    if (this.pendingContextChanges.size === 0) return null
 
     // TODO: it's possible that a 'job' created by this process is
     // blocked by a parent memo after a queueUpdate -> replaceTree action.
@@ -323,16 +327,16 @@ export class Scheduler {
 
     this.pendingContextChanges.clear()
     this.treesInProgress.push(...jobRoots)
-    return jobRoots[0]
+    return jobRoots[0] ?? null
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
     let renderChild = true
     try {
-      const { type, props } = vNode
-      if (typeof type === "function") {
-        renderChild = this.updateFunctionComponent(vNode as FunctionVNode)
-      } else if (isExoticVNode(vNode)) {
+      const { props } = vNode
+      if (typeof vNode.type === "string") {
+        this.updateHostComponent(vNode as DomVNode)
+      } else if (isExoticType(vNode.type)) {
         if (vNode.type === $CONTEXT_PROVIDER) {
           const asProvider = vNode as ContextProviderNode<any>
           const { dependents, value } = asProvider.props
@@ -344,15 +348,10 @@ export class Scheduler {
             this.pendingContextChanges.add(asProvider)
           }
         }
-        vNode.child =
-          reconcileChildren(
-            this.appCtx,
-            vNode,
-            vNode.child || null,
-            props.children
-          ) || undefined
+        vNode.child = reconcileChildren(vNode, props.children)
+        vNode.deletions?.forEach((d) => this.queueDelete(d))
       } else {
-        this.updateHostComponent(vNode)
+        renderChild = this.updateFunctionComponent(vNode as FunctionVNode)
       }
     } catch (error) {
       window.__kaioken?.emit(
@@ -381,7 +380,7 @@ export class Scheduler {
       return vNode.child
     }
 
-    let nextNode: VNode | undefined = vNode
+    let nextNode: VNode | null = vNode
     while (nextNode) {
       // queue effects upon ascent
       if (nextNode.immediateEffects) {
@@ -405,14 +404,7 @@ export class Scheduler {
   }
 
   private updateFunctionComponent(vNode: FunctionVNode) {
-    const {
-      type,
-      props,
-      subs,
-      prev,
-      child: prevChild = null,
-      isMemoized,
-    } = vNode
+    const { type, props, subs, prev, isMemoized } = vNode
     if (isMemoized) {
       vNode.memoizedProps = props
       if (
@@ -426,11 +418,11 @@ export class Scheduler {
     try {
       node.current = vNode
       nodeToCtxMap.set(vNode, this.appCtx)
-      let newChildren
+      let newChild
       let renderTryCount = 0
       do {
         this.isRenderDirtied = false
-        this.appCtx.hookIndex = 0
+        hookIndex.current = 0
 
         /**
          * remove previous signal subscriptions (if any) every render.
@@ -440,7 +432,7 @@ export class Scheduler {
         while (subs?.length) Signal.unsubscribe(vNode, subs.pop()!)
 
         if (__DEV__) {
-          newChildren = latest(type)(props)
+          newChild = latest(type)(props)
           delete vNode.hmrUpdated
           if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
             throw new KaiokenError({
@@ -452,43 +444,40 @@ export class Scheduler {
           }
           continue
         }
-        newChildren = type(props)
+        newChild = type(props)
       } while (this.isRenderDirtied)
-      vNode.child =
-        reconcileChildren(this.appCtx, vNode, prevChild, newChildren) ||
-        undefined
+      vNode.child = reconcileChildren(vNode, newChild)
+      vNode.deletions?.forEach((d) => this.queueDelete(d))
       return true
     } finally {
-      node.current = undefined
+      node.current = null
     }
   }
 
-  private updateHostComponent(vNode: VNode) {
-    const { props, child: prevChild = null } = vNode
-    try {
-      node.current = vNode
+  private updateHostComponent(vNode: DomVNode) {
+    const { props } = vNode
+    if (__DEV__) {
       assertValidElementProps(vNode)
-      if (!vNode.dom) {
-        if (renderMode.current === "hydrate") {
-          hydrateDom(vNode)
-        } else {
-          vNode.dom = createDom(vNode)
-        }
-        if (__DEV__) {
-          // @ts-expect-error we apply vNode to the dom node
-          vNode.dom!.__kaiokenNode = vNode
-        }
+    }
+    if (!vNode.dom) {
+      if (renderMode.current === "hydrate") {
+        hydrateDom(vNode)
+      } else {
+        vNode.dom = createDom(vNode)
       }
-
-      vNode.child =
-        reconcileChildren(this.appCtx, vNode, prevChild, props.children) ||
-        undefined
-
-      if (vNode.child && renderMode.current === "hydrate") {
-        hydrationStack.push(vNode.dom!)
+      if (__DEV__) {
+        // @ts-expect-error we apply vNode to the dom node
+        vNode.dom.__kaiokenNode = vNode
       }
-    } finally {
-      node.current = undefined
+    }
+    // text should _never_ have children
+    if (vNode.type !== "#text") {
+      vNode.child = reconcileChildren(vNode, props.children)
+      vNode.deletions?.forEach((d) => this.queueDelete(d))
+    }
+
+    if (vNode.child && renderMode.current === "hydrate") {
+      hydrationStack.push(vNode.dom!)
     }
   }
 

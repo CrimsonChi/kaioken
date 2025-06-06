@@ -1,15 +1,8 @@
 import { node, nodeToCtxMap, renderMode } from "./globals.js"
-import {
-  $CONTEXT_PROVIDER,
-  $FRAGMENT,
-  $HYDRATION_BOUNDARY,
-  FLAG,
-  REGEX_UNIT,
-} from "./constants.js"
+import { $CONTEXT_PROVIDER, $FRAGMENT, FLAG, REGEX_UNIT } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
-import type { ExoticVNode } from "./types.utils"
 import { __DEV__ } from "./env.js"
 import { flags } from "./flags.js"
 
@@ -18,8 +11,8 @@ export {
   isFragment,
   isLazy,
   isMemo,
+  className,
   isContextProvider,
-  isExoticVNode,
   isExoticType,
   isVNodeDeleted,
   vNodeContains,
@@ -30,7 +23,6 @@ export {
   traverseApply,
   postOrderApply,
   findParent,
-  classNamePropToString,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   propsToElementAttributes,
@@ -53,7 +45,13 @@ type VNode = Kaioken.VNode
 
 const noop: () => void = Object.freeze(() => {})
 
-const addUnique = <T>(arr: T[], val: T) => arr.includes(val) || arr.push(val)
+function className(...classes: (string | false | undefined)[]): string {
+  return classes.filter(Boolean).join(" ")
+}
+
+function addUnique<T>(arr: T[], val: T) {
+  arr.includes(val) || arr.push(val)
+}
 
 /**
  * This is a no-op in production. It is used to get the latest
@@ -84,16 +82,8 @@ function isVNode(thing: unknown): thing is VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
-function isExoticVNode(thing: unknown): thing is ExoticVNode {
-  return isVNode(thing) && isExoticType(thing.type)
-}
-
-function isExoticType(type: VNode["type"]): type is ExoticVNode["type"] {
-  return (
-    type === $FRAGMENT ||
-    type === $CONTEXT_PROVIDER ||
-    type === $HYDRATION_BOUNDARY
-  )
+function isExoticType(type: VNode["type"]): type is Kaioken.ExoticSymbol {
+  return type === $FRAGMENT || type === $CONTEXT_PROVIDER
 }
 
 function isFragment(vNode: VNode): vNode is VNode & { type: typeof $FRAGMENT } {
@@ -122,7 +112,7 @@ function isContextProvider(
   return isVNode(thing) && thing.type === $CONTEXT_PROVIDER
 }
 
-function getCurrentVNode(): VNode | undefined {
+function getCurrentVNode(): VNode | null {
   return node.current
 }
 
@@ -137,7 +127,7 @@ function getVNodeAppContext(vNode: VNode): AppContext {
 }
 
 function commitSnapshot(vNode: VNode): void {
-  vNode.prev = { ...vNode, props: { ...vNode.props }, prev: undefined }
+  vNode.prev = { ...vNode, props: { ...vNode.props }, prev: null }
   vNode.flags = flags.unsetRange(vNode.flags, FLAG.UPDATE, FLAG.DELETION)
 }
 
@@ -156,7 +146,7 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
 }
 
 function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
-  let node: VNode | undefined = target
+  let node: VNode | null = target
 
   while (
     node &&
@@ -237,12 +227,12 @@ function findParent(
   vNode: Kaioken.VNode,
   predicate: (n: Kaioken.VNode) => boolean
 ) {
-  let n: Kaioken.VNode | undefined = vNode.parent
+  let n: Kaioken.VNode | null = vNode.parent
   while (n) {
     if (predicate(n)) return n
     n = n.parent
   }
-  return undefined
+  return null
 }
 
 function compare<T>(a: T, b: T, deep = false): boolean {
@@ -617,13 +607,6 @@ function styleObjectToString(obj: Partial<CSSStyleDeclaration>): string {
   return cssString
 }
 
-function classNamePropToString(className: unknown): string {
-  if (typeof className === "string") return className
-  if (Array.isArray(className))
-    return className.flat().filter(Boolean).join(" ")
-  return ""
-}
-
 function stylePropToString(style: unknown) {
   if (typeof style === "string") return style
   if (typeof style === "object" && !!style) return styleObjectToString(style)
@@ -639,10 +622,12 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
   const attrs: string[] = []
   const { className, style, ...rest } = props
   if (className) {
-    attrs.push(`class="${classNamePropToString(unwrap(className))}"`)
+    const val = unwrap(className)
+    if (!!val) attrs.push(`class="${val}"`)
   }
   if (style) {
-    attrs.push(`style="${stylePropToString(unwrap(style))}"`)
+    const val = unwrap(style)
+    if (!!val) attrs.push(`style="${stylePropToString(val)}"`)
   }
 
   const keys = Object.keys(rest).filter(propFilters.isProperty)

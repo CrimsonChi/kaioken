@@ -26,16 +26,15 @@ export interface AppContextOptions {
 export class AppContext<T extends Record<string, unknown> = {}> {
   id: string
   name: string
-  scheduler: Scheduler | undefined
-  rootNode: VNode | undefined = undefined
-  hookIndex = 0
+  scheduler?: Scheduler
+  rootNode?: VNode
   root?: HTMLElement
   mounted = false
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
     private appProps = {},
-    public options?: AppContextOptions
+    private options?: AppContextOptions
   ) {
     this.id = generateRandomID()
     this.name = options?.name ?? "App-" + this.id
@@ -83,7 +82,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
 
       this.scheduler?.nextIdle(() => {
         this.scheduler = undefined
-        this.rootNode && (this.rootNode.child = undefined)
+        this.rootNode && (this.rootNode.child = null)
         this.mounted = false
         window.__kaioken?.emit("unmount", this as AppContext<any>)
         resolve(this)

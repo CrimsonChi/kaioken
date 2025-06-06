@@ -4,7 +4,7 @@ import { __DEV__ } from "../env.js"
 import { $CONTEXT_PROVIDER } from "../constants.js"
 
 type UseContextHookState<T> = {
-  provider: ContextProviderNode<T> | undefined
+  provider?: ContextProviderNode<T>
   context: Kaioken.Context<T>
   warnIfNotFound: boolean
 }
@@ -20,7 +20,10 @@ export function useContext<T>(
 ): T {
   return useHook(
     "useContext",
-    { provider: undefined, context, warnIfNotFound },
+    {
+      context,
+      warnIfNotFound,
+    } satisfies UseContextHookState<T>,
     useContextCallback as typeof useContextCallback<T>
   )
 }

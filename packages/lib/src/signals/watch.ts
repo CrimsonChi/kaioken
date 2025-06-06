@@ -12,7 +12,7 @@ export class WatchEffect {
   protected id: string
   protected getter: () => (() => void) | void
   protected unsubs: Map<Signal<any>, Function>
-  protected cleanup?: CleanupInstance
+  protected cleanup: CleanupInstance | null
   protected isRunning?: boolean
   protected [$HMR_ACCEPT]?: HMRAccept<WatchEffect>
 
@@ -21,6 +21,7 @@ export class WatchEffect {
     this.getter = getter
     this.unsubs = new Map()
     this.isRunning = false
+    this.cleanup = null
     if (__DEV__) {
       this[$HMR_ACCEPT] = {
         provide: () => this,
@@ -75,7 +76,7 @@ export class WatchEffect {
     this.unsubs.forEach((fn) => fn())
     this.unsubs.clear()
     this.cleanup?.call?.()
-    this.cleanup = undefined
+    this.cleanup = null
     this.isRunning = false
   }
 }
