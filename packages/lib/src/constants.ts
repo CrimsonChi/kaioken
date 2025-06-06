@@ -5,6 +5,7 @@ export const $FRAGMENT = Symbol.for("kaioken.fragment")
 export const $KAIOKEN_ERROR = Symbol.for("kaioken.error")
 export const $HMR_ACCEPT = Symbol.for("kaioken.hmrAccept")
 export const $MEMO = Symbol.for("kaioken.memo")
+export const $HYDRATION_BOUNDARY = Symbol.for("kaioken.hydrationBoundary")
 
 export const CONSECUTIVE_DIRTY_LIMIT = 50
 

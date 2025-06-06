@@ -1,12 +1,16 @@
-import type {
-  ESBuildOptions,
-  IndexHtmlTransformResult,
-  Plugin,
-  UserConfig,
+import {
+  type ViteDevServer,
+  type ESBuildOptions,
+  type IndexHtmlTransformResult,
+  type Plugin,
+  type UserConfig,
 } from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import devtoolsHostBuild from "kaioken-devtools-host"
-import { injectHMRContextPreamble } from "./codegen.js"
+import {
+  injectHMRContextPreamble,
+  prepareHydrationBoundaries,
+} from "./codegen.js"
 import MagicString from "magic-string"
 import path from "node:path"
 import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
@@ -21,8 +25,6 @@ export const defaultEsBuildOptions: ESBuildOptions = {
 }
 
 export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
-  const tsxOrJsxRegex = /\.(tsx|jsx)$/
-  const tsOrJsRegex = /\.(ts|js)$/
   let isProduction = false
   let isBuild = false
 
@@ -38,13 +40,29 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let transformedDtHostBuild = ""
   let transformedDtClientBuild = ""
 
-  let _config: UserConfig | null = null
+  const virtualModules: Record<string, string> = {}
+  const fileToVirtualModules: Record<string, Set<string>> = {}
+  let projectRoot = process.cwd().replace(/\\/g, "/")
+  let includedPaths: string[] = []
 
   return {
     name: "vite-plugin-kaioken",
-    buildStart: async function () {
-      // transform 'devtoolsHostBuild' to use the correct path for kaioken imports
+    // @ts-ignore
+    resolveId(id) {
+      if (virtualModules[id]) {
+        return id
+      }
+    },
+    load(id) {
+      return virtualModules[id]
+    },
+    async buildStart() {
       const kaiokenPath = await this.resolve("kaioken")
+      if (!kaiokenPath) {
+        throw new Error(
+          "[vite-plugin-kaioken]: Unable to resolve kaioken path."
+        )
+      }
       transformedDtHostBuild = devtoolsHostBuild.replaceAll(
         'from "kaioken"',
         `from "/@fs/${kaiokenPath!.id}"`
@@ -55,13 +73,13 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       )
     },
     config(config) {
-      return (_config = {
+      return {
         ...config,
         esbuild: {
           ...defaultEsBuildOptions,
           ...config.esbuild,
         },
-      } as UserConfig)
+      } as UserConfig
     },
     transformIndexHtml(html) {
       if (isProduction || isBuild || opts?.devtools === false) return
@@ -81,42 +99,115 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
     configResolved(config) {
       isProduction = config.isProduction
       isBuild = config.command === "build"
+      projectRoot = config.root.replace(/\\/g, "/")
+      includedPaths = (opts?.include ?? []).map((p) =>
+        path.resolve(projectRoot, p).replace(/\\/g, "/")
+      )
     },
     configureServer(server) {
-      if (isProduction || isBuild || opts?.devtools === false) return
-      server.middlewares.use(dtHostScriptPath, (_, res) => {
-        res.setHeader("Content-Type", "application/javascript")
-        res.end(transformedDtHostBuild, "utf-8")
-      })
-      server.middlewares.use(dtClientPathname, (_, res) => {
-        res.end(transformedDtClientBuild)
+      if (isProduction || isBuild) return
+      if (opts?.devtools !== false) {
+        server.middlewares.use(dtHostScriptPath, (_, res) => {
+          res.setHeader("Content-Type", "application/javascript")
+          res.end(transformedDtHostBuild, "utf-8")
+        })
+        server.middlewares.use(dtClientPathname, (_, res) => {
+          res.end(transformedDtClientBuild)
+        })
+      }
+      server.watcher.on("change", (file) => {
+        const affectedVirtualModules = fileToVirtualModules[file]
+        if (affectedVirtualModules) {
+          for (const modId of affectedVirtualModules) {
+            const mod = server.moduleGraph.getModuleById(modId)
+            if (mod) {
+              server!.moduleGraph.invalidateModule(
+                mod,
+                undefined,
+                undefined,
+                true
+              )
+              // virtualModules[modId] = "" // optional: clear stale content
+            }
+          }
+        }
+
+        // find & invalidate virtual modules that import this
+        // to be investigated: do we also need to invalidate
+        // the file that the virtual is derived from?
+        const mod = server.moduleGraph.getModuleById(file)
+        if (mod) {
+          mod.importers.forEach((importer) => {
+            if (importer.id && virtualModules[importer.id]) {
+              server!.moduleGraph.invalidateModule(
+                importer,
+                undefined,
+                undefined,
+                true
+              )
+            }
+          })
+        }
       })
     },
-    transform(code, id) {
-      if (isProduction || isBuild) return
-      if (!tsxOrJsxRegex.test(id) && !tsOrJsRegex.test(id)) return { code }
-      const projectRoot = path.resolve(_config?.root ?? process.cwd())
-      const filePath = path.resolve(id)
-      if (!filePath.startsWith(projectRoot)) {
-        return { code }
-      }
-      const ast = this.parse(code)
-      const transformed: MagicString | null = injectHMRContextPreamble(
-        new MagicString(code),
-        ast,
-        fileLinkFormatter,
-        id
-      )
-      if (transformed === null) return { code }
+    transform(src, id, options) {
+      const isVirtual = !!virtualModules[id]
+      if (!isVirtual) {
+        if (
+          id.startsWith("\0") ||
+          id.startsWith("vite:") ||
+          id.includes("/node_modules/")
+        )
+          return { code: src }
 
-      const map = transformed.generateMap({
+        if (!/\.[cm]?[jt]sx?$/.test(id)) return { code: src }
+
+        const filePath = path.resolve(id).replace(/\\/g, "/")
+        const isIncludedByUser = includedPaths.some((p) =>
+          filePath.startsWith(p)
+        )
+
+        if (!isIncludedByUser && !filePath.startsWith(projectRoot)) {
+          return { code: src }
+        }
+      }
+
+      const ast = this.parse(src)
+      const code = new MagicString(src)
+
+      if (!isProduction && !isBuild) {
+        injectHMRContextPreamble(code, ast, fileLinkFormatter, id, isVirtual)
+        // early return if no components or hotVars are found
+        if (!code.hasChanged()) {
+          return { code: src }
+        }
+      }
+
+      if (!options?.ssr) {
+        const { extraModules } = prepareHydrationBoundaries(code, ast, id)
+        for (const key in extraModules) {
+          ;(fileToVirtualModules[id] ??= new Set()).add(key)
+          // const mod = devServer!.moduleGraph.getModuleById(key)
+          // if (mod) {
+          //   devServer!.moduleGraph.invalidateModule(
+          //     mod,
+          //     undefined,
+          //     undefined,
+          //     true
+          //   )
+          // }
+          virtualModules[key] = extraModules[key]
+        }
+      }
+
+      const map = code.generateMap({
         source: id,
         file: `${id}.map`,
         includeContent: true,
       })
 
       return {
-        code: transformed.toString(),
+        code: code.toString(),
         map: map.toString(),
       }
     },

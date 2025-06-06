@@ -22,6 +22,7 @@
   "dependencies": {
     "express": "^4.21.0",
     "kaioken": "workspace:^",
+    "shared": "workspace:^",
     "tsx": "^4.19.1",
     "vike": "^0.4.197",
     "vite": "^5.4.8"

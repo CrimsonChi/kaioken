@@ -19,6 +19,7 @@
   "dependencies": {
     "@kaioken-core/hooks": "0.0.9",
     "kaioken": "workspace:^",
+    "shared": "workspace:^",
     "x-templ": "^2.0.0"
   }
 }

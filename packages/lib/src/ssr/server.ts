@@ -7,10 +7,12 @@ import {
   encodeHtmlEntities,
   propsToElementAttributes,
   selfClosingTags,
+  isExoticType,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
-import { $CONTEXT_PROVIDER, $FRAGMENT } from "../constants.js"
+import { $HYDRATION_BOUNDARY } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
+import { HYDRATION_BOUNDARY_MARKER } from "./hydrationBoundary.js"
 import { __DEV__ } from "../env.js"
 
 type RequestState = {
@@ -81,10 +83,14 @@ function renderToStream_internal(
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
-  if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
-    if (!Array.isArray(children))
-      return renderToStream_internal(state, children, el, idx)
-    return children.forEach((c, i) => renderToStream_internal(state, c, el, i))
+  if (isExoticType(type)) {
+    if (type === $HYDRATION_BOUNDARY) {
+      state.stream.push(`<!--${HYDRATION_BOUNDARY_MARKER}-->`)
+      renderToStream_internal(state, children, el, idx)
+      state.stream.push(`<!--/${HYDRATION_BOUNDARY_MARKER}-->`)
+      return
+    }
+    return renderToStream_internal(state, children, el, idx)
   }
 
   if (typeof type !== "string") {

@@ -10,9 +10,8 @@ export default defineConfig({
   },
   plugins: [
     kaioken({
-      devtools: {
-        pathname: "/__devtools__",
-      },
+      devtools: false,
+      include: ["../shared/"],
     }),
   ],
 })

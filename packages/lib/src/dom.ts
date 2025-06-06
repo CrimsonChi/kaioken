@@ -110,20 +110,27 @@ function handlePostPlacementFocusPersistence() {
   persistingFocus = false
 }
 
-function wrapFocusEventHandler(callback: (event: FocusEvent) => void) {
-  return (event: FocusEvent) => {
+function wrapFocusEventHandler(
+  vNode: VNode,
+  evtName: "focus" | "blur",
+  callback: (event: FocusEvent) => void
+) {
+  const wrappedHandlers = vNodeToWrappedFocusEventHandlersMap.get(vNode) ?? {}
+  const handler = (wrappedHandlers[evtName] = (event: FocusEvent) => {
     if (persistingFocus) {
       event.preventDefault()
       event.stopPropagation()
       return
     }
     callback(event)
-  }
+  })
+  vNodeToWrappedFocusEventHandlersMap.set(vNode, wrappedHandlers)
+  return handler
 }
 
 type WrappedFocusEventMap = {
-  onfocus?: (event: FocusEvent) => void
-  onblur?: (event: FocusEvent) => void
+  focus?: (event: FocusEvent) => void
+  blur?: (event: FocusEvent) => void
 }
 
 const vNodeToWrappedFocusEventHandlersMap = new WeakMap<
@@ -139,65 +146,67 @@ function updateDom(vNode: VNode) {
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
 
   keys.forEach((key) => {
+    const prev = prevProps[key],
+      next = nextProps[key]
     if (propFilters.internalProps.includes(key) && key !== "innerHTML") {
-      if (key === "ref" && prevProps[key] !== nextProps[key]) {
-        if (prevProps[key]) {
-          setDomRef(prevProps[key], null)
+      if (key === "ref" && prev !== next) {
+        if (prev) {
+          setDomRef(prev, null)
         }
-        if (nextProps[key]) {
-          setDomRef(nextProps[key], dom)
+        if (next) {
+          setDomRef(next, dom)
         }
       }
       return
     }
 
     if (propFilters.isEvent(key)) {
-      if (
-        prevProps[key] !== nextProps[key] ||
-        renderMode.current === "hydrate"
-      ) {
-        const eventType = key.toLowerCase().substring(2)
+      if (prev !== next || renderMode.current === "hydrate") {
+        const evtName = key.toLowerCase().substring(2)
+        const isFocusEvent = evtName === "focus" || evtName === "blur"
         if (key in prevProps) {
-          let cb = prevProps[key]
-          if (key === "onfocus" || key === "onblur") {
-            cb = vNodeToWrappedFocusEventHandlersMap.get(vNode)?.[key]
-          }
-          dom.removeEventListener(eventType, cb)
+          dom.removeEventListener(
+            evtName,
+            isFocusEvent
+              ? vNodeToWrappedFocusEventHandlersMap.get(vNode)?.[evtName]
+              : prev
+          )
         }
         if (key in nextProps) {
-          let cb = nextProps[key]
-          if (key === "onfocus" || key === "onblur") {
-            cb = wrapFocusEventHandler(cb)
-            const wrappedHandlers =
-              vNodeToWrappedFocusEventHandlersMap.get(vNode) ?? {}
-            wrappedHandlers[key] = cb
-            vNodeToWrappedFocusEventHandlersMap.set(vNode, wrappedHandlers)
-          }
-          dom.addEventListener(eventType, cb)
+          dom.addEventListener(
+            evtName,
+            isFocusEvent ? wrapFocusEventHandler(vNode, evtName, next) : next
+          )
         }
       }
       return
     }
 
     if (!(dom instanceof Text)) {
-      if (prevProps[key] === nextProps[key]) return
-      if (Signal.isSignal(prevProps[key]) && vNode.cleanups) {
-        vNode.cleanups[key] &&
-          (vNode.cleanups[key](), delete vNode.cleanups[key])
+      if (
+        prev === next ||
+        (renderMode.current === "hydrate" && dom.getAttribute(key) === next)
+      ) {
+        return
       }
-      if (Signal.isSignal(nextProps[key])) {
-        return setSignalProp(vNode, dom, key, nextProps[key], prevProps[key])
+
+      if (Signal.isSignal(prev) && vNode.cleanups) {
+        const v = vNode.cleanups[key]
+        v && (v(), delete vNode.cleanups[key])
       }
-      setProp(vNode, dom, key, nextProps[key], prevProps[key])
+      if (Signal.isSignal(next)) {
+        return setSignalProp(vNode, dom, key, next, prev)
+      }
+      setProp(vNode, dom, key, next, prev)
       return
     }
-    if (Signal.isSignal(nextProps[key])) {
+    if (Signal.isSignal(next)) {
       // signal textNodes are handled via 'subTextNode'.
       return
     }
-    const nodeVal = nextProps[key]
-    if (dom.nodeValue !== nodeVal) {
-      dom.nodeValue = nodeVal
+    // text node
+    if (dom.nodeValue !== next) {
+      dom.nodeValue = next
     }
   })
 }
@@ -581,7 +590,7 @@ function placeDom(
     // downwards traversal
     if (!isPortal(child) && dBounds.indexOf(child) === -1) {
       dBounds.push(child)
-      const dom = child.dom
+      const dom = child.dom ?? child.lastChildDom
       // traverse downwards if no dom for this child
       if (!dom && child.child) {
         currentParent = child

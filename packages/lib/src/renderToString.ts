@@ -6,10 +6,12 @@ import {
   encodeHtmlEntities,
   propsToElementAttributes,
   selfClosingTags,
+  isExoticType,
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
-import { $CONTEXT_PROVIDER, $FRAGMENT } from "./constants.js"
+import { $HYDRATION_BOUNDARY } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
+import { HYDRATION_BOUNDARY_MARKER } from "./ssr/hydrationBoundary.js"
 import { __DEV__ } from "./env.js"
 
 export function renderToString<T extends Record<string, unknown>>(
@@ -49,13 +51,20 @@ function renderToString_internal(
   el.depth = parent!.depth + 1
   el.index = idx
   const props = el.props ?? {}
-  const children = props.children
   const type = el.type
   if (type === "#text") return encodeHtmlEntities(props.nodeValue ?? "")
-  if (type === $FRAGMENT || type === $CONTEXT_PROVIDER) {
-    if (!Array.isArray(children))
-      return renderToString_internal(children, el, idx)
-    return children.map((c, i) => renderToString_internal(c, el, i)).join("")
+
+  const children = props.children
+  if (isExoticType(type)) {
+    if (type === $HYDRATION_BOUNDARY) {
+      return `<!--${HYDRATION_BOUNDARY_MARKER}-->${renderToString_internal(
+        children,
+        el,
+        idx
+      )}<!--/${HYDRATION_BOUNDARY_MARKER}-->`
+    }
+
+    return renderToString_internal(children, el, idx)
   }
 
   if (typeof type !== "string") {
