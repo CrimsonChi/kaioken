@@ -38,7 +38,7 @@ export const HydrationBoundaryContext = createContext<{
   events: string[]
 }>(null!)
 
-export function HydrationBoundary<T extends HydrationBoundaryMode>(
+export function Experimental_HydrationBoundary<T extends HydrationBoundaryMode>(
   props: HydrationBoundaryProps<T>
 ) {
   const provider = createElement(

@@ -1,4 +1,4 @@
-import { HydrationBoundary } from "kaioken/ssr"
+import { Experimental_HydrationBoundary } from "kaioken/ssr"
 import Counter from "./Counter"
 import { createContext, Derive, For, useSignal } from "kaioken"
 import ElementBindingsExample from "shared/src/ElementBindingsExample"
@@ -33,13 +33,13 @@ export function Page() {
     <>
       <button onclick={() => (toggled.value = !toggled.value)}>toggle</button>
       <Num />
-      <HydrationBoundary
+      <Experimental_HydrationBoundary
         mode="interaction"
         events={["pointerdown", "keydown", "focus", "input", "mousemove"]}
       >
         123
         {toggled.value && <Counter />}
-      </HydrationBoundary>
+      </Experimental_HydrationBoundary>
     </>
   )
 }
