@@ -63,7 +63,8 @@ export interface AstNode {
 
 export function findNode(
   node: AstNode,
-  predicate: (node: AstNode) => boolean
+  predicate: (node: AstNode) => boolean,
+  maxDepth = Infinity
 ): AstNode | null {
   let res: AstNode | null = null
   walk(node, {
@@ -72,6 +73,7 @@ export function findNode(
         res = node
         ctx.exit()
       }
+      if (ctx.stack.length >= maxDepth) ctx.exitBranch()
     },
   })
   return res

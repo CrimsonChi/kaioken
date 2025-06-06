@@ -466,13 +466,13 @@ function createHMRRegistrationBlurb(
   if (isVirtualModule) {
     entries = Array.from(hotVars).map(({ name, type }) => {
       if (type !== "component") {
-        return `    ${name}: {
+        return `    "${name}": {
       type: "${type}",
       value: ${name}
     }`
       }
 
-      return `    ${name}: {
+      return `    "${name}": {
         type: "component",
         value: ${name},
         hooks: [],
@@ -483,7 +483,7 @@ function createHMRRegistrationBlurb(
     entries = Array.from(hotVars).map(({ name, type }) => {
       const line = findHotVarLineInSrc(src, name)
       if (type !== "component") {
-        return `    ${name}: {
+        return `    "${name}": {
       type: "${type}",
       value: ${name},
       link: "${fileLinkFormatter(filePath, line)}"
@@ -498,7 +498,7 @@ function createHMRRegistrationBlurb(
       const args = componentHookArgs[name].map(([name, args]) => {
         return `{ name: "${name}", args: "${args}" }`
       })
-      return `    ${name}: {
+      return `    "${name}": {
       type: "component",
       value: ${name},
       hooks: [${args.join(",")}],
@@ -609,7 +609,7 @@ function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
     }
 
     for (const aliasHandler of aliasHandlers) {
-      if (AST.findNode(node, aliasHandler.nodeContainsAliasCall)) {
+      if (AST.findNode(node, aliasHandler.nodeContainsAliasCall, 1)) {
         addHotVarDesc(node, hotVars, aliasHandler.name)
         break
       }
