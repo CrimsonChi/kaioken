@@ -27,7 +27,7 @@ export interface KaiokenPluginOptions {
   devtools?: boolean | DevtoolsOptions
 
   /**
-   * Specifies extra paths to be considered for HMR injection
+   * Specifies additional directories (relative to root) to include in transforms.
    * @example ['../path/to/components/']
    */
   include?: string[]

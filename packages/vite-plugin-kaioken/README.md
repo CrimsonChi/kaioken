@@ -34,6 +34,8 @@ kaioken({
   devtools: {
     // Path where the devtools client will be served
     pathname: "/devtools", // default: "/__devtools__"
+    // Optional - function to format file links that will be displayed in the devtools
+    formatFileLink: (path, line) => `vscode://file/${path}:${line}`,
   },
 
   // Additional directories (relative to root) to include in transforms.
