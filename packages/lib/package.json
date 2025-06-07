@@ -61,7 +61,12 @@
     "kaioken",
     "kaiokenjs",
     "kaioken.js",
-    "react"
+    "dom",
+    "jsx",
+    "html",
+    "virtual-dom",
+    "reactive",
+    "signal"
   ],
   "author": "LankyMoose",
   "license": "ISC",
