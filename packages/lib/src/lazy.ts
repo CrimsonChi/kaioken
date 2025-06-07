@@ -35,7 +35,7 @@ const lazyCache: Map<string, LazyState> =
       (window.__KAIOKEN_LAZY_CACHE ??= new Map<string, LazyState>())
     : new Map<string, LazyState>()
 
-function consumeHydrationBoundaryChildren(): {
+function consumeHydrationBoundaryChildren(parentNode: Kaioken.VNode): {
   parent: HTMLElement
   childNodes: Node[]
   startIndex: number
@@ -49,7 +49,7 @@ function consumeHydrationBoundaryChildren(): {
       message:
         "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
       fatal: true,
-      vNode: node.current,
+      vNode: parentNode,
     })
   }
   const parent = boundaryStart.parentElement!
@@ -75,7 +75,7 @@ function consumeHydrationBoundaryChildren(): {
       message:
         "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
       fatal: true,
-      vNode: node.current,
+      vNode: parentNode,
     })
   }
   boundaryEnd.remove()
@@ -125,7 +125,7 @@ export function lazy<T extends LazyImportValue>(
         return fallback
       }
 
-      const thisNode = node.current
+      const thisNode = node.current!
 
       abortHydration.current = () => {
         for (const child of childNodes) {
@@ -135,7 +135,7 @@ export function lazy<T extends LazyImportValue>(
           child.parentNode?.removeChild(child)
         }
         needsHydration.current = false
-        delete thisNode!.lastChildDom
+        delete thisNode.lastChildDom
       }
 
       if (__DEV__) {
@@ -147,9 +147,9 @@ export function lazy<T extends LazyImportValue>(
       }
 
       const { parent, childNodes, startIndex } =
-        consumeHydrationBoundaryChildren()
+        consumeHydrationBoundaryChildren(thisNode)
 
-      thisNode!.lastChildDom = childNodes[childNodes.length - 1] as SomeDom
+      thisNode.lastChildDom = childNodes[childNodes.length - 1] as SomeDom
 
       for (const child of childNodes) {
         if (child instanceof Element) {
@@ -160,7 +160,7 @@ export function lazy<T extends LazyImportValue>(
         if (needsHydration.current === false) return
 
         appCtx.scheduler?.nextIdle(() => {
-          delete thisNode!.lastChildDom
+          delete thisNode.lastChildDom
           needsHydration.current = false
           hydrationStack.push(parent)
           hydrationStack.childIdxStack[
@@ -181,9 +181,7 @@ export function lazy<T extends LazyImportValue>(
               hydrationStack.releaseEvents(child)
             }
           }
-          console.log("lazy - performed syncHydrate")
         })
-        console.log("lazy - queued syncHydrate")
       }
 
       /**
