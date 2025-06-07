@@ -1,5 +1,4 @@
 import {
-  type ViteDevServer,
   type ESBuildOptions,
   type IndexHtmlTransformResult,
   type Plugin,
@@ -28,13 +27,13 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let isProduction = false
   let isBuild = false
 
-  const fileLinkFormatter: FileLinkFormatter =
-    opts?.formatFileLink ||
-    ((path: string, line: number) => `vscode://file/${path}:${line}`)
+  let fileLinkFormatter: FileLinkFormatter = (path: string, line: number) =>
+    `vscode://file/${path}:${line}`
 
   let dtClientPathname = "/__devtools__"
   if (typeof opts?.devtools === "object") {
     dtClientPathname = opts.devtools.pathname ?? dtClientPathname
+    fileLinkFormatter = opts.devtools.formatFileLink ?? fileLinkFormatter
   }
   const dtHostScriptPath = "/__devtools_host__.js"
   let transformedDtHostBuild = ""

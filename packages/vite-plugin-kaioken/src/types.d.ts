@@ -1,12 +1,5 @@
 import type { Plugin } from "vite"
 
-/**
- * Formats the link displayed in devtools to the component's source code
- * @param path the path to the file that contains the component on disk
- * @param line the component's line number
- * @returns {string} the formatted link
- * @default (path) => `vscode://file/${path}`
- */
 export type FileLinkFormatter = (path: string, line: number) => string
 
 export interface DevtoolsOptions {
@@ -15,6 +8,15 @@ export interface DevtoolsOptions {
    * @default "/__devtools__"
    */
   pathname?: string
+
+  /**
+   * Formats the link displayed in devtools to the component's source code
+   * @param path the path to the file that contains the component on disk
+   * @param line the component's line number
+   * @returns {string} the formatted link
+   * @default (path, line) => `vscode://file/${path}:${line}`
+   */
+  formatFileLink?: FileLinkFormatter
 }
 
 export interface KaiokenPluginOptions {
@@ -25,12 +27,10 @@ export interface KaiokenPluginOptions {
   devtools?: boolean | DevtoolsOptions
 
   /**
-   * Specifies extra paths to be included in the build
+   * Specifies extra paths to be considered for HMR injection
    * @example ['../path/to/components/']
    */
   include?: string[]
-
-  formatFileLink?: FileLinkFormatter
 }
 
 export default function kaioken(opts?: KaiokenPluginOptions): Plugin
