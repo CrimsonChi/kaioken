@@ -113,7 +113,7 @@ export function NodeListItem({
 function NodeListItemSiblings({ node }: { node?: Kaioken.VNode }) {
   if (!node) return null
   let nodes = []
-  let n: Kaioken.VNode | undefined = node.sibling
+  let n = node.sibling
   while (n) {
     nodes.push(n)
     n = n.sibling
