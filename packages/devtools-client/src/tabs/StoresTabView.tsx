@@ -192,9 +192,9 @@ function StoreSubscriberAppTree({
 
   if (!root) return null
 
-  const clonedTree = cloneTree(root, (node) => subscribers.has(node as any)) as
-    | KNodeTreeNode
-    | undefined
+  const clonedTree = cloneTree(root, (node) =>
+    subscribers.has(node as any)
+  ) as KNodeTreeNode | null
 
   return (
     <div className="flex flex-col gap-2 p-2 rounded-b border border-white border-opacity-10">

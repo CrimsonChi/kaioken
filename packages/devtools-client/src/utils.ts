@@ -56,25 +56,25 @@ export const nodeContainsNode = (
 }
 
 interface TreeNode {
-  sibling?: TreeNode
-  child?: TreeNode
+  sibling: TreeNode | null
+  child: TreeNode | null
 }
 
 export function cloneTree<T extends TreeNode>(
-  tree: T | undefined,
+  tree: T | null,
   predicate: (node: T) => boolean
-): (T & { ref: T }) | undefined {
+): (T & { ref: T }) | null {
   // Base case: if the node is undefined, return undefined
   if (!tree) {
-    return undefined
+    return null
   }
 
   // Clone the current node if its name starts with 'a'
   const shouldCloneCurrentNode = predicate(tree)
 
   // Recursively clone sibling and child nodes that start with 'a'
-  const clonedSibling = cloneTree<T>(tree.sibling as T | undefined, predicate)
-  const clonedChild = cloneTree<T>(tree.child as T | undefined, predicate)
+  const clonedSibling = cloneTree<T>(tree.sibling as T | null, predicate)
+  const clonedChild = cloneTree<T>(tree.child as T | null, predicate)
 
   // If the current node doesn't start with 'a' but has valid cloned descendants,
   // we need to return the first valid descendant
@@ -88,13 +88,13 @@ export function cloneTree<T extends TreeNode>(
       return clonedChild
     }
     // No valid nodes to clone in this branch
-    return undefined
+    return null
   }
 
   // Clone the current node and attach cloned descendants
   return {
     ref: tree,
-    sibling: clonedSibling,
-    child: clonedChild,
+    sibling: clonedSibling ?? null,
+    child: clonedChild ?? null,
   } as T & { ref: T }
 }
