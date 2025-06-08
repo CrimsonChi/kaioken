@@ -1,42 +1,23 @@
 import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
-import { For, useSignal } from "kaioken"
-
-function shuffle(array: Array<any>) {
-  let currentIndex = array.length
-
-  // While there remain elements to shuffle...
-  while (currentIndex != 0) {
-    // Pick a remaining element...
-    let randomIndex = Math.floor(Math.random() * currentIndex)
-    currentIndex--
-
-    // And swap it with the current element.
-    ;[array[currentIndex], array[randomIndex]] = [
-      array[randomIndex],
-      array[currentIndex],
-    ]
-  }
-}
-
-function spliceRandom(array: Array<any>) {
-  const idx = Math.floor(Math.random() * array.length)
-  array.splice(idx, 1)
-}
+import { useComputed, useEffect, useSignal } from "kaioken"
 
 const Home: Kaioken.FC = () => {
-  const items = useSignal("abcdefghijklmnopqrstuvwxyz".split(""))
-  console.log("Home")
+  const count = useSignal(0)
+  const doubled = useComputed(() => {
+    console.log("doubled")
+    return count.value * 2
+  })
+  useEffect(() => {
+    console.log("Home mounted")
+  }, [])
+
   return (
     <div>
       <h1>Home</h1>
-      <For each={items}>{(item) => <div key={item}>{item}</div>}</For>
-      <button onclick={() => (shuffle(items.value), items.notify())}>
-        Shuffle
-      </button>
-      <button onclick={() => (spliceRandom(items.value), items.notify())}>
-        Splice
-      </button>
+      <p>Count: {count}</p>
+      <p>Doubled: {doubled}</p>
+      <button onclick={() => count.value++}>Increment</button>
     </div>
   )
 }
