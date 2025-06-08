@@ -93,7 +93,6 @@ export function lazy<T extends LazyImportValue>(
       hydrationCtx && renderMode.current === "hydrate"
     )
     const abortHydration = useRef(noop)
-    console.log("LazyComponent - needsHydration", needsHydration.current)
     const requestUpdate = useRequestUpdate()
     if (renderMode.current === "string" || renderMode.current === "stream") {
       return fallback
@@ -103,7 +102,6 @@ export function lazy<T extends LazyImportValue>(
     const withoutQuery = removeQueryString(fn)
     const cachedState = lazyCache.get(withoutQuery)
     if (!cachedState || cachedState.fn !== fn) {
-      console.log("lazy - loading", fn === cachedState?.fn)
       const promise = componentPromiseFn()
       const state: LazyState = {
         fn,
@@ -120,7 +118,6 @@ export function lazy<T extends LazyImportValue>(
       })
 
       if (!needsHydration.current) {
-        console.log("lazy - queued requestUpdate")
         ready.then(() => requestUpdate())
         return fallback
       }
