@@ -26,8 +26,8 @@ export const useDevTools = () => {
       const size = savedSize_raw
         ? (JSON.parse(savedSize_raw) as SavedSize)
         : {
-            width: Math.floor(window.innerWidth / 2),
-            height: Math.floor(window.innerHeight / 2),
+            width: Math.floor(Math.min(1920, window.screen.width) / 2),
+            height: Math.floor(Math.min(1080, window.screen.height) / 2),
           }
       const features = `popup,width=${size.width},height=${size.height};`
 
