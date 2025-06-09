@@ -144,6 +144,7 @@ function updateDom(vNode: VNode) {
   const prevProps: Record<string, any> = vNode.prev?.props ?? {}
   const nextProps: Record<string, any> = vNode.props ?? {}
   const keys = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
+  const isHydration = renderMode.current === "hydrate"
 
   keys.forEach((key) => {
     const prev = prevProps[key],
@@ -183,10 +184,7 @@ function updateDom(vNode: VNode) {
     }
 
     if (!(dom instanceof Text)) {
-      if (
-        prev === next ||
-        (renderMode.current === "hydrate" && dom.getAttribute(key) === next)
-      ) {
+      if (prev === next || (isHydration && dom.getAttribute(key) === next)) {
         return
       }
 
@@ -219,7 +217,6 @@ function deriveSelectElementValue(dom: HTMLSelectElement) {
 }
 
 function setSelectElementValue(dom: HTMLSelectElement, value: any) {
-  console.log("setSelectElementValue", value)
   if (!dom.multiple || value === undefined || value === null || value === "") {
     dom.value = value
     return
