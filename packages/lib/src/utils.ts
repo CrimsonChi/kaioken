@@ -1,5 +1,11 @@
 import { node, nodeToCtxMap, renderMode } from "./globals.js"
-import { $CONTEXT_PROVIDER, $FRAGMENT, FLAG, REGEX_UNIT } from "./constants.js"
+import {
+  $CONTEXT_PROVIDER,
+  $FRAGMENT,
+  $HYDRATION_BOUNDARY,
+  FLAG,
+  REGEX_UNIT,
+} from "./constants.js"
 import { unwrap } from "./signals/utils.js"
 import { KaiokenError } from "./error.js"
 import type { AppContext } from "./appContext"
@@ -83,7 +89,11 @@ function isVNode(thing: unknown): thing is VNode {
 }
 
 function isExoticType(type: VNode["type"]): type is Kaioken.ExoticSymbol {
-  return type === $FRAGMENT || type === $CONTEXT_PROVIDER
+  return (
+    type === $FRAGMENT ||
+    type === $CONTEXT_PROVIDER ||
+    type === $HYDRATION_BOUNDARY
+  )
 }
 
 function isFragment(vNode: VNode): vNode is VNode & { type: typeof $FRAGMENT } {
