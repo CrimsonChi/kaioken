@@ -102,7 +102,7 @@ export function prepareHydrationBoundaries(
   const extraModules: Record<string, string> = {}
   const bodyNodes = ast.body as AstNode[]
   const hydrationBoundaryAliasHandler = createAliasHandler(
-    "HydrationBoundary",
+    "Experimental_HydrationBoundary",
     "kaioken/ssr"
   )
   const importNodes: AstNode[] = []
