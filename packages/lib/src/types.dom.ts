@@ -25,7 +25,9 @@ type StyleObject = Prettify<
       | "getPropertyValue"
       | "getPropertyPriority"
       | typeof Symbol.iterator
-    >
+    > & {
+      [Key in `--${string}`]: string | number
+    }
   >
 >
 
