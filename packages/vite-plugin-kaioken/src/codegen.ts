@@ -20,9 +20,7 @@ export function injectHMRContextPreamble(
   isVirtualModule: boolean
 ) {
   try {
-    createUnnamedWatchInserts(code, ast.body as AstNode[])
-
-    const hotVars = findHotVars(ast.body as AstNode[], filePath)
+    const hotVars = findHotVars(code, ast.body as AstNode[], filePath)
     if (hotVars.size === 0 && !code.hasChanged()) return
 
     code.prepend(`
@@ -52,6 +50,505 @@ if (import.meta.hot && "window" in globalThis) {
   } catch (error) {
     console.error(error)
   }
+}
+
+type HotVarDesc = {
+  type: string
+  name: string
+}
+
+function createHMRRegistrationBlurb(
+  hotVars: Set<HotVarDesc>,
+  componentHookArgs: Record<string, HookToArgs[]>,
+  fileLinkFormatter: FileLinkFormatter,
+  filePath: string,
+  isVirtualModule: boolean
+) {
+  let entries: string[] = []
+  if (isVirtualModule) {
+    entries = Array.from(hotVars).map(({ name, type }) => {
+      if (type !== "component") {
+        return `    "${name}": {
+      type: "${type}",
+      value: ${name}
+    }`
+      }
+
+      return `    "${name}": {
+        type: "component",
+        value: ${name},
+        hooks: [],
+      }`
+    })
+  } else {
+    const src = fs.readFileSync(filePath, "utf-8")
+    entries = Array.from(hotVars).map(({ name, type }) => {
+      const line = findHotVarLineInSrc(src, name)
+      if (type !== "component") {
+        return `    "${name}": {
+      type: "${type}",
+      value: ${name},
+      link: "${fileLinkFormatter(filePath, line)}"
+    }`
+      }
+      if (!componentHookArgs[name]) {
+        console.error(
+          "[vite-plugin-kaioken]: failed to parse component hooks",
+          name
+        )
+      }
+      const args = componentHookArgs[name].map(([name, args]) => {
+        return `{ name: "${name}", args: "${args}" }`
+      })
+      return `    "${name}": {
+      type: "component",
+      value: ${name},
+      hooks: [${args.join(",")}],
+      link: "${fileLinkFormatter(filePath, line)}"
+    }`
+    })
+  }
+
+  return `
+  window.__kaioken.HMRContext?.register({
+${entries.join(",\n")}
+  });`
+}
+
+function findHotVarLineInSrc(src: string, name: string) {
+  const lines = src.split("\n")
+  const potentialMatches = [
+    `const ${name}`,
+    `let ${name}`,
+    `var ${name}`,
+    `function ${name}`,
+    `export const ${name}`,
+    `export let ${name}`,
+    `export var ${name}`,
+    `export default ${name}`,
+    `export function ${name}`,
+    `export default function ${name}`,
+  ]
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    for (let j = 0; j < potentialMatches.length; j++) {
+      if (line.startsWith(potentialMatches[j])) return i + 1
+    }
+  }
+  return 0
+}
+
+function createAliasHandler(name: string, namespace = "kaioken") {
+  const aliases = new Set<string>()
+
+  const isMatchingCallExpression = (node: AstNode) =>
+    node.type === "CallExpression" &&
+    node.callee?.type === "Identifier" &&
+    typeof node.callee.name === "string" &&
+    aliases.has(node.callee.name)
+
+  const addAliases = (node: AstNode): boolean => {
+    if (node.source?.value !== namespace) return false
+    let didAdd = false
+    const specifiers = node.specifiers || []
+    for (let i = 0; i < specifiers.length; i++) {
+      const specifier = specifiers[i]
+      if (
+        specifier.imported &&
+        specifier.imported.name === name &&
+        !!specifier.local
+      ) {
+        aliases.add(specifier.local.name)
+        didAdd = true
+      }
+    }
+    return didAdd
+  }
+  return { name, aliases, addAliases, isMatchingCallExpression }
+}
+
+function createNamespaceAliasHandler(name: string) {
+  const aliases = new Set<string>()
+
+  const addAliases = (node: AstNode) => {
+    if (node.source?.value !== name) return
+    const specifiers = node.specifiers || []
+    for (let i = 0; i < specifiers.length; i++) {
+      const specifier = specifiers[i]
+      if (specifier.type === "ImportNamespaceSpecifier" && !!specifier.local) {
+        aliases.add(specifier.local.name)
+        break
+      }
+    }
+  }
+
+  return { name, aliases, addAliases }
+}
+
+/**
+ * These represent the valid parent stack of a hot var. After the parents,
+ * any combination of Property or ObjectExpression is allowed until the CallExpression.
+ */
+const allowedHotVarParentStacks: Array<AstNode["type"][]> = [
+  ["VariableDeclaration", "VariableDeclarator"],
+  ["ExportNamedDeclaration", "VariableDeclaration", "VariableDeclarator"],
+]
+
+function findHotVars(
+  code: MagicString,
+  bodyNodes: AstNode[],
+  _id: string
+): Set<HotVarDesc> {
+  const hotVars = new Set<HotVarDesc>()
+
+  const aliasHandlers = [
+    "createStore",
+    "signal",
+    "computed",
+    "watch",
+    "createContext",
+    "lazy",
+  ].map((name) => createAliasHandler(name))
+
+  for (const node of bodyNodes) {
+    if (node.type === "ImportDeclaration") {
+      for (const aliasHandler of aliasHandlers) {
+        aliasHandler.addAliases(node)
+      }
+      continue
+    }
+
+    if (isComponent(node, bodyNodes)) {
+      addHotVarDesc(node, hotVars, "component")
+      continue
+    }
+
+    for (const aliasHandler of aliasHandlers) {
+      AST.walk(node, {
+        CallExpression: (node, ctx) => {
+          if (!aliasHandler.isMatchingCallExpression(node)) {
+            return ctx.exit()
+          }
+          if (
+            aliasHandler.name === "watch" &&
+            ctx.stack.length === 1 &&
+            ctx.stack[0].type === "ExpressionStatement"
+          ) {
+            code.appendRight(node.start, UNNAMED_WATCH_PREAMBLE)
+            return ctx.exit()
+          }
+
+          const matchingParentStack = allowedHotVarParentStacks.find(
+            (stack) => {
+              return stack.every((type, i) => ctx.stack[i]?.type === type)
+            }
+          )
+          if (!matchingParentStack) {
+            return ctx.exit()
+          }
+          const remainingStack = ctx.stack.slice(matchingParentStack.length)
+          if (
+            remainingStack.some(
+              (n) => n.type !== "ObjectExpression" && n.type !== "Property"
+            )
+          ) {
+            return ctx.exit()
+          }
+
+          const name = ctx.stack.reduce((acc, item) => {
+            switch (item.type) {
+              case "VariableDeclarator":
+                return item.id!.name
+              case "Property":
+                if (!item.key) return acc
+                if (item.key.name) return `${acc}.${item.key.name}`
+                if (item.key.value) return `${acc}['${item.key.value}']`
+                return acc
+            }
+            return acc
+          }, "")
+
+          hotVars.add({ type: aliasHandler.name, name })
+          ctx.exit()
+        },
+      })
+    }
+  }
+
+  return hotVars
+}
+
+function isFuncDecOrExpr(node: AstNode | undefined) {
+  if (!node) return false
+  if (node.type === "VariableDeclaration") {
+    return isFuncDecOrExpr(node.declarations?.[0]?.init)
+  }
+  return [
+    "FunctionDeclaration",
+    "FunctionExpression",
+    "ArrowFunctionExpression",
+  ].includes(node.type)
+}
+
+function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
+  if (isFuncDecOrExpr(node)) {
+    return true
+  }
+  switch (node.type) {
+    case "VariableDeclaration":
+    case "ExportNamedDeclaration":
+      if (node.declaration) {
+        return isFuncDecOrExpr(node.declaration)
+      } else if (node.declarations) {
+        return !!AST.findNode(node, isFuncDecOrExpr)
+      }
+      const name = findNodeName(node)
+      if (name === null) return false
+      const dec = findFunctionBodyNodes(node, name, bodyNodes)
+      if (!dec) return false
+      return isFuncDecOrExpr(dec[0])
+    case "ExportDefaultDeclaration":
+      return isFuncDecOrExpr(node.declaration)
+  }
+
+  return false
+}
+
+function isComponent(node: AstNode, bodyNodes: AstNode[]): boolean {
+  const isTlf = isTopLevelFunction(node, bodyNodes)
+  if (!isTlf) return false
+  const name = findNodeName(node)
+  if (name === null) return false
+  const charCode = name.charCodeAt(0)
+  return charCode >= 65 && charCode <= 90
+}
+
+function findNodeName(node: AstNode): string | null {
+  if (node.id?.name) return node.id.name
+  if (node.declaration?.id?.name) return node.declaration.id.name
+  if (node.declaration?.declarations?.[0]?.id?.name)
+    return node.declaration.declarations[0].id.name
+  if (node.declarations?.[0]?.id?.name) return node.declarations[0].id.name
+  return null
+}
+
+function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
+  const name = findNodeName(node)
+  if (name == null && type === "component") {
+    console.error("[vite-plugin-kaioken]: failed to find component name", node)
+    throw new Error("[vite-plugin-kaioken]: Component name not found")
+  }
+  if (name !== null) {
+    names.add({ type, name })
+  }
+}
+
+type ComponentName = string
+type HookName = string
+type HookToArgs = [HookName, string]
+
+function getComponentHookArgs(
+  bodyNodes: AstNode[],
+  code: string,
+  filePath: string
+): Record<string, HookToArgs[]> {
+  const res: Record<ComponentName, HookToArgs[]> = {}
+  const kaiokenNamespaceAliasHandler = createNamespaceAliasHandler("kaioken")
+  for (const node of bodyNodes) {
+    if (node.type === "ImportDeclaration") {
+      kaiokenNamespaceAliasHandler.addAliases(node)
+      continue
+    }
+    if (isComponent(node, bodyNodes)) {
+      const name = findNodeName(node)
+      if (name === null) {
+        console.error(
+          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component name)",
+          node.type,
+          node.start
+        )
+        continue
+      }
+
+      const hookArgsArr: HookToArgs[] = (res[name] = [])
+      const body = findFunctionBodyNodes(node, name, bodyNodes)
+      if (!body) {
+        /**
+         * todo: ensure that if we didn't find a body, it's because
+         * the function _actually_ doesn't have a body, eg.
+         * const App = () => (<div>Hello World</div>)
+         */
+        continue
+      }
+
+      for (const bodyNode of body) {
+        switch (bodyNode.type) {
+          case "VariableDeclaration":
+            if (!bodyNode.declarations) continue
+            for (const dec of bodyNode.declarations) {
+              if (
+                // handle `const count = useSignal(1)`
+                dec.init?.callee?.name?.startsWith("use") &&
+                dec.init.arguments
+              ) {
+                try {
+                  const args = argsToString(dec.init.arguments, code)
+                  hookArgsArr.push([dec.init.callee.name, args])
+                } catch (error) {
+                  console.error(
+                    "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
+                    filePath,
+                    dec.init.callee.name,
+                    error
+                  )
+                }
+              } else if (
+                // handle `const count = kaioken.useSignal(1)`
+                dec.init?.callee?.type === "MemberExpression" &&
+                dec.init.callee.object?.name &&
+                kaiokenNamespaceAliasHandler.aliases.has(
+                  dec.init.callee.object.name
+                ) &&
+                dec.init.callee.property?.name?.startsWith("use") &&
+                dec.init.arguments
+              ) {
+                try {
+                  const args = argsToString(dec.init.arguments, code)
+                  hookArgsArr.push([dec.init.callee.property.name, args])
+                } catch (error) {
+                  console.error(
+                    "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration -> MemberExpression)",
+                    filePath,
+                    dec.init.callee.property.name,
+                    error
+                  )
+                }
+              }
+            }
+            break
+          case "ExpressionStatement":
+            if (
+              // handle `useEffect(() => {}, [])`
+              bodyNode.expression?.type === "CallExpression" &&
+              bodyNode.expression.callee?.name?.startsWith("use") &&
+              bodyNode.expression.arguments
+            ) {
+              try {
+                const args = argsToString(bodyNode.expression.arguments, code)
+                hookArgsArr.push([bodyNode.expression.callee.name, args])
+              } catch (error) {
+                console.error(
+                  "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
+                  filePath,
+                  bodyNode.expression.callee.name,
+                  error
+                )
+              }
+            } else if (
+              // handle `kaioken.useEffect(() => {}, [])`
+              bodyNode.expression?.type === "CallExpression" &&
+              bodyNode.expression.callee?.type === "MemberExpression" &&
+              bodyNode.expression.callee.object?.name &&
+              kaiokenNamespaceAliasHandler.aliases.has(
+                bodyNode.expression.callee.object.name
+              ) &&
+              bodyNode.expression.callee.property?.name?.startsWith("use") &&
+              bodyNode.expression.arguments
+            ) {
+              try {
+                const args = argsToString(bodyNode.expression.arguments, code)
+                hookArgsArr.push([
+                  bodyNode.expression.callee.property.name,
+                  args,
+                ])
+              } catch (error) {
+                console.error(
+                  "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement -> MemberExpression)",
+                  filePath,
+                  bodyNode.expression.callee.property.name,
+                  error
+                )
+              }
+            }
+            break
+        }
+      }
+    }
+  }
+  return res
+}
+
+function findFunctionBodyNodes(
+  node: AstNode,
+  name: string,
+  bodyNodes: AstNode[]
+): null | AstNode[] {
+  let dec = node.declaration
+  if (!dec) {
+    for (const _node of bodyNodes) {
+      if (_node.type === "VariableDeclaration") {
+        if (_node.declarations?.[0]?.id?.name === name) {
+          dec = _node
+          break
+        }
+      } else if (_node.type === "FunctionDeclaration") {
+        if (_node.id?.name === name) {
+          dec = _node
+          break
+        }
+      }
+    }
+  }
+  if (!dec) {
+    throw new Error(
+      "[vite-plugin-kaioken]: failed to find declaration for component"
+    )
+  }
+
+  if (
+    dec.type === "FunctionDeclaration" &&
+    dec.body &&
+    !Array.isArray(dec.body) &&
+    dec.body.type === "BlockStatement"
+  ) {
+    return dec.body.body as AstNode[]
+  } else if (dec.type === "VariableDeclaration") {
+    if (!Array.isArray(dec.declarations)) {
+      return null
+    }
+    for (const _dec of dec.declarations) {
+      if (_dec.id?.name !== name) continue
+      if (
+        _dec.init?.type === "ArrowFunctionExpression" ||
+        _dec.init?.type === "FunctionExpression"
+      ) {
+        return (_dec.init.body as AstNode).body as AstNode[]
+      } else if (_dec.init?.type === "CallExpression" && _dec.init.arguments) {
+        // accumulate argNodes that are functions and return JSX
+        const nodes: AstNode[] = []
+        for (const arg of _dec.init.arguments) {
+          if (
+            isFuncDecOrExpr(arg) &&
+            arg.body &&
+            !Array.isArray(arg.body) &&
+            Array.isArray(arg.body.body)
+          ) {
+            nodes.push(...arg.body.body)
+          }
+        }
+        return nodes
+      }
+    }
+  }
+  return null
+}
+
+function getArgValues(args: AstNode[], code: string) {
+  return args.map((arg) => code.substring(arg.start, arg.end))
+}
+
+function argsToString(args: AstNode[], code: string) {
+  return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
 }
 
 function findFirstParentOfType(stack: AstNode[], type: AstNode["type"]) {
@@ -448,464 +945,4 @@ export default BoundaryChildrenLoader;`
     })
   }
   return { extraModules }
-}
-
-type HotVarDesc = {
-  type: string
-  name: string
-}
-
-function createHMRRegistrationBlurb(
-  hotVars: Set<HotVarDesc>,
-  componentHookArgs: Record<string, HookToArgs[]>,
-  fileLinkFormatter: FileLinkFormatter,
-  filePath: string,
-  isVirtualModule: boolean
-) {
-  let entries: string[] = []
-  if (isVirtualModule) {
-    entries = Array.from(hotVars).map(({ name, type }) => {
-      if (type !== "component") {
-        return `    "${name}": {
-      type: "${type}",
-      value: ${name}
-    }`
-      }
-
-      return `    "${name}": {
-        type: "component",
-        value: ${name},
-        hooks: [],
-      }`
-    })
-  } else {
-    const src = fs.readFileSync(filePath, "utf-8")
-    entries = Array.from(hotVars).map(({ name, type }) => {
-      const line = findHotVarLineInSrc(src, name)
-      if (type !== "component") {
-        return `    "${name}": {
-      type: "${type}",
-      value: ${name},
-      link: "${fileLinkFormatter(filePath, line)}"
-    }`
-      }
-      if (!componentHookArgs[name]) {
-        console.error(
-          "[vite-plugin-kaioken]: failed to parse component hooks",
-          name
-        )
-      }
-      const args = componentHookArgs[name].map(([name, args]) => {
-        return `{ name: "${name}", args: "${args}" }`
-      })
-      return `    "${name}": {
-      type: "component",
-      value: ${name},
-      hooks: [${args.join(",")}],
-      link: "${fileLinkFormatter(filePath, line)}"
-    }`
-    })
-  }
-
-  return `
-  window.__kaioken.HMRContext?.register({
-${entries.join(",\n")}
-  });`
-}
-
-function findHotVarLineInSrc(src: string, name: string) {
-  const lines = src.split("\n")
-  const potentialMatches = [
-    `const ${name}`,
-    `let ${name}`,
-    `var ${name}`,
-    `function ${name}`,
-    `export const ${name}`,
-    `export let ${name}`,
-    `export var ${name}`,
-    `export default ${name}`,
-    `export function ${name}`,
-    `export default function ${name}`,
-  ]
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    for (let j = 0; j < potentialMatches.length; j++) {
-      if (line.startsWith(potentialMatches[j])) return i + 1
-    }
-  }
-  return 0
-}
-
-function createAliasHandler(name: string, namespace = "kaioken") {
-  const aliases = new Set<string>()
-
-  const nodeContainsAliasCall = (node: AstNode) =>
-    node.type === "CallExpression" &&
-    node.callee?.type === "Identifier" &&
-    typeof node.callee.name === "string" &&
-    aliases.has(node.callee.name)
-
-  const addAliases = (node: AstNode): boolean => {
-    if (node.source?.value !== namespace) return false
-    let didAdd = false
-    const specifiers = node.specifiers || []
-    for (let i = 0; i < specifiers.length; i++) {
-      const specifier = specifiers[i]
-      if (
-        specifier.imported &&
-        specifier.imported.name === name &&
-        !!specifier.local
-      ) {
-        aliases.add(specifier.local.name)
-        didAdd = true
-      }
-    }
-    return didAdd
-  }
-  return { name, aliases, addAliases, nodeContainsAliasCall }
-}
-
-function createNamespaceAliasHandler(name: string) {
-  const aliases = new Set<string>()
-
-  const addAliases = (node: AstNode) => {
-    if (node.source?.value !== name) return
-    const specifiers = node.specifiers || []
-    for (let i = 0; i < specifiers.length; i++) {
-      const specifier = specifiers[i]
-      if (specifier.type === "ImportNamespaceSpecifier" && !!specifier.local) {
-        aliases.add(specifier.local.name)
-        break
-      }
-    }
-  }
-
-  return { name, aliases, addAliases }
-}
-
-function findHotVars(bodyNodes: AstNode[], _id: string): Set<HotVarDesc> {
-  const hotVars = new Set<HotVarDesc>()
-
-  const aliasHandlers = [
-    "createStore",
-    "signal",
-    "computed",
-    "watch",
-    "createContext",
-    "lazy",
-  ].map((name) => createAliasHandler(name))
-
-  for (const node of bodyNodes) {
-    if (node.type === "ImportDeclaration") {
-      for (const aliasHandler of aliasHandlers) {
-        aliasHandler.addAliases(node)
-      }
-      continue
-    }
-
-    if (isComponent(node, bodyNodes)) {
-      addHotVarDesc(node, hotVars, "component")
-      continue
-    }
-
-    for (const aliasHandler of aliasHandlers) {
-      if (AST.findNode(node, aliasHandler.nodeContainsAliasCall, 1)) {
-        addHotVarDesc(node, hotVars, aliasHandler.name)
-        break
-      }
-    }
-  }
-
-  return hotVars
-}
-
-function isFuncDecOrExpr(node: AstNode | undefined) {
-  if (!node) return false
-  if (node.type === "VariableDeclaration") {
-    return isFuncDecOrExpr(node.declarations?.[0]?.init)
-  }
-  return [
-    "FunctionDeclaration",
-    "FunctionExpression",
-    "ArrowFunctionExpression",
-  ].includes(node.type)
-}
-
-function isTopLevelFunction(node: AstNode, bodyNodes: AstNode[]): boolean {
-  if (isFuncDecOrExpr(node)) {
-    return true
-  }
-  switch (node.type) {
-    case "VariableDeclaration":
-    case "ExportNamedDeclaration":
-      if (node.declaration) {
-        return isFuncDecOrExpr(node.declaration)
-      } else if (node.declarations) {
-        return !!AST.findNode(node, isFuncDecOrExpr)
-      }
-      const name = findNodeName(node)
-      if (name === null) return false
-      const dec = findFunctionBodyNodes(node, name, bodyNodes)
-      if (!dec) return false
-      return isFuncDecOrExpr(dec[0])
-    case "ExportDefaultDeclaration":
-      return isFuncDecOrExpr(node.declaration)
-  }
-
-  return false
-}
-
-function isComponent(node: AstNode, bodyNodes: AstNode[]): boolean {
-  const isTlf = isTopLevelFunction(node, bodyNodes)
-  if (!isTlf) return false
-  const name = findNodeName(node)
-  if (name === null) return false
-  const charCode = name.charCodeAt(0)
-  return charCode >= 65 && charCode <= 90
-}
-
-function findNodeName(node: AstNode): string | null {
-  if (node.id?.name) return node.id.name
-  if (node.declaration?.id?.name) return node.declaration.id.name
-  if (node.declaration?.declarations?.[0]?.id?.name)
-    return node.declaration.declarations[0].id.name
-  if (node.declarations?.[0]?.id?.name) return node.declarations[0].id.name
-  return null
-}
-
-function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
-  const name = findNodeName(node)
-  if (name == null && type === "component") {
-    console.error("[vite-plugin-kaioken]: failed to find component name", node)
-    throw new Error("[vite-plugin-kaioken]: Component name not found")
-  }
-  if (name !== null) {
-    names.add({ type, name })
-  }
-}
-
-type ComponentName = string
-type HookName = string
-type HookToArgs = [HookName, string]
-
-function getComponentHookArgs(
-  bodyNodes: AstNode[],
-  code: string,
-  filePath: string
-): Record<string, HookToArgs[]> {
-  const res: Record<ComponentName, HookToArgs[]> = {}
-  const kaiokenNamespaceAliasHandler = createNamespaceAliasHandler("kaioken")
-  for (const node of bodyNodes) {
-    if (node.type === "ImportDeclaration") {
-      kaiokenNamespaceAliasHandler.addAliases(node)
-      continue
-    }
-    if (isComponent(node, bodyNodes)) {
-      const name = findNodeName(node)
-      if (name === null) {
-        console.error(
-          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component name)",
-          node.type,
-          node.start
-        )
-        continue
-      }
-
-      const hookArgsArr: HookToArgs[] = (res[name] = [])
-      const body = findFunctionBodyNodes(node, name, bodyNodes)
-      if (!body) {
-        /**
-         * todo: ensure that if we didn't find a body, it's because
-         * the function _actually_ doesn't have a body, eg.
-         * const App = () => (<div>Hello World</div>)
-         */
-        continue
-      }
-
-      for (const bodyNode of body) {
-        switch (bodyNode.type) {
-          case "VariableDeclaration":
-            if (!bodyNode.declarations) continue
-            for (const dec of bodyNode.declarations) {
-              if (
-                // handle `const count = useSignal(1)`
-                dec.init?.callee?.name?.startsWith("use") &&
-                dec.init.arguments
-              ) {
-                try {
-                  const args = argsToString(dec.init.arguments, code)
-                  hookArgsArr.push([dec.init.callee.name, args])
-                } catch (error) {
-                  console.error(
-                    "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
-                    filePath,
-                    dec.init.callee.name,
-                    error
-                  )
-                }
-              } else if (
-                // handle `const count = kaioken.useSignal(1)`
-                dec.init?.callee?.type === "MemberExpression" &&
-                dec.init.callee.object?.name &&
-                kaiokenNamespaceAliasHandler.aliases.has(
-                  dec.init.callee.object.name
-                ) &&
-                dec.init.callee.property?.name?.startsWith("use") &&
-                dec.init.arguments
-              ) {
-                try {
-                  const args = argsToString(dec.init.arguments, code)
-                  hookArgsArr.push([dec.init.callee.property.name, args])
-                } catch (error) {
-                  console.error(
-                    "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration -> MemberExpression)",
-                    filePath,
-                    dec.init.callee.property.name,
-                    error
-                  )
-                }
-              }
-            }
-            break
-          case "ExpressionStatement":
-            if (
-              // handle `useEffect(() => {}, [])`
-              bodyNode.expression?.type === "CallExpression" &&
-              bodyNode.expression.callee?.name?.startsWith("use") &&
-              bodyNode.expression.arguments
-            ) {
-              try {
-                const args = argsToString(bodyNode.expression.arguments, code)
-                hookArgsArr.push([bodyNode.expression.callee.name, args])
-              } catch (error) {
-                console.error(
-                  "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
-                  filePath,
-                  bodyNode.expression.callee.name,
-                  error
-                )
-              }
-            } else if (
-              // handle `kaioken.useEffect(() => {}, [])`
-              bodyNode.expression?.type === "CallExpression" &&
-              bodyNode.expression.callee?.type === "MemberExpression" &&
-              bodyNode.expression.callee.object?.name &&
-              kaiokenNamespaceAliasHandler.aliases.has(
-                bodyNode.expression.callee.object.name
-              ) &&
-              bodyNode.expression.callee.property?.name?.startsWith("use") &&
-              bodyNode.expression.arguments
-            ) {
-              try {
-                const args = argsToString(bodyNode.expression.arguments, code)
-                hookArgsArr.push([
-                  bodyNode.expression.callee.property.name,
-                  args,
-                ])
-              } catch (error) {
-                console.error(
-                  "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement -> MemberExpression)",
-                  filePath,
-                  bodyNode.expression.callee.property.name,
-                  error
-                )
-              }
-            }
-            break
-        }
-      }
-    }
-  }
-  return res
-}
-
-function findFunctionBodyNodes(
-  node: AstNode,
-  name: string,
-  bodyNodes: AstNode[]
-): null | AstNode[] {
-  let dec = node.declaration
-  if (!dec) {
-    for (const _node of bodyNodes) {
-      if (_node.type === "VariableDeclaration") {
-        if (_node.declarations?.[0]?.id?.name === name) {
-          dec = _node
-          break
-        }
-      } else if (_node.type === "FunctionDeclaration") {
-        if (_node.id?.name === name) {
-          dec = _node
-          break
-        }
-      }
-    }
-  }
-  if (!dec) {
-    throw new Error(
-      "[vite-plugin-kaioken]: failed to find declaration for component"
-    )
-  }
-
-  if (
-    dec.type === "FunctionDeclaration" &&
-    dec.body &&
-    !Array.isArray(dec.body) &&
-    dec.body.type === "BlockStatement"
-  ) {
-    return dec.body.body as AstNode[]
-  } else if (dec.type === "VariableDeclaration") {
-    if (!Array.isArray(dec.declarations)) {
-      return null
-    }
-    for (const _dec of dec.declarations) {
-      if (_dec.id?.name !== name) continue
-      if (
-        _dec.init?.type === "ArrowFunctionExpression" ||
-        _dec.init?.type === "FunctionExpression"
-      ) {
-        return (_dec.init.body as AstNode).body as AstNode[]
-      } else if (_dec.init?.type === "CallExpression" && _dec.init.arguments) {
-        // accumulate argNodes that are functions and return JSX
-        const nodes: AstNode[] = []
-        for (const arg of _dec.init.arguments) {
-          if (
-            isFuncDecOrExpr(arg) &&
-            arg.body &&
-            !Array.isArray(arg.body) &&
-            Array.isArray(arg.body.body)
-          ) {
-            nodes.push(...arg.body.body)
-          }
-        }
-        return nodes
-      }
-    }
-  }
-  return null
-}
-
-function getArgValues(args: AstNode[], code: string) {
-  return args.map((arg) => code.substring(arg.start, arg.end))
-}
-
-function argsToString(args: AstNode[], code: string) {
-  return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
-}
-
-function createUnnamedWatchInserts(code: MagicString, nodes: AstNode[]) {
-  const watchAliasHandler = createAliasHandler("watch")
-
-  for (const node of nodes) {
-    if (node.type === "ImportDeclaration") {
-      watchAliasHandler.addAliases(node)
-      continue
-    }
-    if (AST.findNode(node, watchAliasHandler.nodeContainsAliasCall)) {
-      const nameSet = new Set<any>()
-      addHotVarDesc(node, nameSet, "unnamedWatch")
-      if (nameSet.size === 0) {
-        code.appendRight(node.start, UNNAMED_WATCH_PREAMBLE)
-      }
-    }
-  }
 }

@@ -6,7 +6,6 @@ type AppRoute = {
   fallthrough?: boolean
 }
 
-const KeyedListExample = lazy(() => import("shared/src/KeyedListExample"))
 const FilteredListExample = lazy(() => import("shared/src/FilteredListExample"))
 const BigListExample = lazy(() => import("shared/src/BigListExample"))
 const ContextExample = lazy(() => import("shared/src/ContextExample"))
@@ -31,7 +30,7 @@ const WebComponentExample = lazy(() => import("shared/src/WebComponentExample"))
 export const ROUTES: Record<string, AppRoute> = {
   "/keyed-list-example": {
     title: "Keyed list",
-    component: KeyedListExample,
+    component: lazy(() => import("shared/src/KeyedListExample")),
   },
   "/filtered-list-example": {
     title: "Filtered list",

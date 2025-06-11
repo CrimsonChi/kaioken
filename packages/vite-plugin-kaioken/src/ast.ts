@@ -7,6 +7,7 @@ const types = [
   "BinaryExpression",
   "ImportDefaultSpecifier",
   "ExportNamedDeclaration",
+  "ExportDefaultDeclaration",
   "FunctionDeclaration",
   "FunctionExpression",
   "BlockStatement",

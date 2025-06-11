@@ -1,12 +1,21 @@
 import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
-import { useComputed, useEffect, useSignal } from "kaioken"
+import { signal, useComputed, useEffect, watch } from "kaioken"
+
+const state = {
+  count: {
+    actual: signal(0),
+  },
+}
+
+watch(() => {
+  console.log("~~~~~ count changed 123 45 asd", state.count.actual.value)
+})
 
 const Home: Kaioken.FC = () => {
-  const count = useSignal(0)
   const doubled = useComputed(() => {
     console.log("doubled")
-    return count.value * 2
+    return state.count.actual.value * 2
   })
   useEffect(() => {
     console.log("Home mounted")
@@ -15,9 +24,9 @@ const Home: Kaioken.FC = () => {
   return (
     <div>
       <h1>Home</h1>
-      <p>Count: {count}</p>
+      <p>Count: {state.count.actual}</p>
       <p>Doubled: {doubled}</p>
-      <button onclick={() => count.value++}>Increment</button>
+      <button onclick={() => state.count.actual.value++}>Increment</button>
     </div>
   )
 }
