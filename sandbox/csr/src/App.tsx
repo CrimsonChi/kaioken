@@ -4,18 +4,18 @@ import { signal, useComputed, useEffect, watch } from "kaioken"
 
 const state = {
   count: {
-    actual: signal(0),
+    ['actu/"al']: signal(0),
   },
 }
 
 watch(() => {
-  console.log("~~~~~ count changed 123 45 asd", state.count.actual.value)
+  console.log("~~~~~ count changed 123 45 asd", state.count['actu/"al'].value)
 })
 
 const Home: Kaioken.FC = () => {
   const doubled = useComputed(() => {
     console.log("doubled")
-    return state.count.actual.value * 2
+    return state.count['actu/"al'].value * 2
   })
   useEffect(() => {
     console.log("Home mounted")
@@ -24,9 +24,9 @@ const Home: Kaioken.FC = () => {
   return (
     <div>
       <h1>Home</h1>
-      <p>Count: {state.count.actual}</p>
+      <p>Count: {state.count['actu/"al']}</p>
       <p>Doubled: {doubled}</p>
-      <button onclick={() => state.count.actual.value++}>Increment</button>
+      <button onclick={() => state.count['actu/"al'].value++}>Increment</button>
     </div>
   )
 }

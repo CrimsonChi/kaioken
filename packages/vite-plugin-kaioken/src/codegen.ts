@@ -67,14 +67,15 @@ function createHMRRegistrationBlurb(
   let entries: string[] = []
   if (isVirtualModule) {
     entries = Array.from(hotVars).map(({ name, type }) => {
+      const key = JSON.stringify(name)
       if (type !== "component") {
-        return `    "${name}": {
+        return `    ${key}: {
       type: "${type}",
       value: ${name}
     }`
       }
 
-      return `    "${name}": {
+      return `    ${key}: {
         type: "component",
         value: ${name},
         hooks: [],
@@ -83,9 +84,10 @@ function createHMRRegistrationBlurb(
   } else {
     const src = fs.readFileSync(filePath, "utf-8")
     entries = Array.from(hotVars).map(({ name, type }) => {
+      const key = JSON.stringify(name)
       const line = findHotVarLineInSrc(src, name)
       if (type !== "component") {
-        return `    "${name}": {
+        return `    ${key}: {
       type: "${type}",
       value: ${name},
       link: "${fileLinkFormatter(filePath, line)}"
@@ -100,7 +102,7 @@ function createHMRRegistrationBlurb(
       const args = componentHookArgs[name].map(([name, args]) => {
         return `{ name: "${name}", args: "${args}" }`
       })
-      return `    "${name}": {
+      return `    ${key}: {
       type: "component",
       value: ${name},
       hooks: [${args.join(",")}],
@@ -262,7 +264,7 @@ function findHotVars(
               case "Property":
                 if (!item.key) return acc
                 if (item.key.name) return `${acc}.${item.key.name}`
-                if (item.key.value) return `${acc}['${item.key.value}']`
+                if (item.key.raw) return `${acc}[${item.key.raw}]`
                 return acc
             }
             return acc

@@ -48,6 +48,7 @@ export interface AstNode {
   specifiers?: AstNode[]
   cases?: AstNode[]
   name?: string
+  raw?: string
   callee?: AstNode
   exported?: AstNode & { name: string }
   consequent?: AstNode | AstNode[]
