@@ -222,6 +222,10 @@ function findHotVars(
       continue
     }
 
+    /**
+     * TODO: refactor to support finding components declared in
+     * var > object expressions
+     */
     if (isComponent(node, bodyNodes)) {
       addHotVarDesc(node, hotVars, "component")
       continue
