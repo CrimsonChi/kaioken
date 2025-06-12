@@ -231,7 +231,7 @@ function findHotVars(
       continue
     }
 
-    const log = _id.includes("App.tsx") ? console.log : () => {}
+    const log = false && _id.includes("App.tsx") ? console.log : () => {}
 
     for (const aliasHandler of aliasHandlers) {
       AST.walk(node, {
