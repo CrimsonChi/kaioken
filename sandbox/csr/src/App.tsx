@@ -2,33 +2,31 @@ import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
 import { signal, useComputed, useEffect, watch } from "kaioken"
 
-const state = {
-  count: {
-    ['actu/"al']: signal(0),
-  },
-}
-
+let count
+count = signal(0)
 watch(() => {
-  console.log("~~~~~ count changed 123 45 asd", state.count['actu/"al'].value)
+  console.log("~~~~~ count changed 123 45 asd", count.value)
 })
 
-const Home: Kaioken.FC = () => {
-  const doubled = useComputed(() => {
-    console.log("doubled")
-    return state.count['actu/"al'].value * 2
-  })
-  useEffect(() => {
-    console.log("Home mounted")
-  }, [])
+const homeStuff = {
+  Home: () => {
+    const doubled = useComputed(() => {
+      console.log("doubled")
+      return count.value * 2
+    })
+    useEffect(() => {
+      console.log("Home mounted")
+    }, [])
 
-  return (
-    <div>
-      <h1>Home</h1>
-      <p>Count: {state.count['actu/"al']}</p>
-      <p>Doubled: {doubled}</p>
-      <button onclick={() => state.count['actu/"al'].value++}>Increment</button>
-    </div>
-  )
+    return (
+      <div>
+        <h1>Home</h1>
+        <p>Count: {count}</p>
+        <p>Doubled: {doubled}</p>
+        <button onclick={() => count.value++}>Increment</button>
+      </div>
+    )
+  },
 }
 
 function Nav() {
@@ -53,7 +51,7 @@ export function App() {
       <Nav />
       <main className="flex items-center justify-center flex-grow w-full">
         <Router>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<homeStuff.Home />} />
           {Object.entries(ROUTES).map(([path, route]) => (
             <Route
               key={path}

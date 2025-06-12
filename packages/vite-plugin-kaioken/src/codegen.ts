@@ -191,8 +191,10 @@ function createNamespaceAliasHandler(name: string) {
  * These represent the valid parent stack of a hot var. After the parents,
  * any combination of Property or ObjectExpression is allowed until the CallExpression.
  */
+const exprAssign = ["ExpressionStatement", "AssignmentExpression"]
 const allowedHotVarParentStacks: Array<AstNode["type"][]> = [
   ["VariableDeclaration", "VariableDeclarator"],
+  exprAssign,
   ["ExportNamedDeclaration", "VariableDeclaration", "VariableDeclarator"],
 ]
 
@@ -225,6 +227,8 @@ function findHotVars(
       continue
     }
 
+    const log = _id.includes("App.tsx") ? console.log : () => {}
+
     for (const aliasHandler of aliasHandlers) {
       AST.walk(node, {
         CallExpression: (node, ctx) => {
@@ -246,8 +250,20 @@ function findHotVars(
             }
           )
           if (!matchingParentStack) {
+            log("no matching parent stack", node, ctx.stack)
             return ctx.exit()
           }
+          if (matchingParentStack === exprAssign) {
+            const [_, assign] = ctx.stack
+            const name = assign.left?.name
+            if (!name) return ctx.exit()
+            hotVars.add({
+              type: aliasHandler.name,
+              name,
+            })
+            return ctx.exit()
+          }
+
           const remainingStack = ctx.stack.slice(matchingParentStack.length)
           if (
             remainingStack.some(
