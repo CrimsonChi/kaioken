@@ -191,7 +191,10 @@ function createNamespaceAliasHandler(name: string) {
  * These represent the valid parent stack of a hot var. After the parents,
  * any combination of Property or ObjectExpression is allowed until the CallExpression.
  */
-const exprAssign = ["ExpressionStatement", "AssignmentExpression"]
+const exprAssign = [
+  "ExpressionStatement",
+  "AssignmentExpression",
+] as const satisfies AstNode["type"][]
 const allowedHotVarParentStacks: Array<AstNode["type"][]> = [
   ["VariableDeclaration", "VariableDeclarator"],
   exprAssign,
@@ -237,7 +240,8 @@ function findHotVars(
       AST.walk(node, {
         CallExpression: (node, ctx) => {
           if (!aliasHandler.isMatchingCallExpression(node)) {
-            return ctx.exit()
+            log("not matching call expression", node, ctx.stack)
+            return ctx.exitBranch()
           }
           if (
             aliasHandler.name === "watch" &&
@@ -255,10 +259,10 @@ function findHotVars(
           )
           if (!matchingParentStack) {
             log("no matching parent stack", node, ctx.stack)
-            return ctx.exit()
+            return ctx.exitBranch()
           }
           if (matchingParentStack === exprAssign) {
-            const [_, assign] = ctx.stack
+            const [_expr, assign] = ctx.stack
             const name = assign.left?.name
             if (!name) return ctx.exit()
             hotVars.add({
@@ -274,7 +278,8 @@ function findHotVars(
               (n) => n.type !== "ObjectExpression" && n.type !== "Property"
             )
           ) {
-            return ctx.exit()
+            log("no matching parent stack", node, ctx.stack)
+            return ctx.exitBranch()
           }
 
           const name = ctx.stack.reduce((acc, item) => {
@@ -291,7 +296,7 @@ function findHotVars(
           }, "")
 
           hotVars.add({ type: aliasHandler.name, name })
-          ctx.exit()
+          ctx.exitBranch()
         },
       })
     }

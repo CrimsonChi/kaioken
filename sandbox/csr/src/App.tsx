@@ -2,16 +2,26 @@ import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
 import { signal, useComputed, useEffect, watch } from "kaioken"
 
-let count
-count = signal(0)
+function test() {
+  console.log(123)
+}
+
+const state = {
+  asd: test(),
+  count: signal(0),
+  greeting: signal("Hello world!"),
+  foo: {
+    bar: signal(123),
+  },
+}
 watch(() => {
-  console.log("~~~~~ count changed 123 45 asd", count.value)
+  console.log("~~~~~ count changed 123 45 asd", state.count.value)
 })
 
 const Home = () => {
   const doubled = useComputed(() => {
     console.log("doubled")
-    return count.value * 2
+    return state.count.value * 2
   })
   useEffect(() => {
     console.log("Home mounted")
@@ -19,10 +29,10 @@ const Home = () => {
 
   return (
     <div>
-      <h1>Home</h1>
-      <p>Count: {count}</p>
+      <h1>{state.greeting}</h1>
+      <p>Count: {state.count}</p>
       <p>Doubled: {doubled}</p>
-      <button onclick={() => count.value++}>Increment</button>
+      <button onclick={() => state.count.value++}>Increment</button>
     </div>
   )
 }
