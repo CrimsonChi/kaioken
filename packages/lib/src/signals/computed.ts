@@ -16,13 +16,14 @@ export class ComputedSignal<T> extends Signal<T> {
     this.$unsubs = new Map()
 
     if (__DEV__) {
-      // @ts-expect-error
+      const inject = this[$HMR_ACCEPT]!.inject!
+      // @ts-expect-error this is fine 😅
       this[$HMR_ACCEPT] = {
         provide: () => {
           return this
         },
         inject: (prev) => {
-          super[$HMR_ACCEPT]?.inject?.(prev)
+          inject(prev)
 
           ComputedSignal.stop(prev)
           ComputedSignal.start(this)
