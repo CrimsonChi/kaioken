@@ -11,12 +11,12 @@ import { Route, Router, Link } from "kaioken/router"
 
 const count = signal(0, "coussdsdnt")
 const isTracking = signal(true, "isTracking")
+
 const double = computed(() => {
   if (isTracking.value) {
     console.log("hello world 123", count.value)
     return count.value * 2
   }
-
   return 0
 }, "double")
 
@@ -96,7 +96,7 @@ const LocalComputedExample = () => {
     return 0
   }, "local double")
 
-  const localQuad = computed(() => {
+  const localQuad = useComputed(() => {
     return localDouble.value * 2
   }, "local quadruble")
 
