@@ -115,7 +115,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         })
       }
       server.watcher.on("change", (file) => {
-        const affectedVirtualModules = fileToVirtualModules[file]
+        const filePath = path.resolve(file).replace(/\\/g, "/")
+        const affectedVirtualModules = fileToVirtualModules[filePath]
         if (affectedVirtualModules) {
           for (const modId of affectedVirtualModules) {
             const mod = server.moduleGraph.getModuleById(modId)
@@ -186,15 +187,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         const { extraModules } = prepareHydrationBoundaries(code, ast, id)
         for (const key in extraModules) {
           ;(fileToVirtualModules[id] ??= new Set()).add(key)
-          // const mod = devServer!.moduleGraph.getModuleById(key)
-          // if (mod) {
-          //   devServer!.moduleGraph.invalidateModule(
-          //     mod,
-          //     undefined,
-          //     undefined,
-          //     true
-          //   )
-          // }
           virtualModules[key] = extraModules[key]
         }
       }
