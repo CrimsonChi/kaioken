@@ -8,10 +8,10 @@ import { sideEffectsEnabled } from "../utils.js"
 import { useHook } from "../hooks/utils.js"
 
 export class ComputedSignal<T> extends Signal<T> {
-  protected $getter: () => T
+  protected $getter: (prev?: T) => T
   protected $unsubs: Map<string, Function>
-  constructor(getter: () => T, displayName?: string) {
-    super(null as T, displayName)
+  constructor(getter: (prev?: T) => T, displayName?: string) {
+    super(void 0 as T, displayName)
     this.$getter = getter
     this.$unsubs = new Map()
 
@@ -66,7 +66,7 @@ export class ComputedSignal<T> extends Signal<T> {
 }
 
 export const computed = <T>(
-  getter: () => T,
+  getter: (prev?: T) => T,
   displayName?: string
 ): ComputedSignal<T> => {
   const computed = new ComputedSignal(getter, displayName)
@@ -74,7 +74,10 @@ export const computed = <T>(
   return computed
 }
 
-export const useComputed = <T>(getter: () => T, displayName?: string) => {
+export const useComputed = <T>(
+  getter: (prev?: T) => T,
+  displayName?: string
+) => {
   return useHook(
     "useComputedSignal",
     {
@@ -101,8 +104,7 @@ export const useComputed = <T>(getter: () => T, displayName?: string) => {
       }
       if (isInit) {
         hook.cleanup = () => ComputedSignal.dispose(hook.signal)
-        hook.signal = new ComputedSignal(getter, displayName)
-        ComputedSignal.start(hook.signal)
+        hook.signal = computed(getter, displayName)
       }
 
       return hook.signal
@@ -118,7 +120,7 @@ const appliedTrackedSignals = (computedSignal: ComputedSignal<any>) => {
   const getter = ComputedSignal.getter(computedSignal)
   // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
   tracking.enabled = true
-  computedSignal.sneak(getter())
+  computedSignal.sneak(getter(computedSignal.peek()))
   tracking.enabled = false
 
   if (node.current && !sideEffectsEnabled()) {
