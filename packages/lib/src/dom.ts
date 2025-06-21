@@ -245,7 +245,8 @@ function setSignalProp(
 ) {
   const _ctx = ctx.current
   const cleanups = (vNode.cleanups ??= {})
-  if (!key.startsWith("bind:")) {
+  const [modifier, attr] = key.split(":")
+  if (modifier !== "bind") {
     cleanups[key] = signal.subscribe((value) => {
       setProp(vNode, dom, key, value, null)
       if (__DEV__) {
@@ -256,7 +257,6 @@ function setSignalProp(
     return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
   }
 
-  const attr = key.substring(5)
   const evtName = bindAttrToEventMap[attr]
   if (!evtName) {
     if (__DEV__) {
