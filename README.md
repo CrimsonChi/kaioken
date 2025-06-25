@@ -4,6 +4,7 @@ Development monorepo for **Kaioken**.
 
 Kaioken is a lightweight rendering library that aims to provide a familiar development experience for those with HTML and Javascript experience.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CrimsonChi/kaioken)
 
 ## Structure
 
