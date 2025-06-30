@@ -25,11 +25,16 @@ type StoreHook<T, U extends Record<string, Function>> = {
   (): Prettify<{ value: T } & U>
 }
 
+type Subscribe<T> = {
+  (fn: (value: T) => void): () => void
+  <R>(sliceFn: (value: T) => R, fn: (value: R) => void): () => void
+}
+
 type Store<T, U extends Record<string, Function>> = StoreHook<T, U> & {
   getState: () => T
   setState: (setter: Kaioken.StateSetter<T>) => void
   methods: U
-  subscribe: (fn: (value: T) => void) => () => void
+  subscribe: Subscribe<T>
 }
 
 type NodeState = {
@@ -184,12 +189,24 @@ function createStore<T, U extends MethodFactory<T>>(
     get methods() {
       return { ...state.current.methods }
     },
-    subscribe: (fn: (state: T) => void) => {
-      state.current.subscribers.add(fn)
-      return (() => (
-        state.current.subscribers.delete(fn), void 0
-      )) as () => void
-    },
+    subscribe: ((sliceOrCb, cb) => {
+      if (cb === undefined) {
+        state.current.subscribers.add(sliceOrCb)
+        return () => (state.current.subscribers.delete(sliceOrCb), void 0)
+      }
+
+      const selection = {
+        current: null as ReturnType<typeof sliceOrCb> | null,
+      }
+      const sliceWrapper = (newState: T) => {
+        const next = sliceOrCb(newState)
+        if (shallowCompare(next, selection.current)) return
+        selection.current = next
+        cb(next)
+      }
+      state.current.subscribers.add(sliceWrapper)
+      return () => (state.current.subscribers.delete(sliceWrapper), void 0)
+    }) as Subscribe<T>,
   })
 
   if (__DEV__) {

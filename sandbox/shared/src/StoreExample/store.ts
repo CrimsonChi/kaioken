@@ -26,3 +26,9 @@ export const useTodosStore = createStore(
     }
   }
 )
+
+useTodosStore.subscribe((todos) => console.log("store changed", todos))
+useTodosStore.subscribe(
+  (todos) => todos.filter((todo) => todo.done).map((todo) => todo.id),
+  (ids) => console.log("ids changed", ids)
+)
