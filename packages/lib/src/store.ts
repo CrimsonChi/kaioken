@@ -143,11 +143,12 @@ function createStore<T, U extends MethodFactory<T>>(
           slices: [],
           update,
         }
-        if (isInit) {
+        let slice: (typeof nodeState.slices)[number]
+        if (isInit || !nodeState.slices[index]) {
           subscribers.add(vNode)
           hook.lastChangeSync = epoch
           hook.value = sliceFn === null ? value : sliceFn(value)
-          nodeState.slices[index] = {
+          slice = nodeState.slices[index] = {
             sliceFn,
             eq: equality,
             value: hook.value,
@@ -159,7 +160,7 @@ function createStore<T, U extends MethodFactory<T>>(
             subscribers.delete(vNode)
           }
         } else {
-          const slice = nodeState.slices[index]!
+          slice = nodeState.slices[index]
           if (slice.sliceFn !== sliceFn) {
             slice.value = hook.value = sliceFn ? sliceFn(value) : value
             slice.sliceFn = sliceFn
@@ -168,9 +169,7 @@ function createStore<T, U extends MethodFactory<T>>(
         }
 
         if (hook.lastChangeSync !== epoch) {
-          const currentSlice = nodeStateMap.get(vNode)?.slices[index]
-
-          hook.value = currentSlice ? currentSlice.value : state.current.value
+          hook.value = slice ? slice.value : state.current.value
           hook.lastChangeSync = epoch
         }
 
