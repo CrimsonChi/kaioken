@@ -12,23 +12,135 @@ export type {
   StyleObject,
 }
 
+type NumericStyleKeys =
+  // Layout: Margin, Padding, Position
+  | "bottom"
+  | "gap"
+  | "inset"
+  | "insetBlock"
+  | "insetBlockEnd"
+  | "insetBlockStart"
+  | "insetInline"
+  | "insetInlineEnd"
+  | "insetInlineStart"
+  | "left"
+  | "margin"
+  | "marginBlock"
+  | "marginBlockEnd"
+  | "marginBlockStart"
+  | "marginInline"
+  | "marginInlineEnd"
+  | "marginInlineStart"
+  | "padding"
+  | "paddingBlock"
+  | "paddingBlockEnd"
+  | "paddingBlockStart"
+  | "paddingInline"
+  | "paddingInlineEnd"
+  | "paddingInlineStart"
+  | "right"
+  | "top"
+
+  // Sizing
+  | "height"
+  | "maxHeight"
+  | "maxWidth"
+  | "minHeight"
+  | "minWidth"
+  | "width"
+
+  // Flexbox
+  | "flexBasis"
+  | "flexGrow"
+  | "flexShrink"
+  | "order"
+
+  // Grid
+  | "columnGap"
+  | "gridAutoColumns"
+  | "gridAutoRows"
+  | "gridColumnGap" // legacy, still used in some cases
+  | "gridRowGap" // legacy
+  | "rowGap"
+
+  // Border
+  | "borderBottomWidth"
+  | "borderImageOutset"
+  | "borderImageSlice"
+  | "borderImageWidth"
+  | "borderLeftWidth"
+  | "borderRadius"
+  | "borderRightWidth"
+  | "borderSpacing"
+  | "borderTopWidth"
+  | "borderWidth"
+
+  // Typography
+  | "fontSize"
+  | "letterSpacing"
+  | "lineHeight"
+  | "tabSize"
+  | "textIndent"
+  | "wordSpacing"
+
+  // Scroll Margin
+  | "scrollMargin"
+  | "scrollMarginBlock"
+  | "scrollMarginBlockEnd"
+  | "scrollMarginBlockStart"
+  | "scrollMarginBottom"
+  | "scrollMarginInline"
+  | "scrollMarginInlineEnd"
+  | "scrollMarginInlineStart"
+  | "scrollMarginLeft"
+  | "scrollMarginRight"
+  | "scrollMarginTop"
+
+  // Scroll Padding
+  | "scrollPadding"
+  | "scrollPaddingBlock"
+  | "scrollPaddingBlockEnd"
+  | "scrollPaddingBlockStart"
+  | "scrollPaddingBottom"
+  | "scrollPaddingInline"
+  | "scrollPaddingInlineEnd"
+  | "scrollPaddingInlineStart"
+  | "scrollPaddingLeft"
+  | "scrollPaddingRight"
+  | "scrollPaddingTop"
+
+  // Animation / Transition
+  | "animationDelay"
+  | "animationDuration"
+  | "transitionDelay"
+  | "transitionDuration"
+
+  // Transform (treated as numeric in APIs)
+  | "rotate"
+  | "scale"
+  | "translate"
+
+  // Effects
+  | "boxShadow"
+  | "zIndex"
+
+type FunctionKeys<T> = {
+  [K in keyof T]: T[K] extends (...args: any) => any ? K : never
+}[keyof T]
+
+type AllStyleRules = Omit<
+  CSSStyleDeclaration,
+  typeof Symbol.iterator | FunctionKeys<CSSStyleDeclaration>
+> & {
+  [Key in `--${string}`]: string | number
+}
+
 type StyleObject = Prettify<
-  Partial<
-    Omit<
-      CSSStyleDeclaration,
-      | number
-      | "length"
-      | "parentRule"
-      | "setProperty"
-      | "removeProperty"
-      | "item"
-      | "getPropertyValue"
-      | "getPropertyPriority"
-      | typeof Symbol.iterator
-    > & {
-      [Key in `--${string}`]: string | number
-    }
-  >
+  Partial<{
+    [Key in keyof AllStyleRules & string]: Key extends NumericStyleKeys
+      ? number | string
+      : AllStyleRules[Key]
+  }>
 >
 
 type ValidUrl = `http${"s" | ""}://${string}`
