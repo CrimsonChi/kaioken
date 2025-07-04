@@ -3,6 +3,7 @@ import { Counter } from "./Counter"
 import { MemoTest } from "./MemoTest"
 import { TodoList } from "./Todos"
 import { EffectsTest } from "./EffectsTest"
+import { StyleTest } from "./StyleTest"
 
 export function App() {
   return (
@@ -37,6 +38,7 @@ export function App() {
           <Route path="/todos" element={<TodoList />} />
           <Route path="/memo" element={<MemoTest />} />
           <Route path="/effects" element={<EffectsTest />} />
+          <Route path="/style" element={<StyleTest />} />
         </Router>
       </div>
     </main>

@@ -208,8 +208,6 @@ declare global {
       cleanups?: Record<string, Function>
       effects?: Array<Function>
       immediateEffects?: Array<Function>
-      prevStyleStr?: string
-      prevStyleObj?: StyleObject
       hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
       isMemoized?: boolean

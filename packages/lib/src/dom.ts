@@ -195,7 +195,7 @@ function updateDom(vNode: VNode) {
       if (Signal.isSignal(next)) {
         return setSignalProp(vNode, dom, key, next, prev)
       }
-      setProp(vNode, dom, key, next, prev)
+      setProp(dom, key, next, prev)
       return
     }
     if (Signal.isSignal(next)) {
@@ -248,13 +248,13 @@ function setSignalProp(
   const [modifier, attr] = key.split(":")
   if (modifier !== "bind") {
     cleanups[key] = signal.subscribe((value) => {
-      setProp(vNode, dom, key, value, null)
+      setProp(dom, key, value, null)
       if (__DEV__) {
         window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
       }
     })
 
-    return setProp(vNode, dom, key, signal.peek(), unwrap(prevValue))
+    return setProp(dom, key, signal.peek(), unwrap(prevValue))
   }
 
   const evtName = bindAttrToEventMap[attr]
@@ -319,7 +319,7 @@ function setSignalProp(
     unsub()
   }
 
-  return setProp(vNode, dom, attr, signal.peek(), unwrap(prevValue))
+  return setProp(dom, attr, signal.peek(), unwrap(prevValue))
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
@@ -422,7 +422,6 @@ const needsExplicitValueSet = (
 }
 
 function setProp(
-  vNode: VNode,
   element: SomeElement,
   key: string,
   value: unknown,
@@ -431,7 +430,7 @@ function setProp(
   if (value === prev) return
   switch (key) {
     case "style":
-      return setStyleProp(vNode, element, value, prev)
+      return setStyleProp(element, value, prev)
     case "className":
       return setClassName(element, value)
     case "innerHTML":
@@ -478,51 +477,39 @@ function setClassName(element: SomeElement, value: unknown) {
   element.setAttribute("class", val as string)
 }
 
-function setStyleProp(
-  vNode: VNode,
-  element: SomeElement,
-  value: unknown,
-  prev: unknown
-) {
-  if (typeof value !== typeof prev) {
-    if (typeof prev === "object" && prev !== null) {
-      delete vNode.prevStyleObj
-    } else if (typeof prev === "string") {
-      delete vNode.prevStyleStr
-    }
-  }
+function setStyleProp(element: SomeElement, value: unknown, prev: unknown) {
   if (handleAttributeRemoval(element, "style", value)) return
-  switch (typeof value) {
-    case "string":
-      if (value === vNode.prevStyleStr) return
-      element.setAttribute("style", value)
-      vNode.prevStyleStr = value
-      break
-    case "object":
-      const style = vNode.prevStyleObj ?? {}
-      const nextStyle = value as StyleObject
-      const keys = new Set([
-        ...Object.keys(style),
-        ...Object.keys(nextStyle),
-      ]) as Set<keyof StyleObject>
 
-      keys.forEach((k) => {
-        const prev = style[k]
-        const next = nextStyle[k]
-        if (prev === next) return
-
-        if (prev !== undefined && next === undefined) {
-          element.style[k as any] = ""
-          return
-        }
-
-        element.style[k as any] = next as any
-      })
-      vNode.prevStyleObj = nextStyle
-      break
-    default:
-      break
+  if (typeof value === "string") {
+    element.setAttribute("style", value)
+    return
   }
+
+  let prevStyle: StyleObject = {}
+  if (typeof prev === "string") {
+    element.setAttribute("style", "")
+  } else if (typeof prev === "object" && !!prev) {
+    prevStyle = prev as StyleObject
+  }
+
+  const nextStyle = value as StyleObject
+  const keys = new Set([
+    ...Object.keys(prevStyle),
+    ...Object.keys(nextStyle),
+  ]) as Set<keyof StyleObject>
+
+  keys.forEach((k) => {
+    const prev = prevStyle[k]
+    const next = nextStyle[k]
+    if (prev === next) return
+
+    if (next === undefined) {
+      element.style[k as any] = ""
+      return
+    }
+
+    element.style[k as any] = next as any
+  })
 }
 
 function getDomParent(vNode: VNode): ElementVNode {
