@@ -100,7 +100,7 @@ function createHMRRegistrationBlurb(
         )
       }
       const args = componentHookArgs[name].map(([name, args]) => {
-        return `{ name: "${name}", args: "${args}" }`
+        return `{ name: "${name}", args: ${args} }`
       })
       return `    ${key}: {
       type: "component",
@@ -570,12 +570,10 @@ function findFunctionBodyNodes(
   return null
 }
 
-function getArgValues(args: AstNode[], code: string) {
-  return args.map((arg) => code.substring(arg.start, arg.end))
-}
-
 function argsToString(args: AstNode[], code: string) {
-  return btoa(getArgValues(args, code).join(",").replace(/\s/g, ""))
+  return JSON.stringify(
+    args.map((arg) => code.substring(arg.start, arg.end)).join(",")
+  )
 }
 
 function findFirstParentOfType(stack: AstNode[], type: AstNode["type"]) {
