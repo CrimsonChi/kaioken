@@ -21,6 +21,6 @@
     "sourceMap": false,
     "jsx": "preserve"
   },
-  "include": ["./src/*", "build.ts"],
+  "include": ["./src/*", "build.ts", "build.dev.ts"],
   "exclude": ["dist"]
 }
