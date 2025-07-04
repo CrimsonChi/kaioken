@@ -130,7 +130,10 @@ type FunctionKeys<T> = {
 
 type AllStyleRules = Omit<
   CSSStyleDeclaration,
-  typeof Symbol.iterator | FunctionKeys<CSSStyleDeclaration>
+  | typeof Symbol.iterator
+  | FunctionKeys<CSSStyleDeclaration>
+  | "length"
+  | "parentRule"
 > & {
   [Key in `--${string}`]: string | number
 }

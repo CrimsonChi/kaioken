@@ -500,19 +500,25 @@ function setStyleProp(
       break
     case "object":
       const style = vNode.prevStyleObj ?? {}
-      Object.entries(value as object).forEach(([k, v]) => {
-        if (style[k as keyof typeof style] !== v) {
-          style[k as keyof typeof style] = v
-          element.style[k as any] = v
-        }
-      })
-      Object.keys(style).forEach((k) => {
-        if (!(k in (value as object))) {
-          delete style[k as keyof StyleObject]
+      const nextStyle = value as StyleObject
+      const keys = new Set([
+        ...Object.keys(style),
+        ...Object.keys(nextStyle),
+      ]) as Set<keyof StyleObject>
+
+      keys.forEach((k) => {
+        const prev = style[k]
+        const next = nextStyle[k]
+        if (prev === next) return
+
+        if (prev !== undefined && next === undefined) {
           element.style[k as any] = ""
+          return
         }
+
+        element.style[k as any] = next as any
       })
-      vNode.prevStyleObj = style
+      vNode.prevStyleObj = nextStyle
       break
     default:
       break

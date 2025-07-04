@@ -28,7 +28,13 @@ const Home = () => {
   }, [])
 
   return (
-    <div>
+    <div
+      style={{
+        display: undefined,
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
       <h1>{state.greeting}</h1>
       <p>Count: {state.count}</p>
       <p>Doubled: {doubled}</p>
