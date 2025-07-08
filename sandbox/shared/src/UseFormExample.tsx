@@ -151,6 +151,8 @@ export default function UseFormExample() {
               return "Must have at least 2 friends"
             }
           },
+          // @ts-expect-error
+          ["invalid-field"]: 123,
         }}
         children={(field) => (
           <div className="flex flex-col gap-2">

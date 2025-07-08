@@ -61,13 +61,13 @@ type AsyncFormFieldValidator<T extends unknown> = (
 ) => Promise<any>
 
 export type FormFieldValidators<RecordKey extends string, Value> = {
-  dependentOn?: RecordKey[]
-  onBlur?: FormFieldValidator<Value>
-  onChange?: FormFieldValidator<Value>
-  onChangeAsyncDebounceMs?: number
-  onChangeAsync?: AsyncFormFieldValidator<Value>
-  onMount?: FormFieldValidator<Value>
-  onSubmit?: FormFieldValidator<Value>
+  dependentOn: RecordKey[]
+  onBlur: FormFieldValidator<Value>
+  onChange: FormFieldValidator<Value>
+  onChangeAsyncDebounceMs: number
+  onChangeAsync: AsyncFormFieldValidator<Value>
+  onMount: FormFieldValidator<Value>
+  onSubmit: FormFieldValidator<Value>
 }
 
 type Falsy = false | null | undefined
@@ -147,7 +147,7 @@ export type FormFieldProps<
   IsArray extends boolean
 > = {
   name: Name
-  validators?: Validators
+  validators?: Partial<Validators>
 
   array?: IsArray
   children: (
@@ -250,7 +250,9 @@ export type FormController<T extends Record<string, unknown>> = {
   disconnectField: (name: RecordKey<T>, update: () => void) => void
   setFieldValidators: <K extends RecordKey<T>>(
     name: K,
-    validators: FormFieldValidators<RecordKey<T>, InferRecordKeyValue<T, K>>
+    validators: Partial<
+      FormFieldValidators<RecordKey<T>, InferRecordKeyValue<T, K>>
+    >
   ) => void
   getSelectorState: () => any
   validateForm: () => Promise<string[]>

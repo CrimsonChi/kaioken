@@ -32,9 +32,8 @@ function createFormController<T extends Record<string, unknown>>(
   const subscribers = new Set<FormStateSubscriber<T>>()
   const state: T = structuredClone(config.initialValues ?? {}) as T
   const formFieldValidators = {} as {
-    [key in RecordKey<T>]: FormFieldValidators<
-      RecordKey<T>,
-      InferRecordKeyValue<T, key>
+    [fieldName in RecordKey<T>]: Partial<
+      FormFieldValidators<RecordKey<T>, InferRecordKeyValue<T, fieldName>>
     >
   }
   const formFieldDependencies = {} as {
@@ -488,7 +487,9 @@ function createFormController<T extends Record<string, unknown>>(
 
   const setFieldValidators = <K extends RecordKey<T>>(
     name: K,
-    validators: FormFieldValidators<RecordKey<T>, InferRecordKeyValue<T, K>>
+    validators: Partial<
+      FormFieldValidators<RecordKey<T>, InferRecordKeyValue<T, K>>
+    >
   ) => {
     formFieldValidators[name] = validators
     if (validators.dependentOn && validators.dependentOn.length > 0) {
