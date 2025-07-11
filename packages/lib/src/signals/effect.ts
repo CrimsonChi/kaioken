@@ -53,8 +53,8 @@ export function executeWithTracking<T, Deps extends readonly Signal<unknown>[]>(
       const unsub = sig.subscribe(effect)
       subs.set(id, unsub)
     }
+    tracking.stack.pop()
   }
 
-  tracking.stack.pop()
   return result
 }
