@@ -165,9 +165,10 @@ export class Signal<T> {
 
   static entangle<T>(signal: Signal<T>) {
     const vNode = node.current
-    if (tracking.enabled) {
+    const trackedSignalObservations = tracking.current()
+    if (trackedSignalObservations) {
       if (!vNode || (vNode && sideEffectsEnabled())) {
-        tracking.signals.set(signal.$id, signal)
+        trackedSignalObservations.set(signal.$id, signal)
       }
       return
     }

@@ -4,58 +4,57 @@ import { tracking, effectQueue } from "./globals.js"
 import type { Signal } from "./base.js"
 import type { SignalValues } from "./types.js"
 
-/**
- * Checks if a server render is in progress
- * @returns True if a server render is in progress
- */
-export function isServerRender(): boolean {
-  return !!node.current && !sideEffectsEnabled()
+type TrackedExecutionContext<T, Deps extends readonly Signal<unknown>[]> = {
+  id: string
+  subs: Map<string, Function>
+  fn: (...values: SignalValues<Deps>) => T
+  deps?: Deps
+  onDepChanged: () => void
 }
 
 /**
- * Registers effect subscriptions for a given id
- * @param id - The id of the effect
- * @param subscriptions - The subscriptions map
- * @param callback - The callback to register
- */
-export function registerEffectSubscriptions<T>(
-  id: string,
-  subscriptions: Map<string, Function>,
-  callback: () => T
-): void {
-  for (const [id, unsub] of subscriptions) {
-    if (tracking.signals.has(id)) continue
-    unsub()
-    subscriptions.delete(id)
-  }
-
-  const effect = () => {
-    if (!effectQueue.has(id)) {
-      queueMicrotask(() => effectQueue.get(id)?.())
-    }
-    effectQueue.set(id, callback)
-  }
-
-  for (const [id, sig] of tracking.signals) {
-    if (subscriptions.has(id)) continue
-    const unsub = sig.subscribe(effect)
-    subscriptions.set(id, unsub)
-  }
-}
-
-/**
- * Executes an effect function with dependency tracking enabled
- * @param fn - The effect function to execute
+ * Executes an effect function with dependency tracking enabled, and manages
+ * the effect's subscriptions.
+ * @param ctx - The execution context
  * @returns The result of the effect function
  */
-export function executeWithTracking<
-  T,
-  TDeps extends readonly Signal<unknown>[]
->(fn: (...values: SignalValues<TDeps>) => T, dependencies: TDeps): T {
-  tracking.enabled = true
-  const result = fn(
-    ...(dependencies?.map((s) => s.value) as SignalValues<TDeps>)
-  )
-  tracking.enabled = false
+export function executeWithTracking<T, Deps extends readonly Signal<unknown>[]>(
+  ctx: TrackedExecutionContext<T, Deps>
+): T {
+  const { id, subs, fn, deps = [], onDepChanged } = ctx
+  let observations: Map<string, Signal<unknown>> | undefined
+
+  effectQueue.delete(id)
+  const isServer = !!node.current && !sideEffectsEnabled()
+
+  if (!isServer) {
+    observations = new Map<string, Signal<unknown>>()
+    tracking.stack.push(observations)
+  }
+
+  const result = fn(...(deps.map((s) => s.value) as SignalValues<Deps>))
+
+  if (!isServer) {
+    for (const [id, unsub] of subs) {
+      if (observations!.has(id)) continue
+      unsub()
+      subs.delete(id)
+    }
+
+    const effect = () => {
+      if (!effectQueue.has(id)) {
+        queueMicrotask(() => effectQueue.get(id)?.())
+      }
+      effectQueue.set(id, onDepChanged)
+    }
+
+    for (const [id, sig] of observations!) {
+      if (subs.has(id)) continue
+      const unsub = sig.subscribe(effect)
+      subs.set(id, unsub)
+    }
+  }
+
+  tracking.stack.pop()
   return result
 }
