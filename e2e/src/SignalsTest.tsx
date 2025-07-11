@@ -24,11 +24,11 @@ const onlineUsersCount = computed(
 
 // Global watch for testing
 const globalLogs = signal<string[]>([])
-watch(() => {
+watch([globalCounter], (counter) => {
   const timestamp = new Date().toLocaleTimeString()
   globalLogs.value = [
     ...globalLogs.peek(),
-    `[${timestamp}] Global counter: ${globalCounter.value}`,
+    `[${timestamp}] Global counter: ${counter}`,
   ].slice(-5)
 })
 
@@ -106,35 +106,30 @@ export function SignalsTest() {
   }
 
   // Watch effects
+  useWatch([username, isValidUsername], (username, isValid) => {
+    addLog(`Username changed to: "${username}"`)
+    addLog(`Username validation: ${isValid ? "valid" : "invalid"}`)
+  })
+
   useWatch(() => {
-    if (username.value) {
-      addLog(`Username changed to: "${username.value}"`)
-      const status = isValidUsername.value ? "valid" : "invalid"
-      addLog(`Username validation: ${status}`)
+    addLog(`Theme changed to: ${theme}`)
+  })
+
+  useWatch([clickCount], (clickCount) => {
+    if (clickCount > 0) {
+      addLog(`Button clicked ${clickCount} times`)
     }
   })
 
-  useWatch(() => {
-    addLog(`Theme changed to: ${theme.value}`)
-  })
-
-  useWatch(() => {
-    if (clickCount.value > 0) {
-      addLog(`Button clicked ${clickCount.value} times`)
+  useWatch([itemCount], (itemCount) => {
+    if (itemCount > 0) {
+      addNotification(`Cart updated: ${itemCount} items`)
     }
   })
 
-  useWatch(() => {
-    if (itemCount.value > 0) {
-      addNotification(`Cart updated: ${itemCount.value} items`)
-    }
-  })
-
-  useWatch(() => {
-    if (discount.value > 0) {
-      addNotification(
-        `Discount applied: ${Math.round(discount.value * 100)}% off!`
-      )
+  useWatch([discount], (discount) => {
+    if (discount > 0) {
+      addNotification(`Discount applied: ${Math.round(discount * 100)}% off!`)
     }
   })
 

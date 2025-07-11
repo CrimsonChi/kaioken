@@ -9,7 +9,7 @@ import {
 } from "kaioken"
 import { Route, Router, Link } from "kaioken/router"
 
-const count = signal(0, "coussdsdnt")
+const count = signal(0, "count")
 const isTracking = signal(true, "isTracking")
 
 const double = computed(() => {
@@ -25,8 +25,8 @@ const quadruple = computed(() => {
   return count.value * 4
 }, "quadruple")
 
-const watcher = watch(() => {
-  console.log("count 123", count.value)
+const watcher = watch([count], (count) => {
+  console.log("count 123", count)
 })
 
 export default function SignalsExample() {

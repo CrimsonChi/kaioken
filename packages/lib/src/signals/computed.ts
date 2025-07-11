@@ -64,7 +64,7 @@ export class ComputedSignal<T> extends Signal<T> {
     const { $id, $getter, $unsubs } = $computed
 
     effectQueue.delete($id)
-    const value = executeWithTracking(() => $getter($computed.peek()))
+    const value = executeWithTracking(() => $getter($computed.peek()), [])
     $computed.sneak(value)
 
     if (!isServerRender()) {

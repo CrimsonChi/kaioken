@@ -10,18 +10,27 @@ import {
   registerEffectSubscriptions,
 } from "./effect.js"
 import { latest } from "../utils.js"
+import type { Signal } from "./base.js"
+import type { SignalValues } from "./types.js"
 
-export class WatchEffect {
+type WatchCallbackReturn = (() => void) | void
+
+export class WatchEffect<const TDeps extends readonly Signal<unknown>[] = []> {
   protected id: string
-  protected getter: () => (() => void) | void
+  protected getter: (...values: SignalValues<TDeps>) => WatchCallbackReturn
+  protected dependencies?: TDeps
   protected unsubs: Map<string, Function>
   protected cleanup: (() => void) | null
   protected isRunning?: boolean
-  protected [$HMR_ACCEPT]?: HMRAccept<WatchEffect>
+  protected [$HMR_ACCEPT]?: HMRAccept<WatchEffect<TDeps>>
 
-  constructor(getter: () => (() => void) | void) {
+  constructor(
+    getter: (...values: SignalValues<TDeps>) => WatchCallbackReturn,
+    dependencies?: TDeps
+  ) {
     this.id = generateRandomID()
     this.getter = getter
+    this.dependencies = dependencies
     this.unsubs = new Map()
     this.isRunning = false
     this.cleanup = null
@@ -39,7 +48,7 @@ export class WatchEffect {
       if ("window" in globalThis) {
         const signals = window.__kaioken!.HMRContext!.signals
         if (signals.isWaitingForNextWatchCall()) {
-          signals.pushWatch(this)
+          signals.pushWatch(this as WatchEffect)
         }
       }
     }
@@ -78,12 +87,12 @@ export class WatchEffect {
     this.isRunning = false
   }
 
-  static run(watchEffect: WatchEffect) {
+  static run(watchEffect: WatchEffect<any>) {
     const effect = latest(watchEffect)
-    const { id, getter, unsubs } = effect
+    const { id, getter, unsubs, dependencies } = effect
 
     effectQueue.delete(id)
-    effect.cleanup = executeWithTracking(getter) ?? null
+    effect.cleanup = executeWithTracking(getter, dependencies ?? []) ?? null
 
     if (isServerRender()) {
       return tracking.clear()
@@ -96,15 +105,38 @@ export class WatchEffect {
   }
 }
 
-export const watch = (getter: () => (() => void) | void) => {
-  return new WatchEffect(getter)
+export function watch(getter: () => WatchCallbackReturn): WatchEffect
+export function watch<const TDeps extends readonly Signal<unknown>[]>(
+  dependencies: TDeps,
+  getter: (...values: SignalValues<TDeps>) => WatchCallbackReturn
+): WatchEffect<TDeps>
+export function watch<const TDeps extends readonly Signal<unknown>[]>(
+  depsOrGetter: TDeps | (() => WatchCallbackReturn),
+  getter?: (...values: SignalValues<TDeps>) => WatchCallbackReturn
+): WatchEffect<TDeps> | WatchEffect {
+  if (typeof depsOrGetter === "function") {
+    return new WatchEffect<[]>(depsOrGetter)
+  }
+  const dependencies = depsOrGetter
+  const effectGetter = getter!
+  return new WatchEffect(effectGetter, dependencies)
 }
 
-export const useWatch = (getter: () => (() => void) | void) => {
+export function useWatch(getter: () => WatchCallbackReturn): WatchEffect
+export function useWatch<const TDeps extends readonly Signal<unknown>[]>(
+  dependencies: TDeps,
+  getter: (...values: SignalValues<TDeps>) => WatchCallbackReturn
+): WatchEffect<TDeps> | undefined
+
+export function useWatch<const TDeps extends readonly Signal<unknown>[]>(
+  depsOrGetter: TDeps | (() => WatchCallbackReturn),
+  getter?: (...values: SignalValues<TDeps>) => WatchCallbackReturn
+): WatchEffect<TDeps> | WatchEffect | undefined {
   if (!sideEffectsEnabled()) return
+
   return useHook(
     "useWatch",
-    { watcher: null as any as WatchEffect },
+    { watcher: null as any as WatchEffect<TDeps> },
     ({ hook, isInit, vNode }) => {
       if (__DEV__) {
         if (vNode.hmrUpdated) {
@@ -113,8 +145,7 @@ export const useWatch = (getter: () => (() => void) | void) => {
         }
       }
       if (isInit) {
-        const watcher = (hook.watcher = new WatchEffect(getter))
-        watcher.start()
+        const watcher = (hook.watcher = watch(depsOrGetter as TDeps, getter!))
         hook.cleanup = () => watcher.stop()
       }
 

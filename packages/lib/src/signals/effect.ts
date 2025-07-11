@@ -1,6 +1,8 @@
 import { node } from "../globals.js"
 import { sideEffectsEnabled } from "../utils.js"
 import { tracking, effectQueue } from "./globals.js"
+import type { Signal } from "./base.js"
+import type { SignalValues } from "./types.js"
 
 /**
  * Checks if a server render is in progress
@@ -46,9 +48,14 @@ export function registerEffectSubscriptions<T>(
  * @param fn - The effect function to execute
  * @returns The result of the effect function
  */
-export function executeWithTracking<T>(fn: () => T): T {
+export function executeWithTracking<
+  T,
+  TDeps extends readonly Signal<unknown>[]
+>(fn: (...values: SignalValues<TDeps>) => T, dependencies: TDeps): T {
   tracking.enabled = true
-  const result = fn()
+  const result = fn(
+    ...(dependencies?.map((s) => s.value) as SignalValues<TDeps>)
+  )
   tracking.enabled = false
   return result
 }
