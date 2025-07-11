@@ -38,7 +38,6 @@ export {
   sideEffectsEnabled,
   encodeHtmlEntities,
   noop,
-  addUnique,
   latest,
   propFilters,
   selfClosingTags,
@@ -53,10 +52,6 @@ const noop: () => void = Object.freeze(() => {})
 
 function className(...classes: (string | false | undefined)[]): string {
   return classes.filter(Boolean).join(" ")
-}
-
-function addUnique<T>(arr: T[], val: T) {
-  arr.includes(val) || arr.push(val)
 }
 
 /**

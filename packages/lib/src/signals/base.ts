@@ -4,7 +4,6 @@ import type { HMRAccept } from "../hmr.js"
 import {
   getVNodeAppContext,
   latest,
-  addUnique,
   safeStringify,
   sideEffectsEnabled,
 } from "../utils.js"
@@ -165,17 +164,16 @@ export class Signal<T> {
   }
 
   static entangle<T>(signal: Signal<T>) {
+    const vNode = node.current
     if (tracking.enabled) {
-      if (!node.current || (node.current && sideEffectsEnabled())) {
-        tracking.signals.push(signal)
+      if (!vNode || (vNode && sideEffectsEnabled())) {
+        tracking.signals.set(signal.$id, signal)
       }
       return
     }
-    if (node.current) {
-      if (!sideEffectsEnabled()) return
-      addUnique((node.current.subs ??= []), signal.$id)
-      Signal.subscribers(signal).add(node.current)
-    }
+    if (!vNode || !sideEffectsEnabled()) return
+    ;(vNode.subs ??= new Set()).add(signal.$id)
+    Signal.subscribers(signal).add(vNode)
   }
 
   static dispose(signal: Signal<any>) {

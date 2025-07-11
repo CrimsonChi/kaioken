@@ -4,6 +4,7 @@ import { MemoTest } from "./MemoTest"
 import { TodoList } from "./Todos"
 import { EffectsTest } from "./EffectsTest"
 import { StyleTest } from "./StyleTest"
+import { SignalsTest } from "./SignalsTest"
 
 export function App() {
   return (
@@ -28,6 +29,9 @@ export function App() {
           <li>
             <Link to="/memo">Memo</Link>
           </li>
+          <li>
+            <Link to="/signals">Signals</Link>
+          </li>
         </ul>
       </nav>
       <div id="router-outlet">
@@ -39,6 +43,7 @@ export function App() {
           <Route path="/memo" element={<MemoTest />} />
           <Route path="/effects" element={<EffectsTest />} />
           <Route path="/style" element={<StyleTest />} />
+          <Route path="/signals" element={<SignalsTest />} />
         </Router>
       </div>
     </main>

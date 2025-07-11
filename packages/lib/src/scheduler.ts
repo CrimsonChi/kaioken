@@ -428,8 +428,17 @@ export class Scheduler {
          * remove previous signal subscriptions (if any) every render.
          * this prevents no-longer-observed signals from triggering updates
          * in components that are not currently using them.
+         *
+         * TODO: in future, we might be able to optimize this by
+         * only clearing the subscriptions that are no longer needed
+         * and not clearing the entire set.
          */
-        while (subs?.length) Signal.unsubscribe(vNode, subs.pop()!)
+        if (subs) {
+          for (const sub of subs) {
+            Signal.unsubscribe(vNode, sub)
+          }
+          subs.clear()
+        }
 
         if (__DEV__) {
           newChild = latest(type)(props)

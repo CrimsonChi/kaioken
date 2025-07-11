@@ -2,10 +2,16 @@ import { __DEV__ } from "../env.js"
 import { Signal } from "./base.js"
 import { effectQueue, tracking } from "./globals.js"
 import { $HMR_ACCEPT } from "../constants.js"
-import { node } from "../globals.js"
 import type { HMRAccept } from "../hmr.js"
-import { sideEffectsEnabled } from "../utils.js"
 import { useHook } from "../hooks/utils.js"
+import {
+  executeWithTracking,
+  cleanupStaleSubscriptions,
+  applyTrackedSignals,
+  createScheduledEffect,
+  isServerRender,
+} from "./effect.js"
+import { latest } from "../utils.js"
 
 export class ComputedSignal<T> extends Signal<T> {
   protected $getter: (prev?: T) => T
@@ -26,11 +32,13 @@ export class ComputedSignal<T> extends Signal<T> {
           inject(prev)
 
           ComputedSignal.stop(prev)
-          ComputedSignal.start(this)
+          ComputedSignal.run(this)
         },
         destroy: () => {},
       } satisfies HMRAccept<ComputedSignal<T>>
     }
+
+    ComputedSignal.run(this)
   }
 
   get value() {
@@ -41,27 +49,35 @@ export class ComputedSignal<T> extends Signal<T> {
   // @ts-expect-error
   set value(next: T) {}
 
-  static start<T>(computed: ComputedSignal<T>) {
-    appliedTrackedSignals(computed)
-  }
-
   static stop<T>(computed: ComputedSignal<T>) {
-    effectQueue.delete(computed.$id)
-    computed.$unsubs.forEach((unsub) => unsub())
-    computed.$unsubs.clear()
-  }
-
-  static unsubs<T>(computed: ComputedSignal<T>) {
-    return computed.$unsubs
-  }
-
-  static getter<T>(computed: ComputedSignal<T>) {
-    return computed.$getter
+    const { $id, $unsubs } = computed
+    effectQueue.delete($id)
+    $unsubs.forEach((unsub) => unsub())
+    $unsubs.clear()
   }
 
   static dispose(signal: ComputedSignal<any>): void {
     ComputedSignal.stop(signal)
     Signal.dispose(signal)
+  }
+
+  static run<T>(computed: ComputedSignal<T>) {
+    const sig = latest(computed)
+    const { $id, $getter, $unsubs } = sig
+
+    effectQueue.delete($id)
+    const value = executeWithTracking(() => $getter(sig.peek()))
+    sig.sneak(value)
+
+    if (!isServerRender()) {
+      cleanupStaleSubscriptions($unsubs)
+      const callback = createScheduledEffect($id, () => {
+        ComputedSignal.run(sig)
+        sig.notify()
+      })
+      applyTrackedSignals($unsubs, callback)
+    }
+    tracking.clear()
   }
 }
 
@@ -69,9 +85,7 @@ export const computed = <T>(
   getter: (prev?: T) => T,
   displayName?: string
 ): ComputedSignal<T> => {
-  const computed = new ComputedSignal(getter, displayName)
-  ComputedSignal.start(computed)
-  return computed
+  return new ComputedSignal(getter, displayName)
 }
 
 export const useComputed = <T>(
@@ -110,56 +124,4 @@ export const useComputed = <T>(
       return hook.signal
     }
   )
-}
-
-const appliedTrackedSignals = (computedSignal: ComputedSignal<any>) => {
-  const id = ComputedSignal.getId(computedSignal)
-  if (effectQueue.has(id)) {
-    effectQueue.delete(id)
-  }
-  const getter = ComputedSignal.getter(computedSignal)
-  // NOTE: DO NOT call the signal notify method, UNTIL THE TRACKING PROCESS IS DONE
-  tracking.enabled = true
-  computedSignal.sneak(getter(computedSignal.peek()))
-  tracking.enabled = false
-
-  if (node.current && !sideEffectsEnabled()) {
-    tracking.signals.splice(0, tracking.signals.length)
-    return
-  }
-
-  const trackedSignalsIds = tracking.signals.map((sig) => Signal.getId(sig))
-  const unsubs = ComputedSignal.unsubs(computedSignal)
-
-  for (const [id, unsub] of unsubs) {
-    if (trackedSignalsIds.includes(id)) continue
-    unsub()
-    unsubs.delete(id)
-  }
-
-  const cb = () => {
-    if (!effectQueue.has(id)) {
-      queueMicrotask(() => {
-        if (effectQueue.has(id)) {
-          const func = effectQueue.get(id)!
-          func()
-        }
-      })
-    }
-
-    effectQueue.set(id, () => {
-      appliedTrackedSignals(computedSignal)
-      computedSignal.notify()
-    })
-  }
-
-  tracking.signals.forEach((dependencySignal) => {
-    const id = Signal.getId(dependencySignal)
-    if (unsubs.get(id)) return
-
-    const unsub = dependencySignal.subscribe(cb)
-    unsubs.set(id, unsub)
-  })
-
-  tracking.signals.splice(0, tracking.signals.length)
 }
