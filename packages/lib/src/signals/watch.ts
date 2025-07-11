@@ -6,10 +6,8 @@ import { effectQueue, tracking } from "./globals.js"
 import { generateRandomID } from "../generateId.js"
 import {
   executeWithTracking,
-  cleanupStaleSubscriptions,
-  applyTrackedSignals,
-  createScheduledEffect,
   isServerRender,
+  registerEffectSubscriptions,
 } from "./effect.js"
 import { latest } from "../utils.js"
 
@@ -90,13 +88,10 @@ export class WatchEffect {
     if (isServerRender()) {
       return tracking.clear()
     }
-    cleanupStaleSubscriptions(unsubs)
-
-    const callback = createScheduledEffect(id, () => {
+    registerEffectSubscriptions(id, unsubs, () => {
       effect.cleanup?.()
       WatchEffect.run(effect)
     })
-    applyTrackedSignals(unsubs, callback)
     tracking.clear()
   }
 }

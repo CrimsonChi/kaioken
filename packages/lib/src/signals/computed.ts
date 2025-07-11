@@ -6,10 +6,8 @@ import type { HMRAccept } from "../hmr.js"
 import { useHook } from "../hooks/utils.js"
 import {
   executeWithTracking,
-  cleanupStaleSubscriptions,
-  applyTrackedSignals,
-  createScheduledEffect,
   isServerRender,
+  registerEffectSubscriptions,
 } from "./effect.js"
 import { latest } from "../utils.js"
 
@@ -62,20 +60,18 @@ export class ComputedSignal<T> extends Signal<T> {
   }
 
   static run<T>(computed: ComputedSignal<T>) {
-    const sig = latest(computed)
-    const { $id, $getter, $unsubs } = sig
+    const $computed = latest(computed)
+    const { $id, $getter, $unsubs } = $computed
 
     effectQueue.delete($id)
-    const value = executeWithTracking(() => $getter(sig.peek()))
-    sig.sneak(value)
+    const value = executeWithTracking(() => $getter($computed.peek()))
+    $computed.sneak(value)
 
     if (!isServerRender()) {
-      cleanupStaleSubscriptions($unsubs)
-      const callback = createScheduledEffect($id, () => {
-        ComputedSignal.run(sig)
-        sig.notify()
+      registerEffectSubscriptions($id, $unsubs, () => {
+        ComputedSignal.run($computed)
+        $computed.notify()
       })
-      applyTrackedSignals($unsubs, callback)
     }
     tracking.clear()
   }

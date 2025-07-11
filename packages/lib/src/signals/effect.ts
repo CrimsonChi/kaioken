@@ -2,58 +2,53 @@ import { node } from "../globals.js"
 import { sideEffectsEnabled } from "../utils.js"
 import { tracking, effectQueue } from "./globals.js"
 
-export const isServerRender = (): boolean => {
+/**
+ * Checks if a server render is in progress
+ * @returns True if a server render is in progress
+ */
+export function isServerRender(): boolean {
   return !!node.current && !sideEffectsEnabled()
 }
 
 /**
- * Executes an effect function with dependency tracking enabled
+ * Registers effect subscriptions for a given id
+ * @param id - The id of the effect
+ * @param subscriptions - The subscriptions map
+ * @param callback - The callback to register
  */
-export const executeWithTracking = <T>(fn: () => T): T => {
-  tracking.enabled = true
-  const result = fn()
-  tracking.enabled = false
-  return result
-}
-
-/**
- * Cleans up old subscriptions that are no longer in the tracked signals
- */
-export const cleanupStaleSubscriptions = (
-  subscriptions: Map<string, Function>
-): void => {
+export function registerEffectSubscriptions<T>(
+  id: string,
+  subscriptions: Map<string, Function>,
+  callback: () => T
+): void {
   for (const [id, unsub] of subscriptions) {
     if (tracking.signals.has(id)) continue
     unsub()
     subscriptions.delete(id)
   }
-}
 
-/**
- * Adds new tracked signals to the subscriptions map
- */
-export const applyTrackedSignals = (
-  subscriptions: Map<string, Function>,
-  callback: () => void
-): void => {
+  const effect = () => {
+    if (!effectQueue.has(id)) {
+      queueMicrotask(() => effectQueue.get(id)?.())
+    }
+    effectQueue.set(id, callback)
+  }
+
   for (const [id, sig] of tracking.signals) {
     if (subscriptions.has(id)) continue
-    const unsub = sig.subscribe(callback)
+    const unsub = sig.subscribe(effect)
     subscriptions.set(id, unsub)
   }
 }
 
 /**
- * Creates a microtask-scheduled effect callback
+ * Executes an effect function with dependency tracking enabled
+ * @param fn - The effect function to execute
+ * @returns The result of the effect function
  */
-export const createScheduledEffect = (
-  effectId: string,
-  effectFn: () => void
-): (() => void) => {
-  return () => {
-    if (!effectQueue.has(effectId)) {
-      queueMicrotask(() => effectQueue.get(effectId)?.())
-    }
-    effectQueue.set(effectId, effectFn)
-  }
+export function executeWithTracking<T>(fn: () => T): T {
+  tracking.enabled = true
+  const result = fn()
+  tracking.enabled = false
+  return result
 }
