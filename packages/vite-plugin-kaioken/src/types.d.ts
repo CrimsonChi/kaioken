@@ -33,4 +33,9 @@ export interface KaiokenPluginOptions {
   include?: string[]
 }
 
+/**
+ * Registers a callback to be called when the HMR is triggered
+ */
+export function onHMR(callback: () => void): void
+
 export default function kaioken(opts?: KaiokenPluginOptions): Plugin

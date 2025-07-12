@@ -72,6 +72,7 @@ function NumberInput() {
 function DateInput() {
   const date = useSignal(new Date().toISOString().split("T")[0])
   useWatch(() => console.log("Date", date.value))
+  // @ts-ignore unsure why but ts prevents us from building this although it is fine
   return <input type="date" bind:value={date} />
 }
 

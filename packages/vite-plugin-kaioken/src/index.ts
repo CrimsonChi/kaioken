@@ -6,12 +6,13 @@ import {
 } from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import devtoolsHostBuild from "kaioken-devtools-host"
-import {
-  injectHMRContextPreamble,
-  prepareHydrationBoundaries,
-} from "./codegen.js"
-import MagicString from "magic-string"
+import { MagicString } from "./codegen/shared.js"
 import path from "node:path"
+import {
+  prepareDevOnlyHooks,
+  prepareHotVars,
+  prepareHydrationBoundaries,
+} from "./codegen"
 import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
@@ -175,12 +176,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       const ast = this.parse(src)
       const code = new MagicString(src)
 
+      prepareDevOnlyHooks(code, ast, isBuild)
+
       if (!isProduction && !isBuild) {
-        injectHMRContextPreamble(code, ast, fileLinkFormatter, id, isVirtual)
-        // early return if no components or hotVars are found
-        if (!code.hasChanged()) {
-          return { code: src }
-        }
+        prepareHotVars(code, ast, fileLinkFormatter, id, isVirtual)
       }
 
       if (!options?.ssr) {
@@ -189,6 +188,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
           ;(fileToVirtualModules[id] ??= new Set()).add(key)
           virtualModules[key] = extraModules[key]
         }
+      }
+
+      if (!code.hasChanged()) {
+        return { code: src }
       }
 
       const map = code.generateMap({
@@ -204,3 +207,6 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
     },
   } satisfies Plugin
 }
+
+// @ts-ignore
+export function onHMR(callback: () => void) {}

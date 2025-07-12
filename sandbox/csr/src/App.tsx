@@ -2,12 +2,16 @@ import { Router, Route, Link } from "kaioken/router"
 import { ROUTES } from "./routes"
 import { signal, useComputed, useEffect, watch } from "kaioken"
 
-function test() {
-  console.log(123)
-}
+import { onHMR } from "vite-plugin-kaioken"
+
+let interval = setInterval(() => console.log("interval"), 1000)
+
+onHMR(() => {
+  console.log("onHMR")
+  clearInterval(interval)
+})
 
 const state = {
-  asd: test(),
   count: signal(0),
   greeting: signal("Hello world!"),
   foo: {
