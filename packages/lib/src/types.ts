@@ -105,7 +105,7 @@ declare global {
 
     type PrimitiveChild = string | number | bigint | boolean | undefined | null
 
-    type ElementKey = string | number | null | undefined
+    type ElementKey = string | number
 
     type Element =
       | Element[]
