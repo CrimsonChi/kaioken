@@ -5,13 +5,18 @@ import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
-import { Scheduler } from "./scheduler.js"
+import { createScheduler, Scheduler } from "./scheduler.js"
 import { generateRandomID } from "./generateId.js"
 
 type VNode = Kaioken.VNode
 
 export interface AppContextOptions {
-  root: HTMLElement
+  root?: HTMLElement
+  /**
+   * @internal
+   * Sets the root node type for the app. Used for SSR & rendering without the DOM.
+   */
+  rootType?: ({ children }: { children: JSX.Children }) => JSX.Element
   /**
    * Sets the maximum render refresh time.
    * @default 50
@@ -23,82 +28,94 @@ export interface AppContextOptions {
   }
 }
 
-export class AppContext<T extends Record<string, unknown> = {}> {
+export interface AppContext<T extends Record<string, unknown> = {}> {
   id: string
   name: string
   scheduler?: Scheduler
   rootNode?: VNode
   root?: HTMLElement
-  mounted = false
+  mounted: boolean
+  mount(): Promise<AppContext<T>>
+  unmount(): Promise<AppContext<T>>
+  setProps(fn: (oldProps: T) => T): Promise<AppContext<T>>
+  flushSync(): void
+  requestUpdate(vNode?: VNode): void
+  requestDelete(vNode: VNode): void
+}
 
-  constructor(
-    private appFunc: (props: T) => JSX.Element,
-    private appProps = {},
-    private options?: AppContextOptions
-  ) {
-    this.id = generateRandomID()
-    this.name = options?.name ?? "App-" + this.id
-    this.root = options?.root
+export function createAppContext<T extends Record<string, unknown> = {}>(
+  appFunc: (props: T) => JSX.Element,
+  appProps = {} as T,
+  options?: AppContextOptions
+): AppContext<T> {
+  const id = generateRandomID()
+  const name = options?.name ?? "App-" + id
+  let root = options?.root
+  let scheduler: Scheduler | undefined
+  let mounted = false
+  let appContext: AppContext<T>
+
+  const appNode = createElement(appFunc, appProps as T)
+  appNode.depth = 1
+  const rootNode = options?.rootType
+    ? createElement(options.rootType, {}, appNode)
+    : root
+    ? createElement(root!.nodeName.toLowerCase(), {}, appNode)
+    : void 0
+  if (rootNode) {
+    rootNode.depth = 0
   }
 
-  mount() {
-    return new Promise<AppContext<T>>((resolve) => {
-      if (this.mounted) return resolve(this)
-      this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
-      const appNode = createElement(this.appFunc, this.appProps as T)
-      this.rootNode = createElement(
-        this.root!.nodeName.toLowerCase(),
-        {},
-        appNode
-      )
-      this.rootNode.depth = 0
-      appNode.depth = 1
+  function mount(): Promise<AppContext<T>> {
+    return new Promise<AppContext<T>>((resolve, reject) => {
+      if (mounted) return resolve(appContext)
+      if (!rootNode) return reject(new KaiokenError("Root node not configured"))
+      root ??= document.body
+      rootNode.dom = root
       if (__DEV__) {
-        this.root!.__kaiokenNode = this.rootNode
+        root.__kaiokenNode = rootNode
       }
-
-      this.rootNode.dom = this.root
+      scheduler = createScheduler(appContext, options?.maxFrameMs ?? 50)
       if (renderMode.current === "hydrate") {
-        hydrationStack.captureEvents(this.root!)
+        hydrationStack.captureEvents(root!)
       }
-      this.scheduler.nextIdle(() => {
+      scheduler.nextIdle(() => {
         if (renderMode.current === "hydrate") {
-          hydrationStack.releaseEvents(this.root!)
+          hydrationStack.releaseEvents(root!)
         }
-        this.mounted = true
-        window.__kaioken?.emit("mount", this as AppContext<any>)
-        resolve(this)
+        mounted = true
+        window.__kaioken?.emit("mount", appContext as AppContext<any>)
+        resolve(appContext)
       }, false)
-      this.scheduler.queueUpdate(this.rootNode)
-      this.scheduler.flushSync()
+      scheduler.queueUpdate(rootNode)
+      scheduler.flushSync()
     })
   }
 
-  unmount() {
+  function unmount(): Promise<AppContext<T>> {
     return new Promise<AppContext<T>>((resolve) => {
-      if (!this.mounted) return resolve(this)
-      if (!this.rootNode?.child) return resolve(this)
-      this.requestDelete(this.rootNode.child)
+      if (!mounted) return resolve(appContext)
+      if (!rootNode?.child) return resolve(appContext)
+      requestDelete(rootNode.child)
 
-      this.scheduler?.nextIdle(() => {
-        this.scheduler = undefined
-        this.rootNode && (this.rootNode.child = null)
-        this.mounted = false
-        window.__kaioken?.emit("unmount", this as AppContext<any>)
-        resolve(this)
+      scheduler?.nextIdle(() => {
+        scheduler = undefined
+        rootNode && (rootNode.child = null)
+        mounted = false
+        window.__kaioken?.emit("unmount", appContext as AppContext<any>)
+        resolve(appContext)
       })
     })
   }
 
-  setProps(fn: (oldProps: T) => T) {
-    const rootChild = this.rootNode?.child
-    const scheduler = this.scheduler
-    if (!this.mounted || !rootChild || !scheduler)
+  function setProps(fn: (oldProps: T) => T): Promise<AppContext<T>> {
+    const rootChild = rootNode?.child
+    if (!mounted || !rootChild || !scheduler)
       throw new KaiokenError(
         "Failed to apply new props - ensure the app is mounted"
       )
     return new Promise<AppContext<T>>((resolve) => {
-      scheduler.clear()
+      scheduler!.clear()
       const { children, ref, key, ...rest } = rootChild.props
       rootChild.props = {
         ...Object.assign(rest, fn(rest as T)),
@@ -106,41 +123,64 @@ export class AppContext<T extends Record<string, unknown> = {}> {
         ref,
         key,
       }
-      scheduler.queueUpdate(rootChild)
-      scheduler.nextIdle(() => resolve(this))
+      scheduler!.queueUpdate(rootChild)
+      scheduler!.nextIdle(() => resolve(appContext))
     })
   }
 
-  flushSync() {
-    this.scheduler?.flushSync()
+  function flushSync(): void {
+    scheduler?.flushSync()
   }
 
-  requestUpdate(vNode?: VNode) {
+  function requestUpdate(vNode?: VNode): void {
     if (!vNode) {
-      if (!this.mounted || !this.rootNode) return
-      vNode = this.rootNode
+      if (!mounted || !rootNode) return
+      vNode = rootNode
     }
     if (flags.get(vNode.flags, FLAG.DELETION)) return
     if (__DEV__) {
-      if (this.options?.debug?.onRequestUpdate) {
-        this.options.debug.onRequestUpdate(vNode)
+      if (options?.debug?.onRequestUpdate) {
+        options.debug.onRequestUpdate(vNode)
       }
     }
     if (renderMode.current === "hydrate") {
-      return this.scheduler?.nextIdle((s) => {
+      return scheduler?.nextIdle((s) => {
         !flags.get(vNode.flags, FLAG.DELETION) && s.queueUpdate(vNode)
       })
     }
-    this.scheduler?.queueUpdate(vNode)
+    scheduler?.queueUpdate(vNode)
   }
 
-  requestDelete(vNode: VNode) {
+  function requestDelete(vNode: VNode): void {
     if (flags.get(vNode.flags, FLAG.DELETION)) return
     if (renderMode.current === "hydrate") {
-      return this.scheduler?.nextIdle((s) => {
+      return scheduler?.nextIdle((s) => {
         !flags.get(vNode.flags, FLAG.DELETION) && s.queueDelete(vNode)
       })
     }
-    this.scheduler?.queueDelete(vNode)
+    scheduler?.queueDelete(vNode)
   }
+
+  return (appContext = {
+    id,
+    name,
+    get scheduler() {
+      return scheduler
+    },
+    get rootNode() {
+      return rootNode
+    },
+    get root() {
+      return root
+    },
+    get mounted() {
+      return mounted
+    },
+    mount,
+    unmount,
+    setProps,
+    flushSync,
+    requestUpdate,
+    requestDelete,
+  })
 }

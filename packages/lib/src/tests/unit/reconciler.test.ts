@@ -18,7 +18,7 @@ const commitChildren = (node: Kaioken.VNode) => {
 
 describe("reconciler", () => {
   it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", () => {
-    ctx.current = new kaioken.AppContext(() => null)
+    ctx.current = kaioken.createAppContext(() => null)
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kaioken.createElement("div")
     node.child = reconcileChildren(node, [
@@ -49,7 +49,7 @@ describe("reconciler", () => {
     )
   })
   it("correctly handles reordered Array children with keys", () => {
-    ctx.current = new kaioken.AppContext(() => null)
+    ctx.current = kaioken.createAppContext(() => null)
 
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kaioken.createElement("div")

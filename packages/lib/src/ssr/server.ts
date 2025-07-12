@@ -1,6 +1,6 @@
 import { Readable } from "node:stream"
-import { createElement, Fragment } from "../index.js"
-import { AppContext } from "../appContext.js"
+import { Fragment } from "../element.js"
+import { AppContext, createAppContext } from "../appContext.js"
 import { renderMode, ctx, node, nodeToCtxMap } from "../globals.js"
 import {
   isVNode,
@@ -28,15 +28,11 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   renderMode.current = "stream"
   const state: RequestState = {
     stream: new Readable(),
-    ctx: new AppContext<any>(appFunc, appProps),
+    ctx: createAppContext(appFunc, appProps, { rootType: Fragment }),
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
-  const appNode = createElement(appFunc, appProps)
-  state.ctx.rootNode = Fragment({ children: [appNode] })
-  state.ctx.rootNode.depth = 0
-  appNode.depth = 1
-  renderToStream_internal(state, appNode, state.ctx.rootNode, 0)
+  renderToStream_internal(state, state.ctx.rootNode, null, 0)
   state.stream.push(null)
   renderMode.current = prev
   ctx.current = prevCtx
@@ -47,7 +43,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
 function renderToStream_internal(
   state: RequestState,
   el: unknown,
-  parent: Kaioken.VNode,
+  parent: Kaioken.VNode | null,
   idx: number
 ): void {
   if (el === null) return
@@ -74,7 +70,7 @@ function renderToStream_internal(
     return
   }
   el.parent = parent
-  el.depth = parent.depth + 1
+  el.depth = (parent?.depth ?? -1) + 1
   el.index = idx
   const props = el.props ?? {}
   const children = props.children

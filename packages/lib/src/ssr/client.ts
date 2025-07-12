@@ -23,10 +23,7 @@ export function hydrate<T extends Record<string, unknown>>(
   hydrationStack.clear()
   const prevRenderMode = renderMode.current
   renderMode.current = "hydrate"
-  return new Promise((resolve) => {
-    mount(appFunc, optionsOrRoot as any, appProps).then((ctx) => {
-      renderMode.current = prevRenderMode
-      resolve(ctx)
-    })
+  return mount(appFunc, optionsOrRoot as any, appProps).finally(() => {
+    renderMode.current = prevRenderMode
   })
 }

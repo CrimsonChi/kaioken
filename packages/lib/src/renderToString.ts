@@ -1,6 +1,6 @@
 import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
-import { AppContext } from "./appContext.js"
-import { createElement, Fragment } from "./element.js"
+import { createAppContext } from "./appContext.js"
+import { Fragment } from "./element.js"
 import {
   isVNode,
   encodeHtmlEntities,
@@ -21,12 +21,10 @@ export function renderToString<T extends Record<string, unknown>>(
   const prev = renderMode.current
   renderMode.current = "string"
   const prevCtx = ctx.current
-  const c = (ctx.current = new AppContext(appFunc, appProps))
-  const appNode = createElement(appFunc, appProps)
-  c.rootNode = Fragment({ children: [appNode] })
-  c.rootNode.depth = 0
-  appNode.depth = 1
-  const res = renderToString_internal(appNode, c.rootNode, 0)
+  const c = (ctx.current = createAppContext(appFunc, appProps, {
+    rootType: Fragment,
+  }))
+  const res = renderToString_internal(c.rootNode, null, 0)
   renderMode.current = prev
   ctx.current = prevCtx
   return res
@@ -34,7 +32,7 @@ export function renderToString<T extends Record<string, unknown>>(
 
 function renderToString_internal(
   el: unknown,
-  parent: Kaioken.VNode,
+  parent: Kaioken.VNode | null,
   idx: number
 ): string {
   if (el === null) return ""
@@ -48,7 +46,7 @@ function renderToString_internal(
   if (Signal.isSignal(el)) return String(el.peek())
   if (!isVNode(el)) return String(el)
   el.parent = parent
-  el.depth = parent!.depth + 1
+  el.depth = (parent?.depth ?? -1) + 1
   el.index = idx
   const props = el.props ?? {}
   const type = el.type

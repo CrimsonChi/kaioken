@@ -28,118 +28,129 @@ import { Signal } from "./signals/base.js"
 
 type VNode = Kaioken.VNode
 
-export class Scheduler {
-  private nextUnitOfWork: VNode | null = null
-  private treesInProgress: VNode[] = []
-  private currentTreeIndex = 0
-  private isRunning = false
-  private nextIdleEffects: ((scheduler: this) => void)[] = []
-  private deletions: VNode[] = []
-  private frameDeadline = 0
-  private pendingCallback: IdleRequestCallback | null = null
-  private channel: MessageChannel
-  private frameHandle: number | null = null
-  private isImmediateEffectsMode = false
-  private immediateEffectDirtiedRender = false
-  private isRenderDirtied = false
-  private consecutiveDirtyCount = 0
-  private pendingContextChanges = new Set<ContextProviderNode<any>>()
-  private effectCallbacks = {
+export interface Scheduler {
+  clear(): void
+  wake(): void
+  sleep(): void
+  nextIdle(fn: (scheduler: Scheduler) => void, wakeUpIfIdle?: boolean): void
+  flushSync(): void
+  queueUpdate(vNode: VNode): void
+  queueDelete(vNode: VNode): void
+}
+
+export function createScheduler(
+  appCtx: AppContext<any>,
+  maxFrameMs = 50
+): Scheduler {
+  let nextUnitOfWork: VNode | null = null
+  let treesInProgress: VNode[] = []
+  let currentTreeIndex = 0
+  let isRunning = false
+  let nextIdleEffects: ((scheduler: Scheduler) => void)[] = []
+  let deletions: VNode[] = []
+  let frameDeadline = 0
+  let pendingCallback: IdleRequestCallback | null = null
+  let frameHandle: number | null = null
+  let isImmediateEffectsMode = false
+  let immediateEffectDirtiedRender = false
+  let isRenderDirtied = false
+  let consecutiveDirtyCount = 0
+  let pendingContextChanges = new Set<ContextProviderNode<any>>()
+  let effectCallbacks = {
     pre: [] as Function[],
     post: [] as Function[],
   }
+  let scheduler: Scheduler
 
-  constructor(private appCtx: AppContext<any>, private maxFrameMs = 50) {
-    const timeRemaining = () => this.frameDeadline - window.performance.now()
-    const deadline = {
-      didTimeout: false,
-      timeRemaining,
-    }
-    this.channel = new MessageChannel()
-    this.channel.port2.onmessage = () => {
-      if (typeof this.pendingCallback === "function") {
-        this.pendingCallback(deadline)
-      }
-    }
+  const timeRemaining = () => frameDeadline - window.performance.now()
+  const deadline = {
+    didTimeout: false,
+    timeRemaining,
   }
-
-  clear() {
-    this.nextUnitOfWork = null
-    this.treesInProgress = []
-    this.currentTreeIndex = 0
-    this.nextIdleEffects = []
-    this.deletions = []
-    this.effectCallbacks = { pre: [], post: [] }
-    this.frameDeadline = 0
-    this.pendingCallback = null
-    this.sleep()
-  }
-
-  wake() {
-    if (this.isRunning) return
-    this.isRunning = true
-    this.requestIdleCallback(this.workLoop.bind(this))
-  }
-
-  sleep() {
-    this.isRunning = false
-    if (this.frameHandle !== null) {
-      globalThis.cancelAnimationFrame(this.frameHandle)
-      this.frameHandle = null
+  const channel = new MessageChannel()
+  channel.port2.onmessage = () => {
+    if (typeof pendingCallback === "function") {
+      pendingCallback(deadline)
     }
   }
 
-  nextIdle(fn: (scheduler: this) => void, wakeUpIfIdle = true) {
-    this.nextIdleEffects.push(fn)
-    if (wakeUpIfIdle) this.wake()
+  function clear() {
+    nextUnitOfWork = null
+    treesInProgress = []
+    currentTreeIndex = 0
+    nextIdleEffects = []
+    deletions = []
+    effectCallbacks = { pre: [], post: [] }
+    frameDeadline = 0
+    pendingCallback = null
+    sleep()
   }
 
-  flushSync() {
-    if (this.frameHandle !== null) {
-      globalThis.cancelAnimationFrame(this.frameHandle)
-      this.frameHandle = null
+  function wake() {
+    if (isRunning) return
+    isRunning = true
+    requestIdleCallback(workLoop)
+  }
+
+  function sleep() {
+    isRunning = false
+    if (frameHandle !== null) {
+      globalThis.cancelAnimationFrame(frameHandle)
+      frameHandle = null
     }
-    this.workLoop()
   }
 
-  queueUpdate(vNode: VNode) {
+  function nextIdle(fn: (scheduler: Scheduler) => void, wakeUpIfIdle = true) {
+    nextIdleEffects.push(fn)
+    if (wakeUpIfIdle) wake()
+  }
+
+  function flushSync() {
+    if (frameHandle !== null) {
+      globalThis.cancelAnimationFrame(frameHandle)
+      frameHandle = null
+    }
+    workLoop()
+  }
+
+  function queueUpdate(vNode: VNode) {
     // In immediate effect mode (useLayoutEffect), immediately mark the render as dirty
-    if (this.isImmediateEffectsMode) {
-      this.immediateEffectDirtiedRender = true
+    if (isImmediateEffectsMode) {
+      immediateEffectDirtiedRender = true
     }
 
     // If this node is currently being rendered, just mark it dirty
     if (node.current === vNode) {
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("updateDirtied", this.appCtx)
+        window.__kaioken?.profilingContext?.emit("updateDirtied", appCtx)
       }
-      this.isRenderDirtied = true
+      isRenderDirtied = true
       return
     }
 
     // If it's already the next unit of work, no need to queue again
-    if (this.nextUnitOfWork === vNode) {
+    if (nextUnitOfWork === vNode) {
       return
     }
 
-    if (this.nextUnitOfWork === null) {
-      this.treesInProgress.push(vNode)
-      this.nextUnitOfWork = vNode
-      return this.wake()
+    if (nextUnitOfWork === null) {
+      treesInProgress.push(vNode)
+      nextUnitOfWork = vNode
+      return wake()
     }
 
     // Check if the node is already in the treesInProgress queue
-    const treeIdx = this.treesInProgress.indexOf(vNode)
+    const treeIdx = treesInProgress.indexOf(vNode)
     if (treeIdx !== -1) {
-      if (treeIdx === this.currentTreeIndex) {
+      if (treeIdx === currentTreeIndex) {
         // Replace current node if it's being worked on now
-        this.treesInProgress[treeIdx] = vNode
-        this.nextUnitOfWork = vNode
-      } else if (treeIdx < this.currentTreeIndex) {
+        treesInProgress[treeIdx] = vNode
+        nextUnitOfWork = vNode
+      } else if (treeIdx < currentTreeIndex) {
         // It was already processed; requeue it to the end
-        this.currentTreeIndex--
-        this.treesInProgress.splice(treeIdx, 1)
-        this.treesInProgress.push(vNode)
+        currentTreeIndex--
+        treesInProgress.splice(treeIdx, 1)
+        treesInProgress.push(vNode)
       }
       return
     }
@@ -147,20 +158,20 @@ export class Scheduler {
     const nodeDepth = vNode.depth
 
     // Check if this node is a descendant of any trees already queued
-    for (let i = 0; i < this.treesInProgress.length; i++) {
-      const tree = this.treesInProgress[i]
+    for (let i = 0; i < treesInProgress.length; i++) {
+      const tree = treesInProgress[i]
       if (tree.depth > nodeDepth) continue // Can't be an ancestor
       if (!vNodeContains(tree, vNode)) continue
 
-      if (i === this.currentTreeIndex) {
+      if (i === currentTreeIndex) {
         // It's a child of the currently worked-on tree
         // If it's deeper within the same tree, we can skip
-        if (vNodeContains(this.nextUnitOfWork, vNode)) return
+        if (vNodeContains(nextUnitOfWork, vNode)) return
         // If it's not in the current work subtree, move back up to it
-        this.nextUnitOfWork = vNode
-      } else if (i < this.currentTreeIndex) {
+        nextUnitOfWork = vNode
+      } else if (i < currentTreeIndex) {
         // It's a descendant of an already processed tree; treat as a new update
-        this.treesInProgress.push(vNode)
+        treesInProgress.push(vNode)
       }
 
       return
@@ -169,27 +180,27 @@ export class Scheduler {
     // Check if this node contains any of the currently queued trees
     let didReplaceTree = false
     let shouldQueueAtEnd = false
-    for (let i = 0; i < this.treesInProgress.length; ) {
-      const tree = this.treesInProgress[i]
+    for (let i = 0; i < treesInProgress.length; ) {
+      const tree = treesInProgress[i]
       if (tree.depth < nodeDepth || !vNodeContains(vNode, tree)) {
         i++
         continue
       }
       // This node contains another update root, replace it
 
-      if (i === this.currentTreeIndex) {
+      if (i === currentTreeIndex) {
         if (!didReplaceTree) {
-          this.treesInProgress.splice(i, 1, vNode)
-          this.nextUnitOfWork = vNode
+          treesInProgress.splice(i, 1, vNode)
+          nextUnitOfWork = vNode
           didReplaceTree = true
           i++ // advance past replaced node
         } else {
-          this.treesInProgress.splice(i, 1)
+          treesInProgress.splice(i, 1)
           // no increment
         }
-      } else if (i < this.currentTreeIndex) {
-        this.currentTreeIndex--
-        this.treesInProgress.splice(i, 1)
+      } else if (i < currentTreeIndex) {
+        currentTreeIndex--
+        treesInProgress.splice(i, 1)
         if (!didReplaceTree) {
           shouldQueueAtEnd = true
           didReplaceTree = true
@@ -197,7 +208,7 @@ export class Scheduler {
         // no increment
       } else {
         // i > currentTreeIndex
-        this.treesInProgress.splice(i, 1)
+        treesInProgress.splice(i, 1)
         if (!didReplaceTree) {
           shouldQueueAtEnd = true
           didReplaceTree = true
@@ -209,100 +220,97 @@ export class Scheduler {
       return
     }
     // If it doesn't overlap with any queued tree, queue as new independent update root
-    this.treesInProgress.push(vNode)
+    treesInProgress.push(vNode)
   }
 
-  queueDelete(vNode: VNode) {
+  function queueDelete(vNode: VNode) {
     traverseApply(vNode, (n) => (n.flags = flags.set(n.flags, FLAG.DELETION)))
-    this.deletions.push(vNode)
+    deletions.push(vNode)
   }
 
-  private isFlushReady() {
-    return (
-      !this.nextUnitOfWork &&
-      (this.deletions.length || this.treesInProgress.length)
-    )
+  function isFlushReady() {
+    return !nextUnitOfWork && (deletions.length || treesInProgress.length)
   }
 
-  private workLoop(deadline?: IdleDeadline): void {
+  function workLoop(deadline?: IdleDeadline): void {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.beginTick(this.appCtx)
+      window.__kaioken?.profilingContext?.beginTick(appCtx)
     }
-    ctx.current = this.appCtx
-    while (this.nextUnitOfWork) {
-      this.nextUnitOfWork =
-        this.performUnitOfWork(this.nextUnitOfWork) ??
-        this.treesInProgress[++this.currentTreeIndex] ??
-        this.queueBlockedContextDependencyRoots()
+    ctx.current = appCtx
+    while (nextUnitOfWork) {
+      nextUnitOfWork =
+        performUnitOfWork(nextUnitOfWork) ??
+        treesInProgress[++currentTreeIndex] ??
+        queueBlockedContextDependencyRoots()
 
       if ((deadline?.timeRemaining() ?? 1) < 1) break
     }
 
-    if (this.isFlushReady()) {
-      while (this.deletions.length) {
-        commitWork(this.deletions.shift()!)
+    if (isFlushReady()) {
+      while (deletions.length) {
+        commitWork(deletions.shift()!)
       }
-      const treesInProgress = [...this.treesInProgress]
-      this.treesInProgress = []
-      this.currentTreeIndex = 0
-      for (const tree of treesInProgress) {
+      const treesInProgressCopy = [...treesInProgress]
+      treesInProgress = []
+      currentTreeIndex = 0
+      for (const tree of treesInProgressCopy) {
         commitWork(tree)
       }
 
-      this.isImmediateEffectsMode = true
-      this.flushEffects(this.effectCallbacks.pre)
-      this.isImmediateEffectsMode = false
+      isImmediateEffectsMode = true
+      flushEffects(effectCallbacks.pre)
+      isImmediateEffectsMode = false
 
-      if (this.immediateEffectDirtiedRender) {
-        this.checkForTooManyConsecutiveDirtyRenders()
-        this.flushEffects(this.effectCallbacks.post)
-        this.immediateEffectDirtiedRender = false
-        this.consecutiveDirtyCount++
+      if (immediateEffectDirtiedRender) {
+        checkForTooManyConsecutiveDirtyRenders()
+        flushEffects(effectCallbacks.post)
+        immediateEffectDirtiedRender = false
+        consecutiveDirtyCount++
         if (__DEV__) {
-          window.__kaioken?.profilingContext?.endTick(this.appCtx)
-          window.__kaioken?.profilingContext?.emit("updateDirtied", this.appCtx)
+          window.__kaioken?.profilingContext?.endTick(appCtx)
+          window.__kaioken?.profilingContext?.emit("updateDirtied", appCtx)
         }
-        return this.workLoop()
+        return workLoop()
       }
-      this.consecutiveDirtyCount = 0
+      consecutiveDirtyCount = 0
 
-      this.flushEffects(this.effectCallbacks.post)
-      window.__kaioken!.emit("update", this.appCtx)
+      flushEffects(effectCallbacks.post)
+      window.__kaioken!.emit("update", appCtx)
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("update", this.appCtx)
+        window.__kaioken?.profilingContext?.emit("update", appCtx)
       }
     }
 
-    if (!this.nextUnitOfWork) {
-      this.sleep()
-      while (this.nextIdleEffects.length) {
-        this.nextIdleEffects.shift()!(this)
+    if (!nextUnitOfWork) {
+      sleep()
+      while (nextIdleEffects.length) {
+        nextIdleEffects.shift()!(scheduler)
       }
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.endTick(this.appCtx)
+        window.__kaioken?.profilingContext?.endTick(appCtx)
       }
       return
     }
 
-    this.requestIdleCallback(this.workLoop.bind(this))
+    requestIdleCallback(workLoop)
   }
 
-  private requestIdleCallback(callback: IdleRequestCallback) {
-    this.frameHandle = globalThis.requestAnimationFrame((time) => {
-      this.frameDeadline = time + this.maxFrameMs
-      this.pendingCallback = callback
-      this.channel.port1.postMessage(null)
+  function requestIdleCallback(callback: IdleRequestCallback) {
+    frameHandle = globalThis.requestAnimationFrame((time) => {
+      frameDeadline = time + maxFrameMs
+      pendingCallback = callback
+      channel.port1.postMessage(null)
     })
   }
 
-  private queueBlockedContextDependencyRoots(): VNode | null {
-    if (this.pendingContextChanges.size === 0) return null
+  function queueBlockedContextDependencyRoots(): VNode | null {
+    if (pendingContextChanges.size === 0) return null
 
     // TODO: it's possible that a 'job' created by this process is
     // blocked by a parent memo after a queueUpdate -> replaceTree action.
     // To prevent this, we might need to add these to a distinct queue.
     const jobRoots: VNode[] = []
-    this.pendingContextChanges.forEach((provider) => {
+    pendingContextChanges.forEach((provider) => {
       provider.props.dependents.forEach((dep) => {
         if (!willMemoBlockUpdate(provider, dep)) return
         const depDepth = dep.depth
@@ -325,17 +333,17 @@ export class Scheduler {
       })
     })
 
-    this.pendingContextChanges.clear()
-    this.treesInProgress.push(...jobRoots)
+    pendingContextChanges.clear()
+    treesInProgress.push(...jobRoots)
     return jobRoots[0] ?? null
   }
 
-  private performUnitOfWork(vNode: VNode): VNode | void {
+  function performUnitOfWork(vNode: VNode): VNode | void {
     let renderChild = true
     try {
       const { props } = vNode
       if (typeof vNode.type === "string") {
-        this.updateHostComponent(vNode as DomVNode)
+        updateHostComponent(vNode as DomVNode)
       } else if (isExoticType(vNode.type)) {
         if (vNode.type === $CONTEXT_PROVIDER) {
           const asProvider = vNode as ContextProviderNode<any>
@@ -345,18 +353,18 @@ export class Scheduler {
             asProvider.prev &&
             asProvider.prev.props.value !== value
           ) {
-            this.pendingContextChanges.add(asProvider)
+            pendingContextChanges.add(asProvider)
           }
         }
         vNode.child = reconcileChildren(vNode, props.children)
-        vNode.deletions?.forEach((d) => this.queueDelete(d))
+        vNode.deletions?.forEach((d) => queueDelete(d))
       } else {
-        renderChild = this.updateFunctionComponent(vNode as FunctionVNode)
+        renderChild = updateFunctionComponent(vNode as FunctionVNode)
       }
     } catch (error) {
       window.__kaioken?.emit(
         "error",
-        this.appCtx,
+        appCtx,
         error instanceof Error ? error : new Error(String(error))
       )
       if (KaiokenError.isKaiokenError(error)) {
@@ -384,14 +392,14 @@ export class Scheduler {
     while (nextNode) {
       // queue effects upon ascent
       if (nextNode.immediateEffects) {
-        this.effectCallbacks.pre.push(...nextNode.immediateEffects)
+        effectCallbacks.pre.push(...nextNode.immediateEffects)
         nextNode.immediateEffects = undefined
       }
       if (nextNode.effects) {
-        this.effectCallbacks.post.push(...nextNode.effects)
+        effectCallbacks.post.push(...nextNode.effects)
         nextNode.effects = undefined
       }
-      if (nextNode === this.treesInProgress[this.currentTreeIndex]) return
+      if (nextNode === treesInProgress[currentTreeIndex]) return
       if (nextNode.sibling) {
         return nextNode.sibling
       }
@@ -403,7 +411,7 @@ export class Scheduler {
     }
   }
 
-  private updateFunctionComponent(vNode: FunctionVNode) {
+  function updateFunctionComponent(vNode: FunctionVNode) {
     const { type, props, subs, prev, isMemoized } = vNode
     if (isMemoized) {
       vNode.memoizedProps = props
@@ -417,11 +425,11 @@ export class Scheduler {
     }
     try {
       node.current = vNode
-      nodeToCtxMap.set(vNode, this.appCtx)
+      nodeToCtxMap.set(vNode, appCtx)
       let newChild
       let renderTryCount = 0
       do {
-        this.isRenderDirtied = false
+        isRenderDirtied = false
         hookIndex.current = 0
 
         /**
@@ -454,16 +462,16 @@ export class Scheduler {
           continue
         }
         newChild = type(props)
-      } while (this.isRenderDirtied)
+      } while (isRenderDirtied)
       vNode.child = reconcileChildren(vNode, newChild)
-      vNode.deletions?.forEach((d) => this.queueDelete(d))
+      vNode.deletions?.forEach((d) => queueDelete(d))
       return true
     } finally {
       node.current = null
     }
   }
 
-  private updateHostComponent(vNode: DomVNode) {
+  function updateHostComponent(vNode: DomVNode) {
     const { props } = vNode
     if (__DEV__) {
       assertValidElementProps(vNode)
@@ -482,7 +490,7 @@ export class Scheduler {
     // text should _never_ have children
     if (vNode.type !== "#text") {
       vNode.child = reconcileChildren(vNode, props.children)
-      vNode.deletions?.forEach((d) => this.queueDelete(d))
+      vNode.deletions?.forEach((d) => queueDelete(d))
     }
 
     if (vNode.child && renderMode.current === "hydrate") {
@@ -490,15 +498,25 @@ export class Scheduler {
     }
   }
 
-  private checkForTooManyConsecutiveDirtyRenders() {
-    if (this.consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
+  function checkForTooManyConsecutiveDirtyRenders() {
+    if (consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
       throw new KaiokenError(
         "Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
       )
     }
   }
 
-  private flushEffects(effectArr: Function[]) {
+  function flushEffects(effectArr: Function[]) {
     while (effectArr.length) effectArr.shift()!()
   }
+
+  return (scheduler = {
+    clear,
+    wake,
+    sleep,
+    nextIdle,
+    flushSync,
+    queueUpdate,
+    queueDelete,
+  })
 }
