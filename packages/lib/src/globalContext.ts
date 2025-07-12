@@ -60,7 +60,7 @@ class KaiokenGlobalContext {
     GlobalKaiokenEvent,
     Set<(ctx: AppContext, data?: Evt["data"]) => void>
   > = new Map()
-  stores: ReactiveMap<Store<any, any>> = new ReactiveMap()
+  stores?: ReactiveMap<Store<any, any>>
   HMRContext?: ReturnType<typeof createHMRContext>
   profilingContext?: ReturnType<typeof createProfilingContext>
   globalState: Record<symbol, any> = {}
@@ -71,6 +71,7 @@ class KaiokenGlobalContext {
     if (__DEV__) {
       this.HMRContext = createHMRContext()
       this.profilingContext = createProfilingContext()
+      this.stores = new ReactiveMap()
     }
   }
 

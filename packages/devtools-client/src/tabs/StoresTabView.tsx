@@ -24,7 +24,7 @@ import { ValueEditor } from "devtools-shared/src/ValueEditor"
 
 const stores = signal<Record<string, Store<any, any>>>({})
 const expandedItems = signal<Store<any, any>[]>([])
-kaiokenGlobal?.stores.subscribe((newStores) => {
+kaiokenGlobal?.stores?.subscribe((newStores) => {
   stores.value = newStores
   expandedItems.value = expandedItems.value.filter((s) =>
     Object.values(stores.value).includes(s)
