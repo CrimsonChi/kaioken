@@ -45,6 +45,13 @@ export class ComputedSignal<T> extends Signal<T> {
   // @ts-expect-error
   set value(next: T) {}
 
+  subscribe(cb: (state: T) => void): () => void {
+    if (this.$isDirty) {
+      ComputedSignal.run(this)
+    }
+    return super.subscribe(cb)
+  }
+
   static dispose(signal: ComputedSignal<any>): void {
     ComputedSignal.stop(signal)
     Signal.dispose(signal)
