@@ -32,14 +32,11 @@ export class ComputedSignal<T> extends Signal<T> {
         destroy: () => {},
       } satisfies HMRAccept<ComputedSignal<T>>
     }
+    Signal.configure(this, () => this.$isDirty && ComputedSignal.run(this))
   }
 
   get value() {
-    if (this.$isDirty) {
-      ComputedSignal.run(this)
-    }
-    ComputedSignal.entangle(this)
-    return this.$value
+    return super.value
   }
 
   // @ts-expect-error
@@ -73,7 +70,7 @@ export class ComputedSignal<T> extends Signal<T> {
     const value = executeWithTracking({
       id,
       subs,
-      fn: () => $getter($computed.peek()),
+      fn: () => $getter($computed.$value),
       onDepChanged: () => {
         $computed.$isDirty = true
         if (!signalSubsMap?.get(id)?.size) return

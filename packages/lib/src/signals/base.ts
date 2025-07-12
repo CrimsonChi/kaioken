@@ -17,6 +17,7 @@ export class Signal<T> {
   [$SIGNAL] = true;
   [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
   displayName?: string
+  private onBeforeRead?: () => void
   protected $id: string
   protected $value: T
   protected $initialValue?: string
@@ -51,6 +52,7 @@ export class Signal<T> {
   }
 
   get value() {
+    this.onBeforeRead?.()
     if (__DEV__) {
       const tgt = latest(this)
       Signal.entangle(tgt)
@@ -74,6 +76,7 @@ export class Signal<T> {
   }
 
   peek() {
+    this.onBeforeRead?.()
     if (__DEV__) {
       return latest(this).$value
     }
@@ -90,6 +93,7 @@ export class Signal<T> {
   }
 
   toString() {
+    this.onBeforeRead?.()
     if (__DEV__) {
       const tgt = latest(this)
       Signal.entangle(tgt)
@@ -175,6 +179,10 @@ export class Signal<T> {
     if (!vNode || !sideEffectsEnabled()) return
     ;(vNode.subs ??= new Set()).add(signal.$id)
     Signal.subscribers(signal).add(vNode)
+  }
+
+  static configure(signal: Signal<any>, onBeforeRead?: () => void) {
+    signal.onBeforeRead = onBeforeRead
   }
 
   static dispose(signal: Signal<any>) {
