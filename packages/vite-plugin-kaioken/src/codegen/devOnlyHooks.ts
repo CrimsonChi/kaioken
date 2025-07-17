@@ -11,6 +11,12 @@ export function prepareDevOnlyHooks(
   replaceOnHMRCallbacks(code, ast, isBuild)
 }
 
+const VITE_IMPORT_META_HOT_ACCEPT = `if ("window" in globalThis) {
+  if (import.meta.hot) {
+    import.meta.hot.accept(%);
+  }           
+}`
+
 function replaceOnHMRCallbacks(
   code: MagicString,
   ast: ProgramNode,
@@ -20,38 +26,35 @@ function replaceOnHMRCallbacks(
 
   for (const node of ast.body as AstNode[]) {
     if (node.type === "ImportDeclaration") {
-      onHMRAliasHandler.addAliases(node)
       if (onHMRAliasHandler.addAliases(node) && isBuild) {
         code.update(node.start, node.end, "")
       }
       continue
     }
 
-    if (
-      node.type === "ExpressionStatement" &&
-      node.expression &&
-      onHMRAliasHandler.isMatchingCallExpression(node.expression)
-    ) {
-      if (isBuild) {
-        code.update(node.expression.start, node.expression.end, "")
-      } else {
-        try {
-          const callback = node.expression.arguments![0]
-          const callbackRaw = code.original.substring(
-            callback.start,
-            callback.end
-          )
-          code.update(
-            node.expression.start,
-            node.expression.end,
-            `if ("window" in globalThis) {
-  if (import.meta.hot) {
-    import.meta.hot.accept(${callbackRaw});
-  }           
-}`
-          )
-        } catch {}
-      }
-    }
+    AST.walk(node, {
+      CallExpression: (node, ctx) => {
+        if (onHMRAliasHandler.isMatchingCallExpression(node)) {
+          try {
+            if (isBuild) {
+              code.update(node.start, node.end, "")
+              return
+            }
+            const callback = node.arguments![0]
+            const callbackRaw = code.original.substring(
+              callback.start,
+              callback.end
+            )
+            code.update(
+              node.start,
+              node.end,
+              VITE_IMPORT_META_HOT_ACCEPT.replace("%", callbackRaw)
+            )
+          } finally {
+            ctx.exitBranch()
+          }
+        }
+      },
+    })
   }
 }
