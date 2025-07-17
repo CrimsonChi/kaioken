@@ -187,7 +187,7 @@ type FormSubscribeComponent<T extends Record<string, unknown>> = <
   props: FormSubscribeProps<T, Selector, ReturnType<Selector>>
 ) => JSX.Element
 
-export type UseFormReturn<T extends Record<string, unknown>> = {
+export type UseFormState<T extends Record<string, unknown>> = {
   Field: FormFieldComponent<T>
   Subscribe: FormSubscribeComponent<T>
   getFieldState: <K extends RecordKey<T>>(name: K) => FormFieldState<T, K>

@@ -20,7 +20,7 @@ import type {
   SelectorState,
   UseFormConfig,
   UseFormInternalState,
-  UseFormReturn,
+  UseFormState,
 } from "./types"
 
 export type * from "./types"
@@ -523,7 +523,7 @@ function createFormController<T extends Record<string, unknown>>(
 
 export function useForm<T extends Record<string, unknown> = {}>(
   config: UseFormConfig<T>
-): UseFormReturn<T> {
+): UseFormState<T> {
   return useHook(
     "useForm",
     {} as UseFormInternalState<T>,
@@ -631,7 +631,7 @@ export function useForm<T extends Record<string, unknown> = {}>(
         reset: (values?: T) => hook.formController.reset(values),
         getFieldState: <K extends RecordKey<T>>(name: K) =>
           hook.formController.getFieldState(name),
-      } satisfies UseFormReturn<T>
+      } satisfies UseFormState<T>
     }
   )
 }
