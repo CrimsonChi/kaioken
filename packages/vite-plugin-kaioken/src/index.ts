@@ -88,6 +88,10 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         tags: [
           {
             tag: "script",
+            children: `window.__KAIOKEN_DEVTOOLS_PATHNAME__ = "${dtClientPathname}";`,
+          },
+          {
+            tag: "script",
             attrs: {
               type: "module",
               src: dtHostScriptPath,

@@ -31,7 +31,12 @@ export const useDevTools = () => {
           }
       const features = `popup,width=${size.width},height=${size.height};`
 
-      const w = window.open("/__devtools__", "_blank", features)
+      const w = window.open(
+        // @ts-ignore
+        window.__KAIOKEN_DEVTOOLS_PATHNAME__,
+        "_blank",
+        features
+      )
       if (!w)
         return console.error("[kaioken]: Unable to open devtools window"), rej()
 
