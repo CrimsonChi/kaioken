@@ -22,6 +22,8 @@ export class Signal<T> {
   protected $value: T
   protected $initialValue?: string
   protected __next?: Signal<T>
+  protected $isDisposed?: boolean
+
   constructor(initial: T, displayName?: string) {
     this.$id = generateRandomID()
     signalSubsMap.set(this.$id, new Set())
@@ -186,6 +188,7 @@ export class Signal<T> {
   }
 
   static dispose(signal: Signal<any>) {
+    signal.$isDisposed = true
     signalSubsMap.delete(signal.$id)
   }
 }
