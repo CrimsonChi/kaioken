@@ -1,4 +1,4 @@
-import { useModel, useEffect, useState } from "kaioken"
+import { Derive, useComputed, useEffect, useRef, useSignal } from "kaioken"
 
 interface Album {
   id: number
@@ -41,21 +41,26 @@ const albums: Album[] = [
 ]
 
 export default function FilteredListExample() {
-  const [sort, setSort] = useState<"asc" | "desc">("asc")
-  const [inputRef, inputValue] = useModel<HTMLInputElement>("")
+  const sort = useSignal<"asc" | "desc">("asc")
+  const inputText = useSignal("")
+  const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  const filteredAlbums = albums
-    .filter((a) => a.title.toLowerCase().indexOf(inputValue.toLowerCase()) > -1)
-    .sort((a, b) => {
-      if (sort === "asc") {
-        return a.id - b.id
-      } else {
-        return b.id - a.id
-      }
-    })
+  const filteredAlbums = useComputed(() => {
+    return albums
+      .filter(
+        (a) => a.title.toLowerCase().indexOf(inputText.value.toLowerCase()) > -1
+      )
+      .sort((a, b) => {
+        if (sort.value === "asc") {
+          return a.id - b.id
+        } else {
+          return b.id - a.id
+        }
+      })
+  })
 
   return (
     <div>
@@ -64,49 +69,53 @@ export default function FilteredListExample() {
           <div className="flex w-full justify-between">
             <h2 className="mb-4 font-bold text-lg">Albums</h2>
             <button
-              onclick={() => setSort(sort === "asc" ? "desc" : "asc")}
+              onclick={() =>
+                (sort.value = sort.peek() === "asc" ? "desc" : "asc")
+              }
               className="text-sm underline"
             >
-              Sort
+              Sort ({sort})
             </button>
           </div>
           <div className="sticky top-0 bg-stone-700 mb-4 flex rounded z-10 shadow-md shadow-stone-900">
             <input
               ref={inputRef}
+              bind:value={inputText}
               type="text"
               className="bg-transparent pl-8 w-full text-sm py-1 "
               placeholder="Search"
             />
           </div>
-          {filteredAlbums.length === 0 ? (
-            <span data-test className="text-muted">
-              No albums found
-            </span>
-          ) : filteredAlbums.length % 2 === 0 ? (
-            <i data-test className="text-muted">
-              Even
-            </i>
-          ) : (
-            <p data-test className="text-muted">
-              Odd
-            </p>
-          )}
-          <AlbumList albums={filteredAlbums} />
+          <Derive from={filteredAlbums}>
+            {(albums) => (
+              <>
+                {albums.length === 0 ? (
+                  <span data-test className="text-muted">
+                    No albums found
+                  </span>
+                ) : albums.length % 2 === 0 ? (
+                  <i data-test className="text-muted">
+                    Even
+                  </i>
+                ) : (
+                  <p data-test className="text-muted">
+                    Odd
+                  </p>
+                )}
+                <>
+                  {albums.map((album) => (
+                    <AlbumItem key={"album-" + album.id} album={album} />
+                  ))}
+                </>
+              </>
+            )}
+          </Derive>
         </div>
       </div>
     </div>
   )
 }
 
-function AlbumList({ albums }: { albums: Album[] }) {
-  return (
-    <>
-      {albums.map((album) => (
-        <AlbumItem key={"album-" + album.id} album={album} />
-      ))}
-    </>
-  )
-}
 function AlbumItem({ album }: { album: Album }) {
   return (
     <div className="flex items-center gap-4">

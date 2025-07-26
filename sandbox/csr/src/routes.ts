@@ -12,7 +12,6 @@ const ContextExample = lazy(() => import("shared/src/ContextExample"))
 const ElementBindingsExample = lazy(
   () => import("shared/src/ElementBindingsExample")
 )
-const UseModelExample = lazy(() => import("shared/src/UseModelExample"))
 const MemoExample = lazy(() => import("shared/src/MemoExample"))
 const RouterExample = lazy(() => import("shared/src/RouterExample"))
 const SignalsExample = lazy(() => import("shared/src/SignalsExample"))
@@ -47,10 +46,6 @@ export const ROUTES: Record<string, AppRoute> = {
   "/element-bindings-example": {
     title: "Element bindings",
     component: ElementBindingsExample,
-  },
-  "/use-model-example": {
-    title: "useModel",
-    component: UseModelExample,
   },
   "/memo-example": {
     title: "Memo",
