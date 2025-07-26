@@ -12,18 +12,12 @@ export {
   useHookDebugGroup,
   useRequestUpdate,
   HookDebugGroupAction,
-  HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY,
   type HookState,
   type HookCallback,
   type HookCallbackContext as HookCallbackState,
 }
 
 type HookState<T> = Kaioken.Hook<T>
-
-const $HOOK_INVALIDATED = Symbol.for("kaioken.hookInvalidated")
-const HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY: HookState<any> = {
-  [$HOOK_INVALIDATED]: true,
-}
 
 enum HookDebugGroupAction {
   Start = "start",
@@ -89,6 +83,11 @@ type HookCallbackContext<T> = {
    * and its raw arguments were changed.
    */
   isInit: boolean
+  /**
+   * Dev mode only - indicates if the hook is being run as a result of a HMR update.
+   * This is the time to clean up the previous version of the hook if necessary, ie. initial arguments changed.
+   */
+  isHMR?: boolean
   /**
    * Queues the current component to be re-rendered
    */
@@ -166,10 +165,6 @@ function useHook<
   ) as HookState<T> | undefined
 
   if (__DEV__) {
-    if (oldHook && $HOOK_INVALIDATED in oldHook) {
-      oldHook = undefined
-    }
-
     currentHookName = hookName
 
     let hook: HookState<T>
@@ -192,12 +187,10 @@ function useHook<
     vNode.hooks[index] = hook
 
     try {
-      const dev = hook.dev ?? {}
-      const shouldReinit =
-        dev?.rawArgsChanged && dev?.onRawArgsChanged === "persist"
       const res = (callback as HookCallback<T>)({
         hook,
-        isInit: Boolean(!oldHook || shouldReinit),
+        isInit: !oldHook,
+        isHMR: vNode.hmrUpdated,
         update: () => appCtx.requestUpdate(vNode),
         queueEffect,
         vNode,
@@ -208,10 +201,6 @@ function useHook<
       throw error
     } finally {
       currentHookName = null
-      if (hook.dev) {
-        // @ts-ignore - Reset the rawArgsChanged flag
-        hook.dev.rawArgsChanged = false
-      }
     }
   }
 

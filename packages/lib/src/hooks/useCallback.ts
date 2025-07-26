@@ -11,12 +11,15 @@ export function useCallback<T extends Function>(
   deps: unknown[]
 ): T {
   if (!sideEffectsEnabled()) return callback
-  return useHook("useCallback", { callback, deps }, ({ hook }) => {
+  return useHook("useCallback", { callback, deps }, ({ hook, isHMR }) => {
     if (__DEV__) {
       hook.dev = {
         devtools: {
           get: () => ({ callback: hook.callback, dependencies: hook.deps }),
         },
+      }
+      if (isHMR) {
+        hook.deps = []
       }
     }
     if (depsRequireChange(deps, hook.deps)) {

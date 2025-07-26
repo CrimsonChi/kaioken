@@ -67,9 +67,12 @@ export function useAsync<T>(
         func: (ctx: UseAsyncCallbackContext) => Promise<T>
       ) => void,
     },
-    ({ hook, isInit, update }) => {
+    ({ hook, isInit, isHMR, update }) => {
       if (__DEV__) {
         hook.dev = { devtools: { get: () => ({ value: hook.task }) } }
+        if (isHMR) {
+          isInit = true
+        }
       }
       if (isInit) {
         hook.cleanup = () => abortTask(hook.task)

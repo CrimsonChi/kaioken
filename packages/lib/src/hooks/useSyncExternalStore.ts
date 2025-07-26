@@ -31,6 +31,7 @@ export function useSyncExternalStore<T>(
     {
       state: null as T,
       unsubscribe: noop as () => void,
+      subscribe,
     },
     ({ hook, isInit, update }) => {
       if (__DEV__) {
@@ -38,8 +39,9 @@ export function useSyncExternalStore<T>(
           devtools: { get: () => ({ value: hook.state }) },
         }
       }
-      if (isInit) {
+      if (isInit || hook.subscribe !== subscribe) {
         hook.state = getState()
+        hook.subscribe = subscribe
         hook.unsubscribe = subscribe(() => {
           const newState = getState()
           if (Object.is(hook.state, newState)) return

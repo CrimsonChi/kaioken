@@ -4,7 +4,6 @@ import { ProgramNode } from "rollup"
 import { FileLinkFormatter } from "../types"
 import {
   createAliasHandler,
-  findFunctionBodyNodes,
   findNodeName,
   isComponent,
   MagicString,
@@ -39,18 +38,11 @@ if (import.meta.hot && "window" in globalThis) {
 }
 `)
 
-    const componentNamesToHookArgs = getComponentHookArgs(
-      ast.body as AstNode[],
-      code.original,
-      filePath
-    )
-
     code.append(`
 if (import.meta.hot && "window" in globalThis) {
   import.meta.hot.accept();
   ${createHMRRegistrationBlurb(
     hotVars,
-    componentNamesToHookArgs,
     fileLinkFormatter,
     filePath,
     isVirtualModule
@@ -64,7 +56,6 @@ if (import.meta.hot && "window" in globalThis) {
 
 function createHMRRegistrationBlurb(
   hotVars: Set<HotVarDesc>,
-  componentHookArgs: Record<string, HookToArgs[]>,
   fileLinkFormatter: FileLinkFormatter,
   filePath: string,
   isVirtualModule: boolean
@@ -91,26 +82,9 @@ function createHMRRegistrationBlurb(
     entries = Array.from(hotVars).map(({ name, type }) => {
       const key = JSON.stringify(name)
       const line = findHotVarLineInSrc(src, name)
-      if (type !== "component") {
-        return `    ${key}: {
+      return `    ${key}: {
       type: "${type}",
       value: ${name},
-      link: "${fileLinkFormatter(filePath, line)}"
-    }`
-      }
-      if (!componentHookArgs[name]) {
-        console.error(
-          "[vite-plugin-kaioken]: failed to parse component hooks",
-          name
-        )
-      }
-      const args = componentHookArgs[name].map(([name, args]) => {
-        return `{ name: "${name}", args: ${args} }`
-      })
-      return `    ${key}: {
-      type: "component",
-      value: ${name},
-      hooks: [${args.join(",")}],
       link: "${fileLinkFormatter(filePath, line)}"
     }`
     })
@@ -143,141 +117,6 @@ function findHotVarLineInSrc(src: string, name: string) {
     }
   }
   return 0
-}
-
-type ComponentName = string
-type HookName = string
-type HookToArgs = [HookName, string]
-
-function getComponentHookArgs(
-  bodyNodes: AstNode[],
-  code: string,
-  filePath: string
-): Record<string, HookToArgs[]> {
-  const res: Record<ComponentName, HookToArgs[]> = {}
-  const kaiokenNamespaceAliasHandler = createNamespaceAliasHandler("kaioken")
-  for (const node of bodyNodes) {
-    if (node.type === "ImportDeclaration") {
-      kaiokenNamespaceAliasHandler.addAliases(node)
-      continue
-    }
-    if (isComponent(node, bodyNodes)) {
-      const name = findNodeName(node)
-      if (name === null) {
-        console.error(
-          "[vite-plugin-kaioken]: unable to perform hook invalidation (failed to find component name)",
-          node.type,
-          node.start
-        )
-        continue
-      }
-
-      const hookArgsArr: HookToArgs[] = (res[name] = [])
-      const body = findFunctionBodyNodes(node, name, bodyNodes)
-      if (!body) {
-        /**
-         * todo: ensure that if we didn't find a body, it's because
-         * the function _actually_ doesn't have a body, eg.
-         * const App = () => (<div>Hello World</div>)
-         */
-        continue
-      }
-
-      for (const bodyNode of body) {
-        switch (bodyNode.type) {
-          case "VariableDeclaration":
-            if (!bodyNode.declarations) continue
-            for (const dec of bodyNode.declarations) {
-              if (
-                // handle `const count = useSignal(1)`
-                dec.init?.callee?.name?.startsWith("use") &&
-                dec.init.arguments
-              ) {
-                try {
-                  const args = argsToString(dec.init.arguments, code)
-                  hookArgsArr.push([dec.init.callee.name, args])
-                } catch (error) {
-                  console.error(
-                    "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration)",
-                    filePath,
-                    dec.init.callee.name,
-                    error
-                  )
-                }
-              } else if (
-                // handle `const count = kaioken.useSignal(1)`
-                dec.init?.callee?.type === "MemberExpression" &&
-                dec.init.callee.object?.name &&
-                kaiokenNamespaceAliasHandler.aliases.has(
-                  dec.init.callee.object.name
-                ) &&
-                dec.init.callee.property?.name?.startsWith("use") &&
-                dec.init.arguments
-              ) {
-                try {
-                  const args = argsToString(dec.init.arguments, code)
-                  hookArgsArr.push([dec.init.callee.property.name, args])
-                } catch (error) {
-                  console.error(
-                    "[vite-plugin-kaioken]: err thrown when getting hook args (VariableDeclaration -> MemberExpression)",
-                    filePath,
-                    dec.init.callee.property.name,
-                    error
-                  )
-                }
-              }
-            }
-            break
-          case "ExpressionStatement":
-            if (
-              // handle `useEffect(() => {}, [])`
-              bodyNode.expression?.type === "CallExpression" &&
-              bodyNode.expression.callee?.name?.startsWith("use") &&
-              bodyNode.expression.arguments
-            ) {
-              try {
-                const args = argsToString(bodyNode.expression.arguments, code)
-                hookArgsArr.push([bodyNode.expression.callee.name, args])
-              } catch (error) {
-                console.error(
-                  "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement)",
-                  filePath,
-                  bodyNode.expression.callee.name,
-                  error
-                )
-              }
-            } else if (
-              // handle `kaioken.useEffect(() => {}, [])`
-              bodyNode.expression?.type === "CallExpression" &&
-              bodyNode.expression.callee?.type === "MemberExpression" &&
-              bodyNode.expression.callee.object?.name &&
-              kaiokenNamespaceAliasHandler.aliases.has(
-                bodyNode.expression.callee.object.name
-              ) &&
-              bodyNode.expression.callee.property?.name?.startsWith("use") &&
-              bodyNode.expression.arguments
-            ) {
-              try {
-                const args = argsToString(bodyNode.expression.arguments, code)
-                hookArgsArr.push([
-                  bodyNode.expression.callee.property.name,
-                  args,
-                ])
-              } catch (error) {
-                console.error(
-                  "[vite-plugin-kaioken]: err thrown when getting hook args (ExpressionStatement -> MemberExpression)",
-                  filePath,
-                  bodyNode.expression.callee.property.name,
-                  error
-                )
-              }
-            }
-            break
-        }
-      }
-    }
-  }
-  return res
 }
 
 /**
@@ -398,24 +237,6 @@ function findHotVars(
   return hotVars
 }
 
-function createNamespaceAliasHandler(name: string) {
-  const aliases = new Set<string>()
-
-  const addAliases = (node: AstNode) => {
-    if (node.source?.value !== name) return
-    const specifiers = node.specifiers || []
-    for (let i = 0; i < specifiers.length; i++) {
-      const specifier = specifiers[i]
-      if (specifier.type === "ImportNamespaceSpecifier" && !!specifier.local) {
-        aliases.add(specifier.local.name)
-        break
-      }
-    }
-  }
-
-  return { name, aliases, addAliases }
-}
-
 function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   const name = findNodeName(node)
   if (name == null && type === "component") {
@@ -425,10 +246,4 @@ function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   if (name !== null) {
     names.add({ type, name })
   }
-}
-
-function argsToString(args: AstNode[], code: string) {
-  return JSON.stringify(
-    args.map((arg) => code.substring(arg.start, arg.end)).join(",")
-  )
 }

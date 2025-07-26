@@ -7,7 +7,6 @@ import {
   svgTags,
   postOrderApply,
 } from "./utils.js"
-import { cleanupHook } from "./hooks/utils.js"
 import { FLAG } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
 import { ctx, renderMode } from "./globals.js"
@@ -723,7 +722,7 @@ function commitDeletion(vNode: VNode) {
       dom,
       props: { ref },
     } = node
-    while (hooks?.length) cleanupHook(hooks.pop()!)
+    while (hooks?.length) hooks.pop()!.cleanup?.()
     subs?.forEach((sub) => Signal.unsubscribe(node, sub))
     if (cleanups) Object.values(cleanups).forEach((c) => c())
 

@@ -1,8 +1,10 @@
+import { __DEV__ } from "../env.js"
 import { Fragment } from "../element.js"
 import { generateRandomID } from "../generateId.js"
-import { shallowCompare } from "../utils.js"
+import { safeStringify, shallowCompare } from "../utils.js"
 import { useEffect } from "../hooks/useEffect.js"
 import { useMemo } from "../hooks/useMemo.js"
+import { useRef } from "../hooks/useRef.js"
 import { useHook, useRequestUpdate } from "../hooks/utils.js"
 import { objGet, objSet } from "./utils.js"
 import type {
@@ -527,7 +529,21 @@ export function useForm<T extends Record<string, unknown> = {}>(
   return useHook(
     "useForm",
     {} as UseFormInternalState<T>,
-    ({ hook, isInit }) => {
+    ({ hook, isInit, isHMR }) => {
+      if (__DEV__) {
+        if (isInit) {
+          hook.dev = {
+            initialArgs: [config],
+          }
+        } else if (isHMR) {
+          const [c] = hook.dev!.initialArgs
+          if (safeStringify(c) !== safeStringify(config)) {
+            hook.cleanup?.()
+            isInit = true
+            hook.dev!.initialArgs = [config]
+          }
+        }
+      }
       if (isInit) {
         const $controller = (hook.formController = createFormController(config))
 
@@ -539,13 +555,15 @@ export function useForm<T extends Record<string, unknown> = {}>(
           >,
           IsArray extends boolean
         >(props: FormFieldProps<T, Name, Validators, IsArray>) {
+          const didMount = useRef(false)
           const update = useRequestUpdate()
           if (props.validators) {
             $controller.setFieldValidators(props.name, props.validators)
           }
           useEffect(() => {
             $controller.connectField(props.name, update)
-            if (props.validators?.onMount) {
+            if (props.validators?.onMount && !didMount.current) {
+              didMount.current = true
               $controller.validateField(props.name, "onMount")
             }
             return () => {
@@ -603,7 +621,13 @@ export function useForm<T extends Record<string, unknown> = {}>(
           const selection = useHook(
             "useFormSubscription",
             { sub: null! as FormStateSubscriber<T> },
-            ({ hook, isInit, update }) => {
+            ({ hook, isInit, isHMR, update }) => {
+              if (__DEV__) {
+                if (isHMR) {
+                  isInit = true
+                  hook.cleanup?.()
+                }
+              }
               if (isInit) {
                 hook.sub = {
                   selector: props.selector,

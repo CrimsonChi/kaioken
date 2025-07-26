@@ -201,25 +201,31 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
   return useHook(
     "useSignal",
     { signal: null! as Signal<T> },
-    ({ hook, isInit }) => {
+    ({ hook, isInit, isHMR }) => {
       if (__DEV__) {
-        hook.dev = {
-          onRawArgsChanged: "persist",
-          devtools: {
-            get: () => ({
-              displayName: hook.signal.displayName,
-              value: hook.signal.peek(),
-            }),
-            set: ({ value }) => {
-              hook.signal.value = value
+        if (isInit) {
+          hook.dev = {
+            devtools: {
+              get: () => ({
+                displayName: hook.signal.displayName,
+                value: hook.signal.peek(),
+              }),
+              set: ({ value }) => {
+                hook.signal.value = value
+              },
             },
-          },
-        }
-        if (isInit && hook.dev.rawArgsChanged) {
-          hook.signal.value = initial
-          return hook.signal
+            initialArgs: [initial, displayName],
+          }
+        } else if (isHMR) {
+          const [v, name] = hook.dev!.initialArgs
+          if (v !== initial || name !== displayName) {
+            hook.cleanup?.()
+            isInit = true
+            hook.dev!.initialArgs = [initial, displayName]
+          }
         }
       }
+
       if (isInit) {
         hook.cleanup = () => Signal.dispose(hook.signal)
         hook.signal = new Signal(initial, displayName)

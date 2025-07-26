@@ -12,12 +12,15 @@ export function useMemo<T>(factory: () => T, deps: unknown[]): T {
   return useHook(
     "useMemo",
     { deps, value: undefined as T },
-    ({ hook, isInit }) => {
+    ({ hook, isInit, isHMR }) => {
       if (__DEV__) {
         hook.dev = {
           devtools: {
             get: () => ({ value: hook.value, dependencies: hook.deps }),
           },
+        }
+        if (isHMR) {
+          isInit = true
         }
       }
       if (isInit || depsRequireChange(deps, hook.deps)) {

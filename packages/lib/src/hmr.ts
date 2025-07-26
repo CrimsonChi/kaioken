@@ -4,7 +4,6 @@ import { $HMR_ACCEPT } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { Signal } from "./signals/base.js"
 import { traverseApply } from "./utils.js"
-import { HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY } from "./hooks/utils.js"
 import type { AppContext } from "./appContext"
 
 export type HMRAccept<T = {}> = {
@@ -45,7 +44,6 @@ type ModuleMemory = {
 type HotVarRegistrationEntry = {
   type: string
   value: HotVar
-  hooks?: Array<{ name: string; args: string }>
   link: string
 }
 
@@ -119,33 +117,6 @@ export function createHMRContext() {
         continue
       }
       if (oldEntry.type === "component" && newEntry.type === "component") {
-        const hooksToReset: number[] = []
-        let maxHookLen: number | null = null
-        if ("hooks" in oldEntry && "hooks" in newEntry) {
-          const newHooks = newEntry.hooks!
-          const oldHooks = oldEntry.hooks ?? []
-
-          for (let i = 0; i < oldHooks.length; i++) {
-            const oldHook = oldHooks[i]
-            const newHook = newHooks[i]
-            if (!newHook || newHook.name !== oldHook.name) {
-              /**
-               * if either:
-               * - hook was removed
-               * or:
-               * - new hook inserted before old hook
-               * then:
-               * invalidate all remaining hooks from this point
-               */
-              maxHookLen = i
-              break
-            }
-            if (newHook.args !== oldHook.args) {
-              hooksToReset.push(i)
-            }
-          }
-        }
-
         window.__kaioken!.apps.forEach((ctx) => {
           if (!ctx.mounted || !ctx.rootNode) return
           traverseApply(ctx.rootNode, (vNode) => {
@@ -155,25 +126,6 @@ export function createHMRContext() {
               vNode.hmrUpdated = true
               if (vNode.prev) {
                 vNode.prev.type = newEntry.value as any
-              }
-              if (!vNode.hooks) return
-              if (maxHookLen !== null) {
-                for (let i = maxHookLen; i < vNode.hooks.length; i++) {
-                  vNode.hooks[i].cleanup?.()
-                }
-                vNode.hooks.length = maxHookLen
-              }
-              for (let i = 0; i < hooksToReset.length; i++) {
-                const hook = vNode.hooks[hooksToReset[i]]
-                if (hook.dev?.onRawArgsChanged === "persist") {
-                  // @ts-ignore
-                  hook.dev.rawArgsChanged = true
-                } else {
-                  hook.cleanup?.()
-                  // replace it with our 'invalidate' sentinel. This will cause `useHook` to recreate the hookState from scratch.
-                  vNode.hooks[hooksToReset[i]] =
-                    HMR_INVALIDATE_HOOK_SENTINEL_INTERNAL_USE_ONLY
-                }
               }
             }
           })
