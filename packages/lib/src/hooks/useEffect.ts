@@ -17,21 +17,28 @@ export function useEffect(
   deps?: unknown[]
 ): void {
   if (!sideEffectsEnabled()) return
-  return useHook("useEffect", { deps }, ({ hook, isInit, queueEffect }) => {
-    if (__DEV__) {
-      hook.dev = {
-        devtools: { get: () => ({ callback, dependencies: hook.deps }) },
+  return useHook(
+    "useEffect",
+    { deps },
+    ({ hook, isInit, isHMR, queueEffect }) => {
+      if (__DEV__) {
+        hook.dev = {
+          devtools: { get: () => ({ callback, dependencies: hook.deps }) },
+        }
+        if (isHMR) {
+          isInit = true
+        }
+      }
+      if (isInit || depsRequireChange(deps, hook.deps)) {
+        hook.deps = deps
+        cleanupHook(hook)
+        queueEffect(() => {
+          const cleanup = callback()
+          if (typeof cleanup === "function") {
+            hook.cleanup = cleanup
+          }
+        })
       }
     }
-    if (isInit || depsRequireChange(deps, hook.deps)) {
-      hook.deps = deps
-      cleanupHook(hook)
-      queueEffect(() => {
-        const cleanup = callback()
-        if (typeof cleanup === "function") {
-          hook.cleanup = cleanup
-        }
-      })
-    }
-  })
+  )
 }

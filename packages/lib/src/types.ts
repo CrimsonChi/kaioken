@@ -152,14 +152,9 @@ declare global {
       cleanup?: () => void
       name?: string
       dev?: {
+        /** Used to perform invalidation during HMR when the hook's arguments have changed */
+        initialArgs?: any
         devtools?: HookDevtoolsProvisions<any>
-        /**
-         * If set to `"persist"`, during development the hook will persist
-         * instead of being recreated when the raw arguments of the hook change.
-         * During the next render, `isInit` and `rawArgsChanged` will be set to `true`.
-         */
-        onRawArgsChanged?: "persist"
-        readonly rawArgsChanged?: boolean
       }
     }
     type RefObject<T> = {

@@ -20,10 +20,13 @@ export function useLayoutEffect(
   return useHook(
     "useLayoutEffect",
     { deps },
-    ({ hook, isInit, queueEffect }) => {
+    ({ hook, isInit, isHMR, queueEffect }) => {
       if (__DEV__) {
         hook.dev = {
           devtools: { get: () => ({ callback, dependencies: hook.deps }) },
+        }
+        if (isHMR) {
+          isInit = true
         }
       }
       if (isInit || depsRequireChange(deps, hook.deps)) {

@@ -111,10 +111,8 @@ export const useComputed = <T>(
 ) => {
   return useHook(
     "useComputedSignal",
-    {
-      signal: null! as ComputedSignal<T>,
-    },
-    ({ hook, isInit, vNode }) => {
+    { signal: null! as ComputedSignal<T> },
+    ({ hook, isInit, isHMR }) => {
       if (__DEV__) {
         hook.dev = {
           devtools: {
@@ -124,11 +122,8 @@ export const useComputed = <T>(
             }),
           },
         }
-        if (!isInit && vNode.hmrUpdated) {
-          // isInit would be true if this is our initial render or if  the
-          // getter was changed. In the case that our vNode was the subject
-          // of an HMR update but the getter did not change, we're ensuring a
-          // new signal is created to handle global signals being replaced.
+        if (isHMR) {
+          // useComputed is always considered side-effecty, so we need to re-run
           hook.cleanup?.()
           isInit = true
         }

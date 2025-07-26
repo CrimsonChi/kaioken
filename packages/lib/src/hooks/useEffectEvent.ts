@@ -11,12 +11,6 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
 export function useEffectEvent<T extends Function>(callback: T): T {
   if (!sideEffectsEnabled()) return callback
   return useHook("useEffectEvent", { callback }, ({ hook }) => {
-    if (__DEV__) {
-      hook.dev = {
-        // persist function ref so that effects referring to it will continue using the latest version
-        onRawArgsChanged: "persist",
-      }
-    }
     hook.callback = callback
     return function () {
       if (node.current) {

@@ -128,12 +128,21 @@ function createStore<T, U extends MethodFactory<T>>(
     return useHook(
       "useStore",
       { value: null as any as T | R, lastChangeSync: -1 },
-      ({ hook, isInit, vNode, index, update }) => {
+      ({ hook, isInit, isHMR, vNode, index, update }) => {
         if (__DEV__) {
-          hook.dev = {
-            devtools: {
-              get: () => ({ value: hook.value }),
-            },
+          if (isInit) {
+            hook.dev = {
+              devtools: {
+                get: () => ({ value: hook.value }),
+              },
+              initialArgs: [sliceFn, equality],
+            }
+          } else if (isHMR) {
+            const [fn, eq] = hook.dev!.initialArgs
+            if (fn !== sliceFn || eq !== equality) {
+              isInit = true
+              hook.dev!.initialArgs = [sliceFn, equality]
+            }
           }
         }
         const { subscribers, nodeStateMap, epoch, value, methods } =

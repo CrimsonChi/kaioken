@@ -1,3 +1,4 @@
+import { __DEV__ } from "./env.js"
 import { useHook } from "./hooks/utils.js"
 import { Signal } from "./signals/base.js"
 import {
@@ -5,6 +6,7 @@ import {
   deepCompare,
   safeStringify,
   sideEffectsEnabled,
+  shallowCompare,
 } from "./utils.js"
 
 export type UseSWRState<T> = (
@@ -192,7 +194,39 @@ export function useSWR<T, K extends SWRKey>(
   return useHook(
     "useSWR",
     { strKey: "", options, update: noop } satisfies SWRHook,
-    ({ hook, isInit, update }) => {
+    ({ hook, isInit, isHMR, update }) => {
+      if (__DEV__) {
+        if (isInit) {
+          hook.dev = {
+            devtools: {
+              get: () => ({
+                key: hook.strKey,
+                value: SWR_GLOBAL_CACHE.get(strKey)!,
+              }),
+            },
+            initialArgs: [key, options],
+          }
+        } else if (isHMR) {
+          const entry = SWR_GLOBAL_CACHE.get(hook.strKey)
+          const [k, o] = hook.dev!.initialArgs
+          hook.dev!.initialArgs = [key, options]
+
+          if (entry) {
+            if (!shallowCompare(k, key)) {
+              // if key changed, new entry will be created
+            } else if (
+              entry.fetcher !== fetcher ||
+              !shallowCompare(o, options)
+            ) {
+              entry.fetcher = fetcher
+              entry.options = options
+              clearTimeout(entry.refreshInterval)
+              clearTimeout(entry.retryState?.timeout)
+              performFetch(entry)
+            }
+          }
+        }
+      }
       hook.options = options
       const strKey = safeStringify(key, { functions: false })
       let entry: SWRCacheEntry<T>

@@ -133,9 +133,9 @@ export function useWatch<const Deps extends readonly Signal<unknown>[]>(
   return useHook(
     "useWatch",
     { watcher: null as any as WatchEffect<Deps> },
-    ({ hook, isInit, vNode }) => {
+    ({ hook, isInit, isHMR }) => {
       if (__DEV__) {
-        if (vNode.hmrUpdated) {
+        if (isHMR) {
           hook.cleanup?.()
           isInit = true
         }
