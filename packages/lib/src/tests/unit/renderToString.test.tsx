@@ -92,7 +92,7 @@ describe("renderToString", () => {
         </div>
       )
     }
-    const expected = `<div><input type="checkbox" checked/></div>`
+    const expected = `<div><input type="checkbox" checked></div>`
     const res = renderToString(App)
 
     assert.strictEqual(res, expected)
