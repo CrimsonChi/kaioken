@@ -6,11 +6,10 @@ import {
   isVNode,
   encodeHtmlEntities,
   propsToElementAttributes,
-  selfClosingTags,
   isExoticType,
 } from "../utils.js"
 import { Signal } from "../signals/base.js"
-import { $HYDRATION_BOUNDARY } from "../constants.js"
+import { $HYDRATION_BOUNDARY, voidElements } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 import { HYDRATION_BOUNDARY_MARKER } from "./hydrationBoundary.js"
 import { __DEV__ } from "../env.js"
@@ -101,12 +100,9 @@ function renderToStream_internal(
     assertValidElementProps(el)
   }
   const attrs = propsToElementAttributes(props)
-  const isSelfClosing = selfClosingTags.includes(type)
-  state.stream.push(
-    `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : ">"}`
-  )
+  state.stream.push(`<${type}${attrs.length ? ` ${attrs}` : ""}>`)
 
-  if (!isSelfClosing) {
+  if (!voidElements.has(type)) {
     if ("innerHTML" in props) {
       state.stream.push(
         String(

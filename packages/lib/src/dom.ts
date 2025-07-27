@@ -1,13 +1,11 @@
 import {
   traverseApply,
-  booleanAttributes,
   commitSnapshot,
   propFilters,
   propToHtmlAttr,
-  svgTags,
   postOrderApply,
 } from "./utils.js"
-import { FLAG } from "./constants.js"
+import { booleanAttributes, FLAG, svgTags } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
@@ -402,7 +400,7 @@ function handleAttributeRemoval(
 }
 
 function setDomAttribute(element: Element, key: string, value: unknown) {
-  const isBoolAttr = booleanAttributes.includes(key)
+  const isBoolAttr = booleanAttributes.has(key)
 
   if (handleAttributeRemoval(element, key, value, isBoolAttr)) return
 

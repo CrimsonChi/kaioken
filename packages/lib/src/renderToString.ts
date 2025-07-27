@@ -5,11 +5,10 @@ import {
   isVNode,
   encodeHtmlEntities,
   propsToElementAttributes,
-  selfClosingTags,
   isExoticType,
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
-import { $HYDRATION_BOUNDARY } from "./constants.js"
+import { $HYDRATION_BOUNDARY, voidElements } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
 import { HYDRATION_BOUNDARY_MARKER } from "./ssr/hydrationBoundary.js"
 import { __DEV__ } from "./env.js"
@@ -86,8 +85,7 @@ function renderToString_internal(
       ? children.map((c, i) => renderToString_internal(c, el, i)).join("")
       : renderToString_internal(children, el, 0)
 
-  const isSelfClosing = selfClosingTags.includes(type)
-  return `<${type}${attrs.length ? " " + attrs : ""}${
-    isSelfClosing ? "/>" : `>${inner}</${type}>`
+  return `<${type}${attrs.length ? ` ${attrs}` : ""}>${
+    voidElements.has(type) ? "" : `${inner}</${type}>`
   }`
 }

@@ -25,8 +25,10 @@ export class KaiokenError extends Error {
         : optionsOrMessage.message
     super(message)
     if (typeof optionsOrMessage !== "string") {
-      if (optionsOrMessage?.vNode) {
-        this.customNodeStack = captureErrorStack(optionsOrMessage.vNode)
+      if (__DEV__) {
+        if (optionsOrMessage?.vNode) {
+          this.customNodeStack = captureErrorStack(optionsOrMessage.vNode)
+        }
       }
       this.fatal = optionsOrMessage?.fatal
     }

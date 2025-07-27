@@ -3,6 +3,7 @@ import {
   $CONTEXT_PROVIDER,
   $FRAGMENT,
   $HYDRATION_BOUNDARY,
+  booleanAttributes,
   FLAG,
   REGEX_UNIT,
 } from "./constants.js"
@@ -40,9 +41,6 @@ export {
   noop,
   latest,
   propFilters,
-  selfClosingTags,
-  svgTags,
-  booleanAttributes,
   safeStringify,
 }
 
@@ -383,110 +381,6 @@ const propFilters = {
     !propFilters.internalProps.includes(key) && !propFilters.isEvent(key),
 }
 
-const selfClosingTags = [
-  "area",
-  "base",
-  "br",
-  "col",
-  "embed",
-  "hr",
-  "img",
-  "input",
-  "link",
-  "meta",
-  "param",
-  "source",
-  "track",
-  "wbr",
-]
-
-const svgTags = new Set([
-  "animateTransform",
-  "circle",
-  "clipPath",
-  "defs",
-  "desc",
-  "ellipse",
-  "feBlend",
-  "feColorMatrix",
-  "feComponentTransfer",
-  "feComposite",
-  "feConvolveMatrix",
-  "feDiffuseLighting",
-  "feDisplacementMap",
-  "feFlood",
-  "feFuncA",
-  "feFuncB",
-  "feFuncG",
-  "feFuncR",
-  "feGaussianBlur",
-  "feMerge",
-  "feMergeNode",
-  "feMorphology",
-  "feOffset",
-  "feSpecularLighting",
-  "feTile",
-  "feTurbulence",
-  "filter",
-  "foreignObject",
-  "g",
-  "image",
-  "line",
-  "linearGradient",
-  "marker",
-  "path",
-  "polygon",
-  "polyline",
-  "radialGradient",
-  "rect",
-  "stop",
-  "svg",
-  "switch",
-  "symbol",
-  "text",
-  "textPath",
-  "title",
-  "tspan",
-  "use",
-])
-
-const booleanAttributes = [
-  "allowfullscreen",
-  "autofocus",
-  "autoplay",
-  "async",
-  "checked",
-  "compact",
-  "controls",
-  "contenteditable",
-  "declare",
-  "default",
-  "defer",
-  "disabled",
-  "download",
-  // "draggable",
-  "hidden",
-  "inert",
-  "ismap",
-  "multiple",
-  "nohref",
-  "noresize",
-  "noshade",
-  "novalidate",
-  "nowrap",
-  "open",
-  "popover",
-  "readonly",
-  "required",
-  "sandbox",
-  "scoped",
-  "selected",
-  "sortable",
-  "spellcheck",
-  "translate",
-  "wrap",
-]
-
 function propToHtmlAttr(key: string): string {
   switch (key) {
     case "className":
@@ -649,7 +543,7 @@ function propsToElementAttributes(props: Record<string, unknown>): string {
       case "symbol":
         continue
       case "boolean":
-        if (booleanAttributes.indexOf(key) > -1) {
+        if (booleanAttributes.has(key)) {
           if (val) attrs.push(key)
           continue
         }

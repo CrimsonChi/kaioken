@@ -11,7 +11,8 @@ type VNode = Kaioken.VNode
 export function reconcileChildren(parent: VNode, children: unknown) {
   if (Array.isArray(children)) {
     if (__DEV__) {
-      if (isListChild(children)) {
+      // array children are 'tagged' during parent reconciliation pass
+      if ($LIST_CHILD in children) {
         checkForMissingKeys(parent, children)
       }
       checkForDuplicateKeys(parent, children)
@@ -448,9 +449,6 @@ function emitCreateNode() {
 const $LIST_CHILD = Symbol("kaioken:marked-list-child")
 function markListChild(children: unknown[]) {
   Object.assign(children, { [$LIST_CHILD]: true })
-}
-function isListChild(children: unknown[]) {
-  return $LIST_CHILD in children
 }
 
 function mapRemainingChildren(child: VNode | null) {
