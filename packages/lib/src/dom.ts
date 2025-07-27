@@ -533,85 +533,58 @@ function getDomParent(vNode: VNode): ElementVNode {
   return parentNode as ElementVNode
 }
 
-function placeDom(
-  vNode: DomVNode,
-  mntParent: ElementVNode,
-  prevSiblingDom?: SomeDom
-) {
+function placeDom(vNode: DomVNode, hostNode: HostNode) {
+  const { node: parentVNodeWithDom, lastChild } = hostNode
   const dom = vNode.dom
-  if (prevSiblingDom) {
-    prevSiblingDom.after(dom)
+  if (lastChild) {
+    lastChild.dom.after(dom)
     return
   }
-  if (mntParent.dom.childNodes.length === 0) {
-    mntParent.dom.appendChild(dom)
+  // TODO: we can probably skip the 'next sibling search' if we're appending
+  const nextSiblingDom = getNextSiblingDom(vNode, parentVNodeWithDom)
+  if (nextSiblingDom) {
+    parentVNodeWithDom.dom.insertBefore(dom, nextSiblingDom)
     return
   }
-  /**
-   * scan from vNode, up, down, then right (repeating) to find previous dom
-   */
-  let prevDom: MaybeDom
-  let currentParent = vNode.parent!
-  let furthestParent = currentParent
-  let child = currentParent.child!
 
-  /**
-   * to prevent sibling-traversal beyond the mount parent or the node
-   * we're placing, we're creating a 'bounds' for our traversal.
-   */
-  const dBounds: VNode[] = [vNode]
-  const rBounds: VNode[] = [vNode]
-  let parent = vNode.parent
-  while (parent && parent !== mntParent) {
-    rBounds.push(parent)
-    parent = parent.parent
-  }
+  parentVNodeWithDom.dom.appendChild(dom)
+}
 
-  const siblingCheckpoints: VNode[] = []
-  while (child && currentParent.depth >= mntParent.depth) {
-    /**
-     * keep track of siblings we've passed for later,
-     * as long as they're within bounds.
-     */
-    if (child.sibling && rBounds.indexOf(child) === -1) {
-      siblingCheckpoints.push(child.sibling)
-    }
-    // downwards traversal
-    if (!isPortal(child) && dBounds.indexOf(child) === -1) {
-      dBounds.push(child)
-      const dom = child.dom ?? child.lastChildDom
-      // traverse downwards if no dom for this child
-      if (!dom && child.child) {
-        currentParent = child
-        child = currentParent.child!
-        continue
+function getNextSiblingDom(vNode: VNode, parent: ElementVNode): MaybeDom {
+  let node: VNode | null = vNode
+
+  while (node) {
+    let sibling = node.sibling
+
+    while (sibling) {
+      // Skip unmounted, to-be-placed & portal nodes
+      if (!flags.get(sibling.flags, FLAG.PLACEMENT) && !isPortal(sibling)) {
+        // Descend into the child to find host dom
+        const dom = findFirstHostDom(sibling)
+        if (dom?.isConnected) return dom
       }
-      // dom found, we can continue up/right traversal
-      if (dom?.isConnected) {
-        prevDom = dom
-      }
+      sibling = sibling.sibling
     }
 
-    // reverse and traverse through most recent sibling checkpoint
-    if (siblingCheckpoints.length) {
-      child = siblingCheckpoints.pop()!
-      currentParent = child.parent!
-      continue
+    // Move up to parent — but don't escape portal boundary
+    node = node.parent
+    if (!node || isPortal(node) || node === parent) {
+      return
     }
-
-    if (prevDom) break // no need to continue traversal
-    if (!furthestParent.parent) break // we've reached the root of the tree
-
-    // continue our upwards crawl from the furthest parent
-    currentParent = furthestParent.parent
-    furthestParent = currentParent
-    child = currentParent.child!
   }
 
-  if (!prevDom) {
-    return mntParent.dom.prepend(dom)
+  return
+}
+
+function findFirstHostDom(vNode: VNode): MaybeDom {
+  let node: VNode | null = vNode
+
+  while (node) {
+    if (node.dom) return node.dom
+    if (isPortal(node)) return // Don't descend into portals
+    node = node.child
   }
-  prevDom.after(dom)
+  return
 }
 
 function commitWork(vNode: VNode) {
@@ -624,7 +597,7 @@ function commitWork(vNode: VNode) {
   handlePrePlacementFocusPersistence()
 
   const hostNodes: HostNode[] = []
-  let currentHostNode: HostNode | undefined
+  let currentHostNode: HostNode
   const placementScopes: PlacementScope[] = []
   let currentPlacementScope: PlacementScope | undefined
 
@@ -659,7 +632,6 @@ function commitWork(vNode: VNode) {
       }
     },
     onAscent: (node) => {
-      // if (node.props["data-test"]) debugger
       let inheritsPlacement = false
       if (currentPlacementScope?.child === node) {
         currentPlacementScope.active = true
@@ -669,6 +641,10 @@ function commitWork(vNode: VNode) {
         return commitDeletion(node)
       }
       if (node.dom) {
+        if (!currentHostNode) {
+          currentHostNode = { node: getDomParent(node) }
+          hostNodes.push(currentHostNode)
+        }
         commitDom(node as DomVNode, currentHostNode, inheritsPlacement)
       }
       commitSnapshot(node)
@@ -690,7 +666,7 @@ function commitWork(vNode: VNode) {
 
 function commitDom(
   vNode: DomVNode,
-  hostNode: HostNode | undefined,
+  hostNode: HostNode,
   inheritsPlacement: boolean
 ) {
   if (isPortal(vNode)) return
@@ -699,15 +675,12 @@ function commitDom(
     !vNode.dom.isConnected ||
     flags.get(vNode.flags, FLAG.PLACEMENT)
   ) {
-    const parent = hostNode?.node ?? getDomParent(vNode)
-    placeDom(vNode, parent, hostNode?.lastChild?.dom)
+    placeDom(vNode, hostNode)
   }
   if (!vNode.prev || flags.get(vNode.flags, FLAG.UPDATE)) {
     updateDom(vNode)
   }
-  if (hostNode) {
-    hostNode.lastChild = vNode
-  }
+  hostNode.lastChild = vNode
 }
 
 function commitDeletion(vNode: VNode) {

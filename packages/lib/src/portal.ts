@@ -2,7 +2,7 @@ import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { useVNode } from "./hooks/utils.js"
-import { getVNodeAppContext, isVNode } from "./utils.js"
+import { getVNodeAppContext } from "./utils.js"
 
 export { Portal, isPortal }
 
@@ -37,7 +37,7 @@ function Portal({ children, container }: PortalProps) {
 }
 
 function isPortal(
-  thing: unknown
-): thing is Kaioken.VNode & { type: typeof Portal } {
-  return isVNode(thing) && thing.type === Portal
+  node: Kaioken.VNode
+): node is Kaioken.VNode & { type: typeof Portal } {
+  return node.type === Portal
 }
