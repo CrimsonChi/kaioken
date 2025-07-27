@@ -203,13 +203,15 @@ declare global {
       cleanups?: Record<string, Function>
       effects?: Array<Function>
       immediateEffects?: Array<Function>
-      hmrUpdated?: boolean
       memoizedProps?: Record<string, any>
       isMemoized?: boolean
       arePropsEqual?: (
         prev: Record<string, any>,
         next: Record<string, any>
       ) => boolean
+      // dev-mode only
+      hookSig?: string[]
+      hmrUpdated?: boolean
     }
   }
 

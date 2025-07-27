@@ -216,7 +216,8 @@ export const useSignal = <T>(initial: T, displayName?: string) => {
             },
             initialArgs: [initial, displayName],
           }
-        } else if (isHMR) {
+        }
+        if (isHMR) {
           const [v, name] = hook.dev!.initialArgs
           if (v !== initial || name !== displayName) {
             hook.cleanup?.()

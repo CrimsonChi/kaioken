@@ -206,7 +206,8 @@ export function useSWR<T, K extends SWRKey>(
             },
             initialArgs: [key, options],
           }
-        } else if (isHMR) {
+        }
+        if (isHMR) {
           const entry = SWR_GLOBAL_CACHE.get(hook.strKey)
           const [k, o] = hook.dev!.initialArgs
           hook.dev!.initialArgs = [key, options]

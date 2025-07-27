@@ -32,7 +32,8 @@ export function useState<T>(
             } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
             initialArgs: [initial],
           }
-        } else if (isHMR) {
+        }
+        if (isHMR) {
           const [v] = hook.dev!.initialArgs
           if (v !== initial) {
             isInit = true

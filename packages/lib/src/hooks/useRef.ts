@@ -25,7 +25,8 @@ export function useRef<T>(initialValue?: T | null) {
             } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
             initialArgs: [hook.ref.current],
           }
-        } else if (isHMR) {
+        }
+        if (isHMR) {
           const [v] = hook.dev!.initialArgs
           if (v !== initialValue) {
             hook.ref = { current: initialValue }

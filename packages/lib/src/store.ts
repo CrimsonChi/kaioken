@@ -137,7 +137,8 @@ function createStore<T, U extends MethodFactory<T>>(
               },
               initialArgs: [sliceFn, equality],
             }
-          } else if (isHMR) {
+          }
+          if (isHMR) {
             const [fn, eq] = hook.dev!.initialArgs
             if (fn !== sliceFn || eq !== equality) {
               isInit = true

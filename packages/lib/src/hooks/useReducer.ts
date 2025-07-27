@@ -26,7 +26,8 @@ export function useReducer<T, A>(
             } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
             initialArgs: [reducer, state],
           }
-        } else if (isHMR) {
+        }
+        if (isHMR) {
           const [r, s] = hook.dev!.initialArgs
           if (r !== reducer || s !== state) {
             hook.state = state

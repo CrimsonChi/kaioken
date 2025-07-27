@@ -78,9 +78,7 @@ type HookCallbackContext<T> = {
    */
   hook: HookState<T>
   /**
-   * Indicates if this is the first time the hook has been initialized,
-   * or if `state.dev.persistWhenRawArgsChanged` has been set to `true`
-   * and its raw arguments were changed.
+   * Indicates if this is the first time the hook has been initialized
    */
   isInit: boolean
   /**
@@ -167,6 +165,22 @@ function useHook<
   if (__DEV__) {
     currentHookName = hookName
 
+    vNode.hooks ??= []
+    vNode.hookSig ??= []
+
+    if (!vNode.hookSig[index]) {
+      vNode.hookSig[index] = hookName
+    } else {
+      if (vNode.hookSig[index] !== hookName) {
+        console.warn(
+          `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${vNode.hookSig[index]}". Strange things may happen.`
+        )
+        vNode.hooks.length = index
+        vNode.hookSig.length = index
+        oldHook = undefined
+      }
+    }
+
     let hook: HookState<T>
     if (!oldHook) {
       hook =
@@ -176,14 +190,8 @@ function useHook<
       hook.name = hookName
     } else {
       hook = oldHook
-      if (oldHook.name !== hookName) {
-        console.warn(
-          `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${oldHook.name}". Strange things may happen.`
-        )
-      }
     }
 
-    vNode.hooks ??= []
     vNode.hooks[index] = hook
 
     try {

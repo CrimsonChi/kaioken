@@ -535,7 +535,8 @@ export function useForm<T extends Record<string, unknown> = {}>(
           hook.dev = {
             initialArgs: [config],
           }
-        } else if (isHMR) {
+        }
+        if (isHMR) {
           const [c] = hook.dev!.initialArgs
           if (safeStringify(c) !== safeStringify(config)) {
             hook.cleanup?.()
