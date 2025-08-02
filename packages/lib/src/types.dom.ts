@@ -2,15 +2,25 @@ import { Signal } from "./signals"
 import type { Prettify, Signalable } from "./types.utils"
 
 export type {
+  HTMLTagToElement,
+  SVGTagToElement,
   HtmlElementAttributes,
   HtmlElementBindableProps,
   SvgElementAttributes,
   SvgGlobalAttributes,
   GlobalAttributes,
-  GlobalEventAttributes,
-  EventAttributes,
   StyleObject,
 }
+
+type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
+  T extends keyof HTMLElementTagNameMap
+    ? HTMLElementTagNameMap[T]
+    : T extends keyof HTMLElementDeprecatedTagNameMap
+    ? HTMLElementDeprecatedTagNameMap[T]
+    : never
+
+type SVGTagToElement<T extends keyof SvgElementAttributes> =
+  T extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[T] : never
 
 type NumericStyleKeys =
   // Layout: Margin, Padding, Position
@@ -287,39 +297,6 @@ type FormMethod = "get" | "post" | "dialog"
 
 type Direction = "ltr" | "rtl" | "auto"
 
-type FocussableElementTags =
-  | "a"
-  | "area"
-  | "audio"
-  | "button"
-  | "details"
-  | "dialog"
-  | "embed"
-  | "iframe"
-  | "input"
-  | "label"
-  | "menu"
-  | "meter"
-  | "object"
-  | "optgroup"
-  | "option"
-  | "output"
-  | "progress"
-  | "select"
-  | "summary"
-  | "textarea"
-  | "video"
-
-type LoadableElementTags =
-  | "img"
-  | "iframe"
-  | "link"
-  | "script"
-  | "source"
-  | "track"
-
-type ErrorableElementTags = "img" | "iframe" | "link" | "script" | "source"
-
 type GlobalAttributes = {
   accessKey?: string
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters"
@@ -341,63 +318,205 @@ type GlobalAttributes = {
   inert?: boolean
 }
 
-type GlobalEventAttributes = Omit<
-  Partial<GlobalEventHandlers>,
-  | keyof InputEventAttributes<any>
-  | keyof FocusEventAttributes
-  | keyof KeyboardEventAttributes
-  | "addEventListener"
-  | "removeEventListener"
->
+type NativeAnimationEvent = AnimationEvent
+type NativeClipboardEvent = ClipboardEvent
+type NativeCompositionEvent = CompositionEvent
+type NativeDragEvent = DragEvent
+type NativeFocusEvent = FocusEvent
+type NativeKeyboardEvent = KeyboardEvent
+type NativeMouseEvent = MouseEvent
+type NativeTouchEvent = TouchEvent
+type NativePointerEvent = PointerEvent
+type NativeSubmitEvent = SubmitEvent
+type NativeToggleEvent = ToggleEvent
+type NativeTransitionEvent = TransitionEvent
+type NativeUIEvent = UIEvent
+type NativeWheelEvent = WheelEvent
 
-type KeyboardEventAttributes = {
-  onkeyup?: (e: KeyboardEvent) => void
-  onkeydown?: (e: KeyboardEvent) => void
-  onkeypress?: (e: KeyboardEvent) => void
+type VoidElement =
+  | HTMLAreaElement
+  | HTMLBaseElement
+  | HTMLBRElement
+  | HTMLEmbedElement
+  | HTMLHRElement
+  | HTMLImageElement
+  | HTMLInputElement
+  | HTMLLinkElement
+  | HTMLMetaElement
+  | HTMLSourceElement
+  | HTMLTrackElement
+
+declare global {
+  namespace Kaioken {
+    type DOMEvent<E = Event, C = unknown, T = unknown> = Omit<
+      E,
+      "target" | "currentTarget"
+    > & {
+      target: C extends VoidElement ? EventTarget & C : EventTarget & T
+      currentTarget: EventTarget & C
+    }
+
+    type EventHandler<E extends DOMEvent> = {
+      bivarianceHack(event: E): void
+    }["bivarianceHack"]
+
+    type BaseEventHandler<T = Element> = EventHandler<DOMEvent<Event, T>>
+    type AnimationEvent<T = Element> = DOMEvent<NativeAnimationEvent, T>
+    type ClipboardEvent<T = Element> = DOMEvent<NativeClipboardEvent, T>
+    type CompositionEvent<T = Element> = DOMEvent<NativeCompositionEvent, T>
+    type DragEvent<T = Element> = DOMEvent<NativeDragEvent, T>
+    type FocusEvent<T = Element> = DOMEvent<NativeFocusEvent, T>
+    type FormEvent<T = Element> = DOMEvent<Event, T>
+    type KeyboardEvent<T = Element> = DOMEvent<NativeKeyboardEvent, T>
+    type MouseEvent<T = Element> = DOMEvent<NativeMouseEvent, T>
+    type PointerEvent<T = Element> = DOMEvent<NativePointerEvent, T>
+    type SubmitEvent<T = Element> = DOMEvent<NativeSubmitEvent, T>
+    type TouchEvent<T = Element> = DOMEvent<NativeTouchEvent, T>
+    type ToggleEvent<T = Element> = DOMEvent<NativeToggleEvent, T>
+    type TransitionEvent<T = Element> = DOMEvent<NativeTransitionEvent, T>
+    type UIEvent<T = Element> = DOMEvent<NativeUIEvent, T>
+    type WheelEvent<T = Element> = DOMEvent<NativeWheelEvent, T>
+
+    type ClipboardEventHandler<T = Element> = EventHandler<ClipboardEvent<T>>
+    type CompositionEventHandler<T = Element> = EventHandler<
+      CompositionEvent<T>
+    >
+    type DragEventHandler<T = Element> = EventHandler<DragEvent<T>>
+    type FocusEventHandler<T = Element> = EventHandler<FocusEvent<T>>
+    type FormEventHandler<T = Element> = EventHandler<FormEvent<T>>
+    type KeyboardEventHandler<T = Element> = EventHandler<KeyboardEvent<T>>
+    type MouseEventHandler<T = Element> = EventHandler<MouseEvent<T>>
+    type TouchEventHandler<T = Element> = EventHandler<TouchEvent<T>>
+    type PointerEventHandler<T = Element> = EventHandler<PointerEvent<T>>
+    type UIEventHandler<T = Element> = EventHandler<UIEvent<T>>
+    type WheelEventHandler<T = Element> = EventHandler<WheelEvent<T>>
+    type AnimationEventHandler<T = Element> = EventHandler<AnimationEvent<T>>
+    type ToggleEventHandler<T = Element> = EventHandler<ToggleEvent<T>>
+    type TransitionEventHandler<T = Element> = EventHandler<TransitionEvent<T>>
+
+    type EventAttributes<T = Element> = {
+      // Clipboard Events
+      oncopy?: ClipboardEventHandler<T> | undefined
+      oncut?: ClipboardEventHandler<T> | undefined
+      onpaste?: ClipboardEventHandler<T> | undefined
+
+      // Composition Events
+      oncompositionend?: CompositionEventHandler<T> | undefined
+      oncompositionstart?: CompositionEventHandler<T> | undefined
+      oncompositionupdate?: CompositionEventHandler<T> | undefined
+
+      // Focus Events
+      onfocus?: FocusEventHandler<T> | undefined
+      onblur?: FocusEventHandler<T> | undefined
+
+      // Form Events
+      onchange?: FormEventHandler<T> | undefined
+      onbeforeinput?: FormEventHandler<T> | undefined
+      oninput?: FormEventHandler<T> | undefined
+      onreset?: FormEventHandler<T> | undefined
+      onsubmit?: FormEventHandler<T> | undefined
+      oninvalid?: FormEventHandler<T> | undefined
+
+      // Image Events
+      onload?: BaseEventHandler<T> | undefined
+      onerror?: BaseEventHandler<T> | undefined
+
+      // Keyboard Events
+      onkeydown?: KeyboardEventHandler<T> | undefined
+      onkeypress?: KeyboardEventHandler<T> | undefined
+      onkeyup?: KeyboardEventHandler<T> | undefined
+
+      // Media Events
+      onabort?: BaseEventHandler<T> | undefined
+      oncanplay?: BaseEventHandler<T> | undefined
+      oncanplaythrough?: BaseEventHandler<T> | undefined
+      ondurationchange?: BaseEventHandler<T> | undefined
+      onemptied?: BaseEventHandler<T> | undefined
+      onencrypted?: BaseEventHandler<T> | undefined
+      onended?: BaseEventHandler<T> | undefined
+      onloadeddata?: BaseEventHandler<T> | undefined
+      onloadedmetadata?: BaseEventHandler<T> | undefined
+      onloadstart?: BaseEventHandler<T> | undefined
+      onpause?: BaseEventHandler<T> | undefined
+      onplay?: BaseEventHandler<T> | undefined
+      onplaying?: BaseEventHandler<T> | undefined
+      onprogress?: BaseEventHandler<T> | undefined
+      onratechange?: BaseEventHandler<T> | undefined
+      onresize?: BaseEventHandler<T> | undefined
+      onseeked?: BaseEventHandler<T> | undefined
+      onseeking?: BaseEventHandler<T> | undefined
+      onstalled?: BaseEventHandler<T> | undefined
+      onsuspend?: BaseEventHandler<T> | undefined
+      ontimeupdate?: BaseEventHandler<T> | undefined
+      onvolumechange?: BaseEventHandler<T> | undefined
+      onwaiting?: BaseEventHandler<T> | undefined
+
+      // Mouse Events
+      onauxclick?: MouseEventHandler<T> | undefined
+      onclick?: MouseEventHandler<T> | undefined
+      oncontextmenu?: MouseEventHandler<T> | undefined
+      ondblclick?: MouseEventHandler<T> | undefined
+      ondrag?: DragEventHandler<T> | undefined
+      ondragend?: DragEventHandler<T> | undefined
+      ondragenter?: DragEventHandler<T> | undefined
+      ondragexit?: DragEventHandler<T> | undefined
+      ondragleave?: DragEventHandler<T> | undefined
+      ondragover?: DragEventHandler<T> | undefined
+      ondragstart?: DragEventHandler<T> | undefined
+      ondrop?: DragEventHandler<T> | undefined
+      onmousedown?: MouseEventHandler<T> | undefined
+      onmouseenter?: MouseEventHandler<T> | undefined
+      onmouseleave?: MouseEventHandler<T> | undefined
+      onmousemove?: MouseEventHandler<T> | undefined
+      onmouseout?: MouseEventHandler<T> | undefined
+      onmouseover?: MouseEventHandler<T> | undefined
+      onmouseup?: MouseEventHandler<T> | undefined
+
+      // Selection Events
+      onselect?: BaseEventHandler<T> | undefined
+
+      // Touch Events
+      ontouchcancel?: TouchEventHandler<T> | undefined
+      ontouchend?: TouchEventHandler<T> | undefined
+      ontouchmove?: TouchEventHandler<T> | undefined
+      ontouchstart?: TouchEventHandler<T> | undefined
+
+      // Pointer Events
+      onpointerdown?: PointerEventHandler<T> | undefined
+      onpointermove?: PointerEventHandler<T> | undefined
+      onpointerup?: PointerEventHandler<T> | undefined
+      onpointercancel?: PointerEventHandler<T> | undefined
+      onpointerenter?: PointerEventHandler<T> | undefined
+      onpointerleave?: PointerEventHandler<T> | undefined
+      onpointerover?: PointerEventHandler<T> | undefined
+      onpointerout?: PointerEventHandler<T> | undefined
+      ongotpointercapture?: PointerEventHandler<T> | undefined
+      onlostpointercapture?: PointerEventHandler<T> | undefined
+
+      // UI Events
+      onscroll?: UIEventHandler<T> | undefined
+      onscrollend?: UIEventHandler<T> | undefined
+
+      // Wheel Events
+      onwheel?: WheelEventHandler<T> | undefined
+
+      // Animation Events
+      onanimationstart?: AnimationEventHandler<T> | undefined
+      onanimationend?: AnimationEventHandler<T> | undefined
+      onanimationiteration?: AnimationEventHandler<T> | undefined
+
+      // Toggle Events
+      ontoggle?: ToggleEventHandler<T> | undefined
+      onbeforetoggle?: ToggleEventHandler<T> | undefined
+
+      // Transition Events
+      ontransitioncancel?: TransitionEventHandler<T> | undefined
+      ontransitionend?: TransitionEventHandler<T> | undefined
+      ontransitionrun?: TransitionEventHandler<T> | undefined
+      ontransitionstart?: TransitionEventHandler<T> | undefined
+    }
+  }
 }
-
-type FocusEventAttributes = {
-  onblur?: (e: FocusEvent) => void
-  onfocus?: (e: FocusEvent) => void
-}
-
-type InputEvent<T extends "input" | "select" | "textarea"> = Omit<
-  Event,
-  "target"
-> & {
-  target: T extends "input"
-    ? HTMLInputElement
-    : T extends "select"
-    ? HTMLSelectElement
-    : HTMLTextAreaElement
-}
-type InputEventAttributes<T extends "input" | "select" | "textarea"> = {
-  onblur?: (e: InputEvent<T>) => void
-  onfocus?: (e: InputEvent<T>) => void
-  onchange?: (e: InputEvent<T>) => void
-  oninput?: (e: InputEvent<T>) => void
-  onreset?: (e: InputEvent<T>) => void
-  onsubmit?: (e: InputEvent<T>) => void
-}
-
-// type MouseEventAttributes = {
-//   onclick?: (e: MouseEvent) => void
-//   ondblclick?: (e: MouseEvent) => void
-//   onmousedown?: (e: MouseEvent) => void
-//   onmouseenter?: (e: MouseEvent) => void
-//   onmouseleave?: (e: MouseEvent) => void
-//   onmousemove?: (e: MouseEvent) => void
-//   onmouseout?: (e: MouseEvent) => void
-//   onmouseover?: (e: MouseEvent) => void
-//   onmouseup?: (e: MouseEvent) => void
-// }
-
-type EventAttributes<T extends string> = KeyboardEventAttributes &
-  // MouseEventAttributes &
-  (T extends FocussableElementTags ? FocusEventAttributes : {}) &
-  (T extends "input" | "select" | "textarea" ? InputEventAttributes<T> : {}) &
-  (T extends LoadableElementTags ? { onload?: (e: Event) => void } : {}) &
-  (T extends ErrorableElementTags ? { onerror?: (e: Event) => void } : {})
 
 type ElementReference<T extends HTMLElement> = T | null | string
 
@@ -534,7 +653,6 @@ interface HtmlElementAttributes {
     name?: string
     novalidate?: boolean
     target?: string
-    onsubmit?: (e: Event) => void
     action?: FormAction
   }
   h1: {}
@@ -636,7 +754,7 @@ interface HtmlElementAttributes {
   mark: {}
   menu: {}
   meta: {
-    charset?: "utf-8"
+    charset?: string
     content?: string
     httpEquiv?: string
     name?: string

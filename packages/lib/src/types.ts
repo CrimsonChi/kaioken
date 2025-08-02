@@ -7,28 +7,18 @@ import type {
 } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
-  EventAttributes,
   GlobalAttributes,
-  GlobalEventAttributes,
   HtmlElementAttributes,
   SvgElementAttributes,
   SvgGlobalAttributes,
   StyleObject,
   HtmlElementBindableProps,
+  HTMLTagToElement,
+  SVGTagToElement,
 } from "./types.dom"
 import { Signalable, SomeDom } from "./types.utils"
 
 export type { ElementProps, StyleObject }
-
-type HTMLTagToElement<T extends keyof HtmlElementAttributes> =
-  T extends keyof HTMLElementTagNameMap
-    ? HTMLElementTagNameMap[T]
-    : T extends keyof HTMLElementDeprecatedTagNameMap
-    ? HTMLElementDeprecatedTagNameMap[T]
-    : never
-
-type SVGTagToElement<T extends keyof SvgElementAttributes> =
-  T extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[T] : never
 
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
   JSX.IntrinsicElements[T]
@@ -60,8 +50,7 @@ type ElementMap = {
   [Tag in keyof HtmlElementAttributes]: SignalableHtmlElementAttributes<Tag> &
     SignalableGlobalAttributes &
     SignalableAriaProps &
-    EventAttributes<Tag> &
-    GlobalEventAttributes &
+    Kaioken.EventAttributes<HTMLTagToElement<Tag>> &
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<HTMLTagToElement<Tag>>
@@ -72,8 +61,7 @@ type ElementMap = {
     SignalableSvgGlobalAttributes &
     SignalableGlobalAttributes &
     SignalableAriaProps &
-    EventAttributes<Tag> &
-    GlobalEventAttributes &
+    Kaioken.EventAttributes<SVGTagToElement<Tag>> &
     JSX.ElementAttributes & {
       ref?:
         | Kaioken.Ref<SVGTagToElement<Tag>>
@@ -122,7 +110,7 @@ declare global {
         | Kaioken.Signal<string | number | null | undefined>
     }
   }
-  export namespace Kaioken {
+  namespace Kaioken {
     type ProviderProps<T> = {
       value: T
       children?: JSX.Children | ((value: T) => JSX.Element)
