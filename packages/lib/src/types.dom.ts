@@ -600,7 +600,9 @@ interface HtmlElementAttributes {
     formAction?: FormAction
     formEnctype?: EncType
     formMethod?: FormMethod
+    name?: string
     type?: "button" | "reset" | "submit"
+    value?: string
   } & PopoverControlAttributes
   canvas: {
     width?: string | number
