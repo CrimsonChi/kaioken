@@ -333,7 +333,7 @@ type NativeTransitionEvent = TransitionEvent
 type NativeUIEvent = UIEvent
 type NativeWheelEvent = WheelEvent
 
-type VoidElement =
+type NoChildElementElement =
   | HTMLAreaElement
   | HTMLBaseElement
   | HTMLBRElement
@@ -345,6 +345,7 @@ type VoidElement =
   | HTMLMetaElement
   | HTMLSourceElement
   | HTMLTrackElement
+  | HTMLTextAreaElement
 
 declare global {
   namespace Kaioken {
@@ -352,7 +353,9 @@ declare global {
       E,
       "target" | "currentTarget"
     > & {
-      target: C extends VoidElement ? EventTarget & C : EventTarget & T
+      target: C extends NoChildElementElement
+        ? EventTarget & C
+        : EventTarget & T
       currentTarget: EventTarget & C
     }
 
