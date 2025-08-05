@@ -594,7 +594,7 @@ interface HtmlElementAttributes {
   body: {}
   br: {}
   button: {
-    autofocus?: "autofocus"
+    autofocus?: boolean
     disabled?: boolean
     form?: ElementReference<HTMLFormElement>
     formAction?: FormAction
