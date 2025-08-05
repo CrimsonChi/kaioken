@@ -3,11 +3,24 @@
  * in order to prevent pollution caused by the UMD version
  */
 
+import type { ProgramNode } from "rollup"
 import MagicString from "../../node_modules/magic-string/dist/magic-string.cjs"
+import { FileLinkFormatter } from "../types"
+
 export { MagicString }
 
 import * as AST from "./ast"
 type AstNode = AST.AstNode
+
+export type TransformCTX = {
+  log: (...data: any[]) => void
+  code: MagicString
+  ast: ProgramNode
+  fileLinkFormatter: FileLinkFormatter
+  isBuild: boolean
+  isVirtualModule: boolean
+  filePath: string
+}
 
 export function createAliasHandler(name: string, namespace = "kaioken") {
   const aliases = new Set<string>()

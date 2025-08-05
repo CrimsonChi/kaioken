@@ -6,14 +6,15 @@ import {
 } from "vite"
 import devtoolsClientBuild from "kaioken-devtools-client"
 import devtoolsHostBuild from "kaioken-devtools-host"
-import { MagicString } from "./codegen/shared.js"
+import { MagicString, TransformCTX } from "./codegen/shared.js"
 import path from "node:path"
 import {
   prepareDevOnlyHooks,
-  prepareHotVars,
+  prepareHMR,
   prepareHydrationBoundaries,
 } from "./codegen"
 import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
+import { ANSI } from "./ansi.js"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
   jsxInject: `import { createElement as _jsx, Fragment as _jsxFragment } from "kaioken"`,
@@ -27,6 +28,13 @@ export const defaultEsBuildOptions: ESBuildOptions = {
 export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let isProduction = false
   let isBuild = false
+  let devtoolsEnabled = false
+
+  let loggingEnabled = false
+  const log = (...data: any[]) => {
+    if (!loggingEnabled) return
+    console.log(ANSI.cyan("[vite-plugin-kaioken]"), ...data)
+  }
 
   let fileLinkFormatter: FileLinkFormatter = (path: string, line: number) =>
     `vscode://file/${path}:${line}`
@@ -57,6 +65,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       return virtualModules[id]
     },
     async buildStart() {
+      if (!devtoolsEnabled) return
+      log("Preparing devtools...")
       const kaiokenPath = await this.resolve("kaioken")
       if (!kaiokenPath) {
         throw new Error(
@@ -71,6 +81,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         'from"kaioken";',
         `from"/@fs/${kaiokenPath!.id}";`
       )
+      log("Devtools ready.")
     },
     config(config) {
       return {
@@ -81,8 +92,19 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         },
       } as UserConfig
     },
+    configResolved(config) {
+      isProduction = config.isProduction
+      isBuild = config.command === "build"
+      devtoolsEnabled = opts?.devtools !== false && !isBuild && !isProduction
+      loggingEnabled = opts?.loggingEnabled === true
+
+      projectRoot = config.root.replace(/\\/g, "/")
+      includedPaths = (opts?.include ?? []).map((p) =>
+        path.resolve(projectRoot, p).replace(/\\/g, "/")
+      )
+    },
     transformIndexHtml(html) {
-      if (isProduction || isBuild || opts?.devtools === false) return
+      if (!devtoolsEnabled) return
       return {
         html,
         tags: [
@@ -100,21 +122,15 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         ],
       } satisfies IndexHtmlTransformResult
     },
-    configResolved(config) {
-      isProduction = config.isProduction
-      isBuild = config.command === "build"
-      projectRoot = config.root.replace(/\\/g, "/")
-      includedPaths = (opts?.include ?? []).map((p) =>
-        path.resolve(projectRoot, p).replace(/\\/g, "/")
-      )
-    },
     configureServer(server) {
       if (isProduction || isBuild) return
-      if (opts?.devtools !== false) {
+      if (devtoolsEnabled) {
+        log(`Serving devtools host at ${ANSI.magenta(dtHostScriptPath)}`)
         server.middlewares.use(dtHostScriptPath, (_, res) => {
           res.setHeader("Content-Type", "application/javascript")
           res.end(transformedDtHostBuild, "utf-8")
         })
+        log(`Serving devtools client at ${ANSI.magenta(dtClientPathname)}`)
         server.middlewares.use(dtClientPathname, (_, res) => {
           res.end(transformedDtClientBuild)
         })
@@ -156,8 +172,8 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       })
     },
     transform(src, id, options) {
-      const isVirtual = !!virtualModules[id]
-      if (!isVirtual) {
+      const isVirtualModule = !!virtualModules[id]
+      if (!isVirtualModule) {
         if (
           id.startsWith("\0") ||
           id.startsWith("vite:") ||
@@ -173,21 +189,33 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         )
 
         if (!isIncludedByUser && !filePath.startsWith(projectRoot)) {
+          opts?.onFileExcluded?.(id)
           return { code: src }
         }
       }
 
+      log(`Processing ${ANSI.black(id)}`)
+
       const ast = this.parse(src)
       const code = new MagicString(src)
+      const ctx: TransformCTX = {
+        code,
+        ast,
+        isBuild,
+        fileLinkFormatter,
+        isVirtualModule,
+        filePath: id,
+        log,
+      }
 
-      prepareDevOnlyHooks(code, ast, isBuild)
+      prepareDevOnlyHooks(ctx)
 
       if (!isProduction && !isBuild) {
-        prepareHotVars(code, ast, fileLinkFormatter, id, isVirtual)
+        prepareHMR(ctx)
       }
 
       if (!options?.ssr) {
-        const { extraModules } = prepareHydrationBoundaries(code, ast, id)
+        const { extraModules } = prepareHydrationBoundaries(ctx)
         for (const key in extraModules) {
           ;(fileToVirtualModules[id] ??= new Set()).add(key)
           virtualModules[key] = extraModules[key]
@@ -195,6 +223,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
       }
 
       if (!code.hasChanged()) {
+        log(ANSI.green("✓"), "No changes")
         return { code: src }
       }
 
@@ -203,9 +232,13 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         file: `${id}.map`,
         includeContent: true,
       })
+      log(ANSI.green("✓"), "Transformed")
+
+      const result = code.toString()
+      opts?.onFileTransformed?.(id, result)
 
       return {
-        code: code.toString(),
+        code: result,
         map: map.toString(),
       }
     },

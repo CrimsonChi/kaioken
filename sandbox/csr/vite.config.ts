@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [
     kaioken({
       include: ["../shared/"],
+      loggingEnabled: true,
     }),
   ],
 })

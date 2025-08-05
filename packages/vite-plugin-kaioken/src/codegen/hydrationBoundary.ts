@@ -5,18 +5,17 @@ import {
   findNodeName,
   findFunctionBodyNodes,
   MagicString,
+  TransformCTX,
 } from "./shared"
-import { ProgramNode } from "rollup"
 import * as AST from "./ast"
+import { ANSI } from "../ansi"
 type AstNode = AST.AstNode
 
-export function prepareHydrationBoundaries(
-  code: MagicString,
-  ast: ProgramNode,
-  filePath: string
-): {
+export function prepareHydrationBoundaries(ctx: TransformCTX): {
   extraModules: Record<string, string>
 } {
+  const { log, code, ast, filePath } = ctx
+
   const CWD = process.cwd().replace(/\\/g, "/")
   const folderPath = filePath
     .replace(/\\/g, "/")
@@ -52,8 +51,10 @@ export function prepareHydrationBoundaries(
 
     const componentName = findNodeName(node)
     if (componentName === null) {
-      console.error(
-        "[vite-plugin-kaioken]: unable to prepare hydration boundaries (failed to find component name)",
+      log(
+        ANSI.red(
+          "unable to prepare hydration boundaries (failed to find component name)"
+        ),
         node.type,
         node.start
       )
@@ -81,10 +82,9 @@ export function prepareHydrationBoundaries(
     type BlockScope = Map<string, AstNode>
     const globalVars = new Map<string, AstNode>(
       importNodes.reduce<Array<[string, AstNode]>>((acc, item) => {
-        const entries: Array<[string, AstNode]> = item.specifiers!.map((s) => [
-          s.local!.name,
-          s,
-        ])
+        const entries: Array<[string, AstNode]> = item.specifiers!.map(
+          (s) => [s.local!.name, s] as const
+        )
         return [...acc, ...entries]
       }, [])
     )
@@ -94,9 +94,6 @@ export function prepareHydrationBoundaries(
       // function scope
       new Map(globalVars),
     ]
-
-    const enableLog = false && filePath.includes("index/+Page.tsx")
-    const log = enableLog ? console.log : () => {}
 
     let index = 0
     const fnExprs: AstNode[] = []
@@ -187,7 +184,7 @@ export function prepareHydrationBoundaries(
               // skip jsx identifiers
               if (n.name === "_jsx") return
 
-              log("identifier", n.name)
+              // log("identifier", n.name)
 
               const parentCallExpression = findFirstParentOfType(
                 ctx.stack,
@@ -263,16 +260,11 @@ export function prepareHydrationBoundaries(
             })
             return () => {
               if (!boundary.hasJsxChildren) return
-              log(
-                "boundary - finalization",
-                boundary.deps.expressions,
-                boundary.deps.imports
-              )
-              /**
-               * TODO: we need to scan childArgs to find jsx expressions and hoist them
-               * into props for the children loader
-               */
-              // hoist props
+              // log(
+              //   "boundary - finalization",
+              //   boundary.deps.expressions,
+              //   boundary.deps.imports
+              // )
 
               // create virtual modules
               const childExprStart = Math.min(...children.map((n) => n.start!))
@@ -280,7 +272,6 @@ export function prepareHydrationBoundaries(
               const childrenExpr = new MagicString(
                 code.original.substring(childExprStart, childExprEnd)
               )
-              log("childrenExpr: before", childrenExpr.toString())
 
               transformChildExpression: {
                 for (let i = 0; i < boundary.deps.expressions.length; i++) {
@@ -299,7 +290,6 @@ export function prepareHydrationBoundaries(
                   childrenExpr.appendLeft(end, `: _props[${i}]`)
                 }
               }
-              log("childrenExpr:after", childrenExpr.toString())
 
               let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
               copyImports: {

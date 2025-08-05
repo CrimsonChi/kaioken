@@ -21,20 +21,36 @@ export interface DevtoolsOptions {
 
 export interface KaiokenPluginOptions {
   /**
-   * Specifies whether the devtools should be injected into the build during development
+   * Whether the devtools should be injected into the build during development
    * @default true
    */
   devtools?: boolean | DevtoolsOptions
 
   /**
-   * Specifies additional directories (relative to root) to include in transforms.
+   * Additional directories (relative to root) to include in transforms
    * @example ['../path/to/components/']
    */
   include?: string[]
+
+  /**
+   * Whether logging should be enabled
+   * @default false
+   */
+  loggingEnabled?: boolean
+
+  /**
+   * Callback for when a file is transformed
+   */
+  onFileTransformed?: (id: string, content: string) => void
+
+  /**
+   * Callback for when a file is excluded from transforms due to not being in project root or `include`
+   */
+  onFileExcluded?: (id: string) => void
 }
 
 /**
- * Registers a callback to be called when the HMR is triggered
+ * Registers a callback to be fired when the HMR is triggered
  */
 export function onHMR(callback: () => void): void
 

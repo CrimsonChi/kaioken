@@ -1,13 +1,10 @@
-import { createAliasHandler, MagicString } from "./shared"
+import { createAliasHandler, MagicString, TransformCTX } from "./shared"
 import { ProgramNode } from "rollup"
 import * as AST from "./ast"
 type AstNode = AST.AstNode
 
-export function prepareDevOnlyHooks(
-  code: MagicString,
-  ast: ProgramNode,
-  isBuild: boolean
-) {
+export function prepareDevOnlyHooks(ctx: TransformCTX) {
+  const { code, ast, isBuild } = ctx
   replaceOnHMRCallbacks(code, ast, isBuild)
 }
 

@@ -1,12 +1,12 @@
 import fs from "node:fs"
 import * as AST from "./ast"
-import { ProgramNode } from "rollup"
 import { FileLinkFormatter } from "../types"
 import {
   createAliasHandler,
   findNodeName,
   isComponent,
   MagicString,
+  TransformCTX,
 } from "./shared"
 
 type AstNode = AST.AstNode
@@ -21,13 +21,9 @@ if (import.meta.hot && "window" in globalThis) {
   window.__kaioken.HMRContext?.signals.registerNextWatch();
 }
 `
-export function prepareHotVars(
-  code: MagicString,
-  ast: ProgramNode,
-  fileLinkFormatter: FileLinkFormatter,
-  filePath: string,
-  isVirtualModule: boolean
-) {
+export function prepareHMR(ctx: TransformCTX) {
+  const { code, ast, fileLinkFormatter, filePath, isVirtualModule } = ctx
+
   try {
     const hotVars = findHotVars(code, ast.body as AstNode[], filePath)
     if (hotVars.size === 0 && !code.hasChanged()) return
@@ -166,13 +162,11 @@ function findHotVars(
       continue
     }
 
-    const log = false && _id.includes("App.tsx") ? console.log : () => {}
-
     for (const aliasHandler of aliasHandlers) {
       AST.walk(node, {
         CallExpression: (node, ctx) => {
           if (!aliasHandler.isMatchingCallExpression(node)) {
-            log("not matching call expression", node, ctx.stack)
+            //log("not matching call expression", node, ctx.stack)
             return ctx.exitBranch()
           }
           if (
@@ -190,7 +184,7 @@ function findHotVars(
             }
           )
           if (!matchingParentStack) {
-            log("no matching parent stack", node, ctx.stack)
+            //log("no matching parent stack", node, ctx.stack)
             return ctx.exitBranch()
           }
           if (matchingParentStack === exprAssign) {
@@ -210,7 +204,7 @@ function findHotVars(
               (n) => n.type !== "ObjectExpression" && n.type !== "Property"
             )
           ) {
-            log("no matching parent stack", node, ctx.stack)
+            //log("no matching parent stack", node, ctx.stack)
             return ctx.exitBranch()
           }
 
