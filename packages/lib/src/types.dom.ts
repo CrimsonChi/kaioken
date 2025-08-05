@@ -560,6 +560,7 @@ interface HtmlElementBindableProps {
 
 interface HtmlElementAttributes {
   a: {
+    autofocus?: boolean
     download?: FileName
     href?: ValidUrlOrPath
     hreflang?: LanguageCode
