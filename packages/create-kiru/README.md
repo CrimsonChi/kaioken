@@ -1,15 +1,15 @@
-# create-kaioken
+# create-kiru
 
-CLI tool to quickly get started with a new Kaioken project.
+CLI tool to quickly get started with a new Kiru project.
 
 #### interactive setup:
 
 ```
-npx create-kaioken@latest
+npx create-kiru@latest
 # or
-yarn create kaioken
+yarn create kiru
 # or
-pnpm create kaioken
+pnpm create kiru
 # or
-bunx create-kaioken
+bunx create-kiru
 ```

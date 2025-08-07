@@ -37,7 +37,7 @@ program
   .option("-d, --dest <dest>", "Destination directory")
   .option("-t, --template <template>", "Choose template")
   .action(async ({ dest, template }) => {
-    console.log("Welcome to Kiru!\n")
+    console.log("[create-kiru]: Welcome!\n")
     if (!dest) {
       const { selectedDest } = await inquirer.prompt([
         {
@@ -104,7 +104,9 @@ program
         if (overwrite === "n") return
         fs.rmSync(dest, { recursive: true, force: true })
       } else {
-        throw new Error(`Unknown file type at ${dest}. Exiting...`)
+        throw new Error(
+          `[create-kiru]: Unknown file type at ${dest}. Exiting...`
+        )
       }
     }
 
@@ -124,7 +126,7 @@ program
     }
     const isValidTemplate = templates.some((t) => t.value === templateUrl)
     if (!isValidTemplate) {
-      console.error("Invalid template. Exiting...")
+      console.error("[create-kiru]: Invalid template. Exiting...")
       return
     }
 
@@ -135,7 +137,7 @@ program
       simpleGit(dest).init()
     } catch (error) {
       console.error(
-        `[create-kaioken]: An error occurred while cloning the template:`,
+        `[create-kiru]: An error occurred while cloning the template:`,
         error
       )
       return
@@ -163,7 +165,7 @@ program
     } else {
       devCmd = "npm run dev"
     }
-    console.log(`Project template downloaded. Get started by running the following:
+    console.log(`[create-kiru]: Project template downloaded. Get started by running the following:
     
     
   cd ${dest}
