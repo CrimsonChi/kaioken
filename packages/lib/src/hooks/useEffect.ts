@@ -8,9 +8,9 @@ import {
 
 /**
  * Runs a function after the component is rendered, or when a value provided in the optional [dependency
- * array](https://kaioken.dev/docs/hooks/dependency-arrays) has changed.
+ * array](https://kirujs.dev/docs/hooks/dependency-arrays) has changed.
  *
- * @see https://kaioken.dev/docs/hooks/useEffect
+ * @see https://kirujs.dev/docs/hooks/useEffect
  * */
 export function useEffect(
   callback: () => void | (() => void),

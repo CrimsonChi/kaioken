@@ -1,8 +1,8 @@
-import { Router, Route, Link } from "kaioken/router"
+import { Router, Route, Link } from "kiru/router"
 import { ROUTES } from "./routes"
-import { signal, useComputed, useEffect, watch } from "kaioken"
+import { signal, useComputed, useEffect, watch } from "kiru"
 
-import { onHMR } from "vite-plugin-kaioken"
+import { onHMR } from "vite-plugin-kiru"
 
 let interval = setInterval(() => console.log("interval"), 1000)
 

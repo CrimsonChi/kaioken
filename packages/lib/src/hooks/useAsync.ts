@@ -42,9 +42,9 @@ type AsyncTaskState<T> = {
 }
 /**
  * Runs an asynchronous function on initial render, or when a value provided in the [dependency
- * array](https://kaioken.dev/docs/hooks/dependency-arrays) has changed.
+ * array](https://kirujs.dev/docs/hooks/dependency-arrays) has changed.
  *
- * @see https://kaioken.dev/docs/hooks/useAsync
+ * @see https://kirujs.dev/docs/hooks/useAsync
  */
 export function useAsync<T>(
   func: (ctx: UseAsyncCallbackContext) => Promise<T>,

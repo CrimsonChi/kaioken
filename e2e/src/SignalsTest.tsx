@@ -6,7 +6,7 @@ import {
   signal,
   computed,
   watch,
-} from "kaioken"
+} from "kiru"
 
 // Global signals for testing global state
 const globalCounter = signal(0)

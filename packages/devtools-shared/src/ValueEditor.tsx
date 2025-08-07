@@ -1,4 +1,4 @@
-import { ElementProps, unwrap, useMemo, useState } from "kaioken"
+import { ElementProps, unwrap, useMemo, useState } from "kiru"
 import { useSettings } from "./Settings"
 import { ChevronIcon } from "./icons"
 import { className as cls } from "./utils"

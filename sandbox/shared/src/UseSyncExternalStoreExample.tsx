@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "kaioken"
+import { useSyncExternalStore } from "kiru"
 import { myStore } from "./UseSyncExternalStoreExample.store"
 
 export default function UseSyncExternalStoreExample() {

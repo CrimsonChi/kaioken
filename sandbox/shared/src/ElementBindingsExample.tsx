@@ -1,4 +1,4 @@
-import { useSignal, useWatch } from "kaioken"
+import { useSignal, useWatch } from "kiru"
 
 export default function ElementBindingsExample() {
   return (

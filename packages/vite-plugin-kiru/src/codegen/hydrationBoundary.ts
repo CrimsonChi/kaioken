@@ -35,7 +35,7 @@ export function prepareHydrationBoundaries(ctx: TransformCTX): {
   const bodyNodes = ast.body as AstNode[]
   const hydrationBoundaryAliasHandler = createAliasHandler(
     "Experimental_HydrationBoundary",
-    "kaioken/ssr"
+    "kiru/ssr"
   )
   const importNodes: AstNode[] = []
 
@@ -291,7 +291,7 @@ export function prepareHydrationBoundaries(ctx: TransformCTX): {
                 }
               }
 
-              let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kaioken";\n`
+              let moduleCode = `\nimport {createElement as _jsx, Fragment as _jsxFragment} from "kiru";\n`
               copyImports: {
                 for (const importedIdentifier of boundary.deps.imports) {
                   const importPath = importedIdentifier.source!.value
@@ -358,7 +358,7 @@ export function prepareHydrationBoundaries(ctx: TransformCTX): {
                 extraModules[boundary.id] = moduleCode
                 extraModules[
                   boundary.id + "_loader"
-                ] = `import {lazy} from "kaioken";
+                ] = `import {lazy} from "kiru";
 const BoundaryChildrenLoader = lazy(() => import("${boundary.id}"));
 export default BoundaryChildrenLoader;`
                 currentBoundary = null

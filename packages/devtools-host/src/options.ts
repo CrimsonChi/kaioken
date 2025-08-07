@@ -27,11 +27,11 @@ export const esbuildPluginTransform: EsbuildInlineTransform = async (
 
 export const options = {
   entryPoints: ["src/index.ts", "src/style.css"],
-  external: ["kaioken"],
+  external: ["kiru"],
   jsx: "transform",
   outdir: "dist",
-  jsxFactory: "kaioken.createElement",
-  jsxFragment: "kaioken.Fragment",
+  jsxFactory: "kiru.createElement",
+  jsxFragment: "kiru.Fragment",
   bundle: true,
   platform: "browser",
   target: "es2020",

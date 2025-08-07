@@ -1,4 +1,4 @@
-import { useSignal, useState } from "kaioken"
+import { useSignal, useState } from "kiru"
 
 export function TodoList() {
   const inputText = useSignal("")

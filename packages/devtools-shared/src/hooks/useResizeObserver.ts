@@ -3,13 +3,13 @@ import {
   depsRequireChange,
   sideEffectsEnabled,
   useHook,
-} from "kaioken"
+} from "kiru"
 
 const isSupported =
   "window" in globalThis && "ResizeObserver" in globalThis.window
 
 export const useResizeObserver = (
-  ref: Kaioken.MutableRefObject<Element | null>,
+  ref: Kiru.MutableRefObject<Element | null>,
   callback: ResizeObserverCallback,
   options: ResizeObserverOptions | undefined = undefined
 ) => {

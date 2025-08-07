@@ -1,4 +1,4 @@
-import { Signal, useSignal } from "kaioken"
+import { Signal, useSignal } from "kiru"
 
 declare global {
   namespace JSX {

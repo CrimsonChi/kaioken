@@ -19,7 +19,7 @@ function replaceOnHMRCallbacks(
   ast: ProgramNode,
   isBuild: boolean
 ) {
-  const onHMRAliasHandler = createAliasHandler("onHMR", "vite-plugin-kaioken")
+  const onHMRAliasHandler = createAliasHandler("onHMR", "vite-plugin-kiru")
 
   for (const node of ast.body as AstNode[]) {
     if (node.type === "ImportDeclaration") {

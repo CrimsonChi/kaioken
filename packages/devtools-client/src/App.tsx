@@ -6,7 +6,7 @@ import {
   SettingsProvider,
   StoresViewIcon,
 } from "devtools-shared"
-import { signal } from "kaioken"
+import { signal } from "kiru"
 import { AppTabView } from "./tabs/AppTabView"
 import { StoresTabView } from "./tabs/StoresTabView"
 import { SettingsEditor } from "devtools-shared/src/Settings"

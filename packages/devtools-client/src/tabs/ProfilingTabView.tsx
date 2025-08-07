@@ -4,8 +4,8 @@ import {
   useRef,
   useRequestUpdate,
   useSignal,
-} from "kaioken"
-import { kaiokenGlobal } from "../state"
+} from "kiru"
+import { kiruGlobal } from "../state"
 import { isDevtoolsApp, typedMapEntries } from "devtools-shared"
 import { LineChart, LineChartData } from "../components/LineChart"
 import type { ProfilingEvent } from "../../../lib/dist/profiling"
@@ -17,15 +17,15 @@ export function ProfilingTabView() {
       if (isDevtoolsApp(app)) return
       requestUpdate()
     }
-    kaiokenGlobal?.on("mount", update)
-    kaiokenGlobal?.on("unmount", update)
+    kiruGlobal?.on("mount", update)
+    kiruGlobal?.on("unmount", update)
     return () => {
-      kaiokenGlobal?.off("mount", update)
-      kaiokenGlobal?.off("unmount", update)
+      kiruGlobal?.off("mount", update)
+      kiruGlobal?.off("unmount", update)
     }
   }, [])
 
-  const profilingContext = kaiokenGlobal?.profilingContext!
+  const profilingContext = kiruGlobal?.profilingContext!
   return (
     <div className="flex flex-col gap-2">
       {typedMapEntries(profilingContext.appStats)
@@ -92,15 +92,15 @@ function AppProfilingView({ app }: AppProfilingViewProps) {
     datasets: createLineChartDatasets(events.current),
   })
   const chartHovered = useSignal(false)
-  const profilingContext = kaiokenGlobal?.profilingContext!
+  const profilingContext = kiruGlobal?.profilingContext!
 
   useEffect(() => {
     const onUpdate = (_app: AppContext) => {
       if (_app.id !== app.id) return
       requestUpdate()
     }
-    kaiokenGlobal?.on("update", onUpdate)
-    return () => kaiokenGlobal?.off("update", onUpdate)
+    kiruGlobal?.on("update", onUpdate)
+    return () => kiruGlobal?.off("update", onUpdate)
   }, [])
 
   useEffect(() => {

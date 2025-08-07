@@ -12,7 +12,7 @@ type UseContextHookState<T> = {
 /**
  * Gets the current value of a context provider created by the context.
  *
- * @see https://kaioken.dev/docs/hooks/useContext
+ * @see https://kirujs.dev/docs/hooks/useContext
  */
 export function useContext<T>(
   context: Kiru.Context<T>,

@@ -18,7 +18,7 @@ type HotVarDesc = {
 
 const UNNAMED_WATCH_PREAMBLE = `\n
 if (import.meta.hot && "window" in globalThis) {
-  window.__kaioken.HMRContext?.signals.registerNextWatch();
+  window.__kiru.HMRContext?.signals.registerNextWatch();
 }
 `
 export function prepareHMR(ctx: TransformCTX) {
@@ -30,7 +30,7 @@ export function prepareHMR(ctx: TransformCTX) {
 
     code.prepend(`
 if (import.meta.hot && "window" in globalThis) {
-  window.__kaioken.HMRContext?.prepare("${filePath}");
+  window.__kiru.HMRContext?.prepare("${filePath}");
 }
 `)
 
@@ -87,7 +87,7 @@ function createHMRRegistrationBlurb(
   }
 
   return `
-  window.__kaioken.HMRContext?.register({
+  window.__kiru.HMRContext?.register({
 ${entries.join(",\n")}
   });`
 }
@@ -234,8 +234,8 @@ function findHotVars(
 function addHotVarDesc(node: AstNode, names: Set<HotVarDesc>, type: string) {
   const name = findNodeName(node)
   if (name == null && type === "component") {
-    console.error("[vite-plugin-kaioken]: failed to find component name", node)
-    throw new Error("[vite-plugin-kaioken]: Component name not found")
+    console.error("[vite-plugin-kiru]: failed to find component name", node)
+    throw new Error("[vite-plugin-kiru]: Component name not found")
   }
   if (name !== null) {
     names.add({ type, name })

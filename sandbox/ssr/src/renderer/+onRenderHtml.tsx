@@ -1,7 +1,7 @@
 // Environment: server
 import type { OnRenderHtmlAsync } from "vike/types"
 import { dangerouslySkipEscape, escapeInject } from "vike/server"
-import { renderToString } from "kaioken"
+import { renderToString } from "kiru"
 import { getTitle } from "./utils"
 import { App } from "./App"
 

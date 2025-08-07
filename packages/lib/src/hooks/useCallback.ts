@@ -4,7 +4,7 @@ import { depsRequireChange, useHook, sideEffectsEnabled } from "./utils.js"
 /**
  * Creates a memoized callback function.
  *
- * @see https://kaioken.dev/docs/hooks/useCallback
+ * @see https://kirujs.dev/docs/hooks/useCallback
  */
 export function useCallback<T extends Function>(
   callback: T,

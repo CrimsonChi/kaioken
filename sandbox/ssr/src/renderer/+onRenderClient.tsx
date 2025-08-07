@@ -1,7 +1,7 @@
 // https://vike.dev/onRenderClient
 import type { OnRenderClientAsync, PageContextClient } from "vike/types"
-import { hydrate } from "kaioken/ssr/client"
-import type { AppContext } from "kaioken"
+import { hydrate } from "kiru/ssr/client"
+import type { AppContext } from "kiru"
 import { getTitle } from "./utils"
 import { App } from "./App"
 

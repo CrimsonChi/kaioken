@@ -20,7 +20,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "jsx": "preserve",
-    "jsxImportSource": "kaioken"
+    "jsxImportSource": "kiru"
   },
   "include": ["src"]
 }

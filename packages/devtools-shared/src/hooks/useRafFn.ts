@@ -1,4 +1,4 @@
-import { cleanupHook, sideEffectsEnabled, useHook } from "kaioken"
+import { cleanupHook, sideEffectsEnabled, useHook } from "kiru"
 
 type RefFnArg = {
   delta: number

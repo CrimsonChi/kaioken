@@ -97,7 +97,7 @@ function isLazy(vNode: VNode): boolean {
   return (
     typeof vNode.type === "function" &&
     "displayName" in vNode.type &&
-    vNode.type.displayName === "Kaioken.lazy"
+    vNode.type.displayName === "Kiru.lazy"
   )
 }
 
@@ -105,7 +105,7 @@ function isMemo(vNode: Kiru.VNode): boolean {
   return (
     typeof vNode.type === "function" &&
     "displayName" in vNode.type &&
-    vNode.type.displayName === "Kaioken.memo"
+    vNode.type.displayName === "Kiru.memo"
   )
 }
 

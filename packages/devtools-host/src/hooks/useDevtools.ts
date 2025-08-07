@@ -1,4 +1,4 @@
-import { useCallback } from "kaioken"
+import { useCallback } from "kiru"
 import { popup } from "../store"
 import { broadcastChannel, BroadcastChannelMessage } from "devtools-shared"
 
@@ -7,7 +7,7 @@ type SavedSize = {
   height: number
 }
 
-const SIZE_STORAGE_KEY = "kaioken-devtools-popup-size"
+const SIZE_STORAGE_KEY = "kiru-devtools-popup-size"
 
 export const useDevTools = () => {
   const _popup = popup.value
@@ -33,21 +33,21 @@ export const useDevTools = () => {
 
       const w = window.open(
         // @ts-ignore
-        window.__KAIOKEN_DEVTOOLS_PATHNAME__,
+        window.__KIRU_DEVTOOLS_PATHNAME__,
         "_blank",
         features
       )
       if (!w)
-        return console.error("[kaioken]: Unable to open devtools window"), rej()
+        return console.error("[kiru]: Unable to open devtools window"), rej()
 
       const handleReady = (e: MessageEvent<BroadcastChannelMessage>) => {
         if (e.data.type !== "ready") return
         broadcastChannel.removeEventListener(handleReady)
-        console.debug("[kaioken]: devtools window opened")
+        console.debug("[kiru]: devtools window opened")
         res(w)
         popup.value = w
         w.onbeforeunload = () => {
-          console.debug("[kaioken]: devtools window closed")
+          console.debug("[kiru]: devtools window closed")
           popup.value = null
         }
       }

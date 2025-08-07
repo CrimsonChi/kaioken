@@ -8,7 +8,7 @@ import { sideEffectsEnabled } from "./utils.js"
  *
  * Falls back to the regular `callback` if not supported.
  *
- * @see https://kaioken.dev/docs/hooks/useViewTransition
+ * @see https://kirujs.dev/docs/hooks/useViewTransition
  */
 export function useViewTransition() {
   if (!sideEffectsEnabled()) return noop

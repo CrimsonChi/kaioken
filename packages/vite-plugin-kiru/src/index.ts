@@ -4,8 +4,8 @@ import {
   type Plugin,
   type UserConfig,
 } from "vite"
-import devtoolsClientBuild from "kaioken-devtools-client"
-import devtoolsHostBuild from "kaioken-devtools-host"
+import devtoolsClientBuild from "kiru-devtools-client"
+import devtoolsHostBuild from "kiru-devtools-host"
 import { MagicString, TransformCTX } from "./codegen/shared.js"
 import path from "node:path"
 import {
@@ -13,11 +13,11 @@ import {
   prepareHMR,
   prepareHydrationBoundaries,
 } from "./codegen"
-import { FileLinkFormatter, KaiokenPluginOptions } from "./types"
+import { FileLinkFormatter, KiruPluginOptions } from "./types"
 import { ANSI } from "./ansi.js"
 
 export const defaultEsBuildOptions: ESBuildOptions = {
-  jsxInject: `import { createElement as _jsx, Fragment as _jsxFragment } from "kaioken"`,
+  jsxInject: `import { createElement as _jsx, Fragment as _jsxFragment } from "kiru"`,
   jsx: "transform",
   jsxFactory: "_jsx",
   jsxFragment: "_jsxFragment",
@@ -25,7 +25,7 @@ export const defaultEsBuildOptions: ESBuildOptions = {
   include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
 }
 
-export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
+export default function kiru(opts?: KiruPluginOptions): Plugin {
   let isProduction = false
   let isBuild = false
   let devtoolsEnabled = false
@@ -33,7 +33,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let loggingEnabled = false
   const log = (...data: any[]) => {
     if (!loggingEnabled) return
-    console.log(ANSI.cyan("[vite-plugin-kaioken]"), ...data)
+    console.log(ANSI.cyan("[vite-plugin-kiru]"), ...data)
   }
 
   let fileLinkFormatter: FileLinkFormatter = (path: string, line: number) =>
@@ -54,7 +54,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
   let includedPaths: string[] = []
 
   return {
-    name: "vite-plugin-kaioken",
+    name: "vite-plugin-kiru",
     // @ts-ignore
     resolveId(id) {
       if (virtualModules[id]) {
@@ -67,19 +67,17 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
     async buildStart() {
       if (!devtoolsEnabled) return
       log("Preparing devtools...")
-      const kaiokenPath = await this.resolve("kaioken")
-      if (!kaiokenPath) {
-        throw new Error(
-          "[vite-plugin-kaioken]: Unable to resolve kaioken path."
-        )
+      const kiruPath = await this.resolve("kiru")
+      if (!kiruPath) {
+        throw new Error("[vite-plugin-kiru]: Unable to resolve kiru path.")
       }
       transformedDtHostBuild = devtoolsHostBuild.replaceAll(
-        'from "kaioken"',
-        `from "/@fs/${kaiokenPath!.id}"`
+        'from "kiru"',
+        `from "/@fs/${kiruPath!.id}"`
       )
       transformedDtClientBuild = devtoolsClientBuild.replaceAll(
-        'from"kaioken";',
-        `from"/@fs/${kaiokenPath!.id}";`
+        'from"kiru";',
+        `from"/@fs/${kiruPath!.id}";`
       )
       log("Devtools ready.")
     },
@@ -110,7 +108,7 @@ export default function kaioken(opts?: KaiokenPluginOptions): Plugin {
         tags: [
           {
             tag: "script",
-            children: `window.__KAIOKEN_DEVTOOLS_PATHNAME__ = "${dtClientPathname}";`,
+            children: `window.__KIRU_DEVTOOLS_PATHNAME__ = "${dtClientPathname}";`,
           },
           {
             tag: "script",

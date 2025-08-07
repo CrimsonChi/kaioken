@@ -32,7 +32,7 @@ type LazyComponentProps<T extends LazyImportValue> = InferLazyImportProps<T> & {
 const lazyCache: Map<string, LazyState> =
   "window" in globalThis
     ? // @ts-ignore - we're shamefully polluting the global scope here and hiding it 🥲
-      (window.__KAIOKEN_LAZY_CACHE ??= new Map<string, LazyState>())
+      (window.__KIRU_LAZY_CACHE ??= new Map<string, LazyState>())
     : new Map<string, LazyState>()
 
 function consumeHydrationBoundaryChildren(parentNode: Kiru.VNode): {
@@ -46,8 +46,7 @@ function consumeHydrationBoundaryChildren(parentNode: Kiru.VNode): {
     boundaryStart.nodeValue !== HYDRATION_BOUNDARY_MARKER
   ) {
     throw new KiruError({
-      message:
-        "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
+      message: "Invalid HydrationBoundary node. This is likely a bug in Kiru.",
       fatal: true,
       vNode: parentNode,
     })
@@ -72,8 +71,7 @@ function consumeHydrationBoundaryChildren(parentNode: Kiru.VNode): {
   const boundaryEnd = hydrationStack.currentChild()
   if (!isBoundaryEnd(boundaryEnd)) {
     throw new KiruError({
-      message:
-        "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
+      message: "Invalid HydrationBoundary node. This is likely a bug in Kiru.",
       fatal: true,
       vNode: parentNode,
     })
@@ -222,7 +220,7 @@ export function lazy<T extends LazyImportValue>(
     }
     return createElement(cachedState.result, rest)
   }
-  LazyComponent.displayName = "Kaioken.lazy"
+  LazyComponent.displayName = "Kiru.lazy"
   return LazyComponent
 }
 

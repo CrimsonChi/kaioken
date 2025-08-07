@@ -5,7 +5,7 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
  * Creates a ref object. Useful for persisting values between renders or getting
  * a reference to an element.
  *
- * @see https://kaioken.dev/docs/hooks/useRef
+ * @see https://kirujs.dev/docs/hooks/useRef
  */
 export function useRef<T>(initialValue: T): Kiru.MutableRefObject<T>
 export function useRef<T>(initialValue: T | null): Kiru.RefObject<T>

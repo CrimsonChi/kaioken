@@ -1,4 +1,4 @@
-import { Link, Route, Router } from "kaioken/router"
+import { Link, Route, Router } from "kiru/router"
 import { Counter } from "./Counter"
 import { MemoTest } from "./MemoTest"
 import { TodoList } from "./Todos"

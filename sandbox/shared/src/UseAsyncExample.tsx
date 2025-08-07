@@ -1,4 +1,4 @@
-import { useAsync, useState } from "kaioken"
+import { useAsync, useState } from "kiru"
 import { Spinner } from "./atoms/Spinner"
 import { Button } from "./atoms/Button"
 

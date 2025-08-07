@@ -1,4 +1,4 @@
-import type { AppContext } from "kaioken"
+import type { AppContext } from "kiru"
 
 export function className(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(" ")
@@ -20,7 +20,7 @@ export function applyObjectChangeFromKeys(
   }
 }
 
-export function getNodeName(node: Kaioken.VNode) {
+export function getNodeName(node: Kiru.VNode) {
   return (
     (node.type as any).displayName ??
     ((node.type as Function).name || "Anonymous Function")
@@ -32,7 +32,7 @@ export const getFileLink = (
 ): string | null => fn.__devtoolsFileLink ?? null
 
 export function isDevtoolsApp(app: AppContext) {
-  return app.name === "kaioken.devtools"
+  return app.name === "kiru.devtools"
 }
 
 type InferredMapEntries<T> = T extends Map<infer K, infer V> ? [K, V][] : never

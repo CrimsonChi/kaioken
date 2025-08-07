@@ -11,7 +11,7 @@ import {
 } from "chart.js"
 import zoomPlugin from "chartjs-plugin-zoom"
 
-import { type ElementProps, type Signal, useEffect, useRef } from "kaioken"
+import { type ElementProps, type Signal, useEffect, useRef } from "kiru"
 
 export type LineChartData = {
   labels: string[]

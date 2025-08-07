@@ -1,6 +1,6 @@
 import { isFragment, isLazy, isMemo } from "../../lib/dist/utils.js"
 
-export function getNodeName(node: Kaioken.VNode) {
+export function getNodeName(node: Kiru.VNode) {
   return (
     (node.type as any).displayName ??
     ((node.type as Function).name || "Anonymous Function")
@@ -13,8 +13,8 @@ export function searchMatchesItem(terms: string[], item: string) {
 }
 
 export function isComponent(
-  node: Kaioken.VNode
-): node is Kaioken.VNode & { type: Function } {
+  node: Kiru.VNode
+): node is Kiru.VNode & { type: Function } {
   return (
     typeof node.type === "function" &&
     !isFragment(node) &&
@@ -23,7 +23,7 @@ export function isComponent(
   )
 }
 
-export function nodeContainsComponent(node: Kaioken.VNode) {
+export function nodeContainsComponent(node: Kiru.VNode) {
   let stack = [node]
   while (stack.length) {
     const n = stack.pop()!
@@ -37,8 +37,8 @@ export function nodeContainsComponent(node: Kaioken.VNode) {
 }
 
 export const nodeContainsNode = (
-  currentNode: Kaioken.VNode,
-  componentNode: Kaioken.VNode
+  currentNode: Kiru.VNode,
+  componentNode: Kiru.VNode
 ) => {
   const stack = [componentNode.parent]
 

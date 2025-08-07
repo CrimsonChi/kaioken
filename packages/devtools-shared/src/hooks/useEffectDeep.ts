@@ -1,4 +1,4 @@
-import { useHook, cleanupHook, sideEffectsEnabled } from "kaioken"
+import { useHook, cleanupHook, sideEffectsEnabled } from "kiru"
 
 export const deepEqual = (a: any, b: any) => {
   if (a === b) {

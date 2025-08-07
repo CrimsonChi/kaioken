@@ -8,7 +8,7 @@ esbuild.buildSync({
   target: "esnext",
   format: "esm",
   outfile: "./dist/index.js",
-  external: ["kaioken"],
+  external: ["kiru"],
   write: true,
 })
 

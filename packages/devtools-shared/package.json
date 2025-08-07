@@ -16,6 +16,6 @@
     "tailwindcss": "^3.4.17"
   },
   "peerDependencies": {
-    "kaioken": "workspace:^"
+    "kiru": "workspace:^"
   }
 }

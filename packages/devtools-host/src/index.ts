@@ -1,17 +1,17 @@
-import { mount } from "kaioken"
+import { mount } from "kiru"
 import App from "./App"
 // @ts-expect-error
-import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
+import tailwindCssKiruDevToolCssInline from "inline:./style.css"
 import { popup } from "./store"
 import { broadcastChannel } from "devtools-shared"
 if ("window" in globalThis) {
-  const pageRoot = document.createElement("kaioken-devtools")
+  const pageRoot = document.createElement("kiru-devtools")
   pageRoot.setAttribute("style", "display: contents")
   document.body.appendChild(pageRoot)
 
   const shadow = pageRoot.attachShadow({ mode: "open" })
   const sheet = new CSSStyleSheet()
-  sheet.replaceSync(tailwindCssKaiokenDevToolCssInline)
+  sheet.replaceSync(tailwindCssKiruDevToolCssInline)
   shadow.adoptedStyleSheets = [sheet]
 
   const appRoot = Object.assign(document.createElement("div"), {
@@ -22,7 +22,7 @@ if ("window" in globalThis) {
 
   mount(App, {
     root: appRoot,
-    name: "kaioken.devtools",
+    name: "kiru.devtools",
   })
   const handleMainWindowClose = () => popup.value?.close()
   window.addEventListener("close", handleMainWindowClose)

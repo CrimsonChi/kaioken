@@ -1,4 +1,4 @@
-import { createStore } from "kaioken"
+import { createStore } from "kiru"
 
 export type TodoItem = {
   id: string

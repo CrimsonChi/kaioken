@@ -1,5 +1,5 @@
 import { useKeyStroke } from "devtools-shared"
-import { useRef } from "kaioken"
+import { useRef } from "kiru"
 import { inspectComponent, keyboardMap, selectedNode } from "../state"
 
 export const useKeyboardControls = () => {

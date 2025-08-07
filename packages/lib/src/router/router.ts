@@ -95,7 +95,7 @@ function setQuery(query: Record<string, string>) {
 /**
  * Gets state and methods provided by a parent <Router>.
  *
- * @see https://kaioken.dev/docs/api/routing
+ * @see https://kirujs.dev/docs/api/routing
  */
 export function useRouter() {
   const { viewTransition, params, query } = useContext(RouterContext)
@@ -152,7 +152,7 @@ const initLoc = () => ({
 /**
  * Main router component.
  *
- * @see https://kaioken.dev/docs/api/routing
+ * @see https://kirujs.dev/docs/api/routing
  */
 export function Router(props: RouterProps) {
   const appCtx = useAppContext()

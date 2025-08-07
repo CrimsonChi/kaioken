@@ -19,9 +19,9 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "jsx": "preserve",
-    "jsxImportSource": "kaioken",
-    "jsxFactory": "kaioken.createElement",
-    "jsxFragmentFactory": "kaioken.Fragment"
+    "jsxImportSource": "kiru",
+    "jsxFactory": "kiru.createElement",
+    "jsxFragmentFactory": "kiru.Fragment"
   },
   "include": ["src"]
 }

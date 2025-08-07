@@ -1,4 +1,4 @@
-import { ElementProps } from "kaioken"
+import { ElementProps } from "kiru"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
 import { appTreeSearch, inspectComponent, selectedApp } from "../state"

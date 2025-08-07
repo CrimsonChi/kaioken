@@ -1,4 +1,4 @@
-import { useId, useSignal } from "kaioken"
+import { useId, useSignal } from "kiru"
 
 export default function Counter() {
   const id = useId()

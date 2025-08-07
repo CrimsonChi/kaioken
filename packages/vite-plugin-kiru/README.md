@@ -1,13 +1,13 @@
-# vite-plugin-kaioken
+# vite-plugin-kiru
 
-Vite plugin for <a href="https://kaioken.dev">Kaioken</a> apps that enables HMR, devtools, and more.
+Vite plugin for <a href="https://kirujs.dev">Kiru</a> apps that enables HMR, devtools, and more.
 
 ## Installation
 
 ```bash
-npm i -D vite-plugin-kaioken
+npm i -D vite-plugin-kiru
 # or
-pnpm add -D vite-plugin-kaioken
+pnpm add -D vite-plugin-kiru
 ```
 
 ### Basic Usage
@@ -15,18 +15,18 @@ pnpm add -D vite-plugin-kaioken
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite"
-import kaioken from "vite-plugin-kaioken"
+import kiru from "vite-plugin-kiru"
 
 export default defineConfig({
-  plugins: [kaioken()],
+  plugins: [kiru()],
 })
 ```
 
 ### Configuration
 
 ```ts
-kaioken({
-  // Enable or disable the Kaioken devtools.
+kiru({
+  // Enable or disable the Kiru devtools.
   // Defaults to true in development mode.
   devtools: false,
 

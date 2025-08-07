@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "kaioken"
+import { createContext, useContext, useState } from "kiru"
 import { ValueEditor } from "./ValueEditor"
 import { applyObjectChangeFromKeys } from "./utils"
 
@@ -53,7 +53,7 @@ export function recursiveObjectAssign(
 }
 
 let userSettings: UserSettings = { ...defaultSettings }
-const storageData = localStorage.getItem("kaioken.devtools.userSettings")
+const storageData = localStorage.getItem("kiru.devtools.userSettings")
 if (storageData) {
   try {
     const parsed = JSON.parse(storageData)
@@ -61,7 +61,7 @@ if (storageData) {
       userSettings = parsed
     }
   } catch (error) {
-    console.error("kaioken.devtools.userSettings error", error)
+    console.error("kiru.devtools.userSettings error", error)
   }
 }
 
@@ -86,7 +86,7 @@ export function SettingsProvider({
 
   const saveUserSettings = (newSettings: UserSettings) => {
     localStorage.setItem(
-      "kaioken.devtools.userSettings",
+      "kiru.devtools.userSettings",
       JSON.stringify(newSettings)
     )
     setUserSettings(newSettings)

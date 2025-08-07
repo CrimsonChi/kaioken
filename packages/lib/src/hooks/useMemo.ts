@@ -3,9 +3,9 @@ import { depsRequireChange, sideEffectsEnabled, useHook } from "./utils.js"
 
 /**
  * Creates a memoized value that only changes when the [dependency
- * array](https://kaioken.dev/docs/hooks/dependency-arrays) has changed.
+ * array](https://kirujs.dev/docs/hooks/dependency-arrays) has changed.
  *
- * @see https://kaioken.dev/docs/hooks/useMemo
+ * @see https://kirujs.dev/docs/hooks/useMemo
  */
 export function useMemo<T>(factory: () => T, deps: unknown[]): T {
   if (!sideEffectsEnabled()) return factory()

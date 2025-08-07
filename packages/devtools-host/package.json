@@ -1,5 +1,5 @@
 {
-  "name": "kaioken-devtools-host",
+  "name": "kiru-devtools-host",
   "private": true,
   "version": "1.0.0",
   "description": "",
@@ -23,10 +23,9 @@
     "tsx": "^4.20.3"
   },
   "dependencies": {
-    "@kaioken-core/hooks": "0.0.9",
     "devtools-shared": "workspace:^"
   },
   "peerDependencies": {
-    "kaioken": "workspace:^"
+    "kiru": "workspace:^"
   }
 }

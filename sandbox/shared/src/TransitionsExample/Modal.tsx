@@ -4,7 +4,7 @@ import {
   useRef,
   useState,
   type TransitionState,
-} from "kaioken"
+} from "kiru"
 import { Button } from "../atoms/Button"
 import { Backdrop } from "./Backdrop"
 import { Header } from "./Header"

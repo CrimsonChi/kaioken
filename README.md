@@ -1,25 +1,25 @@
-# Kaioken
+# Kiru
 
-Development monorepo for **Kaioken**.
+Development monorepo for **Kiru**.
 
-Kaioken is a lightweight rendering library that aims to provide a familiar development experience for those with HTML and Javascript experience.
+Kiru is a lightweight rendering library that aims to provide a familiar development experience for those with HTML and Javascript experience.
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CrimsonChi/kaioken)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kirujs/kiru)
 
 ## Structure
 
 - `.github`
   - Contains workflows used by GitHub Actions.
 - `assets`
-  - Contains Kaioken brand assets.
+  - Contains Kiru brand assets.
 - `e2e`
   - Contains end-to-end test suite.
 - `packages`
   - Contains the individual packages managed in the monorepo.
-  - [kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/lib)
-  - [vite-plugin-kaioken](https://github.com/CrimsonChi/kaioken/blob/main/packages/vite-plugin-kaioken)
-  - [devtools-host](https://github.com/CrimsonChi/kaioken/blob/main/packages/devtools-host)
-  - [devtools-client](https://github.com/CrimsonChi/kaioken/blob/main/packages/devtools-client)
+  - [kiru](https://github.com/kirujs/kiru/blob/main/packages/lib)
+  - [vite-plugin-kiru](https://github.com/kirujs/kiru/blob/main/packages/vite-plugin-kiru)
+  - [devtools-host](https://github.com/kirujs/kiru/blob/main/packages/devtools-host)
+  - [devtools-client](https://github.com/kirujs/kiru/blob/main/packages/devtools-client)
 - `sandbox`
   - Contains example applications and random tidbits.
 

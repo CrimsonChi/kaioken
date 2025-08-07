@@ -510,7 +510,7 @@ function checkForMissingKeys(parent: VNode, children: unknown[]) {
 }
 
 function keyWarning(str: string) {
-  const formatted = `[kiru]: ${str}. See https://kaioken.dev/keys-warning for more information.`
+  const formatted = `[kiru]: ${str}. See https://kirujs.dev/keys-warning for more information.`
   console.error(formatted)
 }
 

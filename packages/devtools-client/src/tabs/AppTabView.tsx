@@ -3,13 +3,13 @@ import {
   BroadcastChannelMessage,
   SelectedNodeView,
 } from "devtools-shared"
-import { useRequestUpdate, useEffect, AppContext } from "kaioken"
+import { useRequestUpdate, useEffect, AppContext } from "kiru"
 import { AppVDomView } from "../components/AppVDomView"
 import { FiftyFiftySplitter } from "../components/FiftyFiftySplitter"
 import { SquareMouse } from "../icons/SquareMouse"
 import {
   toggleElementToVnode,
-  kaiokenGlobal,
+  kiruGlobal,
   selectedApp,
   selectedNode,
   mountedApps,
@@ -34,8 +34,8 @@ export function AppTabView() {
       if (_app !== app) return
       requestUpdate()
     }
-    kaiokenGlobal?.on("update", handleUpdate)
-    return () => kaiokenGlobal?.off("update", handleUpdate)
+    kiruGlobal?.on("update", handleUpdate)
+    return () => kiruGlobal?.off("update", handleUpdate)
   }, [selectedApp])
 
   useEffect(() => {
@@ -65,8 +65,9 @@ export function AppTabView() {
             value={app?.name ?? ""}
             onchange={(e) =>
               (selectedApp.value =
-                mountedApps.peek().find((a) => a.name === e.target.value) ??
-                null)
+                mountedApps
+                  .peek()
+                  .find((a) => a.name === e.currentTarget.value) ?? null)
             }
           >
             <option value="" disabled>
@@ -96,7 +97,7 @@ export function AppTabView() {
             selectedApp={app}
             selectedNode={node}
             setSelectedNode={(n) => (selectedNode.value = n)}
-            kaiokenGlobal={kaiokenGlobal}
+            kiruGlobal={kiruGlobal}
           />
         )}
       </FiftyFiftySplitter>

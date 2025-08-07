@@ -1,6 +1,6 @@
-import { Experimental_HydrationBoundary } from "kaioken/ssr"
+import { Experimental_HydrationBoundary } from "kiru/ssr"
 import Counter from "./Counter"
-import { createContext, Derive, For, useSignal } from "kaioken"
+import { createContext, Derive, For, useSignal } from "kiru"
 import ElementBindingsExample from "shared/src/ElementBindingsExample"
 import WebComponentExample from "shared/src/WebComponentExample"
 import StoreExample from "shared/src/StoreExample"
@@ -24,7 +24,8 @@ export function Page() {
    * need to ensure it is called at the top level instead.
    */
   const addItem = () => (
-    items.value.push(items.value.length + 1), items.notify()
+    items.value.push(items.value.length + 1),
+    items.notify()
   )
 
   console.log("page render", Num)

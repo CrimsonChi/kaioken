@@ -1,5 +1,5 @@
 import "./index.css"
-import { mount } from "kaioken"
+import { mount } from "kiru"
 import { App } from "./App"
 import { broadcastChannel } from "devtools-shared"
 

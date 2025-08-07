@@ -22,7 +22,7 @@ export type TransformCTX = {
   filePath: string
 }
 
-export function createAliasHandler(name: string, namespace = "kaioken") {
+export function createAliasHandler(name: string, namespace = "kiru") {
   const aliases = new Set<string>()
 
   const isMatchingCallExpression = (node: AstNode) =>
@@ -92,7 +92,7 @@ export function findFunctionBodyNodes(
   }
   if (!dec) {
     throw new Error(
-      "[vite-plugin-kaioken]: failed to find declaration for component"
+      "[vite-plugin-kiru]: failed to find declaration for component"
     )
   }
 

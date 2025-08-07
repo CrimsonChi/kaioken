@@ -1,5 +1,5 @@
 import { defineConfig } from "vite"
-import kaioken from "vite-plugin-kaioken"
+import kiru from "vite-plugin-kiru"
 
 export default defineConfig({
   esbuild: {
@@ -8,7 +8,7 @@ export default defineConfig({
     },
   },
   plugins: [
-    kaioken({
+    kiru({
       include: ["../shared/"],
       loggingEnabled: true,
     }),

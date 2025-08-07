@@ -1,8 +1,8 @@
-import { lazy } from "kaioken"
+import { lazy } from "kiru"
 
 type AppRoute = {
   title: string
-  component: Kaioken.FC<any>
+  component: Kiru.FC<any>
   fallthrough?: boolean
 }
 

@@ -1,4 +1,4 @@
-import { type ElementProps } from "kaioken"
+import { type ElementProps } from "kiru"
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "success"
 

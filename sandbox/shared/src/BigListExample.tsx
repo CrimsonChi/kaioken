@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "kaioken"
+import { memo, useEffect, useState } from "kiru"
 
 export default function BigListExample() {
   const [toggle, setToggle] = useState(false)

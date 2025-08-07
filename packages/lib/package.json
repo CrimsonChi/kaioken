@@ -4,7 +4,7 @@
   "description": "A batteries-included, easy-to-use rendering library with a tiny footprint",
   "main": "dist/index.js",
   "type": "module",
-  "homepage": "https://kiru.dev",
+  "homepage": "https://kirujs.dev",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

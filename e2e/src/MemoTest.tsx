@@ -1,8 +1,8 @@
-import { createContext, memo, useContext, useState } from "kaioken"
+import { createContext, memo, useContext, useState } from "kiru"
 
 type CountContextType = {
   count: number
-  setCount: (count: Kaioken.StateSetter<number>) => void
+  setCount: (count: Kiru.StateSetter<number>) => void
 }
 const CountContext = createContext<CountContextType>(null!)
 const useCount = () => useContext(CountContext)
@@ -76,7 +76,7 @@ const memoNodeRenders = new Map<number, number>([
   [1, 0],
   [2, 0],
 ])
-const MemoNode: Kaioken.FC<{ depth: number }> = memo(
+const MemoNode: Kiru.FC<{ depth: number }> = memo(
   function MemoNode({ children, depth }) {
     const renders = memoNodeRenders.get(depth)! + 1
     memoNodeRenders.set(depth, renders)

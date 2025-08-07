@@ -15,9 +15,9 @@
     "cypress": "^13.17.0",
     "typescript": "^5.9.2",
     "vite": "^5.4.19",
-    "vite-plugin-kaioken": "workspace:^"
+    "vite-plugin-kiru": "workspace:^"
   },
   "dependencies": {
-    "kaioken": "workspace:^"
+    "kiru": "workspace:^"
   }
 }

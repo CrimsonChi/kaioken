@@ -5,9 +5,9 @@ import {
   useCallback,
   useEffect,
   useRequestUpdate,
-} from "kaioken"
-import { SWRCache, SWRCacheEntry } from "kaioken/swr"
-import { kaiokenGlobal } from "../state"
+} from "kiru"
+import { SWRCache, SWRCacheEntry } from "kiru/swr"
+import { kiruGlobal } from "../state"
 import {
   ChevronIcon,
   Filter,
@@ -37,12 +37,12 @@ export function SWRTabView() {
       if (isDevtoolsApp(_app)) return
       requestUpdate()
     }
-    kaiokenGlobal?.on("update", onUpdate)
-    return () => kaiokenGlobal?.off("update", onUpdate)
+    kiruGlobal?.on("update", onUpdate)
+    return () => kiruGlobal?.off("update", onUpdate)
   }, [])
 
   const SWR_GLOBAL_CACHE: SWRCache =
-    kaiokenGlobal?.globalState[Symbol.for("SWR_GLOBAL")] ?? new Map()
+    kiruGlobal?.globalState[Symbol.for("SWR_GLOBAL")] ?? new Map()
 
   if (SWR_GLOBAL_CACHE.size === 0) {
     return (

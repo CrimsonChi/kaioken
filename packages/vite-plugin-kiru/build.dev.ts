@@ -9,14 +9,14 @@ await esbuild
     target: "esnext",
     format: "esm",
     outfile: "./dist/index.js",
-    external: ["kaioken"],
+    external: ["kiru"],
     write: true,
     plugins: [
       {
         name: "build-evts",
         setup({ onEnd }) {
           onEnd(() => {
-            console.log("[vite-plugin-kaioken]: Build complete!")
+            console.log("[vite-plugin-kiru]: Build complete!")
             fs.copyFileSync("./src/types.d.ts", "dist/index.d.ts")
           })
         },
@@ -25,5 +25,5 @@ await esbuild
   })
   .then((ctx) => {
     ctx.watch()
-    console.log("[vite-plugin-kaioken]: Watching for changes...")
+    console.log("[vite-plugin-kiru]: Watching for changes...")
   })

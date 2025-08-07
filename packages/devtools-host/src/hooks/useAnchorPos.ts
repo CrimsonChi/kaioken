@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSignal,
-} from "kaioken"
+import { useCallback, useLayoutEffect, useMemo, useRef, useSignal } from "kiru"
 import { LOCAL_KEY, PADDING } from "../utils/constants"
 import { SnapSide, Storage } from "../utils/types"
 import { reinitializeAnchorPos } from "../utils"

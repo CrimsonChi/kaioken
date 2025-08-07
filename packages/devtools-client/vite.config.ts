@@ -4,10 +4,10 @@ import { viteSingleFile } from "vite-plugin-singlefile"
 
 export default defineConfig({
   esbuild: {
-    jsxInject: `import * as kaioken from "kaioken"`,
+    jsxInject: `import * as kiru from "kiru"`,
     jsx: "transform",
-    jsxFactory: "kaioken.createElement",
-    jsxFragment: "kaioken.Fragment",
+    jsxFactory: "kiru.createElement",
+    jsxFragment: "kiru.Fragment",
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },
@@ -18,7 +18,7 @@ export default defineConfig({
     cssCodeSplit: false,
     assetsDir: "",
     rollupOptions: {
-      external: ["kaioken"],
+      external: ["kiru"],
       output: {
         inlineDynamicImports: true,
       },

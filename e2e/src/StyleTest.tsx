@@ -5,7 +5,7 @@ import {
   useState,
   useSignal,
   useEffectEvent,
-} from "kaioken"
+} from "kiru"
 
 const generateRandomStyleProp = (): StyleObject | string | undefined => {
   if (Math.random() > 0.5) return undefined

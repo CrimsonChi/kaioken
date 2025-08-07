@@ -454,7 +454,7 @@ export function createScheduler(
           if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
             throw new KiruError({
               message:
-                "Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop.",
+                "Too many re-renders. Kiru limits the number of renders to prevent an infinite loop.",
               fatal: true,
               vNode,
             })
@@ -501,7 +501,7 @@ export function createScheduler(
   function checkForTooManyConsecutiveDirtyRenders() {
     if (consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
       throw new KiruError(
-        "Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
+        "Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kiru limits the number of nested updates to prevent infinite loops."
       )
     }
   }

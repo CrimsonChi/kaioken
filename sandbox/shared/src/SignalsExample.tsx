@@ -6,8 +6,8 @@ import {
   useSignal,
   For,
   Derive,
-} from "kaioken"
-import { Route, Router, Link } from "kaioken/router"
+} from "kiru"
+import { Route, Router, Link } from "kiru/router"
 
 const count = signal(0, "count")
 const isTracking = signal(true, "isTracking")

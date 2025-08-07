@@ -1,5 +1,5 @@
 {
-  "name": "kaioken-devtools-client",
+  "name": "kiru-devtools-client",
   "private": true,
   "version": "0.0.0",
   "main": "dist/index.js",
@@ -25,6 +25,6 @@
     "devtools-shared": "workspace:^"
   },
   "peerDependencies": {
-    "kaioken": "workspace:^"
+    "kiru": "workspace:^"
   }
 }

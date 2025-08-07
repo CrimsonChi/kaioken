@@ -1,5 +1,5 @@
-import * as kaioken from "kaioken"
-import { useEffect, useMemo, useRef } from "kaioken"
+import * as kiru from "kiru"
+import { useEffect, useMemo, useRef } from "kiru"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "../../../lib/dist/utils.js"
 import { toggleElementToVnode, popup } from "../store"
@@ -12,7 +12,7 @@ import {
   useMouse,
 } from "devtools-shared"
 
-export const InspectComponent: Kaioken.FC = () => {
+export const InspectComponent: Kiru.FC = () => {
   const openDevTools = useDevTools()
   const { mouse } = useMouse()
 
@@ -25,10 +25,10 @@ export const InspectComponent: Kaioken.FC = () => {
   const element = toggleElementToVnode.value ? _el : null
 
   const elApp = useMemo(() => {
-    if (element && window.__kaioken) {
-      const app = window.__kaioken.apps.find(($app) => {
-        if ($app.rootNode == null || element.__kaiokenNode == null) return false
-        return vNodeContains($app.rootNode, element.__kaiokenNode)
+    if (element && window.__kiru) {
+      const app = window.__kiru.apps.find(($app) => {
+        if ($app.rootNode == null || element.__kiruNode == null) return false
+        return vNodeContains($app.rootNode, element.__kiruNode)
       })
 
       if (app?.rootNode == null) return null

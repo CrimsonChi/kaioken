@@ -1,4 +1,4 @@
-import { Portal, Transition, useRef, useState } from "kaioken"
+import { Portal, Transition, useRef, useState } from "kiru"
 import { Button } from "../atoms/Button"
 import { Backdrop } from "./Backdrop"
 import { Header } from "./Header"

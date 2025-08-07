@@ -20,7 +20,7 @@ if (process.argv.includes("--child")) {
   const __dirname = dirname(__filename)
   const pluginPath = join(
     __dirname,
-    "../../packages/vite-plugin-kaioken/dist/index.js"
+    "../../packages/vite-plugin-kiru/dist/index.js"
   )
 
   const createChild = () =>

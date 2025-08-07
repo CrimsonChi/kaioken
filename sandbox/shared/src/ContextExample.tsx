@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useState } from "kaioken"
+import { createContext, memo, useContext, useState } from "kiru"
 
 const ThemeContext = createContext<"light" | "dark">("dark")
 ThemeContext.displayName = "ThemeContext"

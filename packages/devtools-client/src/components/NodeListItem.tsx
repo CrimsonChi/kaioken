@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "kaioken"
+import { useState, useMemo, useEffect } from "kiru"
 import { ChevronIcon } from "devtools-shared"
 import {
   appTreeSearch,
@@ -18,7 +18,7 @@ export function NodeListItem({
   node,
   traverseSiblings = true,
 }: {
-  node: Kaioken.VNode
+  node: Kiru.VNode
   traverseSiblings?: boolean
 }) {
   const [collapsed, setCollapsed] = useState(true)
@@ -110,7 +110,7 @@ export function NodeListItem({
     </>
   )
 }
-function NodeListItemSiblings({ node }: { node?: Kaioken.VNode }) {
+function NodeListItemSiblings({ node }: { node?: Kiru.VNode }) {
   if (!node) return null
   let nodes = []
   let n = node.sibling

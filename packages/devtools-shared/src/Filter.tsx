@@ -1,4 +1,4 @@
-import { type ElementProps, type Signal } from "kaioken"
+import { type ElementProps, type Signal } from "kiru"
 import { className as cls } from "./utils"
 
 type FilterProps = ElementProps<"div"> & {

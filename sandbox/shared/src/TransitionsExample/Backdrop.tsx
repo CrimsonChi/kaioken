@@ -1,4 +1,4 @@
-import { ElementProps } from "kaioken"
+import { ElementProps } from "kiru"
 
 export function Backdrop({ children, ...props }: ElementProps<"div">) {
   return (

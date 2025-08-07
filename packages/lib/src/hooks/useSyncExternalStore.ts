@@ -8,7 +8,7 @@ import { __DEV__ } from "../env.js"
  * Allows you to use a generic external store as long as it provides
  * a subscribe function and a way to get its current state.
  *
- * @see https://kaioken.dev/docs/hooks/useSyncExternalStore
+ * @see https://kirujs.dev/docs/hooks/useSyncExternalStore
  */
 export function useSyncExternalStore<T>(
   subscribe: (callback: () => void) => () => void,

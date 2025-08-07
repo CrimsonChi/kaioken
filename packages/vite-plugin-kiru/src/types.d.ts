@@ -19,7 +19,7 @@ export interface DevtoolsOptions {
   formatFileLink?: FileLinkFormatter
 }
 
-export interface KaiokenPluginOptions {
+export interface KiruPluginOptions {
   /**
    * Whether the devtools should be injected into the build during development
    * @default true
@@ -54,4 +54,4 @@ export interface KaiokenPluginOptions {
  */
 export function onHMR(callback: () => void): void
 
-export default function kaioken(opts?: KaiokenPluginOptions): Plugin
+export default function kiru(opts?: KiruPluginOptions): Plugin

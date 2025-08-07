@@ -5,7 +5,7 @@ import { HookCallback, useHook } from "./utils.js"
  * Creates a unique id for the current node. This is derived based on the node's position in your application tree.
  * Useful for assigning predictable ids to elements.
  *
- * @see https://kaioken.dev/docs/hooks/useId
+ * @see https://kirujs.dev/docs/hooks/useId
  */
 export function useId(): string {
   return useHook("useId", createUseIdState, useIdCallback)

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {},
   "dependencies": {
-    "kaioken": "workspace:^",
+    "kiru": "workspace:^",
     "x-templ": "^2.0.0"
   }
 }

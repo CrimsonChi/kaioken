@@ -1,8 +1,8 @@
-import { createContext, memo, useContext, useState } from "kaioken"
+import { createContext, memo, useContext, useState } from "kiru"
 
 type CountContextType = {
   count: number
-  setCount: (value: Kaioken.StateSetter<number>) => void
+  setCount: (value: Kiru.StateSetter<number>) => void
 }
 const CountContext = createContext<CountContextType>(null!)
 const useCount = () => useContext(CountContext)

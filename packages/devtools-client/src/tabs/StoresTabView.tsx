@@ -8,8 +8,8 @@ import {
   useLayoutEffect,
   useRequestUpdate,
   useState,
-} from "kaioken"
-import { kaiokenGlobal, mountedApps } from "../state"
+} from "kiru"
+import { kiruGlobal, mountedApps } from "../state"
 import {
   applyObjectChangeFromKeys,
   ChevronIcon,
@@ -24,7 +24,7 @@ import { ValueEditor } from "devtools-shared/src/ValueEditor"
 
 const stores = signal<Record<string, Store<any, any>>>({})
 const expandedItems = signal<Store<any, any>[]>([])
-kaiokenGlobal?.stores?.subscribe((newStores) => {
+kiruGlobal?.stores?.subscribe((newStores) => {
   stores.value = newStores
   expandedItems.value = expandedItems.value.filter((s) =>
     Object.values(stores.value).includes(s)
@@ -150,15 +150,15 @@ type NodeState = {
   }[]
 }
 
-type NodeStateMap = WeakMap<Kaioken.VNode, NodeState>
+type NodeStateMap = WeakMap<Kiru.VNode, NodeState>
 
 type InternalStoreState = {
   value: any
-  subscribers: Set<Kaioken.VNode | Function>
+  subscribers: Set<Kiru.VNode | Function>
   nodeStateMap: NodeStateMap
 }
 
-const $HMR_ACCEPT = Symbol.for("kaioken.hmrAccept")
+const $HMR_ACCEPT = Symbol.for("kiru.hmrAccept")
 const getStoreInternals = (store: Store<any, any>) => {
   if ($HMR_ACCEPT in store) {
     return (
@@ -186,8 +186,8 @@ function StoreSubscriberAppTree({
       if (appCtx !== app) return
       requestUpdate()
     }
-    kaiokenGlobal?.on("update", handleUpdate)
-    return () => kaiokenGlobal?.off("update", handleUpdate)
+    kiruGlobal?.on("update", handleUpdate)
+    return () => kiruGlobal?.off("update", handleUpdate)
   }, [])
 
   if (!root) return null
@@ -209,7 +209,7 @@ function StoreSubscriberAppTree({
 }
 
 type KNodeTreeNode = {
-  ref: Kaioken.VNode
+  ref: Kiru.VNode
   child?: KNodeTreeNode
   sibling?: KNodeTreeNode
 }

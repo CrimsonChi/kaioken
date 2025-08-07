@@ -1,4 +1,4 @@
-import { Fragment, useState, useViewTransition } from "kaioken"
+import { Fragment, useState, useViewTransition } from "kiru"
 import { Button } from "./atoms/Button"
 
 export default function KeyedListExample() {

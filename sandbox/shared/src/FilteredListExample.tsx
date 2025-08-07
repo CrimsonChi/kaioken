@@ -1,4 +1,4 @@
-import { Derive, useComputed, useEffect, useRef, useSignal } from "kaioken"
+import { Derive, useComputed, useEffect, useRef, useSignal } from "kiru"
 
 interface Album {
   id: number

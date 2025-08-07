@@ -1,4 +1,4 @@
-import * as kaioken from "kaioken"
+import * as kiru from "kiru"
 import { Flame } from "./icon/Flame"
 import { useAnchorPos } from "./hooks/useAnchorPos"
 import {
@@ -8,7 +8,7 @@ import {
   useLayoutEffect,
   useRef,
   useAppContext,
-} from "kaioken"
+} from "kiru"
 import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
@@ -29,7 +29,7 @@ type Vec2 = {
   y: number
 }
 
-type LerpedVec2Signal = kaioken.Signal<Vec2> & {
+type LerpedVec2Signal = kiru.Signal<Vec2> & {
   set: (value: Vec2, options?: { hard?: boolean }) => void
 }
 
@@ -186,12 +186,6 @@ export default function App() {
         >
           <Flame />
         </button>
-      </div>
-      <div hidden>
-        {/* <SelectedNodeView
-          kaiokenGlobal={window.__kaioken}
-          selectedApp={useDevTools().selectedApp}
-        /> */}
       </div>
       <InspectComponent />
     </>

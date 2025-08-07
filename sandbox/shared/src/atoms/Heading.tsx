@@ -1,4 +1,4 @@
-import { ElementProps } from "kaioken"
+import { ElementProps } from "kiru"
 
 export function H1({ className, children, ...props }: ElementProps<"h1">) {
   return (

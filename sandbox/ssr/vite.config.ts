@@ -1,7 +1,7 @@
 import path from "node:path"
 import { defineConfig } from "vite"
 import ssr from "vike/plugin"
-import kaioken from "vite-plugin-kaioken"
+import kiru from "vite-plugin-kiru"
 
 export default defineConfig({
   esbuild: {
@@ -15,5 +15,5 @@ export default defineConfig({
       $: path.join(__dirname, "src"),
     },
   },
-  plugins: [ssr(), kaioken({ include: ["../shared/"] })],
+  plugins: [ssr(), kiru({ include: ["../shared/"] })],
 })

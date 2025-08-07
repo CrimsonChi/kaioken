@@ -34,7 +34,7 @@ export function memo<T extends Record<string, unknown> = {}>(
     },
     {
       [$MEMO]: { arePropsEqual },
-      displayName: "Kaioken.memo",
+      displayName: "Kiru.memo",
     }
   )
 }

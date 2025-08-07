@@ -27,12 +27,9 @@ describe("signals", () => {
       cy.get("#string-signal #greeting").should("contain.text", "Hello, World!")
 
       // Test two-way binding
-      cy.get("#string-signal #name-input").clear().type("Kaioken")
-      cy.get("#string-signal #name-input").should("have.value", "Kaioken")
-      cy.get("#string-signal #greeting").should(
-        "contain.text",
-        "Hello, Kaioken!"
-      )
+      cy.get("#string-signal #name-input").clear().type("Kiru")
+      cy.get("#string-signal #name-input").should("have.value", "Kiru")
+      cy.get("#string-signal #greeting").should("contain.text", "Hello, Kiru!")
     })
   })
 

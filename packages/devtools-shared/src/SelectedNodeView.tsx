@@ -1,4 +1,4 @@
-import { AppContext, useEffect, useRequestUpdate } from "kaioken"
+import { AppContext, useEffect, useRequestUpdate } from "kiru"
 import { isVNodeDeleted } from "../../lib/dist/utils.js"
 import { applyObjectChangeFromKeys, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
@@ -8,16 +8,16 @@ import { FileLink } from "./FileLink"
 
 type SelectedNodeViewProps = {
   selectedApp: AppContext
-  selectedNode: Kaioken.VNode & { type: Function }
-  setSelectedNode: (node: (Kaioken.VNode & { type: Function }) | null) => void
-  kaiokenGlobal: typeof window.__kaioken
+  selectedNode: Kiru.VNode & { type: Function }
+  setSelectedNode: (node: (Kiru.VNode & { type: Function }) | null) => void
+  kiruGlobal: typeof window.__kiru
 }
 
 export function SelectedNodeView({
   selectedApp,
   selectedNode,
   setSelectedNode,
-  kaiokenGlobal,
+  kiruGlobal,
 }: SelectedNodeViewProps) {
   const requestUpdate = useRequestUpdate()
 
@@ -31,8 +31,8 @@ export function SelectedNodeView({
       }
     }
 
-    kaiokenGlobal?.on("update", handleUpdate)
-    return () => kaiokenGlobal?.off("update", handleUpdate)
+    kiruGlobal?.on("update", handleUpdate)
+    return () => kiruGlobal?.off("update", handleUpdate)
   }, [])
 
   const refresh = () => {
@@ -72,7 +72,7 @@ export function SelectedNodeView({
   )
 }
 
-type DisplayGroupHook = Kaioken.Hook<{
+type DisplayGroupHook = Kiru.Hook<{
   name: "devtools:useHookDebugGroup"
   displayName: string
   action: "start" | "end"
@@ -80,20 +80,20 @@ type DisplayGroupHook = Kaioken.Hook<{
 type HookGroupNode = {
   parent: HookGroupNode | null
   name: string
-  children: (Kaioken.Hook<any> | HookGroupNode)[]
+  children: (Kiru.Hook<any> | HookGroupNode)[]
   [hookGroupSymbol]: true
 }
-function isDisplayGroupHook(hook: Kaioken.Hook<any>): hook is DisplayGroupHook {
+function isDisplayGroupHook(hook: Kiru.Hook<any>): hook is DisplayGroupHook {
   return hook.name === "devtools:useHookDebugGroup"
 }
 function isHookGroupNode(
-  node: HookGroupNode | Kaioken.Hook<any>
+  node: HookGroupNode | Kiru.Hook<any>
 ): node is HookGroupNode {
   return hookGroupSymbol in node
 }
 
 const hookGroupSymbol = Symbol.for("devtools.hookGroup")
-function makeHookTree(node: Kaioken.VNode) {
+function makeHookTree(node: Kiru.VNode) {
   const root: HookGroupNode = {
     parent: null,
     name: "hooks",
@@ -140,7 +140,7 @@ function HookTreeDisplay({
   selectedApp,
   depth = 0,
 }: {
-  node: HookGroupNode | Kaioken.Hook<any>
+  node: HookGroupNode | Kiru.Hook<any>
   selectedApp: AppContext
   depth?: number
 }) {
@@ -161,7 +161,7 @@ function HookTreeDisplay({
       </NodeDataSection>
     )
   }
-  const { name, dev, cleanup, ...rest } = node as Kaioken.Hook<{}>
+  const { name, dev, cleanup, ...rest } = node as Kiru.Hook<{}>
   const devtools = dev?.devtools
   const data = typeof devtools?.get === "function" ? devtools.get() : rest
 

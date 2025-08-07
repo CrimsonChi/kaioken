@@ -5,7 +5,7 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
 /**
  * Creates 'dispatcher-driven' state.
  *
- * @see https://kaioken.dev/docs/hooks/useReducer
+ * @see https://kirujs.dev/docs/hooks/useReducer
  */
 export function useReducer<T, A>(
   reducer: (state: T, action: A) => T,
