@@ -349,7 +349,7 @@ type NoChildElementElement =
   | HTMLTextAreaElement
 
 declare global {
-  namespace Kaioken {
+  namespace Kiru {
     type DOMEvent<E = Event, C = unknown, T = unknown> = Omit<
       E,
       "target" | "currentTarget"

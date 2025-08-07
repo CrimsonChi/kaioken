@@ -1,5 +1,5 @@
 import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { useVNode } from "./hooks/utils.js"
 import { getVNodeAppContext } from "./utils.js"
@@ -18,7 +18,7 @@ function Portal({ children, container }: PortalProps) {
       vNode.dom = typeof container === "function" ? container() : container
       if (!(vNode.dom instanceof HTMLElement)) {
         if (__DEV__) {
-          throw new KaiokenError({
+          throw new KiruError({
             message: `Invalid portal container, expected HTMLElement, got ${vNode.dom}`,
             vNode: vNode,
           })
@@ -37,7 +37,7 @@ function Portal({ children, container }: PortalProps) {
 }
 
 function isPortal(
-  node: Kaioken.VNode
-): node is Kaioken.VNode & { type: typeof Portal } {
+  node: Kiru.VNode
+): node is Kiru.VNode & { type: typeof Portal } {
   return node.type === Portal
 }

@@ -88,7 +88,7 @@ export type SWROptions = {
   refetchWhenOffline?: boolean
 }
 
-type SWRHook = Kaioken.Hook<{
+type SWRHook = Kiru.Hook<{
   strKey: string
   options: SWROptions
   update: () => void
@@ -107,7 +107,7 @@ let SWR_GLOBAL_CACHE: SWRCache
 let IS_ONLINE = false
 
 if ("window" in globalThis) {
-  SWR_GLOBAL_CACHE = window.__kaioken!.globalState[Symbol.for("SWR_GLOBAL")] ??=
+  SWR_GLOBAL_CACHE = window.__kiru!.globalState[Symbol.for("SWR_GLOBAL")] ??=
     new Map()
 
   IS_ONLINE = navigator.onLine

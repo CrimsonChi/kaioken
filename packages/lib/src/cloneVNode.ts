@@ -1,7 +1,7 @@
 import { createElement } from "./element.js"
 import { isVNode } from "./utils.js"
 
-export function cloneVNode(vNode: Kaioken.VNode): Kaioken.VNode {
+export function cloneVNode(vNode: Kiru.VNode): Kiru.VNode {
   const children = vNode.props.children
   let clonedChildren: unknown
   if (isVNode(children)) {

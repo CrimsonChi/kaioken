@@ -111,7 +111,7 @@ export class Signal<T> {
     return () => signalSubsMap.get(this.$id)?.delete(cb)
   }
 
-  notify(options?: { filter?: (sub: Function | Kaioken.VNode) => boolean }) {
+  notify(options?: { filter?: (sub: Function | Kiru.VNode) => boolean }) {
     signalSubsMap.get(this.$id)?.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
       if (typeof sub === "function") {

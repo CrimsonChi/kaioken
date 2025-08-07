@@ -42,7 +42,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
 function renderToStream_internal(
   state: RequestState,
   el: unknown,
-  parent: Kaioken.VNode | null,
+  parent: Kiru.VNode | null,
   idx: number
 ): void {
   if (el === null) return

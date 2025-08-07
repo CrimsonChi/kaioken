@@ -7,9 +7,9 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
  *
  * @see https://kaioken.dev/docs/hooks/useRef
  */
-export function useRef<T>(initialValue: T): Kaioken.MutableRefObject<T>
-export function useRef<T>(initialValue: T | null): Kaioken.RefObject<T>
-export function useRef<T = undefined>(): Kaioken.MutableRefObject<T | undefined>
+export function useRef<T>(initialValue: T): Kiru.MutableRefObject<T>
+export function useRef<T>(initialValue: T | null): Kiru.RefObject<T>
+export function useRef<T = undefined>(): Kiru.MutableRefObject<T | undefined>
 export function useRef<T>(initialValue?: T | null) {
   if (!sideEffectsEnabled()) return { current: initialValue }
   return useHook(
@@ -22,7 +22,7 @@ export function useRef<T>(initialValue?: T | null) {
             devtools: {
               get: () => ({ value: hook.ref.current! }),
               set: ({ value }) => (hook.ref.current = value),
-            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
+            } satisfies Kiru.HookDevtoolsProvisions<{ value: T }>,
             initialArgs: [hook.ref.current],
           }
         }

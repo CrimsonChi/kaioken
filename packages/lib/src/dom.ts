@@ -12,7 +12,7 @@ import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 import { flags } from "./flags.js"
 import type {
   DomVNode,
@@ -24,7 +24,7 @@ import type {
 
 export { commitWork, createDom, updateDom, hydrateDom }
 
-type VNode = Kaioken.VNode
+type VNode = Kiru.VNode
 type HostNode = {
   node: ElementVNode
   lastChild?: DomVNode
@@ -35,7 +35,7 @@ type PlacementScope = {
   child?: VNode
 }
 
-function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
+function setDomRef(ref: Kiru.Ref<SomeDom | null>, value: SomeDom | null) {
   if (typeof ref === "function") {
     ref(value)
     return
@@ -47,7 +47,7 @@ function setDomRef(ref: Kaioken.Ref<SomeDom | null>, value: SomeDom | null) {
     })
     return
   }
-  ;(ref as Kaioken.MutableRefObject<SomeDom | null>).current = value
+  ;(ref as Kiru.MutableRefObject<SomeDom | null>).current = value
 }
 
 function createDom(vNode: DomVNode): SomeDom {
@@ -247,7 +247,7 @@ function setSignalProp(
     cleanups[key] = signal.subscribe((value) => {
       setProp(dom, key, value, null)
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
+        window.__kiru?.profilingContext?.emit("signalAttrUpdate", _ctx)
       }
     })
 
@@ -257,9 +257,7 @@ function setSignalProp(
   const evtName = bindAttrToEventMap[attr]
   if (!evtName) {
     if (__DEV__) {
-      console.error(
-        `[kaioken]: ${attr} is not a valid element binding attribute.`
-      )
+      console.error(`[kiru]: ${attr} is not a valid element binding attribute.`)
     }
     return
   }
@@ -272,7 +270,7 @@ function setSignalProp(
   const signalUpdateCallback = (value: any) => {
     setAttr(value)
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("signalAttrUpdate", _ctx)
+      window.__kiru?.profilingContext?.emit("signalAttrUpdate", _ctx)
     }
   }
 
@@ -324,7 +322,7 @@ function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
   ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((v) => {
     textNode.nodeValue = v
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("signalTextUpdate", _ctx)
+      window.__kiru?.profilingContext?.emit("signalTextUpdate", _ctx)
     }
   })
 }
@@ -332,7 +330,7 @@ function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
 function hydrateDom(vNode: VNode) {
   const dom = hydrationStack.nextChild()
   if (!dom)
-    throw new KaiokenError({
+    throw new KiruError({
       message: `Hydration mismatch - no node found`,
       vNode,
     })
@@ -341,7 +339,7 @@ function hydrateDom(vNode: VNode) {
     nodeName = nodeName.toLowerCase()
   }
   if ((vNode.type as string) !== nodeName) {
-    throw new KaiokenError({
+    throw new KiruError({
       message: `Hydration mismatch - expected node of type ${vNode.type.toString()} but received ${nodeName}`,
       vNode,
     })
@@ -523,7 +521,7 @@ function getDomParent(vNode: VNode): ElementVNode {
       return vNode as ElementVNode
     }
 
-    throw new KaiokenError({
+    throw new KiruError({
       message: "No DOM parent found while attempting to place node.",
       vNode: vNode,
     })
@@ -698,11 +696,11 @@ function commitDeletion(vNode: VNode) {
     if (cleanups) Object.values(cleanups).forEach((c) => c())
 
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.emit("removeNode", ctx.current)
+      window.__kiru?.profilingContext?.emit("removeNode", ctx.current)
     }
 
     if (dom) {
-      if (ref) setDomRef(ref as Kaioken.Ref<SomeDom>, null)
+      if (ref) setDomRef(ref as Kiru.Ref<SomeDom>, null)
       if (dom.isConnected && !isPortal(node)) {
         dom.remove()
       }

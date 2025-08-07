@@ -9,7 +9,7 @@ export { createStore }
 export type { Store, MethodFactory }
 
 type MethodFactory<T> = (
-  setState: (setter: Kaioken.StateSetter<T>) => void,
+  setState: (setter: Kiru.StateSetter<T>) => void,
   getState: () => T
 ) => Record<string, Function>
 
@@ -32,7 +32,7 @@ type Subscribe<T> = {
 
 type Store<T, U extends Record<string, Function>> = StoreHook<T, U> & {
   getState: () => T
-  setState: (setter: Kaioken.StateSetter<T>) => void
+  setState: (setter: Kiru.StateSetter<T>) => void
   methods: U
   subscribe: Subscribe<T>
 }
@@ -51,8 +51,8 @@ type NodeState = {
 type InternalStoreState<T, U extends MethodFactory<T>> = {
   value: T
   epoch: number
-  subscribers: Set<Kaioken.VNode | Function>
-  nodeStateMap: WeakMap<Kaioken.VNode, NodeState>
+  subscribers: Set<Kiru.VNode | Function>
+  nodeStateMap: WeakMap<Kiru.VNode, NodeState>
   methods: ReturnType<U>
 }
 
@@ -65,8 +65,8 @@ function createStore<T, U extends MethodFactory<T>>(
     current: {
       value: initial,
       epoch: 0,
-      subscribers: new Set<Kaioken.VNode | Function>(),
-      nodeStateMap: new WeakMap<Kaioken.VNode, NodeState>(),
+      subscribers: new Set<Kiru.VNode | Function>(),
+      nodeStateMap: new WeakMap<Kiru.VNode, NodeState>(),
       methods: null as any as ReturnType<U>,
     } satisfies InternalStoreState<T, U>,
   }
@@ -76,7 +76,7 @@ function createStore<T, U extends MethodFactory<T>>(
 
   const getState = () => state.current.value
 
-  const setState = (setter: Kaioken.StateSetter<T>) => {
+  const setState = (setter: Kiru.StateSetter<T>) => {
     state.current.value =
       typeof setter === "function"
         ? (setter as Function)(state.current.value)

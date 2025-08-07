@@ -12,7 +12,7 @@ import {
 } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 import { ctx, hookIndex, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
@@ -26,7 +26,7 @@ import {
 } from "./utils.js"
 import { Signal } from "./signals/base.js"
 
-type VNode = Kaioken.VNode
+type VNode = Kiru.VNode
 
 export interface Scheduler {
   clear(): void
@@ -122,7 +122,7 @@ export function createScheduler(
     // If this node is currently being rendered, just mark it dirty
     if (node.current === vNode) {
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("updateDirtied", appCtx)
+        window.__kiru?.profilingContext?.emit("updateDirtied", appCtx)
       }
       isRenderDirtied = true
       return
@@ -234,7 +234,7 @@ export function createScheduler(
 
   function workLoop(deadline?: IdleDeadline): void {
     if (__DEV__) {
-      window.__kaioken?.profilingContext?.beginTick(appCtx)
+      window.__kiru?.profilingContext?.beginTick(appCtx)
     }
     ctx.current = appCtx
     while (nextUnitOfWork) {
@@ -267,17 +267,17 @@ export function createScheduler(
         immediateEffectDirtiedRender = false
         consecutiveDirtyCount++
         if (__DEV__) {
-          window.__kaioken?.profilingContext?.endTick(appCtx)
-          window.__kaioken?.profilingContext?.emit("updateDirtied", appCtx)
+          window.__kiru?.profilingContext?.endTick(appCtx)
+          window.__kiru?.profilingContext?.emit("updateDirtied", appCtx)
         }
         return workLoop()
       }
       consecutiveDirtyCount = 0
 
       flushEffects(effectCallbacks.post)
-      window.__kaioken!.emit("update", appCtx)
+      window.__kiru!.emit("update", appCtx)
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.emit("update", appCtx)
+        window.__kiru?.profilingContext?.emit("update", appCtx)
       }
     }
 
@@ -287,7 +287,7 @@ export function createScheduler(
         nextIdleEffects.shift()!(scheduler)
       }
       if (__DEV__) {
-        window.__kaioken?.profilingContext?.endTick(appCtx)
+        window.__kiru?.profilingContext?.endTick(appCtx)
       }
       return
     }
@@ -362,12 +362,12 @@ export function createScheduler(
         renderChild = updateFunctionComponent(vNode as FunctionVNode)
       }
     } catch (error) {
-      window.__kaioken?.emit(
+      window.__kiru?.emit(
         "error",
         appCtx,
         error instanceof Error ? error : new Error(String(error))
       )
-      if (KaiokenError.isKaiokenError(error)) {
+      if (KiruError.isKiruError(error)) {
         if (error.customNodeStack) {
           setTimeout(() => {
             throw new Error(error.customNodeStack)
@@ -452,7 +452,7 @@ export function createScheduler(
           newChild = latest(type)(props)
           delete vNode.hmrUpdated
           if (++renderTryCount > CONSECUTIVE_DIRTY_LIMIT) {
-            throw new KaiokenError({
+            throw new KiruError({
               message:
                 "Too many re-renders. Kaioken limits the number of renders to prevent an infinite loop.",
               fatal: true,
@@ -484,7 +484,7 @@ export function createScheduler(
       }
       if (__DEV__) {
         // @ts-expect-error we apply vNode to the dom node
-        vNode.dom.__kaiokenNode = vNode
+        vNode.dom.__kiruNode = vNode
       }
     }
     // text should _never_ have children
@@ -500,7 +500,7 @@ export function createScheduler(
 
   function checkForTooManyConsecutiveDirtyRenders() {
     if (consecutiveDirtyCount > CONSECUTIVE_DIRTY_LIMIT) {
-      throw new KaiokenError(
+      throw new KiruError(
         "Maximum update depth exceeded. This can happen when a component repeatedly calls setState during render or in useLayoutEffect. Kaioken limits the number of nested updates to prevent infinite loops."
       )
     }

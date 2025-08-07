@@ -31,7 +31,7 @@ export function renderToString<T extends Record<string, unknown>>(
 
 function renderToString_internal(
   el: unknown,
-  parent: Kaioken.VNode | null,
+  parent: Kiru.VNode | null,
   idx: number
 ): string {
   if (el === null) return ""

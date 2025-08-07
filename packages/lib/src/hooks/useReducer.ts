@@ -23,7 +23,7 @@ export function useReducer<T, A>(
             devtools: {
               get: () => ({ value: hook.state }),
               set: ({ value }) => (hook.state = value),
-            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
+            } satisfies Kiru.HookDevtoolsProvisions<{ value: T }>,
             initialArgs: [reducer, state],
           }
         }

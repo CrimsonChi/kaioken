@@ -5,7 +5,7 @@ import { renderMode } from "../globals.js"
 
 type EventsArray = (keyof GlobalEventHandlersEventMap)[]
 
-export const HYDRATION_BOUNDARY_MARKER = "kaioken:h-boundary"
+export const HYDRATION_BOUNDARY_MARKER = "kiru:h-boundary"
 export const DEFAULT_INTERACTION_EVENTS = [
   "pointerdown",
   "keydown",

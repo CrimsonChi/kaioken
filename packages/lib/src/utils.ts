@@ -8,7 +8,7 @@ import {
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 import type { AppContext } from "./appContext"
 import { __DEV__ } from "./env.js"
 import { flags } from "./flags.js"
@@ -44,7 +44,7 @@ export {
   safeStringify,
 }
 
-type VNode = Kaioken.VNode
+type VNode = Kiru.VNode
 
 const noop: () => void = Object.freeze(() => {})
 
@@ -81,7 +81,7 @@ function isVNode(thing: unknown): thing is VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
-function isExoticType(type: VNode["type"]): type is Kaioken.ExoticSymbol {
+function isExoticType(type: VNode["type"]): type is Kiru.ExoticSymbol {
   return (
     type === $FRAGMENT ||
     type === $CONTEXT_PROVIDER ||
@@ -101,7 +101,7 @@ function isLazy(vNode: VNode): boolean {
   )
 }
 
-function isMemo(vNode: Kaioken.VNode): boolean {
+function isMemo(vNode: Kiru.VNode): boolean {
   return (
     typeof vNode.type === "function" &&
     "displayName" in vNode.type &&
@@ -122,7 +122,7 @@ function getCurrentVNode(): VNode | null {
 function getVNodeAppContext(vNode: VNode): AppContext {
   const n = nodeToCtxMap.get(vNode)
   if (!n)
-    throw new KaiokenError({
+    throw new KiruError({
       message: "Unable to find VNode's AppContext.",
       vNode,
     })
@@ -226,11 +226,8 @@ function postOrderApply(
   callbacks.onAscent(root)
 }
 
-function findParent(
-  vNode: Kaioken.VNode,
-  predicate: (n: Kaioken.VNode) => boolean
-) {
-  let n: Kaioken.VNode | null = vNode.parent
+function findParent(vNode: Kiru.VNode, predicate: (n: Kiru.VNode) => boolean) {
+  let n: Kiru.VNode | null = vNode.parent
   while (n) {
     if (predicate(n)) return n
     n = n.parent

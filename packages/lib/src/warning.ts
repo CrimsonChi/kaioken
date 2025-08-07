@@ -4,6 +4,6 @@ export const warnDeprecated = (
   solution: string
 ) => {
   console.warn(
-    `[kaioken]: "${featName}" is deprecated ${reason} and will be removed in future versions. ${solution}.`
+    `[kiru]: "${featName}" is deprecated ${reason} and will be removed in future versions. ${solution}.`
   )
 }

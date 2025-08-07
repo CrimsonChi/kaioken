@@ -6,7 +6,7 @@ import { createElement, Fragment } from "./element.js"
 import { flags } from "./flags.js"
 import { ctx } from "./globals.js"
 
-type VNode = Kaioken.VNode
+type VNode = Kiru.VNode
 
 export function reconcileChildren(parent: VNode, children: unknown) {
   if (Array.isArray(children)) {
@@ -428,7 +428,7 @@ function updateFromMap(
   return null
 }
 
-function setParent(child: Kaioken.VNode, parent: Kaioken.VNode) {
+function setParent(child: Kiru.VNode, parent: Kiru.VNode) {
   child.parent = parent
   child.depth = parent.depth + 1
   if (parent.isMemoized || flags.get(parent.flags, FLAG.HAS_MEMO_ANCESTOR)) {
@@ -438,15 +438,15 @@ function setParent(child: Kaioken.VNode, parent: Kaioken.VNode) {
 
 function emitUpdateNode() {
   if (!("window" in globalThis)) return
-  window.__kaioken?.profilingContext?.emit("updateNode", ctx.current)
+  window.__kiru?.profilingContext?.emit("updateNode", ctx.current)
 }
 
 function emitCreateNode() {
   if (!("window" in globalThis)) return
-  window.__kaioken?.profilingContext?.emit("createNode", ctx.current)
+  window.__kiru?.profilingContext?.emit("createNode", ctx.current)
 }
 
-const $LIST_CHILD = Symbol("kaioken:marked-list-child")
+const $LIST_CHILD = Symbol("kiru:marked-list-child")
 function markListChild(children: unknown[]) {
   Object.assign(children, { [$LIST_CHILD]: true })
 }
@@ -510,7 +510,7 @@ function checkForMissingKeys(parent: VNode, children: unknown[]) {
 }
 
 function keyWarning(str: string) {
-  const formatted = `[kaioken]: ${str}. See https://kaioken.dev/keys-warning for more information.`
+  const formatted = `[kiru]: ${str}. See https://kaioken.dev/keys-warning for more information.`
   console.error(formatted)
 }
 

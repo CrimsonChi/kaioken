@@ -46,6 +46,6 @@ export function Route({ element }: RouteProps) {
 
 export function isRoute(
   thing: unknown
-): thing is Kaioken.VNode & { props: RouteProps } {
+): thing is Kiru.VNode & { props: RouteProps } {
   return isVNode(thing) && thing.type === Route
 }

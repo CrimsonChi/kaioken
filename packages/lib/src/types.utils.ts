@@ -6,13 +6,13 @@ export type SomeElement = HTMLElement | SVGElement
 export type SomeDom = HTMLElement | SVGElement | Text
 export type MaybeDom = SomeDom | undefined
 
-type VNode = Kaioken.VNode
+type VNode = Kiru.VNode
 
 export type FunctionVNode = Omit<VNode, "type"> & {
   type: (...args: any) => any
 }
 export type ExoticVNode = Omit<VNode, "type"> & {
-  type: Kaioken.ExoticSymbol
+  type: Kiru.ExoticSymbol
 }
 export type ElementVNode = Omit<VNode, "dom" | "type"> & {
   dom: SomeElement
@@ -23,11 +23,11 @@ export type DomVNode = Omit<VNode, "dom" | "type"> & {
   type: "#text" | (string & {})
 }
 
-export type ContextProviderNode<T> = Kaioken.VNode & {
+export type ContextProviderNode<T> = Kiru.VNode & {
   type: typeof $CONTEXT_PROVIDER
-  props: { value: T; ctx: Kaioken.Context<T>; dependents: Set<Kaioken.VNode> }
+  props: { value: T; ctx: Kiru.Context<T>; dependents: Set<Kiru.VNode> }
 }
-export type HydrationBoundaryNode = Kaioken.VNode & {
+export type HydrationBoundaryNode = Kiru.VNode & {
   type: typeof $HYDRATION_BOUNDARY
   props: { mode: HydrationBoundaryMode }
 }

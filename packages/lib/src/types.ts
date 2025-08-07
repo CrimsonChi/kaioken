@@ -5,7 +5,7 @@ import type {
   $FRAGMENT,
   $HYDRATION_BOUNDARY,
 } from "./constants"
-import type { KaiokenGlobalContext } from "./globalContext"
+import type { KiruGlobalContext } from "./globalContext"
 import type {
   GlobalAttributes,
   HtmlElementAttributes,
@@ -50,10 +50,10 @@ type ElementMap = {
   [Tag in keyof HtmlElementAttributes]: SignalableHtmlElementAttributes<Tag> &
     SignalableGlobalAttributes &
     SignalableAriaProps &
-    Kaioken.EventAttributes<HTMLTagToElement<Tag>> &
+    Kiru.EventAttributes<HTMLTagToElement<Tag>> &
     JSX.ElementAttributes & {
       ref?:
-        | Kaioken.Ref<HTMLTagToElement<Tag>>
+        | Kiru.Ref<HTMLTagToElement<Tag>>
         | SignalClass<HTMLTagToElement<Tag> | null>
     }
 } & {
@@ -61,10 +61,10 @@ type ElementMap = {
     SignalableSvgGlobalAttributes &
     SignalableGlobalAttributes &
     SignalableAriaProps &
-    Kaioken.EventAttributes<SVGTagToElement<Tag>> &
+    Kiru.EventAttributes<SVGTagToElement<Tag>> &
     JSX.ElementAttributes & {
       ref?:
-        | Kaioken.Ref<SVGTagToElement<Tag>>
+        | Kiru.Ref<SVGTagToElement<Tag>>
         | SignalClass<SVGTagToElement<Tag> | null>
     }
 } & {
@@ -73,7 +73,7 @@ type ElementMap = {
 
 declare global {
   interface Window {
-    __kaioken: KaiokenGlobalContext | undefined
+    __kiru: KiruGlobalContext | undefined
   }
   namespace JSX {
     interface IntrinsicElements extends ElementMap {}
@@ -97,9 +97,9 @@ declare global {
 
     type Element =
       | Element[]
-      | Kaioken.VNode
+      | Kiru.VNode
       | PrimitiveChild
-      | Kaioken.Signal<PrimitiveChild>
+      | Kiru.Signal<PrimitiveChild>
 
     type ElementAttributes = {
       key?: JSX.ElementKey
@@ -107,10 +107,10 @@ declare global {
       innerHTML?:
         | string
         | number
-        | Kaioken.Signal<string | number | null | undefined>
+        | Kiru.Signal<string | number | null | undefined>
     }
   }
-  namespace Kaioken {
+  namespace Kiru {
     type ProviderProps<T> = {
       value: T
       children?: JSX.Children | ((value: T) => JSX.Element)
@@ -130,7 +130,7 @@ declare global {
       displayName?: string
     }
     type FCProps<T = {}> = T & { children?: JSX.Children }
-    type InferProps<T> = T extends Kaioken.FC<infer P> ? P : never
+    type InferProps<T> = T extends Kiru.FC<infer P> ? P : never
 
     type HookDevtoolsProvisions<T extends Record<string, any>> = {
       get: () => T
@@ -176,7 +176,7 @@ declare global {
         [key: string]: any
         children?: unknown
         key?: JSX.ElementKey
-        ref?: Kaioken.Ref<unknown>
+        ref?: Kiru.Ref<unknown>
       }
       index: number
       depth: number
@@ -204,6 +204,6 @@ declare global {
   }
 
   interface Element {
-    __kaiokenNode?: Kaioken.VNode
+    __kiruNode?: Kiru.VNode
   }
 }

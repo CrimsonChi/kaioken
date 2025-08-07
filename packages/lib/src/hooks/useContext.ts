@@ -5,7 +5,7 @@ import { $CONTEXT_PROVIDER } from "../constants.js"
 
 type UseContextHookState<T> = {
   provider?: ContextProviderNode<T>
-  context: Kaioken.Context<T>
+  context: Kiru.Context<T>
   warnIfNotFound: boolean
 }
 
@@ -15,7 +15,7 @@ type UseContextHookState<T> = {
  * @see https://kaioken.dev/docs/hooks/useContext
  */
 export function useContext<T>(
-  context: Kaioken.Context<T>,
+  context: Kiru.Context<T>,
   warnIfNotFound = true
 ): T {
   return useHook(
@@ -70,10 +70,10 @@ const useContextCallback = <T>({
   return hook.provider.props.value
 }
 
-const contextsNotFound = new Set<Kaioken.Context<any>>()
-function warnProviderNotFound(ctx: Kaioken.Context<any>) {
+const contextsNotFound = new Set<Kiru.Context<any>>()
+function warnProviderNotFound(ctx: Kiru.Context<any>) {
   if (!contextsNotFound.has(ctx)) {
     contextsNotFound.add(ctx)
-    console.warn("[kaioken]: Unable to find context provider")
+    console.warn("[kiru]: Unable to find context provider")
   }
 }

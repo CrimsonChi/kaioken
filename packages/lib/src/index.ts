@@ -4,9 +4,9 @@ import {
   type AppContextOptions,
 } from "./appContext.js"
 import { ctx } from "./globals.js"
-import { createKaiokenGlobalContext } from "./globalContext.js"
+import { createKiruGlobalContext } from "./globalContext.js"
 import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 
 export type * from "./types"
 export * from "./appContext.js"
@@ -23,7 +23,7 @@ export * from "./store.js"
 export * from "./transition.js"
 
 if ("window" in globalThis) {
-  globalThis.window.__kaioken ??= createKaiokenGlobalContext()
+  globalThis.window.__kiru ??= createKiruGlobalContext()
 }
 
 export function mount<T extends Record<string, unknown>>(
@@ -52,7 +52,7 @@ export function mount<T extends Record<string, unknown>>(
     root = optionsOrRoot.root!
     if (__DEV__) {
       if (!(root instanceof HTMLElement)) {
-        throw new KaiokenError("Root node must be an HTMLElement")
+        throw new KiruError("Root node must be an HTMLElement")
       }
     }
   }

@@ -67,7 +67,7 @@ export function Link({ to, onclick, replace, inherit, ...props }: LinkProps) {
 }
 
 type RouterCtx = {
-  viewTransition: Kaioken.RefObject<ViewTransition>
+  viewTransition: Kiru.RefObject<ViewTransition>
   queueSyncNav: (callback: () => void) => void
   params: Record<string, string>
   query: Record<string, string>
@@ -205,8 +205,8 @@ export function Router(props: RouterProps) {
     }
   })
 
-  type RouteComponent = Kaioken.VNode & {
-    props: Kaioken.InferProps<typeof Route>
+  type RouteComponent = Kiru.VNode & {
+    props: Kiru.InferProps<typeof Route>
   }
   let fallbackRoute: RouteComponent | undefined
   let route: RouteComponent | undefined
@@ -221,7 +221,7 @@ export function Router(props: RouterProps) {
       if (__DEV__) {
         if (fallbackRoute) {
           console.warn(
-            "[kaioken]: More than one fallback route defined. Only the last one will be used."
+            "[kiru]: More than one fallback route defined. Only the last one will be used."
           )
         }
       }

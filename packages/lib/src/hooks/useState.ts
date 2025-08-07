@@ -9,7 +9,7 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
  */
 export function useState<T>(
   initial: T | (() => T)
-): readonly [T, (value: Kaioken.StateSetter<T>) => void] {
+): readonly [T, (value: Kiru.StateSetter<T>) => void] {
   if (!sideEffectsEnabled()) {
     return [
       typeof initial === "function" ? (initial as Function)() : initial,
@@ -20,7 +20,7 @@ export function useState<T>(
     "useState",
     {
       state: undefined as T,
-      dispatch: noop as (value: Kaioken.StateSetter<T>) => void,
+      dispatch: noop as (value: Kiru.StateSetter<T>) => void,
     },
     ({ hook, isInit, update, isHMR }) => {
       if (__DEV__) {
@@ -29,7 +29,7 @@ export function useState<T>(
             devtools: {
               get: () => ({ value: hook.state }),
               set: ({ value }) => (hook.state = value),
-            } satisfies Kaioken.HookDevtoolsProvisions<{ value: T }>,
+            } satisfies Kiru.HookDevtoolsProvisions<{ value: T }>,
             initialArgs: [initial],
           }
         }
@@ -45,7 +45,7 @@ export function useState<T>(
       if (isInit) {
         hook.state =
           typeof initial === "function" ? (initial as Function)() : initial
-        hook.dispatch = (setter: Kaioken.StateSetter<T>) => {
+        hook.dispatch = (setter: Kiru.StateSetter<T>) => {
           const newState =
             typeof setter === "function"
               ? (setter as Function)(hook.state)

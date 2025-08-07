@@ -1,5 +1,5 @@
 import { node } from "../globals.js"
-import { KaiokenError } from "../error.js"
+import { KiruError } from "../error.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled, useHook } from "./utils.js"
 import { __DEV__ } from "../env.js"
@@ -17,7 +17,7 @@ export function useSyncExternalStore<T>(
 ): T {
   if (!sideEffectsEnabled()) {
     if (getServerState === undefined) {
-      throw new KaiokenError({
+      throw new KiruError({
         message:
           "useSyncExternalStore must receive a getServerSnapshot function if the component is rendered on the server.",
         vNode: node.current!,

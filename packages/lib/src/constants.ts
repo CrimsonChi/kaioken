@@ -3,7 +3,7 @@ export {
   $CONTEXT,
   $CONTEXT_PROVIDER,
   $FRAGMENT,
-  $KAIOKEN_ERROR,
+  $KIRU_ERROR,
   $HMR_ACCEPT,
   $MEMO,
   $HYDRATION_BOUNDARY,
@@ -14,14 +14,14 @@ export {
 
 export { voidElements, svgTags, booleanAttributes }
 
-const $SIGNAL = Symbol.for("kaioken.signal")
-const $CONTEXT = Symbol.for("kaioken.context")
-const $CONTEXT_PROVIDER = Symbol.for("kaioken.contextProvider")
-const $FRAGMENT = Symbol.for("kaioken.fragment")
-const $KAIOKEN_ERROR = Symbol.for("kaioken.error")
-const $HMR_ACCEPT = Symbol.for("kaioken.hmrAccept")
-const $MEMO = Symbol.for("kaioken.memo")
-const $HYDRATION_BOUNDARY = Symbol.for("kaioken.hydrationBoundary")
+const $SIGNAL = Symbol.for("kiru.signal")
+const $CONTEXT = Symbol.for("kiru.context")
+const $CONTEXT_PROVIDER = Symbol.for("kiru.contextProvider")
+const $FRAGMENT = Symbol.for("kiru.fragment")
+const $KIRU_ERROR = Symbol.for("kiru.error")
+const $HMR_ACCEPT = Symbol.for("kiru.hmrAccept")
+const $MEMO = Symbol.for("kiru.memo")
+const $HYDRATION_BOUNDARY = Symbol.for("kiru.hydrationBoundary")
 
 const CONSECUTIVE_DIRTY_LIMIT = 50
 

@@ -4,11 +4,7 @@ import { createHMRContext } from "./hmr.js"
 import { createProfilingContext } from "./profiling.js"
 import { Store } from "./store"
 
-export {
-  createKaiokenGlobalContext,
-  type GlobalKaiokenEvent,
-  type KaiokenGlobalContext,
-}
+export { createKiruGlobalContext, type GlobalKiruEvent, type KiruGlobalContext }
 
 interface ReactiveMap<V> {
   add(key: string, value: V): void
@@ -72,9 +68,9 @@ type Evt =
       data: Error
     }
 
-type GlobalKaiokenEvent = Evt["name"]
+type GlobalKiruEvent = Evt["name"]
 
-interface KaiokenGlobalContext {
+interface KiruGlobalContext {
   readonly apps: AppContext[]
   stores?: ReactiveMap<Store<any, any>>
   HMRContext?: ReturnType<typeof createHMRContext>
@@ -91,10 +87,10 @@ interface KaiokenGlobalContext {
   ): void
 }
 
-function createKaiokenGlobalContext(): KaiokenGlobalContext {
+function createKiruGlobalContext(): KiruGlobalContext {
   const contexts = new Set<AppContext>()
   const listeners = new Map<
-    GlobalKaiokenEvent,
+    GlobalKiruEvent,
     Set<(ctx: AppContext, data?: Evt["data"]) => void>
   >()
   const globalState: Record<symbol, any> = {}
@@ -128,7 +124,7 @@ function createKaiokenGlobalContext(): KaiokenGlobalContext {
     listeners.get(event)?.delete(callback)
   }
 
-  const globalContext: KaiokenGlobalContext = {
+  const globalContext: KiruGlobalContext = {
     get apps() {
       return Array.from(contexts)
     },

@@ -2,13 +2,13 @@ import { flags } from "./flags.js"
 import { FLAG } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { createScheduler, Scheduler } from "./scheduler.js"
 import { generateRandomID } from "./generateId.js"
 
-type VNode = Kaioken.VNode
+type VNode = Kiru.VNode
 
 export interface AppContextOptions {
   root?: HTMLElement
@@ -69,11 +69,11 @@ export function createAppContext<T extends Record<string, unknown> = {}>(
   function mount(): Promise<AppContext<T>> {
     return new Promise<AppContext<T>>((resolve, reject) => {
       if (mounted) return resolve(appContext)
-      if (!rootNode) return reject(new KaiokenError("Root node not configured"))
+      if (!rootNode) return reject(new KiruError("Root node not configured"))
       root ??= document.body
       rootNode.dom = root
       if (__DEV__) {
-        root.__kaiokenNode = rootNode
+        root.__kiruNode = rootNode
       }
       scheduler = createScheduler(appContext, options?.maxFrameMs ?? 50)
       if (renderMode.current === "hydrate") {
@@ -84,7 +84,7 @@ export function createAppContext<T extends Record<string, unknown> = {}>(
           hydrationStack.releaseEvents(root!)
         }
         mounted = true
-        window.__kaioken?.emit("mount", appContext as AppContext<any>)
+        window.__kiru?.emit("mount", appContext as AppContext<any>)
         resolve(appContext)
       }, false)
       scheduler.queueUpdate(rootNode)
@@ -102,7 +102,7 @@ export function createAppContext<T extends Record<string, unknown> = {}>(
         scheduler = undefined
         rootNode && (rootNode.child = null)
         mounted = false
-        window.__kaioken?.emit("unmount", appContext as AppContext<any>)
+        window.__kiru?.emit("unmount", appContext as AppContext<any>)
         resolve(appContext)
       })
     })
@@ -111,7 +111,7 @@ export function createAppContext<T extends Record<string, unknown> = {}>(
   function setProps(fn: (oldProps: T) => T): Promise<AppContext<T>> {
     const rootChild = rootNode?.child
     if (!mounted || !rootChild || !scheduler)
-      throw new KaiokenError(
+      throw new KiruError(
         "Failed to apply new props - ensure the app is mounted"
       )
     return new Promise<AppContext<T>>((resolve) => {

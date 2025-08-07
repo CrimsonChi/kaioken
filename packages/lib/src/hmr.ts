@@ -15,7 +15,7 @@ export type HMRAccept<T = {}> = {
 export type GenericHMRAcceptor<T = {}> = {
   [$HMR_ACCEPT]: HMRAccept<T>
 }
-type HotVar = Kaioken.FC | Store<any, any> | Signal<any> | Kaioken.Context<any>
+type HotVar = Kiru.FC | Store<any, any> | Signal<any> | Kiru.Context<any>
 
 type HotVarDesc = {
   type: string
@@ -80,7 +80,7 @@ export function createHMRContext() {
     hotVarRegistrationEntries: Record<string, HotVarRegistrationEntry>
   ) => {
     if (currentModuleMemory === null)
-      throw new Error("[kaioken]: HMR could not register: No active module")
+      throw new Error("[kiru]: HMR could not register: No active module")
 
     let dirtiedApps: Set<AppContext> = new Set()
     for (const [name, newEntry] of Object.entries(hotVarRegistrationEntries)) {
@@ -101,7 +101,7 @@ export function createHMRContext() {
       }
 
       if (newEntry.type === "createStore") {
-        window.__kaioken!.stores!.add(name, newEntry.value as Store<any, any>)
+        window.__kiru!.stores!.add(name, newEntry.value as Store<any, any>)
       }
 
       currentModuleMemory.hotVars.set(name, newEntry)
@@ -117,7 +117,7 @@ export function createHMRContext() {
         continue
       }
       if (oldEntry.type === "component" && newEntry.type === "component") {
-        window.__kaioken!.apps.forEach((ctx) => {
+        window.__kiru!.apps.forEach((ctx) => {
           if (!ctx.mounted || !ctx.rootNode) return
           traverseApply(ctx.rootNode, (vNode) => {
             if (vNode.type === oldEntry.value) {

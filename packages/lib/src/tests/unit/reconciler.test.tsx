@@ -2,13 +2,13 @@ import { describe, it } from "node:test"
 import assert from "node:assert"
 import { reconcileChildren } from "../../reconciler.js"
 import { ctx } from "../../globals.js"
-import * as kaioken from "../../index.js"
+import * as kiru from "../../index.js"
 import { FLAG } from "../../constants.js"
 import { shuffle } from "./utils.js"
 import { flags } from "../../flags.js"
 import { commitSnapshot } from "../../utils.js"
 
-const commitChildren = (node: Kaioken.VNode) => {
+const commitChildren = (node: Kiru.VNode) => {
   let n = node.child
   while (n) {
     commitSnapshot(n)
@@ -18,9 +18,9 @@ const commitChildren = (node: Kaioken.VNode) => {
 
 describe("reconciler", () => {
   it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", () => {
-    ctx.current = kaioken.createAppContext(() => null)
+    ctx.current = kiru.createAppContext(() => null)
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
-    const node = kaioken.createElement("div")
+    const node = kiru.createElement("div")
     node.child = reconcileChildren(node, [
       items.map((i) => <div key={i}>{i}</div>),
     ])!
@@ -49,10 +49,10 @@ describe("reconciler", () => {
     )
   })
   it("correctly handles reordered Array children with keys", () => {
-    ctx.current = kaioken.createAppContext(() => null)
+    ctx.current = kiru.createAppContext(() => null)
 
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
-    const node = kaioken.createElement("div")
+    const node = kiru.createElement("div")
     node.child = reconcileChildren(node, [
       items.map((i) => <div key={i}>{i}</div>),
     ])
@@ -66,7 +66,7 @@ describe("reconciler", () => {
 
     const assertChildStates = (opName: string) => {
       let i = 0,
-        c: Kaioken.VNode | null = node.child!.child!
+        c: Kiru.VNode | null = node.child!.child!
 
       while (c) {
         assert.strictEqual(
@@ -143,10 +143,10 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kaioken.createAppContext(() => null)
+      ctx.current = kiru.createAppContext(() => null)
 
       // Create a parent node
-      const node = kaioken.createElement("div")
+      const node = kiru.createElement("div")
 
       // Create children with duplicate keys
       const children = [
@@ -189,9 +189,9 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kaioken.createAppContext(() => null)
+      ctx.current = kiru.createAppContext(() => null)
 
-      const node = kaioken.createElement("div")
+      const node = kiru.createElement("div")
 
       // Test 1: Regular array with duplicate keys should warn
       const arrayWithDuplicates = [
@@ -227,9 +227,9 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kaioken.createAppContext(() => null)
+      ctx.current = kiru.createAppContext(() => null)
 
-      const node = kaioken.createElement("div")
+      const node = kiru.createElement("div")
 
       // Mix of keyed and non-keyed children in array context
       const children = [
@@ -260,10 +260,10 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kaioken.createAppContext(() => null)
+      ctx.current = kiru.createAppContext(() => null)
 
       // Create a parent node
-      const node = kaioken.createElement("div")
+      const node = kiru.createElement("div")
 
       // Simulate individual JSX children (not an array) - like the user's second example
       // <div><p key="a"></p><button>...</button></div>
@@ -289,7 +289,7 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kaioken.createAppContext(() => null)
+      ctx.current = kiru.createAppContext(() => null)
 
       const NamedComponent = () => {
         return (
@@ -302,10 +302,10 @@ describe("reconciler", () => {
       NamedComponent.displayName = "MyTestComponent"
 
       // Create parent component node
-      const parentNode = kaioken.createElement(NamedComponent)
+      const parentNode = kiru.createElement(NamedComponent)
 
       // Set up parent-child relationship
-      const childNode = kaioken.createElement("div")
+      const childNode = kiru.createElement("div")
       childNode.parent = parentNode
       childNode.type = NamedComponent
 

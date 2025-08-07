@@ -1,7 +1,7 @@
 import { describe, it } from "node:test"
 import assert from "node:assert"
 import { renderToString } from "../../renderToString.js"
-import * as kaioken from "../../index.js"
+import * as kiru from "../../index.js"
 
 describe("innerHTML", () => {
   it("sets the inner content of the tag", () => {
@@ -13,7 +13,7 @@ describe("innerHTML", () => {
     assert.strictEqual(res, expected)
   })
   it("can use a Signal to set the inner content of the tag", () => {
-    const text = kaioken.signal("Hello world!")
+    const text = kiru.signal("Hello world!")
     const App = () => {
       return <div innerHTML={text}></div>
     }

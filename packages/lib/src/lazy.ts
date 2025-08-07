@@ -1,6 +1,6 @@
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
+import { KiruError } from "./error.js"
 import { node, renderMode } from "./globals.js"
 import { useContext } from "./hooks/useContext.js"
 import { useRef } from "./hooks/useRef.js"
@@ -13,16 +13,16 @@ import {
 import type { SomeDom } from "./types.utils"
 import { noop } from "./utils.js"
 
-type FCModule = { default: Kaioken.FC<any> }
-type LazyImportValue = Kaioken.FC<any> | FCModule
+type FCModule = { default: Kiru.FC<any> }
+type LazyImportValue = Kiru.FC<any> | FCModule
 type InferLazyImportProps<T extends LazyImportValue> = T extends FCModule
-  ? Kaioken.InferProps<T["default"]>
-  : Kaioken.InferProps<T>
+  ? Kiru.InferProps<T["default"]>
+  : Kiru.InferProps<T>
 
 type LazyState = {
   fn: string
   promise: Promise<LazyImportValue>
-  result: Kaioken.FC | null
+  result: Kiru.FC | null
 }
 
 type LazyComponentProps<T extends LazyImportValue> = InferLazyImportProps<T> & {
@@ -35,7 +35,7 @@ const lazyCache: Map<string, LazyState> =
       (window.__KAIOKEN_LAZY_CACHE ??= new Map<string, LazyState>())
     : new Map<string, LazyState>()
 
-function consumeHydrationBoundaryChildren(parentNode: Kaioken.VNode): {
+function consumeHydrationBoundaryChildren(parentNode: Kiru.VNode): {
   parent: HTMLElement
   childNodes: Node[]
   startIndex: number
@@ -45,7 +45,7 @@ function consumeHydrationBoundaryChildren(parentNode: Kaioken.VNode): {
     boundaryStart?.nodeType !== Node.COMMENT_NODE ||
     boundaryStart.nodeValue !== HYDRATION_BOUNDARY_MARKER
   ) {
-    throw new KaiokenError({
+    throw new KiruError({
       message:
         "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
       fatal: true,
@@ -71,7 +71,7 @@ function consumeHydrationBoundaryChildren(parentNode: Kaioken.VNode): {
   }
   const boundaryEnd = hydrationStack.currentChild()
   if (!isBoundaryEnd(boundaryEnd)) {
-    throw new KaiokenError({
+    throw new KiruError({
       message:
         "Invalid HydrationBoundary node. This is likely a bug in Kaioken.",
       fatal: true,
@@ -84,7 +84,7 @@ function consumeHydrationBoundaryChildren(parentNode: Kaioken.VNode): {
 
 export function lazy<T extends LazyImportValue>(
   componentPromiseFn: () => Promise<T>
-): Kaioken.FC<LazyComponentProps<T>> {
+): Kiru.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
     const { fallback = null, ...rest } = props
     const appCtx = useAppContext()
@@ -136,7 +136,7 @@ export function lazy<T extends LazyImportValue>(
       }
 
       if (__DEV__) {
-        window.__kaioken?.HMRContext?.onHmr(() => {
+        window.__kiru?.HMRContext?.onHmr(() => {
           if (needsHydration.current) {
             abortHydration.current()
           }

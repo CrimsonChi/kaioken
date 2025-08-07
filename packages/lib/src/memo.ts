@@ -25,7 +25,7 @@ export type MemoFn = Function & {
 }
 
 export function memo<T extends Record<string, unknown> = {}>(
-  fn: Kaioken.FC<T>,
+  fn: Kiru.FC<T>,
   arePropsEqual: (prevProps: T, nextProps: T) => boolean = _arePropsEqual
 ): (props: T) => JSX.Element {
   return Object.assign(

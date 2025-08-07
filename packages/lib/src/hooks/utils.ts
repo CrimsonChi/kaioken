@@ -1,4 +1,4 @@
-import { KaiokenError } from "../error.js"
+import { KiruError } from "../error.js"
 import { __DEV__ } from "../env.js"
 import { ctx, hookIndex, node, nodeToCtxMap } from "../globals.js"
 import { getVNodeAppContext, noop } from "../utils.js"
@@ -17,7 +17,7 @@ export {
   type HookCallbackContext as HookCallbackState,
 }
 
-type HookState<T> = Kaioken.Hook<T>
+type HookState<T> = Kiru.Hook<T>
 
 enum HookDebugGroupAction {
   Start = "start",
@@ -57,9 +57,7 @@ const useAppContext = () => {
   if (!node.current) error_hookMustBeCalledTopLevel("useAppContext")
   const ctx = nodeToCtxMap.get(node.current)
   if (!ctx)
-    error_hookMustBeCalledTopLevel(
-      "[kaioken]: unable to find node's AppContext"
-    )
+    error_hookMustBeCalledTopLevel("[kiru]: unable to find node's AppContext")
   return ctx
 }
 
@@ -97,7 +95,7 @@ type HookCallbackContext<T> = {
   /**
    * The VNode associated with the current component
    */
-  vNode: Kaioken.VNode
+  vNode: Kiru.VNode
   /**
    * The index of the current hook.
    * You can count on this being stable across renders,
@@ -140,7 +138,7 @@ function useHook<
       !nestedHookWarnings.has(hookName + currentHookName)
     ) {
       nestedHookWarnings.add(hookName + currentHookName)
-      throw new KaiokenError({
+      throw new KiruError({
         message: `Nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange will most certainly happen.`,
         vNode,
       })
@@ -173,7 +171,7 @@ function useHook<
     } else {
       if (vNode.hookSig[index] !== hookName) {
         console.warn(
-          `[kaioken]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${vNode.hookSig[index]}". Strange things may happen.`
+          `[kiru]: hooks must be called in the same order. Hook "${hookName}" was called in place of "${vNode.hookSig[index]}". Strange things may happen.`
         )
         vNode.hooks.length = index
         vNode.hookSig.length = index
@@ -237,7 +235,7 @@ function useHook<
 }
 
 function error_hookMustBeCalledTopLevel(hookName: string): never {
-  throw new KaiokenError(
+  throw new KiruError(
     `Hook "${hookName}" must be used at the top level of a component or inside another composite hook.`
   )
 }
