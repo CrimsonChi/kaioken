@@ -19,15 +19,15 @@ if (pieces.find((x) => x.includes("pnpm"))) {
 const templates = [
   {
     name: "CSR (Client-side rendering)",
-    value: "https://github.com/CrimsonChi/kaioken-csr-template.git",
+    value: "https://github.com/kirujs/kiru-csr-template.git",
   },
   {
     name: "SSR/SSG (Server-side rendering)",
-    value: "https://github.com/CrimsonChi/kaioken-ssr-template.git",
+    value: "https://github.com/kirujs/kiru-ssr-template.git",
   },
   {
     name: "Tauri (Webview-based Desktop app)",
-    value: "https://github.com/CrimsonChi/kaioken-tauri-template.git",
+    value: "https://github.com/kirujs/kiru-tauri-template.git",
   },
 ]
 
@@ -37,7 +37,7 @@ program
   .option("-d, --dest <dest>", "Destination directory")
   .option("-t, --template <template>", "Choose template")
   .action(async ({ dest, template }) => {
-    console.log("Welcome to Kaioken!\n")
+    console.log("Welcome to Kiru!\n")
     if (!dest) {
       const { selectedDest } = await inquirer.prompt([
         {
