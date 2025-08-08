@@ -73,6 +73,7 @@ const svgTags = new Set([
   "feConvolveMatrix",
   "feDiffuseLighting",
   "feDisplacementMap",
+  "feDropShadow",
   "feFlood",
   "feFuncA",
   "feFuncB",

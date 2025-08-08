@@ -1099,6 +1099,13 @@ interface SvgElementAttributes {
     yChannelSelector?: "R" | "G" | "B" | "A"
     result?: string
   }
+  feDropShadow: SvgColorInterpolationFilters & {
+    dx?: string | number
+    dy?: string | number
+    stdDeviation?: string | number
+    floodColor?: string
+    floodOpacity?: string
+  }
   feGaussianBlur: SvgColorInterpolationFilters & {
     in?: string
     stdDeviation?: string | number
