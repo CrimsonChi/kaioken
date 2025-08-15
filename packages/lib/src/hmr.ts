@@ -125,9 +125,6 @@ export function createHMRContext() {
               vNode.type = newEntry.value as any
               dirtiedApps.add(ctx)
               vNode.hmrUpdated = true
-              if (vNode.prev) {
-                vNode.prev.type = newEntry.value as any
-              }
             }
           })
         })

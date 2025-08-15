@@ -143,9 +143,7 @@ function useHook<
 
   const index = hookIndex.current++
 
-  let oldHook = (
-    vNode.prev ? vNode.prev.hooks?.at(index) : vNode.hooks?.at(index)
-  ) as HookState<T> | undefined
+  let oldHook = vNode.hooks?.at(index) as HookState<T> | undefined
 
   if (__DEV__) {
     currentHookName = hookName

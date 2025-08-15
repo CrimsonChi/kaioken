@@ -185,7 +185,7 @@ declare global {
       parent: VNode | null
       child: VNode | null
       sibling: VNode | null
-      prev: VNode | null
+      prev: VNodeSnapshot | null
       deletions: VNode[] | null
       flags: number
       hooks?: Hook<unknown>[]
@@ -203,6 +203,11 @@ declare global {
       hookSig?: string[]
       hmrUpdated?: boolean
     }
+  }
+  type VNodeSnapshot = {
+    props: Kiru.VNode["props"]
+    memoizedProps: Kiru.VNode["memoizedProps"]
+    index: number
   }
 
   interface Element {

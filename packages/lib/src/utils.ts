@@ -133,7 +133,12 @@ function getVNodeAppContext(vNode: VNode): AppContext | null {
 }
 
 function commitSnapshot(vNode: VNode): void {
-  vNode.prev = { ...vNode, props: { ...vNode.props }, prev: null }
+  const {
+    props: { children, ...props },
+    memoizedProps,
+    index,
+  } = vNode
+  vNode.prev = { props, memoizedProps, index }
   vNode.flags &= ~(FLAG_UPDATE | FLAG_PLACEMENT | FLAG_DELETION)
 }
 

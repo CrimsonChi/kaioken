@@ -342,7 +342,7 @@ function performUnitOfWork(vNode: VNode): VNode | void {
         }
       }
       vNode.child = reconcileChildren(vNode, props.children)
-      vNode.deletions?.forEach((d) => queueDelete(d))
+      queueNodeChildDeletions(vNode)
     } else {
       renderChild = updateFunctionComponent(vNode as FunctionVNode)
     }
@@ -451,7 +451,7 @@ function updateFunctionComponent(vNode: FunctionVNode) {
       newChild = type(props)
     } while (isRenderDirtied)
     vNode.child = reconcileChildren(vNode, newChild)
-    vNode.deletions?.forEach((d) => queueDelete(d))
+    queueNodeChildDeletions(vNode)
     return true
   } finally {
     node.current = null
@@ -477,11 +477,18 @@ function updateHostComponent(vNode: DomVNode) {
   // text should _never_ have children
   if (vNode.type !== "#text") {
     vNode.child = reconcileChildren(vNode, props.children)
-    vNode.deletions?.forEach((d) => queueDelete(d))
+    queueNodeChildDeletions(vNode)
   }
 
   if (vNode.child && renderMode.current === "hydrate") {
     hydrationStack.push(vNode.dom!)
+  }
+}
+
+function queueNodeChildDeletions(vNode: VNode) {
+  if (vNode.deletions) {
+    vNode.deletions.forEach(queueDelete)
+    vNode.deletions = null
   }
 }
 

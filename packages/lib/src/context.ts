@@ -36,9 +36,6 @@ export function createContext<T>(defaultValue: T): Kiru.Context<T> {
             if (vNode.type === prev.Provider) {
               vNode.type = newProvider
               vNode.hmrUpdated = true
-              if (vNode.prev) {
-                vNode.prev.type = newProvider
-              }
               requestUpdate(vNode)
             }
           })
