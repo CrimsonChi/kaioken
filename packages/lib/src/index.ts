@@ -3,7 +3,6 @@ import {
   type AppContext,
   type AppContextOptions,
 } from "./appContext.js"
-import { ctx } from "./globals.js"
 import { createKiruGlobalContext } from "./globalContext.js"
 import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
@@ -19,6 +18,7 @@ export { memo } from "./memo.js"
 export * from "./portal.js"
 export * from "./renderToString.js"
 export * from "./signals/index.js"
+export { nextIdle, flushSync, requestUpdate } from "./scheduler.js"
 export * from "./store.js"
 export * from "./transition.js"
 
@@ -56,6 +56,6 @@ export function mount<T extends Record<string, unknown>>(
       }
     }
   }
-  ctx.current = createAppContext<T>(appFunc, appProps, opts)
-  return ctx.current.mount()
+
+  return createAppContext<T>(appFunc, appProps, opts).mount()
 }

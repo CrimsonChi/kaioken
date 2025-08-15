@@ -1,14 +1,14 @@
 import { KiruError } from "../error.js"
 import { __DEV__ } from "../env.js"
-import { ctx, hookIndex, node, nodeToCtxMap } from "../globals.js"
-import { getVNodeAppContext, noop } from "../utils.js"
+import { hookIndex, node } from "../globals.js"
+import { noop } from "../utils.js"
+import { requestUpdate } from "../scheduler.js"
 export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
   depsRequireChange,
   useHook,
   useVNode,
-  useAppContext,
   useHookDebugGroup,
   useRequestUpdate,
   HookDebugGroupAction,
@@ -46,19 +46,7 @@ const useHookDebugGroup = (name: string, action: HookDebugGroupAction) => {
 const useRequestUpdate = () => {
   const n = node.current
   if (!n) error_hookMustBeCalledTopLevel("useRequestUpdate")
-  const ctx = getVNodeAppContext(n)
-  return () => ctx.requestUpdate(n)
-}
-
-/**
- * Used to obtain the 'AppContext' for the current component.
- */
-const useAppContext = () => {
-  if (!node.current) error_hookMustBeCalledTopLevel("useAppContext")
-  const ctx = nodeToCtxMap.get(node.current)
-  if (!ctx)
-    error_hookMustBeCalledTopLevel("[kiru]: unable to find node's AppContext")
-  return ctx
+  return () => requestUpdate(n)
 }
 
 /**
@@ -153,7 +141,6 @@ function useHook<
     ;(vNode.effects ??= []).push(callback)
   }
 
-  const appCtx = ctx.current
   const index = hookIndex.current++
 
   let oldHook = (
@@ -197,7 +184,7 @@ function useHook<
         hook,
         isInit: !oldHook,
         isHMR: vNode.hmrUpdated,
-        update: () => appCtx.requestUpdate(vNode),
+        update: () => requestUpdate(vNode),
         queueEffect,
         vNode,
         index,
@@ -223,7 +210,7 @@ function useHook<
     const res = (callback as HookCallback<T>)({
       hook,
       isInit: !oldHook,
-      update: () => appCtx.requestUpdate(vNode),
+      update: () => requestUpdate(vNode),
       queueEffect,
       vNode,
       index,

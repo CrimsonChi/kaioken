@@ -5,7 +5,6 @@ import {
   useContext,
   useLayoutEffect,
   useRef,
-  useAppContext,
 } from "../hooks/index.js"
 import { __DEV__ } from "../env.js"
 import {
@@ -15,9 +14,10 @@ import {
 } from "./routerUtils.js"
 import { createContext } from "../context.js"
 import { isRoute, Route } from "./route.js"
-import { getVNodeAppContext, noop } from "../utils.js"
+import { noop } from "../utils.js"
 import { node } from "../globals.js"
 import type { ElementProps } from "../types"
+import { flushSync, nextIdle } from "../scheduler.js"
 
 export interface LinkProps extends Omit<ElementProps<"a">, "href"> {
   /**
@@ -116,8 +116,7 @@ export function navigate(to: string, options?: { replace?: boolean }) {
      * called from a non-router-decendant - postpone
      * until next tick to avoid race conditions
      */
-    const ctx = getVNodeAppContext(node.current)
-    return ctx.scheduler?.nextIdle(doNav), null
+    return nextIdle(doNav), null
   }
   /**
    * set the value of our router's syncNavCallback,
@@ -155,7 +154,6 @@ const initLoc = () => ({
  * @see https://kirujs.dev/docs/api/routing
  */
 export function Router(props: RouterProps) {
-  const appCtx = useAppContext()
   const viewTransition = useRef<ViewTransition | null>(null)
   const syncNavCallback = useRef<(() => void) | null>(null)
   const parentRouterContext = useContext(RouterContext, false)
@@ -188,7 +186,7 @@ export function Router(props: RouterProps) {
           pathname: window.location.pathname,
           search: window.location.search,
         })
-        appCtx.flushSync()
+        flushSync()
       })
       viewTransition.current.finished.then(() => {
         viewTransition.current = null

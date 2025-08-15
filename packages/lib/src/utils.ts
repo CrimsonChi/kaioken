@@ -1,4 +1,4 @@
-import { node, nodeToCtxMap, renderMode } from "./globals.js"
+import { node, renderMode } from "./globals.js"
 import {
   $CONTEXT_PROVIDER,
   $FRAGMENT,
@@ -8,10 +8,9 @@ import {
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
-import { KiruError } from "./error.js"
-import type { AppContext } from "./appContext"
 import { __DEV__ } from "./env.js"
 import { flags } from "./flags.js"
+import type { AppContext } from "./appContext"
 
 export {
   isVNode,
@@ -119,14 +118,16 @@ function getCurrentVNode(): VNode | null {
   return node.current
 }
 
-function getVNodeAppContext(vNode: VNode): AppContext {
-  const n = nodeToCtxMap.get(vNode)
-  if (!n)
-    throw new KiruError({
-      message: "Unable to find VNode's AppContext.",
-      vNode,
-    })
-  return n
+function getVNodeAppContext(vNode: VNode): AppContext | null {
+  let n: VNode | null = vNode
+  while (n) {
+    if (n.app) {
+      return (vNode.app = n.app)
+    }
+    n = n.parent
+  }
+
+  return null
 }
 
 function commitSnapshot(vNode: VNode): void {

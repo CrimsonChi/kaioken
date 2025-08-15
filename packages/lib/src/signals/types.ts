@@ -1,4 +1,4 @@
-import { type Signal } from "./base"
+import { type Signal } from "./index.js"
 
 export type ReadonlySignal<T> = Signal<T> & {
   readonly value: T

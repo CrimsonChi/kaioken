@@ -1,5 +1,5 @@
 import { KiruError } from "./error.js"
-import { Signal } from "./signals/base.js"
+import { Signal } from "./signals/index.js"
 
 export function assertValidElementProps(vNode: Kiru.VNode) {
   if ("children" in vNode.props && vNode.props.innerHTML) {

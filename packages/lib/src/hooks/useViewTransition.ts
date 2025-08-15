@@ -1,4 +1,5 @@
-import { ctx, node } from "../globals.js"
+import { flushSync } from "../scheduler.js"
+import { node } from "../globals.js"
 import { noop } from "../utils.js"
 import { sideEffectsEnabled } from "./utils.js"
 
@@ -12,7 +13,6 @@ import { sideEffectsEnabled } from "./utils.js"
  */
 export function useViewTransition() {
   if (!sideEffectsEnabled()) return noop
-  const appCtx = ctx.current
   return (callback: () => void) => {
     if (node.current) {
       throw new Error("useViewTransition can't be called during rendering.")
@@ -20,7 +20,7 @@ export function useViewTransition() {
     if (!document.startViewTransition) return callback()
     document.startViewTransition(() => {
       callback()
-      appCtx.flushSync()
+      flushSync()
     })
   }
 }

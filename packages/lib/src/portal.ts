@@ -2,7 +2,7 @@ import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
 import { renderMode } from "./globals.js"
 import { useVNode } from "./hooks/utils.js"
-import { getVNodeAppContext } from "./utils.js"
+import { nextIdle, requestUpdate } from "./scheduler.js"
 
 export { Portal, isPortal }
 
@@ -27,8 +27,7 @@ function Portal({ children, container }: PortalProps) {
       }
       return children
     case "hydrate":
-      const ctx = getVNodeAppContext(vNode)
-      ctx.scheduler?.nextIdle(() => ctx.requestUpdate(vNode))
+      nextIdle(() => requestUpdate(vNode))
       return null
     case "stream":
     case "string":

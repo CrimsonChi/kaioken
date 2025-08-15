@@ -17,6 +17,7 @@ import type {
   SVGTagToElement,
 } from "./types.dom"
 import { Signalable, SomeDom } from "./types.utils"
+import type { AppContext } from "./appContext"
 
 export type { ElementProps, StyleObject }
 
@@ -169,6 +170,7 @@ declare global {
       | typeof $HYDRATION_BOUNDARY
 
     type VNode = {
+      app?: AppContext
       dom?: SomeDom
       lastChildDom?: SomeDom
       type: Function | ExoticSymbol | "#text" | (string & {})

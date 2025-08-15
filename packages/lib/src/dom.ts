@@ -4,10 +4,11 @@ import {
   propFilters,
   propToHtmlAttr,
   postOrderApply,
+  getVNodeAppContext,
 } from "./utils.js"
 import { booleanAttributes, FLAG, svgTags } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
-import { ctx, renderMode } from "./globals.js"
+import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
@@ -21,6 +22,7 @@ import type {
   SomeDom,
   SomeElement,
 } from "./types.utils"
+import type { AppContext } from "./appContext.js"
 
 export { commitWork, createDom, updateDom, hydrateDom }
 
@@ -240,14 +242,16 @@ function setSignalProp(
   signal: Signal<any>,
   prevValue: unknown
 ) {
-  const _ctx = ctx.current
   const cleanups = (vNode.cleanups ??= {})
   const [modifier, attr] = key.split(":")
   if (modifier !== "bind") {
     cleanups[key] = signal.subscribe((value) => {
       setProp(dom, key, value, null)
       if (__DEV__) {
-        window.__kiru?.profilingContext?.emit("signalAttrUpdate", _ctx)
+        window.__kiru?.profilingContext?.emit(
+          "signalAttrUpdate",
+          getVNodeAppContext(vNode)!
+        )
       }
     })
 
@@ -270,7 +274,10 @@ function setSignalProp(
   const signalUpdateCallback = (value: any) => {
     setAttr(value)
     if (__DEV__) {
-      window.__kiru?.profilingContext?.emit("signalAttrUpdate", _ctx)
+      window.__kiru?.profilingContext?.emit(
+        "signalAttrUpdate",
+        getVNodeAppContext(vNode)!
+      )
     }
   }
 
@@ -318,11 +325,13 @@ function setSignalProp(
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
-  const _ctx = ctx.current
   ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((v) => {
     textNode.nodeValue = v
     if (__DEV__) {
-      window.__kiru?.profilingContext?.emit("signalTextUpdate", _ctx)
+      window.__kiru?.profilingContext?.emit(
+        "signalTextUpdate",
+        getVNodeAppContext(vNode)!
+      )
     }
   })
 }
@@ -683,6 +692,10 @@ function commitDeletion(vNode: VNode) {
   if (vNode === vNode.parent?.child) {
     vNode.parent.child = vNode.sibling
   }
+  let ctx: AppContext
+  if (__DEV__) {
+    ctx = getVNodeAppContext(vNode)!
+  }
   traverseApply(vNode, (node) => {
     const {
       hooks,
@@ -696,7 +709,7 @@ function commitDeletion(vNode: VNode) {
     if (cleanups) Object.values(cleanups).forEach((c) => c())
 
     if (__DEV__) {
-      window.__kiru?.profilingContext?.emit("removeNode", ctx.current)
+      window.__kiru?.profilingContext?.emit("removeNode", ctx)
     }
 
     if (dom) {
@@ -707,4 +720,6 @@ function commitDeletion(vNode: VNode) {
       delete node.dom
     }
   })
+
+  vNode.parent = null
 }

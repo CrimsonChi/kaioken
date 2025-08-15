@@ -1,10 +1,10 @@
 import {
   StyleObject,
-  useAppContext,
   useRef,
   useState,
   useSignal,
   useEffectEvent,
+  nextIdle,
 } from "kiru"
 
 const generateRandomStyleProp = (): StyleObject | string | undefined => {
@@ -71,7 +71,6 @@ const compareStyles = (
 
 export function StyleTest() {
   const divRef = useRef<HTMLButtonElement>(null)
-  const appCtx = useAppContext()
   const [divStyle, setDivstyle] = useState<StyleObject | string | undefined>({
     display: "flex",
     flexDirection: "column",
@@ -82,7 +81,7 @@ export function StyleTest() {
   const randomizeStyle = () => {
     const next = generateRandomStyleProp()
     setDivstyle(next)
-    appCtx.scheduler?.nextIdle(verify)
+    nextIdle(verify)
   }
 
   const verify = useEffectEvent(() => {

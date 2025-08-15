@@ -1,14 +1,18 @@
 import { FLAG, $FRAGMENT } from "./constants.js"
-import { isVNode, latest } from "./utils.js"
-import { Signal } from "./signals/base.js"
+import { getVNodeAppContext, isVNode, latest } from "./utils.js"
+import { Signal } from "./signals/index.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
 import { flags } from "./flags.js"
-import { ctx } from "./globals.js"
+import type { AppContext } from "./appContext.js"
 
 type VNode = Kiru.VNode
+let appCtx: AppContext
 
 export function reconcileChildren(parent: VNode, children: unknown) {
+  if (__DEV__) {
+    appCtx = getVNodeAppContext(parent)!
+  }
   if (Array.isArray(children)) {
     if (__DEV__) {
       // array children are 'tagged' during parent reconciliation pass
@@ -192,14 +196,14 @@ function updateTextNode(
 ) {
   if (oldChild === null || oldChild.type !== "#text") {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const newChild = createElement("#text", { nodeValue: content })
     setParent(newChild, parent)
     return newChild
   } else {
     if (__DEV__) {
-      emitUpdateNode()
+      dev_emitUpdateNode()
     }
     oldChild.props.nodeValue = content
     oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
@@ -225,7 +229,7 @@ function updateNode(parent: VNode, oldChild: VNode | null, newChild: VNode) {
   }
   if (oldChild?.type === nodeType) {
     if (__DEV__) {
-      emitUpdateNode()
+      dev_emitUpdateNode()
     }
     oldChild.index = 0
     oldChild.props = newChild.props
@@ -235,7 +239,7 @@ function updateNode(parent: VNode, oldChild: VNode | null, newChild: VNode) {
     return oldChild
   }
   if (__DEV__) {
-    emitCreateNode()
+    dev_emitCreateNode()
   }
   const created = createElement(nodeType, newChild.props)
   setParent(created, parent)
@@ -250,14 +254,14 @@ function updateFragment(
 ) {
   if (oldChild === null || oldChild.type !== $FRAGMENT) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const el = createElement($FRAGMENT, { children, ...newProps })
     setParent(el, parent)
     return el
   }
   if (__DEV__) {
-    emitUpdateNode()
+    dev_emitUpdateNode()
   }
   oldChild.props = { ...oldChild.props, ...newProps, children }
   oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
@@ -272,7 +276,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     typeof child === "bigint"
   ) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const el = createElement("#text", {
       nodeValue: "" + child,
@@ -283,7 +287,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (Signal.isSignal(child)) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const el = createElement("#text", {
       nodeValue: child,
@@ -294,7 +298,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (isVNode(child)) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const newNode = createElement(child.type, child.props)
     setParent(newNode, parent)
@@ -304,7 +308,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (Array.isArray(child)) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
       markListChild(child)
     }
     const el = Fragment({ children: child })
@@ -365,7 +369,7 @@ function updateFromMap(
     }
 
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const newChild = createElement("#text", {
       nodeValue: child,
@@ -382,7 +386,7 @@ function updateFromMap(
     )
     if (oldChild?.type === child.type) {
       if (__DEV__) {
-        emitUpdateNode()
+        dev_emitUpdateNode()
       }
       oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props = child.props
@@ -391,7 +395,7 @@ function updateFromMap(
       return oldChild
     } else {
       if (__DEV__) {
-        emitCreateNode()
+        dev_emitCreateNode()
       }
       const newChild = createElement(child.type, child.props)
       setParent(newChild, parent)
@@ -408,14 +412,14 @@ function updateFromMap(
     }
     if (oldChild) {
       if (__DEV__) {
-        emitUpdateNode()
+        dev_emitUpdateNode()
       }
       oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
       oldChild.props.children = child
       return oldChild
     } else {
       if (__DEV__) {
-        emitCreateNode()
+        dev_emitCreateNode()
       }
       const newChild = Fragment({ children: child })
       setParent(newChild, parent)
@@ -428,7 +432,7 @@ function updateFromMap(
   return null
 }
 
-function setParent(child: Kiru.VNode, parent: Kiru.VNode) {
+function setParent(child: VNode, parent: VNode) {
   child.parent = parent
   child.depth = parent.depth + 1
   if (parent.isMemoized || flags.get(parent.flags, FLAG.HAS_MEMO_ANCESTOR)) {
@@ -436,14 +440,14 @@ function setParent(child: Kiru.VNode, parent: Kiru.VNode) {
   }
 }
 
-function emitUpdateNode() {
+function dev_emitUpdateNode() {
   if (!("window" in globalThis)) return
-  window.__kiru?.profilingContext?.emit("updateNode", ctx.current)
+  window.__kiru?.profilingContext?.emit("updateNode", appCtx)
 }
 
-function emitCreateNode() {
+function dev_emitCreateNode() {
   if (!("window" in globalThis)) return
-  window.__kiru?.profilingContext?.emit("createNode", ctx.current)
+  window.__kiru?.profilingContext?.emit("createNode", appCtx)
 }
 
 const $LIST_CHILD = Symbol("kiru:marked-list-child")

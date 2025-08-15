@@ -1,5 +1,5 @@
 import { __DEV__ } from "../env.js"
-import { Signal } from "./base.js"
+import { Signal } from "./index.js"
 import { effectQueue, signalSubsMap } from "./globals.js"
 import { $HMR_ACCEPT } from "../constants.js"
 import type { HMRAccept } from "../hmr.js"

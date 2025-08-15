@@ -3,6 +3,7 @@ import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 import { GenericHMRAcceptor } from "./hmr.js"
 import { useState } from "./hooks/useState.js"
+import { requestUpdate } from "./scheduler.js"
 import { traverseApply } from "./utils.js"
 
 export function createContext<T>(defaultValue: T): Kiru.Context<T> {
@@ -38,7 +39,7 @@ export function createContext<T>(defaultValue: T): Kiru.Context<T> {
               if (vNode.prev) {
                 vNode.prev.type = newProvider
               }
-              ctx.requestUpdate(vNode)
+              requestUpdate(vNode)
             }
           })
         })
