@@ -115,14 +115,11 @@ export class Signal<T> {
   notify(options?: { filter?: (sub: Function | Kiru.VNode) => boolean }) {
     signalSubsMap.get(this.$id)?.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
-      if (typeof sub === "function") {
-        if (__DEV__) {
-          const value = latest(this).$value
-          return sub(value)
-        }
-        return sub(this.$value)
+      if (__DEV__) {
+        const value = latest(this).$value
+        return sub(value)
       }
-      requestUpdate(sub)
+      return sub(this.$value)
     })
   }
 
@@ -180,8 +177,8 @@ export class Signal<T> {
       return
     }
     if (!vNode || !sideEffectsEnabled()) return
-    ;(vNode.subs ??= new Set()).add(signal.$id)
-    Signal.subscribers(signal).add(vNode)
+    const unsub = signal.subscribe(() => requestUpdate(vNode))
+    ;(vNode.subs ??= new Set()).add(unsub)
   }
 
   static configure(signal: Signal<any>, onBeforeRead?: () => void) {

@@ -189,7 +189,7 @@ declare global {
       deletions: VNode[] | null
       flags: number
       hooks?: Hook<unknown>[]
-      subs?: Set<string>
+      subs?: Set<Function>
       cleanups?: Record<string, Function>
       effects?: Array<Function>
       immediateEffects?: Array<Function>

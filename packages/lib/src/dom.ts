@@ -710,7 +710,7 @@ function commitDeletion(vNode: VNode) {
       props: { ref },
     } = node
     while (hooks?.length) hooks.pop()!.cleanup?.()
-    subs?.forEach((sub) => Signal.unsubscribe(node, sub))
+    subs?.forEach((unsub) => unsub())
     if (cleanups) Object.values(cleanups).forEach((c) => c())
 
     if (__DEV__) {

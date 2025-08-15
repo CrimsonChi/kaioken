@@ -8,4 +8,4 @@ export const tracking = {
   },
 }
 export const effectQueue = new Map<string, Function>()
-export const signalSubsMap: Map<string, Set<SignalSubscriber>> = new Map()
+export const signalSubsMap: Map<string, Set<SignalSubscriber<any>>> = new Map()

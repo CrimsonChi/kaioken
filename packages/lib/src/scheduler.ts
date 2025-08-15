@@ -23,7 +23,6 @@ import {
   isExoticType,
   getVNodeAppContext,
 } from "./utils.js"
-import { Signal } from "./signals/index.js"
 import type { AppContext } from "./appContext"
 
 type VNode = Kiru.VNode
@@ -429,9 +428,7 @@ function updateFunctionComponent(vNode: FunctionVNode) {
        * and not clearing the entire set.
        */
       if (subs) {
-        for (const sub of subs) {
-          Signal.unsubscribe(vNode, sub)
-        }
+        subs.forEach((unsub) => unsub())
         subs.clear()
       }
 
