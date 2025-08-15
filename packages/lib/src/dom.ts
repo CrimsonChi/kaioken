@@ -6,7 +6,13 @@ import {
   postOrderApply,
   getVNodeAppContext,
 } from "./utils.js"
-import { booleanAttributes, FLAG, svgTags } from "./constants.js"
+import {
+  booleanAttributes,
+  FLAG_DELETION,
+  FLAG_PLACEMENT,
+  FLAG_UPDATE,
+  svgTags,
+} from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
@@ -14,7 +20,6 @@ import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
-import { flags } from "./flags.js"
 import type {
   DomVNode,
   ElementVNode,
@@ -563,7 +568,7 @@ function getNextSiblingDom(vNode: VNode, parent: ElementVNode): MaybeDom {
 
     while (sibling) {
       // Skip unmounted, to-be-placed & portal nodes
-      if (!flags.get(sibling.flags, FLAG.PLACEMENT) && !isPortal(sibling)) {
+      if (!(sibling.flags & FLAG_PLACEMENT) && !isPortal(sibling)) {
         // Descend into the child to find host dom
         const dom = findFirstHostDom(sibling)
         if (dom?.isConnected) return dom
@@ -596,7 +601,7 @@ function commitWork(vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
   }
-  if (flags.get(vNode.flags, FLAG.DELETION)) {
+  if (vNode.flags & FLAG_DELETION) {
     return commitDeletion(vNode)
   }
   handlePrePlacementFocusPersistence()
@@ -631,7 +636,7 @@ function commitWork(vNode: VNode) {
           // prevent scope applying to descendants of this element node
           currentPlacementScope.active = false
         }
-      } else if (flags.get(node.flags, FLAG.PLACEMENT)) {
+      } else if (node.flags & FLAG_PLACEMENT) {
         currentPlacementScope = { parent: node, active: true }
         placementScopes.push(currentPlacementScope)
       }
@@ -642,7 +647,7 @@ function commitWork(vNode: VNode) {
         currentPlacementScope.active = true
         inheritsPlacement = true
       }
-      if (flags.get(node.flags, FLAG.DELETION)) {
+      if (node.flags & FLAG_DELETION) {
         return commitDeletion(node)
       }
       if (node.dom) {
@@ -678,11 +683,11 @@ function commitDom(
   if (
     inheritsPlacement ||
     !vNode.dom.isConnected ||
-    flags.get(vNode.flags, FLAG.PLACEMENT)
+    vNode.flags & FLAG_PLACEMENT
   ) {
     placeDom(vNode, hostNode)
   }
-  if (!vNode.prev || flags.get(vNode.flags, FLAG.UPDATE)) {
+  if (!vNode.prev || vNode.flags & FLAG_UPDATE) {
     updateDom(vNode)
   }
   hostNode.lastChild = vNode

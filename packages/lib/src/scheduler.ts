@@ -3,11 +3,10 @@ import type {
   DomVNode,
   FunctionVNode,
 } from "./types.utils"
-import { flags } from "./flags.js"
 import {
   $CONTEXT_PROVIDER,
   CONSECUTIVE_DIRTY_LIMIT,
-  FLAG,
+  FLAG_DELETION,
 } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
@@ -75,7 +74,7 @@ export function flushSync() {
 }
 
 export function requestUpdate(vNode: VNode): void {
-  if (flags.get(vNode.flags, FLAG.DELETION)) return
+  if (vNode.flags & FLAG_DELETION) return
   if (__DEV__) {
     // if (options?.debug?.onRequestUpdate) {
     //   options.debug.onRequestUpdate(vNode)
@@ -83,17 +82,17 @@ export function requestUpdate(vNode: VNode): void {
   }
   if (renderMode.current === "hydrate") {
     return nextIdle(() => {
-      !flags.get(vNode.flags, FLAG.DELETION) && queueUpdate(vNode)
+      vNode.flags & FLAG_DELETION || queueUpdate(vNode)
     })
   }
   queueUpdate(vNode)
 }
 
 export function requestDelete(vNode: VNode): void {
-  if (flags.get(vNode.flags, FLAG.DELETION)) return
+  if (vNode.flags & FLAG_DELETION) return
   if (renderMode.current === "hydrate") {
     return nextIdle(() => {
-      !flags.get(vNode.flags, FLAG.DELETION) && queueDelete(vNode)
+      vNode.flags & FLAG_DELETION || queueDelete(vNode)
     })
   }
   queueDelete(vNode)
@@ -210,7 +209,7 @@ function queueUpdate(vNode: VNode) {
 }
 
 function queueDelete(vNode: VNode) {
-  traverseApply(vNode, (n) => (n.flags = flags.set(n.flags, FLAG.DELETION)))
+  traverseApply(vNode, (n) => (n.flags |= FLAG_DELETION))
   deletions.push(vNode)
 }
 

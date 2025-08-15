@@ -4,12 +4,14 @@ import {
   $FRAGMENT,
   $HYDRATION_BOUNDARY,
   booleanAttributes,
-  FLAG,
+  FLAG_DELETION,
+  FLAG_HAS_MEMO_ANCESTOR,
+  FLAG_PLACEMENT,
+  FLAG_UPDATE,
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
 import { __DEV__ } from "./env.js"
-import { flags } from "./flags.js"
 import type { AppContext } from "./appContext"
 
 export {
@@ -73,7 +75,7 @@ function sideEffectsEnabled(): boolean {
 }
 
 function isVNodeDeleted(vNode: VNode): boolean {
-  return flags.get(vNode.flags, FLAG.DELETION)
+  return (vNode.flags & FLAG_DELETION) !== 0
 }
 
 function isVNode(thing: unknown): thing is VNode {
@@ -132,7 +134,7 @@ function getVNodeAppContext(vNode: VNode): AppContext | null {
 
 function commitSnapshot(vNode: VNode): void {
   vNode.prev = { ...vNode, props: { ...vNode.props }, prev: null }
-  vNode.flags = flags.unsetRange(vNode.flags, FLAG.UPDATE, FLAG.DELETION)
+  vNode.flags &= ~(FLAG_UPDATE | FLAG_PLACEMENT | FLAG_DELETION)
 }
 
 function vNodeContains(haystack: VNode, needle: VNode): boolean {
@@ -152,11 +154,7 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
 function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
   let node: VNode | null = target
 
-  while (
-    node &&
-    node !== root &&
-    flags.get(node.flags, FLAG.HAS_MEMO_ANCESTOR)
-  ) {
+  while (node && node !== root && node.flags & FLAG_HAS_MEMO_ANCESTOR) {
     const parent = node.parent
     if (
       parent?.isMemoized &&

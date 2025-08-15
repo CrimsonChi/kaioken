@@ -2,10 +2,9 @@ import { describe, it } from "node:test"
 import assert from "node:assert"
 import { reconcileChildren } from "../../reconciler.js"
 import * as kiru from "../../index.js"
-import { FLAG } from "../../constants.js"
 import { shuffle } from "./utils.js"
-import { flags } from "../../flags.js"
 import { commitSnapshot } from "../../utils.js"
+import { FLAG_PLACEMENT } from "../../constants.js"
 
 const commitChildren = (node: Kiru.VNode) => {
   let n = node.child
@@ -73,7 +72,7 @@ describe("reconciler", () => {
         const prev = c.prev
         if (!prev || prev.index < i) {
           assert.strictEqual(
-            flags.get(c!.flags, FLAG.PLACEMENT),
+            (c.flags & FLAG_PLACEMENT) !== 0,
             true,
             `[${opName}]: ${i}th child should have flag "placement"`
           )

@@ -1,9 +1,13 @@
-import { FLAG, $FRAGMENT } from "./constants.js"
+import {
+  $FRAGMENT,
+  FLAG_HAS_MEMO_ANCESTOR,
+  FLAG_PLACEMENT,
+  FLAG_UPDATE,
+} from "./constants.js"
 import { getVNodeAppContext, isVNode, latest } from "./utils.js"
 import { Signal } from "./signals/index.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
-import { flags } from "./flags.js"
 import type { AppContext } from "./appContext.js"
 
 type VNode = Kiru.VNode
@@ -206,7 +210,7 @@ function updateTextNode(
       dev_emitUpdateNode()
     }
     oldChild.props.nodeValue = content
-    oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+    oldChild.flags |= FLAG_UPDATE
     oldChild.sibling = null
     return oldChild
   }
@@ -234,7 +238,7 @@ function updateNode(parent: VNode, oldChild: VNode | null, newChild: VNode) {
     oldChild.index = 0
     oldChild.props = newChild.props
     oldChild.sibling = null
-    oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+    oldChild.flags |= FLAG_UPDATE
     oldChild.memoizedProps = newChild.memoizedProps
     return oldChild
   }
@@ -264,7 +268,7 @@ function updateFragment(
     dev_emitUpdateNode()
   }
   oldChild.props = { ...oldChild.props, ...newProps, children }
-  oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+  oldChild.flags |= FLAG_UPDATE
   oldChild.sibling = null
   return oldChild
 }
@@ -302,7 +306,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     }
     const newNode = createElement(child.type, child.props)
     setParent(newNode, parent)
-    newNode.flags = flags.set(newNode.flags, FLAG.PLACEMENT)
+    newNode.flags |= FLAG_PLACEMENT
     return newNode
   }
 
@@ -329,13 +333,13 @@ function placeChild(
   if (child.prev !== null) {
     const oldIndex = child.prev.index
     if (oldIndex < lastPlacedIndex) {
-      child.flags = flags.set(child.flags, FLAG.PLACEMENT)
+      child.flags |= FLAG_PLACEMENT
       return lastPlacedIndex
     } else {
       return oldIndex
     }
   } else {
-    child.flags = flags.set(child.flags, FLAG.PLACEMENT)
+    child.flags |= FLAG_PLACEMENT
     return lastPlacedIndex
   }
 }
@@ -356,7 +360,7 @@ function updateFromMap(
     const oldChild = existingChildren.get(index)
     if (oldChild) {
       if (oldChild.props.nodeValue === child) {
-        oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+        oldChild.flags |= FLAG_UPDATE
         oldChild.props.nodeValue = child
         return oldChild
       }
@@ -375,7 +379,7 @@ function updateFromMap(
       nodeValue: child,
     })
     setParent(newChild, parent)
-    newChild.flags = flags.set(newChild.flags, FLAG.PLACEMENT)
+    newChild.flags |= FLAG_PLACEMENT
     newChild.index = index
     return newChild
   }
@@ -388,7 +392,7 @@ function updateFromMap(
       if (__DEV__) {
         dev_emitUpdateNode()
       }
-      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+      oldChild.flags |= FLAG_UPDATE
       oldChild.props = child.props
       oldChild.sibling = null
       oldChild.index = index
@@ -399,7 +403,7 @@ function updateFromMap(
       }
       const newChild = createElement(child.type, child.props)
       setParent(newChild, parent)
-      newChild.flags = flags.set(newChild.flags, FLAG.PLACEMENT)
+      newChild.flags |= FLAG_PLACEMENT
       newChild.index = index
       return newChild
     }
@@ -414,7 +418,7 @@ function updateFromMap(
       if (__DEV__) {
         dev_emitUpdateNode()
       }
-      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+      oldChild.flags |= FLAG_UPDATE
       oldChild.props.children = child
       return oldChild
     } else {
@@ -423,7 +427,7 @@ function updateFromMap(
       }
       const newChild = Fragment({ children: child })
       setParent(newChild, parent)
-      newChild.flags = flags.set(newChild.flags, FLAG.PLACEMENT)
+      newChild.flags |= FLAG_PLACEMENT
       newChild.index = index
       return newChild
     }
@@ -435,8 +439,8 @@ function updateFromMap(
 function setParent(child: VNode, parent: VNode) {
   child.parent = parent
   child.depth = parent.depth + 1
-  if (parent.isMemoized || flags.get(parent.flags, FLAG.HAS_MEMO_ANCESTOR)) {
-    child.flags = flags.set(child.flags, FLAG.HAS_MEMO_ANCESTOR)
+  if (parent.isMemoized || parent.flags & FLAG_HAS_MEMO_ANCESTOR) {
+    child.flags |= FLAG_HAS_MEMO_ANCESTOR
   }
 }
 
