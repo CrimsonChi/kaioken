@@ -250,8 +250,8 @@ function setSignalProp(
   const cleanups = (vNode.cleanups ??= {})
   const [modifier, attr] = key.split(":")
   if (modifier !== "bind") {
-    cleanups[key] = signal.subscribe((value) => {
-      setProp(dom, key, value, null)
+    cleanups[key] = signal.subscribe((value, prev) => {
+      setProp(dom, key, value, prev)
       if (__DEV__) {
         window.__kiru?.profilingContext?.emit(
           "signalAttrUpdate",
@@ -330,8 +330,9 @@ function setSignalProp(
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
-  ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((v) => {
-    textNode.nodeValue = v
+  ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((value, prev) => {
+    if (value === prev) return
+    textNode.nodeValue = value
     if (__DEV__) {
       window.__kiru?.profilingContext?.emit(
         "signalTextUpdate",
