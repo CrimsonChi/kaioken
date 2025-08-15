@@ -16,6 +16,7 @@ export class Signal<T> {
   private onBeforeRead?: () => void
   protected $id: string
   protected $value: T
+  protected $prevValue?: T
   protected $initialValue?: string
   protected __next?: Signal<T>
   protected $isDisposed?: boolean
@@ -64,11 +65,13 @@ export class Signal<T> {
     if (__DEV__) {
       const tgt = latest(this)
       if (Object.is(tgt.$value, next)) return
+      tgt.$prevValue = tgt.$value
       tgt.$value = next
       tgt.notify()
       return
     }
     if (Object.is(this.$value, next)) return
+    this.$prevValue = this.$value
     this.$value = next
     this.notify()
   }
@@ -84,9 +87,11 @@ export class Signal<T> {
   sneak(newValue: T) {
     if (__DEV__) {
       const tgt = latest(this)
+      tgt.$prevValue = tgt.$value
       tgt.$value = newValue
       return
     }
+    this.$prevValue = this.$value
     this.$value = newValue
   }
 
@@ -101,7 +106,7 @@ export class Signal<T> {
     return `${this.$value}`
   }
 
-  subscribe(cb: (state: T) => void): () => void {
+  subscribe(cb: (state: T, prevState?: T) => void): () => void {
     const subs = signalSubsMap.get(this.$id)!
     subs!.add(cb)
     return () => signalSubsMap.get(this.$id)?.delete(cb)

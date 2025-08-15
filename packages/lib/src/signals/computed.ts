@@ -90,6 +90,7 @@ export class ComputedSignal<T> extends Signal<T> {
         $computed.$isDirty = true
         if (!signalSubsMap?.get(id)?.size) return
         ComputedSignal.run($computed)
+        if (Object.is($computed.$value, $computed.$prevValue)) return
         $computed.notify()
       },
     })
