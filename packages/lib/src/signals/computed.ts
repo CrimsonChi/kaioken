@@ -88,7 +88,11 @@ export class ComputedSignal<T> extends Signal<T> {
       fn: () => $getter($computed.$value),
       onDepChanged: () => {
         $computed.$isDirty = true
-        if (!signalSubsMap?.get(id)?.size) return
+        if (__DEV__) {
+          if (!signalSubsMap?.get(id)?.size) return
+        } else {
+          if (!computed.$subs!.size) return
+        }
         ComputedSignal.run($computed)
         if (Object.is($computed.$value, $computed.$prevValue)) return
         $computed.notify()

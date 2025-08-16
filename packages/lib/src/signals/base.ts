@@ -14,6 +14,7 @@ export class Signal<T> {
   [$HMR_ACCEPT]?: HMRAccept<Signal<any>>
   displayName?: string
   private onBeforeRead?: () => void
+  protected $subs?: Set<SignalSubscriber<any>>
   protected $id: string
   protected $value: T
   protected $prevValue?: T
@@ -23,11 +24,11 @@ export class Signal<T> {
 
   constructor(initial: T, displayName?: string) {
     this.$id = generateRandomID()
-    signalSubsMap.set(this.$id, new Set())
-
     this.$value = initial
     if (displayName) this.displayName = displayName
+
     if (__DEV__) {
+      signalSubsMap.set(this.$id, new Set())
       this.$initialValue = safeStringify(initial)
       this[$HMR_ACCEPT] = {
         provide: () => {
@@ -47,6 +48,8 @@ export class Signal<T> {
         },
         destroy: () => {},
       } satisfies HMRAccept<Signal<any>>
+    } else {
+      this.$subs = new Set()
     }
   }
 
@@ -107,19 +110,26 @@ export class Signal<T> {
   }
 
   subscribe(cb: (state: T, prevState?: T) => void): () => void {
-    const subs = signalSubsMap.get(this.$id)!
-    subs!.add(cb)
-    return () => signalSubsMap.get(this.$id)?.delete(cb)
+    if (__DEV__) {
+      const subs = signalSubsMap.get(this.$id)!
+      subs!.add(cb)
+      return () => signalSubsMap.get(this.$id)?.delete(cb)
+    }
+    this.$subs!.add(cb)
+    return () => this.$subs!.delete(cb)
   }
 
   notify(options?: { filter?: (sub: Function | Kiru.VNode) => boolean }) {
-    signalSubsMap.get(this.$id)?.forEach((sub) => {
+    if (__DEV__) {
+      return signalSubsMap.get(this.$id)?.forEach((sub) => {
+        if (options?.filter && !options.filter(sub)) return
+        const { $value, $prevValue } = latest(this)
+        return sub($value, $prevValue)
+      })
+    }
+    this.$subs!.forEach((sub) => {
       if (options?.filter && !options.filter(sub)) return
-      if (__DEV__) {
-        const value = latest(this).$value
-        return sub(value)
-      }
-      return sub(this.$value)
+      return sub(this.$value, this.$prevValue)
     })
   }
 
@@ -127,12 +137,11 @@ export class Signal<T> {
     return typeof x === "object" && !!x && $SIGNAL in x
   }
 
-  static unsubscribe(sub: SignalSubscriber, id: string) {
-    signalSubsMap.get(id)?.delete(sub)
-  }
-
   static subscribers(signal: Signal<any>) {
-    return signalSubsMap.get(signal.$id)!
+    if (__DEV__) {
+      return signalSubsMap.get(signal.$id)!
+    }
+    return signal.$subs
   }
 
   static makeReadonly<T>(signal: Signal<T>): ReadonlySignal<T> {
@@ -163,10 +172,6 @@ export class Signal<T> {
     })
   }
 
-  static getId<T>(signal: Signal<T>) {
-    return signal.$id
-  }
-
   static entangle<T>(signal: Signal<T>) {
     const vNode = node.current
     const trackedSignalObservations = tracking.current()
@@ -187,7 +192,11 @@ export class Signal<T> {
 
   static dispose(signal: Signal<any>) {
     signal.$isDisposed = true
-    signalSubsMap.delete(signal.$id)
+    if (__DEV__) {
+      signalSubsMap.delete(signal.$id)
+      return
+    }
+    signal.$subs!.clear()
   }
 }
 
