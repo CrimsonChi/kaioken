@@ -1,17 +1,18 @@
 import type { Signal } from "./index.js"
 import type { SignalValues } from "./types.js"
 
-type ForProps<T extends Signal<any[]>> = {
+type InferArraySignalItemType<T extends Signal<any[]>> = T extends Signal<
+  infer V
+>
+  ? V extends Array<infer W>
+    ? W
+    : never
+  : never
+
+type ForProps<T extends Signal<any[]>, U = InferArraySignalItemType<T>> = {
   each: T
   fallback?: JSX.Element
-  children: (
-    value: T extends Signal<infer U>
-      ? U extends Array<infer V>
-        ? V
-        : never
-      : never,
-    index: number
-  ) => JSX.Element
+  children: (value: U, index: number, array: U[]) => JSX.Element
 }
 
 export function For<T extends Signal<any[]>>({
@@ -21,7 +22,7 @@ export function For<T extends Signal<any[]>>({
 }: ForProps<T>) {
   const items = each.value
   if (items.length === 0) return fallback
-  return items.map((v, i) => children(v, i))
+  return items.map(children)
 }
 
 type DeriveChildrenArgs<T extends Signal<any> | Signal<any>[]> =
