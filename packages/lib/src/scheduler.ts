@@ -435,7 +435,7 @@ function updateFunctionComponent(vNode: FunctionVNode) {
 }
 
 function updateHostComponent(vNode: DomVNode) {
-  const { props } = vNode
+  const { props, type } = vNode
   if (__DEV__) {
     assertValidElementProps(vNode)
   }
@@ -446,18 +446,18 @@ function updateHostComponent(vNode: DomVNode) {
       vNode.dom = createDom(vNode)
     }
     if (__DEV__) {
-      // @ts-expect-error we apply vNode to the dom node
-      vNode.dom.__kiruNode = vNode
+      if (vNode.dom instanceof Element) {
+        vNode.dom.__kiruNode = vNode
+      }
     }
   }
   // text should _never_ have children
-  if (vNode.type !== "#text") {
+  if (type !== "#text") {
     vNode.child = reconcileChildren(vNode, props.children)
     queueNodeChildDeletions(vNode)
-  }
-
-  if (vNode.child && renderMode.current === "hydrate") {
-    hydrationStack.push(vNode.dom!)
+    if (vNode.child && renderMode.current === "hydrate") {
+      hydrationStack.push(vNode.dom!)
+    }
   }
 }
 
