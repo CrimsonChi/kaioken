@@ -29,7 +29,7 @@ import type {
 } from "./types.utils"
 import type { AppContext } from "./appContext.js"
 
-export { commitWork, createDom, updateDom, hydrateDom }
+export { commitWork, commitDeletion, createDom, hydrateDom }
 
 type VNode = Kiru.VNode
 type HostNode = {

@@ -8,7 +8,7 @@ import {
   CONSECUTIVE_DIRTY_LIMIT,
   FLAG_DELETION,
 } from "./constants.js"
-import { commitWork, createDom, hydrateDom } from "./dom.js"
+import { commitDeletion, commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
 import { hookIndex, node, renderMode } from "./globals.js"
@@ -34,30 +34,13 @@ let currentTreeIndex = 0
 let isRunning = false
 let nextIdleEffects: (() => void)[] = []
 let deletions: VNode[] = []
-let frameHandle: number | null = null
 let isImmediateEffectsMode = false
 let immediateEffectDirtiedRender = false
 let isRenderDirtied = false
 let consecutiveDirtyCount = 0
 let pendingContextChanges = new Set<ContextProviderNode<any>>()
-let effectCallbacks = {
-  pre: [] as Function[],
-  post: [] as Function[],
-}
-
-function wake() {
-  if (isRunning) return
-  isRunning = true
-  queueMicrotask(workLoop)
-}
-
-function sleep() {
-  isRunning = false
-  if (frameHandle !== null) {
-    globalThis.cancelAnimationFrame(frameHandle)
-    frameHandle = null
-  }
-}
+let preEffects: Array<Function> = []
+let postEffects: Array<Function> = []
 
 export function nextIdle(fn: () => void, wakeUpIfIdle = true) {
   nextIdleEffects.push(fn)
@@ -65,10 +48,6 @@ export function nextIdle(fn: () => void, wakeUpIfIdle = true) {
 }
 
 export function flushSync() {
-  if (frameHandle !== null) {
-    globalThis.cancelAnimationFrame(frameHandle)
-    frameHandle = null
-  }
   workLoop()
 }
 
@@ -97,6 +76,20 @@ export function requestDelete(vNode: VNode): void {
   queueDelete(vNode)
 }
 
+function queueWorkLoop() {
+  queueMicrotask(workLoop)
+}
+
+function wake() {
+  if (isRunning) return
+  isRunning = true
+  queueWorkLoop()
+}
+
+function sleep() {
+  isRunning = false
+}
+
 function queueUpdate(vNode: VNode) {
   // In immediate effect mode (useLayoutEffect), immediately mark the render as dirty
   if (isImmediateEffectsMode) {
@@ -123,28 +116,21 @@ function queueUpdate(vNode: VNode) {
     return wake()
   }
 
-  // Check if the node is already in the treesInProgress queue
-  const treeIdx = treesInProgress.indexOf(vNode)
-  if (treeIdx !== -1) {
-    if (treeIdx === currentTreeIndex) {
-      // Replace current node if it's being worked on now
-      treesInProgress[treeIdx] = vNode
-      nextUnitOfWork = vNode
-    } else if (treeIdx < currentTreeIndex) {
+  for (let i = 0; i < treesInProgress.length; i++) {
+    const tree = treesInProgress[i]
+    if (tree !== vNode) continue
+    if (i < currentTreeIndex) {
       // It was already processed; requeue it to the end
       currentTreeIndex--
-      treesInProgress.splice(treeIdx, 1)
-      treesInProgress.push(vNode)
+      treesInProgress.splice(i, 1)
+      treesInProgress.push(tree)
     }
     return
   }
 
-  const nodeDepth = vNode.depth
-
   // Check if this node is a descendant of any trees already queued
   for (let i = 0; i < treesInProgress.length; i++) {
     const tree = treesInProgress[i]
-    if (tree.depth > nodeDepth) continue // Can't be an ancestor
     if (!vNodeContains(tree, vNode)) continue
 
     if (i === currentTreeIndex) {
@@ -166,7 +152,7 @@ function queueUpdate(vNode: VNode) {
   let shouldQueueAtEnd = false
   for (let i = 0; i < treesInProgress.length; ) {
     const tree = treesInProgress[i]
-    if (tree.depth < nodeDepth || !vNodeContains(vNode, tree)) {
+    if (!vNodeContains(vNode, tree)) {
       i++
       continue
     }
@@ -212,11 +198,7 @@ function queueDelete(vNode: VNode) {
   deletions.push(vNode)
 }
 
-function isFlushReady() {
-  return !nextUnitOfWork && (deletions.length || treesInProgress.length)
-}
-
-function workLoop(deadline?: IdleDeadline): void {
+function workLoop(): void {
   if (__DEV__) {
     const n = nextUnitOfWork ?? deletions[0] ?? treesInProgress[0]
     if (n) {
@@ -232,39 +214,37 @@ function workLoop(deadline?: IdleDeadline): void {
       performUnitOfWork(nextUnitOfWork) ??
       treesInProgress[++currentTreeIndex] ??
       queueBlockedContextDependencyRoots()
-
-    if ((deadline?.timeRemaining() ?? 1) < 1) break
   }
 
-  if (isFlushReady()) {
+  if (!nextUnitOfWork && (deletions.length || treesInProgress.length)) {
     while (deletions.length) {
-      commitWork(deletions.shift()!)
+      commitDeletion(deletions.shift()!)
     }
-    const treesInProgressCopy = [...treesInProgress]
-    treesInProgress = []
+    const workRoots = [...treesInProgress]
+    treesInProgress.length = 0
     currentTreeIndex = 0
-    for (const tree of treesInProgressCopy) {
-      commitWork(tree)
+    for (const root of workRoots) {
+      commitWork(root)
     }
 
     isImmediateEffectsMode = true
-    flushEffects(effectCallbacks.pre)
+    flushEffects(preEffects)
     isImmediateEffectsMode = false
 
     if (immediateEffectDirtiedRender) {
       checkForTooManyConsecutiveDirtyRenders()
-      flushEffects(effectCallbacks.post)
+      flushEffects(postEffects)
       immediateEffectDirtiedRender = false
       consecutiveDirtyCount++
       if (__DEV__) {
         window.__kiru?.profilingContext?.endTick(appCtx!)
         window.__kiru?.profilingContext?.emit("updateDirtied", appCtx!)
       }
-      return workLoop()
+      return flushSync()
     }
     consecutiveDirtyCount = 0
 
-    flushEffects(effectCallbacks.post)
+    flushEffects(postEffects)
     if (__DEV__) {
       window.__kiru!.emit("update", appCtx!)
       window.__kiru?.profilingContext?.emit("update", appCtx!)
@@ -284,7 +264,7 @@ function workLoop(deadline?: IdleDeadline): void {
     return
   }
 
-  queueMicrotask(workLoop)
+  queueWorkLoop()
 }
 
 function queueBlockedContextDependencyRoots(): VNode | null {
@@ -297,18 +277,16 @@ function queueBlockedContextDependencyRoots(): VNode | null {
   pendingContextChanges.forEach((provider) => {
     provider.props.dependents.forEach((dep) => {
       if (!willMemoBlockUpdate(provider, dep)) return
-      const depDepth = dep.depth
       for (let i = 0; i < jobRoots.length; i++) {
         const root = jobRoots[i]
-        const rootDepth = root.depth
-        if (depDepth > rootDepth && vNodeContains(root, dep)) {
+        if (vNodeContains(root, dep)) {
           if (willMemoBlockUpdate(root, dep)) {
             // root is a parent of dep and there's a memo between them, prevent consolidation and queue as new root
             break
           }
           return
         }
-        if (depDepth < rootDepth && vNodeContains(dep, root)) {
+        if (vNodeContains(dep, root)) {
           jobRoots[i] = dep
           return
         }
@@ -379,13 +357,14 @@ function performUnitOfWork(vNode: VNode): VNode | void {
   while (nextNode) {
     // queue effects upon ascent
     if (nextNode.immediateEffects) {
-      effectCallbacks.pre.push(...nextNode.immediateEffects)
+      preEffects.push(...nextNode.immediateEffects)
       nextNode.immediateEffects = undefined
     }
     if (nextNode.effects) {
-      effectCallbacks.post.push(...nextNode.effects)
+      postEffects.push(...nextNode.effects)
       nextNode.effects = undefined
     }
+
     if (nextNode === treesInProgress[currentTreeIndex]) return
     if (nextNode.sibling) {
       return nextNode.sibling
@@ -498,5 +477,8 @@ function checkForTooManyConsecutiveDirtyRenders() {
 }
 
 function flushEffects(effectArr: Function[]) {
-  while (effectArr.length) effectArr.shift()!()
+  for (let i = 0; i < effectArr.length; i++) {
+    effectArr[i]()
+  }
+  effectArr.length = 0
 }

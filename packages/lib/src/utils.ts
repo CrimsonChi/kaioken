@@ -143,6 +143,7 @@ function commitSnapshot(vNode: VNode): void {
 }
 
 function vNodeContains(haystack: VNode, needle: VNode): boolean {
+  if (needle.depth < haystack.depth) return false
   if (haystack === needle) return true
   let checkSiblings = false
   const stack: VNode[] = [haystack]
