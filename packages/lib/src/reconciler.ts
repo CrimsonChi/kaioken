@@ -74,7 +74,7 @@ function reconcileChildrenArray(parent: VNode, children: unknown[]) {
   let lastPlacedIndex = 0
   let newIdx = 0
 
-  for (; !!oldChild && newIdx < children.length; newIdx++) {
+  for (; oldChild !== null && newIdx < children.length; newIdx++) {
     if (oldChild.index > newIdx) {
       nextOldChild = oldChild
       oldChild = null
@@ -329,14 +329,14 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 }
 
 function placeChild(
-  child: VNode | null,
+  child: VNode,
   lastPlacedIndex: number,
   newIndex: number
 ): number {
-  if (child === null) return lastPlacedIndex
   child.index = newIndex
-  if (child.prev !== null) {
-    const oldIndex = child.prev.index
+  const prev = child.prev
+  if (prev !== null) {
+    const oldIndex = prev.index
     if (oldIndex < lastPlacedIndex) {
       child.flags |= FLAG_PLACEMENT
       return lastPlacedIndex
