@@ -69,12 +69,15 @@ function createDom(vNode: DomVNode): SomeDom {
   return dom
 }
 function createTextNode(vNode: VNode): Text {
-  const prop = vNode.props.nodeValue
-  const value = unwrap(prop)
-  const textNode = document.createTextNode(value)
-  if (Signal.isSignal(prop)) {
-    subTextNode(vNode, textNode, prop)
+  const nodeValue = vNode.props.nodeValue
+  if (Signal.isSignal(nodeValue)) {
+    const value = nodeValue.peek()
+    const textNode = document.createTextNode(value)
+    subTextNode(vNode, textNode, nodeValue)
+    return textNode
   }
+
+  const textNode = document.createTextNode(nodeValue)
   return textNode
 }
 
@@ -710,9 +713,9 @@ function commitDeletion(vNode: VNode) {
       dom,
       props: { ref },
     } = node
-    while (hooks?.length) hooks.pop()!.cleanup?.()
     subs?.forEach((unsub) => unsub())
     if (cleanups) Object.values(cleanups).forEach((c) => c())
+    while (hooks?.length) hooks.pop()!.cleanup?.()
 
     if (__DEV__) {
       window.__kiru?.profilingContext?.emit("removeNode", ctx)
