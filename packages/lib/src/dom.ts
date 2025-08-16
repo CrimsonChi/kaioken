@@ -605,9 +605,6 @@ function commitWork(vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
   }
-  if (vNode.flags & FLAG_DELETION) {
-    return commitDeletion(vNode)
-  }
   handlePrePlacementFocusPersistence()
 
   const hostNodes: HostNode[] = []
