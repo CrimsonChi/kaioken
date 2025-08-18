@@ -258,4 +258,5 @@ export type FormController<T extends Record<string, unknown>> = {
   validateForm: () => Promise<string[]>
   getFormContext: () => FormContext<T>
   reset: (values?: T) => void
+  setSubmitting: (isSubmitting: boolean) => void
 }

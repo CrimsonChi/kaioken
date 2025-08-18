@@ -504,6 +504,13 @@ function createFormController<T extends Record<string, unknown>>(
     }
   }
 
+  const setSubmitting = (submitting: boolean) => {
+    if (submitting !== isSubmitting) {
+      isSubmitting = submitting
+      updateSubscribers()
+    }
+  }
+
   return {
     subscribers,
     state,
@@ -520,6 +527,7 @@ function createFormController<T extends Record<string, unknown>>(
     validateForm,
     reset,
     getFormContext,
+    setSubmitting,
   }
 }
 
@@ -648,10 +656,16 @@ export function useForm<T extends Record<string, unknown> = {}>(
         Field: hook.Field,
         Subscribe: hook.Subscribe,
         handleSubmit: async () => {
-          const errors = await hook.formController.validateForm()
-          const formCtx = hook.formController.getFormContext()
+          const controller = hook.formController
+          const errors = await controller.validateForm()
+          const formCtx = controller.getFormContext()
           if (errors.length) return config.onSubmitInvalid?.(formCtx)
-          await config.onSubmit?.(formCtx)
+          controller.setSubmitting(true)
+          try {
+            await config.onSubmit?.(formCtx)
+          } finally {
+            controller.setSubmitting(false)
+          }
         },
         reset: (values?: T) => hook.formController.reset(values),
         getFieldState: <K extends RecordKey<T>>(name: K) =>

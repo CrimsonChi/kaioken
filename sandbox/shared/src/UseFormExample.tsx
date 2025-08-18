@@ -34,7 +34,11 @@ export default function UseFormExample() {
         bar: 123,
       },
     },
-    onSubmit: ({ state }) => console.log("submit", state),
+    onSubmit: async ({ state }) => {
+      console.log("submitting", state)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      console.log("submitted")
+    },
   })
 
   console.log("render UseFormExample")
