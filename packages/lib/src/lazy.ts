@@ -4,8 +4,9 @@ import { KiruError } from "./error.js"
 import { node, renderMode } from "./globals.js"
 import { useContext } from "./hooks/useContext.js"
 import { useRef } from "./hooks/useRef.js"
-import { useAppContext, useRequestUpdate } from "./hooks/utils.js"
+import { useRequestUpdate } from "./hooks/utils.js"
 import { hydrationStack } from "./hydration.js"
+import { flushSync, nextIdle } from "./scheduler.js"
 import {
   HYDRATION_BOUNDARY_MARKER,
   HydrationBoundaryContext,
@@ -85,7 +86,6 @@ export function lazy<T extends LazyImportValue>(
 ): Kiru.FC<LazyComponentProps<T>> {
   function LazyComponent(props: LazyComponentProps<T>) {
     const { fallback = null, ...rest } = props
-    const appCtx = useAppContext()
     const hydrationCtx = useContext(HydrationBoundaryContext, false)
     const needsHydration = useRef(
       hydrationCtx && renderMode.current === "hydrate"
@@ -154,7 +154,7 @@ export function lazy<T extends LazyImportValue>(
       const hydrate = () => {
         if (needsHydration.current === false) return
 
-        appCtx.scheduler?.nextIdle(() => {
+        nextIdle(() => {
           delete thisNode.lastChildDom
           needsHydration.current = false
           hydrationStack.push(parent)
@@ -169,7 +169,7 @@ export function lazy<T extends LazyImportValue>(
            */
           requestUpdate()
           renderMode.current = "hydrate"
-          appCtx.flushSync()
+          flushSync()
           renderMode.current = prev
           for (const child of childNodes) {
             if (child instanceof Element) {

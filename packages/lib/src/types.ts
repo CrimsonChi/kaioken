@@ -17,6 +17,7 @@ import type {
   SVGTagToElement,
 } from "./types.dom"
 import { Signalable, SomeDom } from "./types.utils"
+import type { AppContext } from "./appContext"
 
 export type { ElementProps, StyleObject }
 
@@ -169,6 +170,7 @@ declare global {
       | typeof $HYDRATION_BOUNDARY
 
     type VNode = {
+      app?: AppContext
       dom?: SomeDom
       lastChildDom?: SomeDom
       type: Function | ExoticSymbol | "#text" | (string & {})
@@ -183,11 +185,11 @@ declare global {
       parent: VNode | null
       child: VNode | null
       sibling: VNode | null
-      prev: VNode | null
+      prev: VNodeSnapshot | null
       deletions: VNode[] | null
       flags: number
       hooks?: Hook<unknown>[]
-      subs?: Set<string>
+      subs?: Set<Function>
       cleanups?: Record<string, Function>
       effects?: Array<Function>
       immediateEffects?: Array<Function>
@@ -201,6 +203,11 @@ declare global {
       hookSig?: string[]
       hmrUpdated?: boolean
     }
+  }
+  type VNodeSnapshot = {
+    props: Kiru.VNode["props"]
+    memoizedProps: Kiru.VNode["memoizedProps"]
+    index: number
   }
 
   interface Element {

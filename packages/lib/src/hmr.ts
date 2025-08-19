@@ -2,8 +2,9 @@ import type { Store } from "./store"
 import type { WatchEffect } from "./signals/watch"
 import { $HMR_ACCEPT } from "./constants.js"
 import { __DEV__ } from "./env.js"
-import { Signal } from "./signals/base.js"
 import { traverseApply } from "./utils.js"
+import { requestUpdate } from "./scheduler.js"
+import { Signal } from "./signals/index.js"
 import type { AppContext } from "./appContext"
 
 export type HMRAccept<T = {}> = {
@@ -124,15 +125,12 @@ export function createHMRContext() {
               vNode.type = newEntry.value as any
               dirtiedApps.add(ctx)
               vNode.hmrUpdated = true
-              if (vNode.prev) {
-                vNode.prev.type = newEntry.value as any
-              }
             }
           })
         })
       }
     }
-    dirtiedApps.forEach((ctx) => ctx.requestUpdate())
+    dirtiedApps.forEach((ctx) => ctx.rootNode && requestUpdate(ctx.rootNode))
     isModuleReplacementExecution = false
 
     if (tmpUnnamedWatchers.length) {

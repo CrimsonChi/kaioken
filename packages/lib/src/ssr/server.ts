@@ -1,7 +1,7 @@
 import { Readable } from "node:stream"
 import { Fragment } from "../element.js"
 import { AppContext, createAppContext } from "../appContext.js"
-import { renderMode, ctx, node, nodeToCtxMap } from "../globals.js"
+import { renderMode, node } from "../globals.js"
 import {
   isVNode,
   encodeHtmlEntities,
@@ -29,12 +29,9 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
     stream: new Readable(),
     ctx: createAppContext(appFunc, appProps, { rootType: Fragment }),
   }
-  const prevCtx = ctx.current
-  ctx.current = state.ctx
   renderToStream_internal(state, state.ctx.rootNode, null, 0)
   state.stream.push(null)
   renderMode.current = prev
-  ctx.current = prevCtx
 
   return state.stream
 }
@@ -89,7 +86,6 @@ function renderToStream_internal(
   }
 
   if (typeof type !== "string") {
-    nodeToCtxMap.set(el, state.ctx)
     node.current = el
     const res = type(props)
     node.current = null

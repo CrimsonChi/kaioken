@@ -1,14 +1,22 @@
-import { FLAG, $FRAGMENT } from "./constants.js"
-import { isVNode, latest } from "./utils.js"
-import { Signal } from "./signals/base.js"
+import {
+  $FRAGMENT,
+  FLAG_HAS_MEMO_ANCESTOR,
+  FLAG_PLACEMENT,
+  FLAG_UPDATE,
+} from "./constants.js"
+import { getVNodeAppContext, isVNode, latest } from "./utils.js"
+import { Signal } from "./signals/index.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
-import { flags } from "./flags.js"
-import { ctx } from "./globals.js"
+import type { AppContext } from "./appContext.js"
 
 type VNode = Kiru.VNode
+let appCtx: AppContext
 
 export function reconcileChildren(parent: VNode, children: unknown) {
+  if (__DEV__) {
+    appCtx = getVNodeAppContext(parent)!
+  }
   if (Array.isArray(children)) {
     if (__DEV__) {
       // array children are 'tagged' during parent reconciliation pass
@@ -43,13 +51,11 @@ function reconcileSingleChild(parent: VNode, child: unknown) {
     const existingChildren = mapRemainingChildren(oldChild)
     const newNode = updateFromMap(existingChildren, parent, 0, child)
     if (newNode !== null) {
-      if (newNode.prev !== null) {
+      const prev = newNode.prev
+      if (prev !== null) {
+        const key = prev.props.key
         // node persisted, remove it from the list so it doesn't get deleted
-        existingChildren.delete(
-          newNode.prev.props.key === undefined
-            ? newNode.prev.index
-            : newNode.prev.props.key
-        )
+        existingChildren.delete(key === undefined ? prev.index : key)
       }
       placeChild(newNode, 0, 0)
     }
@@ -68,7 +74,7 @@ function reconcileChildrenArray(parent: VNode, children: unknown[]) {
   let lastPlacedIndex = 0
   let newIdx = 0
 
-  for (; !!oldChild && newIdx < children.length; newIdx++) {
+  for (; oldChild !== null && newIdx < children.length; newIdx++) {
     if (oldChild.index > newIdx) {
       nextOldChild = oldChild
       oldChild = null
@@ -128,13 +134,11 @@ function reconcileChildrenArray(parent: VNode, children: unknown[]) {
       children[newIdx]
     )
     if (newNode !== null) {
-      if (newNode.prev !== null) {
+      const prev = newNode.prev
+      if (prev !== null) {
+        const key = prev.props.key
         // node persisted, remove it from the list so it doesn't get deleted
-        existingChildren.delete(
-          newNode.prev.props.key === undefined
-            ? newNode.prev.index
-            : newNode.prev.props.key
-        )
+        existingChildren.delete(key === undefined ? prev.index : key)
       }
       lastPlacedIndex = placeChild(newNode, lastPlacedIndex, newIdx)
       if (prevNewChild === null) {
@@ -192,24 +196,27 @@ function updateTextNode(
 ) {
   if (oldChild === null || oldChild.type !== "#text") {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const newChild = createElement("#text", { nodeValue: content })
     setParent(newChild, parent)
     return newChild
-  } else {
-    if (__DEV__) {
-      emitUpdateNode()
-    }
-    oldChild.props.nodeValue = content
-    oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
-    oldChild.sibling = null
-    return oldChild
   }
+
+  if (__DEV__) {
+    dev_emitUpdateNode()
+  }
+  const prev = oldChild.props.nodeValue
+  if (prev !== content) {
+    oldChild.props.nodeValue = content
+    oldChild.flags |= FLAG_UPDATE
+  }
+  oldChild.sibling = null
+  return oldChild
 }
 
 function updateNode(parent: VNode, oldChild: VNode | null, newChild: VNode) {
-  let nodeType = newChild.type
+  let { type: nodeType, props: newProps } = newChild
   if (__DEV__) {
     if (typeof nodeType === "function") {
       nodeType = latest(nodeType)
@@ -219,25 +226,31 @@ function updateNode(parent: VNode, oldChild: VNode | null, newChild: VNode) {
     return updateFragment(
       parent,
       oldChild,
-      (newChild.props.children as VNode[]) || [],
-      newChild.props
+      (newProps.children as VNode[]) || [],
+      newProps
     )
   }
   if (oldChild?.type === nodeType) {
     if (__DEV__) {
-      emitUpdateNode()
+      dev_emitUpdateNode()
     }
     oldChild.index = 0
-    oldChild.props = newChild.props
     oldChild.sibling = null
-    oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+    if (typeof nodeType === "string") {
+      if (propsChanged(oldChild.props, newProps)) {
+        oldChild.flags |= FLAG_UPDATE
+      }
+    } else {
+      oldChild.flags |= FLAG_UPDATE
+    }
+    oldChild.props = newProps
     oldChild.memoizedProps = newChild.memoizedProps
     return oldChild
   }
   if (__DEV__) {
-    emitCreateNode()
+    dev_emitCreateNode()
   }
-  const created = createElement(nodeType, newChild.props)
+  const created = createElement(nodeType, newProps)
   setParent(created, parent)
   return created
 }
@@ -250,17 +263,17 @@ function updateFragment(
 ) {
   if (oldChild === null || oldChild.type !== $FRAGMENT) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const el = createElement($FRAGMENT, { children, ...newProps })
     setParent(el, parent)
     return el
   }
   if (__DEV__) {
-    emitUpdateNode()
+    dev_emitUpdateNode()
   }
   oldChild.props = { ...oldChild.props, ...newProps, children }
-  oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+  oldChild.flags |= FLAG_UPDATE
   oldChild.sibling = null
   return oldChild
 }
@@ -272,7 +285,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
     typeof child === "bigint"
   ) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const el = createElement("#text", {
       nodeValue: "" + child,
@@ -283,7 +296,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (Signal.isSignal(child)) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const el = createElement("#text", {
       nodeValue: child,
@@ -294,17 +307,17 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (isVNode(child)) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const newNode = createElement(child.type, child.props)
     setParent(newNode, parent)
-    newNode.flags = flags.set(newNode.flags, FLAG.PLACEMENT)
+    newNode.flags |= FLAG_PLACEMENT
     return newNode
   }
 
   if (Array.isArray(child)) {
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
       markListChild(child)
     }
     const el = Fragment({ children: child })
@@ -316,22 +329,22 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 }
 
 function placeChild(
-  child: VNode | null,
+  child: VNode,
   lastPlacedIndex: number,
   newIndex: number
 ): number {
-  if (child === null) return lastPlacedIndex
   child.index = newIndex
-  if (child.prev !== null) {
-    const oldIndex = child.prev.index
+  const prev = child.prev
+  if (prev !== null) {
+    const oldIndex = prev.index
     if (oldIndex < lastPlacedIndex) {
-      child.flags = flags.set(child.flags, FLAG.PLACEMENT)
+      child.flags |= FLAG_PLACEMENT
       return lastPlacedIndex
     } else {
       return oldIndex
     }
   } else {
-    child.flags = flags.set(child.flags, FLAG.PLACEMENT)
+    child.flags |= FLAG_PLACEMENT
     return lastPlacedIndex
   }
 }
@@ -352,8 +365,6 @@ function updateFromMap(
     const oldChild = existingChildren.get(index)
     if (oldChild) {
       if (oldChild.props.nodeValue === child) {
-        oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
-        oldChild.props.nodeValue = child
         return oldChild
       }
       if (
@@ -365,40 +376,46 @@ function updateFromMap(
     }
 
     if (__DEV__) {
-      emitCreateNode()
+      dev_emitCreateNode()
     }
     const newChild = createElement("#text", {
       nodeValue: child,
     })
     setParent(newChild, parent)
-    newChild.flags = flags.set(newChild.flags, FLAG.PLACEMENT)
+    newChild.flags |= FLAG_PLACEMENT
     newChild.index = index
     return newChild
   }
 
   if (isVNode(child)) {
-    const oldChild = existingChildren.get(
-      child.props.key === undefined ? index : child.props.key
-    )
-    if (oldChild?.type === child.type) {
+    const { type, props: newProps } = child
+    const key = newProps.key
+    const oldChild = existingChildren.get(key === undefined ? index : key)
+    if (oldChild?.type === type) {
       if (__DEV__) {
-        emitUpdateNode()
+        dev_emitUpdateNode()
       }
-      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
-      oldChild.props = child.props
+      if (typeof type === "string") {
+        if (propsChanged(oldChild.props, newProps)) {
+          oldChild.flags |= FLAG_UPDATE
+        }
+      } else {
+        oldChild.flags |= FLAG_UPDATE
+      }
+      oldChild.props = newProps
       oldChild.sibling = null
       oldChild.index = index
       return oldChild
-    } else {
-      if (__DEV__) {
-        emitCreateNode()
-      }
-      const newChild = createElement(child.type, child.props)
-      setParent(newChild, parent)
-      newChild.flags = flags.set(newChild.flags, FLAG.PLACEMENT)
-      newChild.index = index
-      return newChild
     }
+
+    if (__DEV__) {
+      dev_emitCreateNode()
+    }
+    const newChild = createElement(child.type, child.props)
+    setParent(newChild, parent)
+    newChild.flags |= FLAG_PLACEMENT
+    newChild.index = index
+    return newChild
   }
 
   if (Array.isArray(child)) {
@@ -408,42 +425,53 @@ function updateFromMap(
     }
     if (oldChild) {
       if (__DEV__) {
-        emitUpdateNode()
+        dev_emitUpdateNode()
       }
-      oldChild.flags = flags.set(oldChild.flags, FLAG.UPDATE)
+      oldChild.flags |= FLAG_UPDATE
       oldChild.props.children = child
       return oldChild
-    } else {
-      if (__DEV__) {
-        emitCreateNode()
-      }
-      const newChild = Fragment({ children: child })
-      setParent(newChild, parent)
-      newChild.flags = flags.set(newChild.flags, FLAG.PLACEMENT)
-      newChild.index = index
-      return newChild
     }
+
+    if (__DEV__) {
+      dev_emitCreateNode()
+    }
+    const newChild = Fragment({ children: child })
+    setParent(newChild, parent)
+    newChild.flags |= FLAG_PLACEMENT
+    newChild.index = index
+    return newChild
   }
 
   return null
 }
 
-function setParent(child: Kiru.VNode, parent: Kiru.VNode) {
+function propsChanged(oldProps: VNode["props"], newProps: VNode["props"]) {
+  const aKeys = Object.keys(oldProps)
+  const bKeys = Object.keys(newProps)
+  if (aKeys.length !== bKeys.length) return true
+  for (let key of aKeys) {
+    if (key === "children" || key === "key") continue
+    if (oldProps[key] !== newProps[key]) return true
+  }
+  return false
+}
+
+function setParent(child: VNode, parent: VNode) {
   child.parent = parent
   child.depth = parent.depth + 1
-  if (parent.isMemoized || flags.get(parent.flags, FLAG.HAS_MEMO_ANCESTOR)) {
-    child.flags = flags.set(child.flags, FLAG.HAS_MEMO_ANCESTOR)
+  if (parent.isMemoized || parent.flags & FLAG_HAS_MEMO_ANCESTOR) {
+    child.flags |= FLAG_HAS_MEMO_ANCESTOR
   }
 }
 
-function emitUpdateNode() {
+function dev_emitUpdateNode() {
   if (!("window" in globalThis)) return
-  window.__kiru?.profilingContext?.emit("updateNode", ctx.current)
+  window.__kiru?.profilingContext?.emit("updateNode", appCtx)
 }
 
-function emitCreateNode() {
+function dev_emitCreateNode() {
   if (!("window" in globalThis)) return
-  window.__kiru?.profilingContext?.emit("createNode", ctx.current)
+  window.__kiru?.profilingContext?.emit("createNode", appCtx)
 }
 
 const $LIST_CHILD = Symbol("kiru:marked-list-child")
@@ -454,10 +482,8 @@ function markListChild(children: unknown[]) {
 function mapRemainingChildren(child: VNode | null) {
   const map: Map<JSX.ElementKey, VNode> = new Map()
   while (child) {
-    map.set(
-      child.props.key === undefined ? child.index : child.props.key,
-      child
-    )
+    const key = child.props.key
+    map.set(key === undefined ? child.index : key, child)
     child = child.sibling
   }
   return map

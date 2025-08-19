@@ -1,4 +1,4 @@
-import type { Signal } from "./base.js"
+import type { Signal } from "./index.js"
 import type { SignalSubscriber } from "./types.js"
 
 export const tracking = {
@@ -8,4 +8,4 @@ export const tracking = {
   },
 }
 export const effectQueue = new Map<string, Function>()
-export const signalSubsMap: Map<string, Set<SignalSubscriber>> = new Map()
+export const signalSubsMap: Map<string, Set<SignalSubscriber<any>>> = new Map()

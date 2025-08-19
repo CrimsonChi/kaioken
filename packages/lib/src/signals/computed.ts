@@ -1,5 +1,5 @@
 import { __DEV__ } from "../env.js"
-import { Signal } from "./base.js"
+import { Signal } from "./index.js"
 import { effectQueue, signalSubsMap } from "./globals.js"
 import { $HMR_ACCEPT } from "../constants.js"
 import type { HMRAccept } from "../hmr.js"
@@ -57,7 +57,7 @@ export class ComputedSignal<T> extends Signal<T> {
   // @ts-expect-error
   set value(next: T) {}
 
-  subscribe(cb: (state: T) => void): () => void {
+  subscribe(cb: (state: T, prevState?: T) => void): () => void {
     if (this.$isDirty) {
       ComputedSignal.run(this)
     }
@@ -88,8 +88,13 @@ export class ComputedSignal<T> extends Signal<T> {
       fn: () => $getter($computed.$value),
       onDepChanged: () => {
         $computed.$isDirty = true
-        if (!signalSubsMap?.get(id)?.size) return
+        if (__DEV__) {
+          if (!signalSubsMap?.get(id)?.size) return
+        } else {
+          if (!computed.$subs!.size) return
+        }
         ComputedSignal.run($computed)
+        if (Object.is($computed.$value, $computed.$prevValue)) return
         $computed.notify()
       },
     })

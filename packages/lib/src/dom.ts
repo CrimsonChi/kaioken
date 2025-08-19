@@ -4,16 +4,22 @@ import {
   propFilters,
   propToHtmlAttr,
   postOrderApply,
+  getVNodeAppContext,
 } from "./utils.js"
-import { booleanAttributes, FLAG, svgTags } from "./constants.js"
+import {
+  booleanAttributes,
+  FLAG_DELETION,
+  FLAG_PLACEMENT,
+  FLAG_UPDATE,
+  svgTags,
+} from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
-import { ctx, renderMode } from "./globals.js"
+import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
 import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
-import { flags } from "./flags.js"
 import type {
   DomVNode,
   ElementVNode,
@@ -21,8 +27,9 @@ import type {
   SomeDom,
   SomeElement,
 } from "./types.utils"
+import type { AppContext } from "./appContext.js"
 
-export { commitWork, createDom, updateDom, hydrateDom }
+export { commitWork, commitDeletion, createDom, hydrateDom }
 
 type VNode = Kiru.VNode
 type HostNode = {
@@ -62,12 +69,15 @@ function createDom(vNode: DomVNode): SomeDom {
   return dom
 }
 function createTextNode(vNode: VNode): Text {
-  const prop = vNode.props.nodeValue
-  const value = unwrap(prop)
-  const textNode = document.createTextNode(value)
-  if (Signal.isSignal(prop)) {
-    subTextNode(vNode, textNode, prop)
+  const nodeValue = vNode.props.nodeValue
+  if (Signal.isSignal(nodeValue)) {
+    const value = nodeValue.peek()
+    const textNode = document.createTextNode(value)
+    subTextNode(vNode, textNode, nodeValue)
+    return textNode
   }
+
+  const textNode = document.createTextNode(nodeValue)
   return textNode
 }
 
@@ -240,14 +250,16 @@ function setSignalProp(
   signal: Signal<any>,
   prevValue: unknown
 ) {
-  const _ctx = ctx.current
   const cleanups = (vNode.cleanups ??= {})
   const [modifier, attr] = key.split(":")
   if (modifier !== "bind") {
-    cleanups[key] = signal.subscribe((value) => {
-      setProp(dom, key, value, null)
+    cleanups[key] = signal.subscribe((value, prev) => {
+      setProp(dom, key, value, prev)
       if (__DEV__) {
-        window.__kiru?.profilingContext?.emit("signalAttrUpdate", _ctx)
+        window.__kiru?.profilingContext?.emit(
+          "signalAttrUpdate",
+          getVNodeAppContext(vNode)!
+        )
       }
     })
 
@@ -270,7 +282,10 @@ function setSignalProp(
   const signalUpdateCallback = (value: any) => {
     setAttr(value)
     if (__DEV__) {
-      window.__kiru?.profilingContext?.emit("signalAttrUpdate", _ctx)
+      window.__kiru?.profilingContext?.emit(
+        "signalAttrUpdate",
+        getVNodeAppContext(vNode)!
+      )
     }
   }
 
@@ -318,11 +333,14 @@ function setSignalProp(
 }
 
 function subTextNode(vNode: VNode, textNode: Text, signal: Signal<string>) {
-  const _ctx = ctx.current
-  ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((v) => {
-    textNode.nodeValue = v
+  ;(vNode.cleanups ??= {}).nodeValue = signal.subscribe((value, prev) => {
+    if (value === prev) return
+    textNode.nodeValue = value
     if (__DEV__) {
-      window.__kiru?.profilingContext?.emit("signalTextUpdate", _ctx)
+      window.__kiru?.profilingContext?.emit(
+        "signalTextUpdate",
+        getVNodeAppContext(vNode)!
+      )
     }
   })
 }
@@ -554,7 +572,7 @@ function getNextSiblingDom(vNode: VNode, parent: ElementVNode): MaybeDom {
 
     while (sibling) {
       // Skip unmounted, to-be-placed & portal nodes
-      if (!flags.get(sibling.flags, FLAG.PLACEMENT) && !isPortal(sibling)) {
+      if (!(sibling.flags & FLAG_PLACEMENT) && !isPortal(sibling)) {
         // Descend into the child to find host dom
         const dom = findFirstHostDom(sibling)
         if (dom?.isConnected) return dom
@@ -586,9 +604,6 @@ function findFirstHostDom(vNode: VNode): MaybeDom {
 function commitWork(vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
-  }
-  if (flags.get(vNode.flags, FLAG.DELETION)) {
-    return commitDeletion(vNode)
   }
   handlePrePlacementFocusPersistence()
 
@@ -622,7 +637,7 @@ function commitWork(vNode: VNode) {
           // prevent scope applying to descendants of this element node
           currentPlacementScope.active = false
         }
-      } else if (flags.get(node.flags, FLAG.PLACEMENT)) {
+      } else if (node.flags & FLAG_PLACEMENT) {
         currentPlacementScope = { parent: node, active: true }
         placementScopes.push(currentPlacementScope)
       }
@@ -633,7 +648,7 @@ function commitWork(vNode: VNode) {
         currentPlacementScope.active = true
         inheritsPlacement = true
       }
-      if (flags.get(node.flags, FLAG.DELETION)) {
+      if (node.flags & FLAG_DELETION) {
         return commitDeletion(node)
       }
       if (node.dom) {
@@ -669,11 +684,11 @@ function commitDom(
   if (
     inheritsPlacement ||
     !vNode.dom.isConnected ||
-    flags.get(vNode.flags, FLAG.PLACEMENT)
+    vNode.flags & FLAG_PLACEMENT
   ) {
     placeDom(vNode, hostNode)
   }
-  if (!vNode.prev || flags.get(vNode.flags, FLAG.UPDATE)) {
+  if (!vNode.prev || vNode.flags & FLAG_UPDATE) {
     updateDom(vNode)
   }
   hostNode.lastChild = vNode
@@ -683,6 +698,10 @@ function commitDeletion(vNode: VNode) {
   if (vNode === vNode.parent?.child) {
     vNode.parent.child = vNode.sibling
   }
+  let ctx: AppContext
+  if (__DEV__) {
+    ctx = getVNodeAppContext(vNode)!
+  }
   traverseApply(vNode, (node) => {
     const {
       hooks,
@@ -691,12 +710,12 @@ function commitDeletion(vNode: VNode) {
       dom,
       props: { ref },
     } = node
-    while (hooks?.length) hooks.pop()!.cleanup?.()
-    subs?.forEach((sub) => Signal.unsubscribe(node, sub))
+    subs?.forEach((unsub) => unsub())
     if (cleanups) Object.values(cleanups).forEach((c) => c())
+    while (hooks?.length) hooks.pop()!.cleanup?.()
 
     if (__DEV__) {
-      window.__kiru?.profilingContext?.emit("removeNode", ctx.current)
+      window.__kiru?.profilingContext?.emit("removeNode", ctx)
     }
 
     if (dom) {
@@ -707,4 +726,6 @@ function commitDeletion(vNode: VNode) {
       delete node.dom
     }
   })
+
+  vNode.parent = null
 }

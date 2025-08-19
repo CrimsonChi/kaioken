@@ -1,4 +1,4 @@
-import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
+import { node, renderMode } from "./globals.js"
 import { createAppContext } from "./appContext.js"
 import { Fragment } from "./element.js"
 import {
@@ -7,7 +7,7 @@ import {
   propsToElementAttributes,
   isExoticType,
 } from "./utils.js"
-import { Signal } from "./signals/base.js"
+import { Signal } from "./signals/index.js"
 import { $HYDRATION_BOUNDARY, voidElements } from "./constants.js"
 import { assertValidElementProps } from "./props.js"
 import { HYDRATION_BOUNDARY_MARKER } from "./ssr/hydrationBoundary.js"
@@ -19,13 +19,11 @@ export function renderToString<T extends Record<string, unknown>>(
 ) {
   const prev = renderMode.current
   renderMode.current = "string"
-  const prevCtx = ctx.current
-  const c = (ctx.current = createAppContext(appFunc, appProps, {
+  const ctx = createAppContext(appFunc, appProps, {
     rootType: Fragment,
-  }))
-  const res = renderToString_internal(c.rootNode, null, 0)
+  })
+  const res = renderToString_internal(ctx.rootNode, null, 0)
   renderMode.current = prev
-  ctx.current = prevCtx
   return res
 }
 
@@ -65,7 +63,6 @@ function renderToString_internal(
   }
 
   if (typeof type !== "string") {
-    nodeToCtxMap.set(el, ctx.current)
     node.current = el
     const res = type(props)
     node.current = null

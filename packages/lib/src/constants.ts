@@ -8,8 +8,11 @@ export {
   $MEMO,
   $HYDRATION_BOUNDARY,
   CONSECUTIVE_DIRTY_LIMIT,
-  FLAG,
   REGEX_UNIT,
+  FLAG_UPDATE,
+  FLAG_PLACEMENT,
+  FLAG_DELETION,
+  FLAG_HAS_MEMO_ANCESTOR,
 }
 
 export { voidElements, svgTags, booleanAttributes }
@@ -25,12 +28,10 @@ const $HYDRATION_BOUNDARY = Symbol.for("kiru.hydrationBoundary")
 
 const CONSECUTIVE_DIRTY_LIMIT = 50
 
-const FLAG = {
-  UPDATE: 1,
-  PLACEMENT: 2,
-  DELETION: 3,
-  HAS_MEMO_ANCESTOR: 4,
-} as const
+const FLAG_UPDATE = 1 << 1
+const FLAG_PLACEMENT = 1 << 2
+const FLAG_DELETION = 1 << 3
+const FLAG_HAS_MEMO_ANCESTOR = 1 << 4
 
 const REGEX_UNIT = {
   AMP_G: /&/g,

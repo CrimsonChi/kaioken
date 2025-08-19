@@ -1,12 +1,10 @@
 import { describe, it } from "node:test"
 import assert from "node:assert"
 import { reconcileChildren } from "../../reconciler.js"
-import { ctx } from "../../globals.js"
 import * as kiru from "../../index.js"
-import { FLAG } from "../../constants.js"
 import { shuffle } from "./utils.js"
-import { flags } from "../../flags.js"
 import { commitSnapshot } from "../../utils.js"
+import { FLAG_PLACEMENT } from "../../constants.js"
 
 const commitChildren = (node: Kiru.VNode) => {
   let n = node.child
@@ -18,7 +16,6 @@ const commitChildren = (node: Kiru.VNode) => {
 
 describe("reconciler", () => {
   it("correctly handles correctly handles 'mapRemainingChildren' phase when dealing with array children", () => {
-    ctx.current = kiru.createAppContext(() => null)
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kiru.createElement("div")
     node.child = reconcileChildren(node, [
@@ -49,8 +46,6 @@ describe("reconciler", () => {
     )
   })
   it("correctly handles reordered Array children with keys", () => {
-    ctx.current = kiru.createAppContext(() => null)
-
     const items = "abcdefghijklmnopqrstuvwxyz".split("")
     const node = kiru.createElement("div")
     node.child = reconcileChildren(node, [
@@ -77,7 +72,7 @@ describe("reconciler", () => {
         const prev = c.prev
         if (!prev || prev.index < i) {
           assert.strictEqual(
-            flags.get(c!.flags, FLAG.PLACEMENT),
+            (c.flags & FLAG_PLACEMENT) !== 0,
             true,
             `[${opName}]: ${i}th child should have flag "placement"`
           )
@@ -143,8 +138,6 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kiru.createAppContext(() => null)
-
       // Create a parent node
       const node = kiru.createElement("div")
 
@@ -189,8 +182,6 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kiru.createAppContext(() => null)
-
       const node = kiru.createElement("div")
 
       // Test 1: Regular array with duplicate keys should warn
@@ -227,8 +218,6 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kiru.createAppContext(() => null)
-
       const node = kiru.createElement("div")
 
       // Mix of keyed and non-keyed children in array context
@@ -260,8 +249,6 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kiru.createAppContext(() => null)
-
       // Create a parent node
       const node = kiru.createElement("div")
 
@@ -289,8 +276,6 @@ describe("reconciler", () => {
     }
 
     try {
-      ctx.current = kiru.createAppContext(() => null)
-
       const NamedComponent = () => {
         return (
           <div>

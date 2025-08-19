@@ -1,14 +1,7 @@
 import * as kiru from "kiru"
 import { Flame } from "./icon/Flame"
 import { useAnchorPos } from "./hooks/useAnchorPos"
-import {
-  useSignal,
-  Transition,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useAppContext,
-} from "kiru"
+import { useSignal, Transition, useEffect, useLayoutEffect, useRef } from "kiru"
 import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
@@ -82,7 +75,6 @@ function useLerpedVec2(
 }
 
 export default function App() {
-  const appCtx = useAppContext()
   const toggled = useSignal(false)
   const handleOpen = useDevTools()
   const {
@@ -174,7 +166,7 @@ export default function App() {
           }
           onclick={async () => {
             toggled.value = !toggled.value
-            appCtx.flushSync()
+            kiru.flushSync()
             // wait for frame after next
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {

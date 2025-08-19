@@ -1,4 +1,4 @@
-import { AppContext, useEffect, useRequestUpdate } from "kiru"
+import { AppContext, useEffect, useRequestUpdate, requestUpdate } from "kiru"
 import { isVNodeDeleted } from "../../lib/dist/utils.js"
 import { applyObjectChangeFromKeys, getNodeName } from "./utils"
 import { NodeDataSection } from "./NodeDataSection"
@@ -19,7 +19,7 @@ export function SelectedNodeView({
   setSelectedNode,
   kiruGlobal,
 }: SelectedNodeViewProps) {
-  const requestUpdate = useRequestUpdate()
+  const update = useRequestUpdate()
 
   useEffect(() => {
     const handleUpdate = (appCtx: AppContext) => {
@@ -27,7 +27,7 @@ export function SelectedNodeView({
       if (isVNodeDeleted(selectedNode)) {
         setSelectedNode(null)
       } else {
-        requestUpdate()
+        update()
       }
     }
 
@@ -37,7 +37,7 @@ export function SelectedNodeView({
 
   const refresh = () => {
     if (!selectedNode || !selectedApp?.mounted) return
-    selectedApp.requestUpdate(selectedNode)
+    requestUpdate(selectedNode)
   }
 
   const nodeProps = { ...selectedNode.props } as Record<string, any>
