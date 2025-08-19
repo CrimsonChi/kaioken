@@ -42,26 +42,30 @@ let pendingContextChanges = new Set<ContextProviderNode<any>>()
 let preEffects: Array<Function> = []
 let postEffects: Array<Function> = []
 
+/**
+ * Runs a function after any existing work has been completed, or if the scheduler is already idle.
+ */
 export function nextIdle(fn: () => void, wakeUpIfIdle = true) {
   nextIdleEffects.push(fn)
   if (wakeUpIfIdle) wake()
 }
 
+/**
+ * Syncronously flushes any pending work.
+ */
 export function flushSync() {
   workLoop()
 }
 
+/**
+ * Queues a node for an update. Has no effect if the node is already deleted or marked for deletion.
+ */
 export function requestUpdate(vNode: VNode): void {
   if (vNode.flags & FLAG_DELETION) return
-  if (__DEV__) {
-    // if (options?.debug?.onRequestUpdate) {
-    //   options.debug.onRequestUpdate(vNode)
-    // }
-  }
   if (renderMode.current === "hydrate") {
     return nextIdle(() => {
       vNode.flags & FLAG_DELETION || queueUpdate(vNode)
-    })
+    }, false)
   }
   queueUpdate(vNode)
 }
@@ -71,7 +75,7 @@ export function requestDelete(vNode: VNode): void {
   if (renderMode.current === "hydrate") {
     return nextIdle(() => {
       vNode.flags & FLAG_DELETION || queueDelete(vNode)
-    })
+    }, false)
   }
   queueDelete(vNode)
 }
