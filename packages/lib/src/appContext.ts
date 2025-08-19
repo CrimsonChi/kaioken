@@ -20,15 +20,7 @@ export interface AppContextOptions {
    * Sets the root node type for the app. Used for SSR & rendering without the DOM.
    */
   rootType?: ({ children }: { children: JSX.Children }) => JSX.Element
-  /**
-   * Sets the maximum render refresh time.
-   * @default 50
-   */
-  maxFrameMs?: number
   name?: string
-  debug?: {
-    onRequestUpdate?: (vNode: VNode) => void
-  }
 }
 
 export interface AppContext<T extends Record<string, unknown> = {}> {
