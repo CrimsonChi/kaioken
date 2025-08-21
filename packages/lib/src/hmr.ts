@@ -1,10 +1,9 @@
 import type { Store } from "./store"
-import type { WatchEffect } from "./signals/watch"
 import { $HMR_ACCEPT } from "./constants.js"
 import { __DEV__ } from "./env.js"
 import { traverseApply } from "./utils.js"
 import { requestUpdate } from "./scheduler.js"
-import { Signal } from "./signals/index.js"
+import { Signal, type WatchEffect } from "./signals/index.js"
 import type { AppContext } from "./appContext"
 
 export type HMRAccept<T = {}> = {

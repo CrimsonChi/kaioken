@@ -10,7 +10,7 @@ import {
   FLAG_UPDATE,
   REGEX_UNIT,
 } from "./constants.js"
-import { unwrap } from "./signals/utils.js"
+import { unwrap } from "./signals/index.js"
 import { __DEV__ } from "./env.js"
 import type { AppContext } from "./appContext"
 
