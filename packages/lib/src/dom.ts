@@ -11,13 +11,13 @@ import {
   FLAG_DELETION,
   FLAG_PLACEMENT,
   FLAG_UPDATE,
+  FLAG_STATIC_DOM,
   svgTags,
 } from "./constants.js"
 import { Signal, unwrap } from "./signals/index.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
-import { isPortal } from "./portal.js"
 import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
 import type {
@@ -146,7 +146,6 @@ const vNodeToWrappedFocusEventHandlersMap = new WeakMap<
 >()
 
 function updateDom(vNode: VNode) {
-  if (isPortal(vNode)) return
   const dom = vNode.dom as SomeDom
   const prevProps: Record<string, any> = vNode.prev?.props ?? {}
   const nextProps: Record<string, any> = vNode.props ?? {}
@@ -363,7 +362,7 @@ function hydrateDom(vNode: VNode) {
     })
   }
   vNode.dom = dom
-  if (vNode.type !== "#text") {
+  if (vNode.type !== "#text" && !(vNode.flags & FLAG_STATIC_DOM)) {
     updateDom(vNode)
     return
   }
@@ -571,8 +570,8 @@ function getNextSiblingDom(vNode: VNode, parent: ElementVNode): MaybeDom {
     let sibling = node.sibling
 
     while (sibling) {
-      // Skip unmounted, to-be-placed & portal nodes
-      if (!(sibling.flags & FLAG_PLACEMENT) && !isPortal(sibling)) {
+      // Skip unmounted, to-be-placed & static nodes
+      if (!(sibling.flags & (FLAG_PLACEMENT | FLAG_STATIC_DOM))) {
         // Descend into the child to find host dom
         const dom = findFirstHostDom(sibling)
         if (dom?.isConnected) return dom
@@ -582,7 +581,7 @@ function getNextSiblingDom(vNode: VNode, parent: ElementVNode): MaybeDom {
 
     // Move up to parent — but don't escape portal boundary
     node = node.parent
-    if (!node || isPortal(node) || node === parent) {
+    if (!node || node.flags & FLAG_STATIC_DOM || node === parent) {
       return
     }
   }
@@ -595,7 +594,7 @@ function findFirstHostDom(vNode: VNode): MaybeDom {
 
   while (node) {
     if (node.dom) return node.dom
-    if (isPortal(node)) return // Don't descend into portals
+    if (node.flags & FLAG_STATIC_DOM) return // Don't descend into portals
     node = node.child
   }
   return
@@ -656,7 +655,9 @@ function commitWork(vNode: VNode) {
           currentHostNode = { node: getDomParent(node) }
           hostNodes.push(currentHostNode)
         }
-        commitDom(node as DomVNode, currentHostNode, inheritsPlacement)
+        if (!(node.flags & FLAG_STATIC_DOM)) {
+          commitDom(node as DomVNode, currentHostNode, inheritsPlacement)
+        }
       }
       commitSnapshot(node)
     },
@@ -680,7 +681,6 @@ function commitDom(
   hostNode: HostNode,
   inheritsPlacement: boolean
 ) {
-  if (isPortal(vNode)) return
   if (
     inheritsPlacement ||
     !vNode.dom.isConnected ||
@@ -720,7 +720,7 @@ function commitDeletion(vNode: VNode) {
 
     if (dom) {
       if (ref) setDomRef(ref as Kiru.Ref<SomeDom>, null)
-      if (dom.isConnected && !isPortal(node)) {
+      if (dom.isConnected && !(node.flags & FLAG_STATIC_DOM)) {
         dom.remove()
       }
       delete node.dom

@@ -16,8 +16,8 @@ export function hydrate(
 
   const app = mount(children, container, options)
 
-  hydrationStack.releaseEvents(container)
   renderMode.current = prevRenderMode
+  hydrationStack.releaseEvents(container)
 
   return app
 }

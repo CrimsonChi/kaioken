@@ -1,3 +1,4 @@
+import { FLAG_STATIC_DOM } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
 import { requestUpdate, flushSync } from "./scheduler.js"
@@ -23,21 +24,23 @@ export function mount(
   container: HTMLElement,
   options?: AppContextOptions
 ): AppContext {
+  const rootNode = createElement(container.nodeName.toLowerCase(), {})
   if (__DEV__) {
     if (container.__kiruNode) {
-      throw new Error("container in use")
+      throw new Error(
+        "[kiru]: container in use - call unmount on the previous app first."
+      )
     }
-  }
-  const id = appId++
-  const rootNode = createElement(container.nodeName.toLowerCase(), {})
-  rootNode.dom = container
-  if (__DEV__) {
     container.__kiruNode = rootNode
   }
+  rootNode.dom = container
+  rootNode.flags |= FLAG_STATIC_DOM
 
+  const id = appId++
+  const name = options?.name ?? `App-${id}`
   const appContext: AppContext = {
     id,
-    name: options?.name ?? `App-${id}`,
+    name,
     rootNode,
     render,
     unmount,

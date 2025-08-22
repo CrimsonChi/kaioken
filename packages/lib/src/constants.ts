@@ -13,6 +13,7 @@ export {
   FLAG_PLACEMENT,
   FLAG_DELETION,
   FLAG_HAS_MEMO_ANCESTOR,
+  FLAG_STATIC_DOM,
 }
 
 export { voidElements, svgTags, booleanAttributes }
@@ -32,6 +33,7 @@ const FLAG_UPDATE = 1 << 1
 const FLAG_PLACEMENT = 1 << 2
 const FLAG_DELETION = 1 << 3
 const FLAG_HAS_MEMO_ANCESTOR = 1 << 4
+const FLAG_STATIC_DOM = 1 << 5
 
 const REGEX_UNIT = {
   AMP_G: /&/g,
