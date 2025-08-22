@@ -13,7 +13,7 @@ describe("renderToString", () => {
       )
     }
     const expected = `<div style="display:flex;"><h1 style="color:red;">Hello world</h1></div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
 
     assert.strictEqual(res, expected)
   })
@@ -33,7 +33,7 @@ describe("renderToString", () => {
       return <h1>{ctx}</h1>
     }
     const expected = `<div><h1>test123</h1></div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
     assert.strictEqual(res, expected)
   })
   it("is able to use Signals for text content", () => {
@@ -46,7 +46,7 @@ describe("renderToString", () => {
       )
     }
     const expected = `<div><h1>Hello world!</h1></div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
 
     assert.strictEqual(res, expected)
   })
@@ -60,7 +60,7 @@ describe("renderToString", () => {
       )
     }
     const expected = `<div><h1 class="main-header">Hello world!</h1></div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
 
     assert.strictEqual(res, expected)
   })
@@ -79,7 +79,7 @@ describe("renderToString", () => {
     const UndefinedComponent = () => undefined
     const BooleanComponent = () => true
     const expected = `<div><h1>Hello world!</h1></div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
 
     assert.strictEqual(res, expected)
   })
@@ -93,7 +93,7 @@ describe("renderToString", () => {
       )
     }
     const expected = `<div><input type="checkbox" checked></div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
 
     assert.strictEqual(res, expected)
   })

@@ -9,7 +9,7 @@ describe("innerHTML", () => {
       return <div innerHTML="Hello world!"></div>
     }
     const expected = `<div>Hello world!</div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
     assert.strictEqual(res, expected)
   })
   it("can use a Signal to set the inner content of the tag", () => {
@@ -18,7 +18,7 @@ describe("innerHTML", () => {
       return <div innerHTML={text}></div>
     }
     const expected = `<div>Hello world!</div>`
-    const res = renderToString(App)
+    const res = renderToString(<App />)
     assert.strictEqual(res, expected)
   })
   it("enforces that no children should be provided if specified", () => {
@@ -31,7 +31,7 @@ describe("innerHTML", () => {
     }
 
     assert.throws(() => {
-      renderToString(App)
+      renderToString(<App />)
     })
   })
 })
