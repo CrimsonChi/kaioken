@@ -31,7 +31,6 @@ export function createContext<T>(defaultValue: T): Kiru.Context<T> {
       inject: (prev) => {
         const newProvider = ctx.Provider
         window.__kiru!.apps.forEach((ctx) => {
-          if (!ctx.mounted || !ctx.rootNode) return
           traverseApply(ctx.rootNode, (vNode) => {
             if (vNode.type === prev.Provider) {
               vNode.type = newProvider

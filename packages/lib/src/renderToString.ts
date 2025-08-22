@@ -1,5 +1,4 @@
 import { node, renderMode } from "./globals.js"
-import { createAppContext } from "./appContext.js"
 import { Fragment } from "./element.js"
 import {
   isVNode,
@@ -13,16 +12,11 @@ import { assertValidElementProps } from "./props.js"
 import { HYDRATION_BOUNDARY_MARKER } from "./ssr/hydrationBoundary.js"
 import { __DEV__ } from "./env.js"
 
-export function renderToString<T extends Record<string, unknown>>(
-  appFunc: (props: T) => JSX.Element,
-  appProps = {} as T
-) {
+export function renderToString(element: JSX.Element) {
   const prev = renderMode.current
   renderMode.current = "string"
-  const ctx = createAppContext(appFunc, appProps, {
-    rootType: Fragment,
-  })
-  const res = renderToString_internal(ctx.rootNode, null, 0)
+  const rootNode = Fragment({ children: element })
+  const res = renderToString_internal(rootNode, null, 0)
   renderMode.current = prev
   return res
 }

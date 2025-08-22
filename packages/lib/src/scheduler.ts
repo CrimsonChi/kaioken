@@ -31,7 +31,7 @@ let appCtx: AppContext | null
 let nextUnitOfWork: VNode | null = null
 let treesInProgress: VNode[] = []
 let currentTreeIndex = 0
-let isRunning = false
+let isRunningOrQueued = false
 let nextIdleEffects: (() => void)[] = []
 let deletions: VNode[] = []
 let isImmediateEffectsMode = false
@@ -41,20 +41,27 @@ let consecutiveDirtyCount = 0
 let pendingContextChanges = new Set<ContextProviderNode<any>>()
 let preEffects: Array<Function> = []
 let postEffects: Array<Function> = []
+let animationFrameHandle = -1
 
 /**
- * Runs a function after any existing work has been completed, or if the scheduler is already idle.
+ * Runs a function after any existing work has been completed,
+ * or immediately if the scheduler is already idle.
  */
-export function nextIdle(fn: () => void, wakeUpIfIdle = true) {
-  nextIdleEffects.push(fn)
-  if (wakeUpIfIdle) wake()
+export function nextIdle(fn: () => void) {
+  if (isRunningOrQueued) {
+    nextIdleEffects.push(fn)
+    return
+  }
+  fn()
 }
 
 /**
  * Syncronously flushes any pending work.
  */
 export function flushSync() {
-  workLoop()
+  if (!isRunningOrQueued) return
+  window.cancelAnimationFrame(animationFrameHandle)
+  doWork()
 }
 
 /**
@@ -65,33 +72,22 @@ export function requestUpdate(vNode: VNode): void {
   if (renderMode.current === "hydrate") {
     return nextIdle(() => {
       vNode.flags & FLAG_DELETION || queueUpdate(vNode)
-    }, false)
+    })
   }
   queueUpdate(vNode)
 }
 
-export function requestDelete(vNode: VNode): void {
-  if (vNode.flags & FLAG_DELETION) return
-  if (renderMode.current === "hydrate") {
-    return nextIdle(() => {
-      vNode.flags & FLAG_DELETION || queueDelete(vNode)
-    }, false)
+function queueBeginWork() {
+  if (isRunningOrQueued) return
+  isRunningOrQueued = true
+  animationFrameHandle = window.requestAnimationFrame(doWork)
+}
+
+function onWorkFinished() {
+  isRunningOrQueued = false
+  while (nextIdleEffects.length) {
+    nextIdleEffects.shift()!()
   }
-  queueDelete(vNode)
-}
-
-function queueWorkLoop() {
-  queueMicrotask(workLoop)
-}
-
-function wake() {
-  if (isRunning) return
-  isRunning = true
-  queueWorkLoop()
-}
-
-function sleep() {
-  isRunning = false
 }
 
 function queueUpdate(vNode: VNode) {
@@ -117,7 +113,7 @@ function queueUpdate(vNode: VNode) {
   if (nextUnitOfWork === null) {
     treesInProgress.push(vNode)
     nextUnitOfWork = vNode
-    return wake()
+    return queueBeginWork()
   }
 
   for (let i = 0; i < treesInProgress.length; i++) {
@@ -202,7 +198,7 @@ function queueDelete(vNode: VNode) {
   deletions.push(vNode)
 }
 
-function workLoop(): void {
+function doWork(): void {
   if (__DEV__) {
     const n = nextUnitOfWork ?? deletions[0] ?? treesInProgress[0]
     if (n) {
@@ -220,55 +216,40 @@ function workLoop(): void {
       queueBlockedContextDependencyRoots()
   }
 
-  if (!nextUnitOfWork && (deletions.length || treesInProgress.length)) {
-    while (deletions.length) {
-      commitDeletion(deletions.shift()!)
-    }
-    const workRoots = [...treesInProgress]
-    treesInProgress.length = 0
-    currentTreeIndex = 0
-    for (const root of workRoots) {
-      commitWork(root)
-    }
+  while (deletions.length) {
+    commitDeletion(deletions.shift()!)
+  }
+  const workRoots = [...treesInProgress]
+  treesInProgress.length = 0
+  currentTreeIndex = 0
+  for (const root of workRoots) {
+    commitWork(root)
+  }
 
-    isImmediateEffectsMode = true
-    flushEffects(preEffects)
-    isImmediateEffectsMode = false
+  isImmediateEffectsMode = true
+  flushEffects(preEffects)
+  isImmediateEffectsMode = false
 
-    if (immediateEffectDirtiedRender) {
-      checkForTooManyConsecutiveDirtyRenders()
-      flushEffects(postEffects)
-      immediateEffectDirtiedRender = false
-      consecutiveDirtyCount++
-      if (__DEV__) {
-        window.__kiru?.profilingContext?.endTick(appCtx!)
-        window.__kiru?.profilingContext?.emit("updateDirtied", appCtx!)
-      }
-      return flushSync()
-    }
-    consecutiveDirtyCount = 0
-
+  if (immediateEffectDirtiedRender) {
+    checkForTooManyConsecutiveDirtyRenders()
     flushEffects(postEffects)
+    immediateEffectDirtiedRender = false
+    consecutiveDirtyCount++
     if (__DEV__) {
-      window.__kiru!.emit("update", appCtx!)
-      window.__kiru?.profilingContext?.emit("update", appCtx!)
+      window.__kiru?.profilingContext?.endTick(appCtx!)
+      window.__kiru?.profilingContext?.emit("updateDirtied", appCtx!)
     }
+    return flushSync()
   }
+  consecutiveDirtyCount = 0
 
-  if (!nextUnitOfWork) {
-    sleep()
-    while (nextIdleEffects.length) {
-      nextIdleEffects.shift()!()
-    }
-    if (__DEV__) {
-      if (appCtx) {
-        window.__kiru?.profilingContext?.endTick(appCtx)
-      }
-    }
-    return
+  onWorkFinished()
+  flushEffects(postEffects)
+  if (__DEV__) {
+    window.__kiru!.emit("update", appCtx!)
+    window.__kiru?.profilingContext?.emit("update", appCtx!)
+    window.__kiru?.profilingContext?.endTick(appCtx!)
   }
-
-  queueWorkLoop()
 }
 
 function queueBlockedContextDependencyRoots(): VNode | null {

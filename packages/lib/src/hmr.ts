@@ -118,7 +118,6 @@ export function createHMRContext() {
       }
       if (oldEntry.type === "component" && newEntry.type === "component") {
         window.__kiru!.apps.forEach((ctx) => {
-          if (!ctx.mounted || !ctx.rootNode) return
           traverseApply(ctx.rootNode, (vNode) => {
             if (vNode.type === oldEntry.value) {
               vNode.type = newEntry.value as any
