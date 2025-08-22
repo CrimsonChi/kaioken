@@ -36,7 +36,7 @@ export function SelectedNodeView({
   }, [])
 
   const refresh = () => {
-    if (!selectedNode || !selectedApp?.mounted) return
+    if (!selectedNode) return
     requestUpdate(selectedNode)
   }
 
@@ -166,7 +166,7 @@ function HookTreeDisplay({
   const data = typeof devtools?.get === "function" ? devtools.get() : rest
 
   const handleChange = (keys: string[], value: unknown) => {
-    if (!selectedApp?.mounted || !devtools?.set || !devtools?.get) return
+    if (!selectedApp || !devtools?.set || !devtools?.get) return
     const data = devtools.get()
     applyObjectChangeFromKeys(data, keys, value)
     devtools.set(data)

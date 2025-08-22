@@ -7,7 +7,7 @@ import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
 import { toggleElementToVnode } from "./store"
-import { broadcastChannel, useEffectDeep } from "devtools-shared"
+import { broadcastChannel } from "devtools-shared"
 
 const handleToggleInspect = () => {
   toggleElementToVnode.value = !toggleElementToVnode.value
@@ -77,14 +77,8 @@ function useLerpedVec2(
 export default function App() {
   const toggled = useSignal(false)
   const handleOpen = useDevTools()
-  const {
-    anchorCoords,
-    anchorRef,
-    viewPortRef,
-    startMouse,
-    snapSide,
-    updateAnchorPos,
-  } = useAnchorPos()
+  const { anchorCoords, anchorRef, viewPortRef, startMouse, snapSide } =
+    useAnchorPos()
   const isHorizontalSnap =
     snapSide.value === "left" || snapSide.value === "right"
   const isMounted = useRef(false)
@@ -92,6 +86,7 @@ export default function App() {
   const smoothedCoords = useLerpedVec2(anchorCoords.value, {
     damping: 0.4,
   })
+  kiru.useWatch([anchorCoords], smoothedCoords.set)
 
   useLayoutEffect(() => {
     if (isMounted.current === false) {
@@ -102,10 +97,6 @@ export default function App() {
 
     isMounted.current = true
   }, [])
-
-  useEffectDeep(() => {
-    smoothedCoords.set(anchorCoords.value)
-  }, [anchorCoords.value])
 
   return (
     <>
@@ -164,16 +155,7 @@ export default function App() {
             "bg-crimson rounded-full p-1" +
             (startMouse.value ? " pointer-events-none" : "")
           }
-          onclick={async () => {
-            toggled.value = !toggled.value
-            kiru.flushSync()
-            // wait for frame after next
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                updateAnchorPos()
-              })
-            })
-          }}
+          onclick={() => (toggled.value = !toggled.value)}
           tabIndex={-1}
         >
           <Flame />

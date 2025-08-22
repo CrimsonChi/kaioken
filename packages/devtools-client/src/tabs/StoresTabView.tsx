@@ -133,10 +133,9 @@ function StoreSubscribers({ store }: { store: Store<any, any> }) {
 
   return (
     <>
-      {apps.map((app) => {
-        if (!app.mounted || !app.rootNode) return null
-        return <StoreSubscriberAppTree store={store} app={app} />
-      })}
+      {apps.map((app) => (
+        <StoreSubscriberAppTree store={store} app={app} />
+      ))}
     </>
   )
 }
