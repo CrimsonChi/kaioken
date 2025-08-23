@@ -14,7 +14,8 @@ import {
   FLAG_STATIC_DOM,
   svgTags,
 } from "./constants.js"
-import { Signal, unwrap } from "./signals/index.js"
+import { Signal } from "./signals/base.js"
+import { unwrap } from "./signals/utils.js"
 import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"

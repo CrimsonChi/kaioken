@@ -1,11 +1,11 @@
 import { __DEV__ } from "../env.js"
-import { Signal } from "./index.js"
-import { effectQueue, signalSubsMap } from "./globals.js"
 import { $HMR_ACCEPT } from "../constants.js"
-import type { HMRAccept } from "../hmr.js"
 import { useHook } from "../hooks/utils.js"
-import { executeWithTracking } from "./effect.js"
 import { latest } from "../utils.js"
+import { effectQueue, signalSubsMap } from "./globals.js"
+import { executeWithTracking } from "./effect.js"
+import { Signal } from "./base.js"
+import type { HMRAccept } from "../hmr.js"
 
 export class ComputedSignal<T> extends Signal<T> {
   protected $getter: (prev?: T) => T

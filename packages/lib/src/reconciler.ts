@@ -5,7 +5,7 @@ import {
   FLAG_UPDATE,
 } from "./constants.js"
 import { getVNodeAppContext, isVNode, latest } from "./utils.js"
-import { Signal } from "./signals/index.js"
+import { Signal } from "./signals/base.js"
 import { __DEV__ } from "./env.js"
 import { createElement, Fragment } from "./element.js"
 import type { AppContext } from "./appContext.js"

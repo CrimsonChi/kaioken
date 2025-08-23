@@ -1,4 +1,4 @@
-import { Signal } from "./index.js"
+import { Signal } from "./base.js"
 import { effectQueue } from "./globals.js"
 
 export function unwrap<T>(value: T | Signal<T>, reactive = false): T {

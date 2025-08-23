@@ -1,6 +1,6 @@
 import { __DEV__ } from "./env.js"
 import { useHook } from "./hooks/utils.js"
-import { Signal } from "./signals/index.js"
+import { Signal } from "./signals/base.js"
 import {
   noop,
   deepCompare,

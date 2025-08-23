@@ -1,4 +1,4 @@
-import type { Signal } from "./index.js"
+import type { Signal } from "./base.js"
 import type { SignalValues } from "./types.js"
 
 type InferArraySignalItemType<T extends Signal<any[]>> = T extends Signal<

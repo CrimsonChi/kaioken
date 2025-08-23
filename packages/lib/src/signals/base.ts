@@ -1,13 +1,13 @@
+import { latest, safeStringify, sideEffectsEnabled } from "../utils.js"
 import { $HMR_ACCEPT, $SIGNAL } from "../constants.js"
 import { __DEV__ } from "../env.js"
-import type { HMRAccept } from "../hmr.js"
-import { latest, safeStringify, sideEffectsEnabled } from "../utils.js"
-import { tracking, signalSubsMap } from "./globals.js"
-import { type SignalSubscriber, ReadonlySignal } from "./types.js"
 import { node } from "../globals.js"
 import { useHook } from "../hooks/utils.js"
 import { generateRandomID } from "../generateId.js"
 import { requestUpdate } from "../scheduler.js"
+import { tracking, signalSubsMap } from "./globals.js"
+import type { SignalSubscriber, ReadonlySignal } from "./types.js"
+import type { HMRAccept } from "../hmr.js"
 
 export class Signal<T> {
   [$SIGNAL] = true;

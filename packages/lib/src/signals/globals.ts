@@ -1,4 +1,4 @@
-import type { Signal } from "./index.js"
+import type { Signal } from "./base.js"
 import type { SignalSubscriber } from "./types.js"
 
 export const tracking = {
