@@ -338,7 +338,7 @@ function placeChild(
   const prev = child.prev
   if (prev !== null) {
     const oldIndex = prev.index
-    if (oldIndex !== lastPlacedIndex) {
+    if (oldIndex < lastPlacedIndex) {
       child.flags |= FLAG_PLACEMENT
       return lastPlacedIndex
     } else {
