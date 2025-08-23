@@ -8,6 +8,7 @@ import {
   FLAG_HAS_MEMO_ANCESTOR,
   FLAG_PLACEMENT,
   FLAG_UPDATE,
+  FLAG_MEMO,
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
@@ -162,8 +163,9 @@ function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
 
   while (node && node !== root && node.flags & FLAG_HAS_MEMO_ANCESTOR) {
     const parent = node.parent
+    if (!parent) return false
     if (
-      parent?.isMemoized &&
+      parent.flags & FLAG_MEMO &&
       parent.prev?.memoizedProps &&
       parent.arePropsEqual!(parent.prev.memoizedProps, parent.props)
     ) {

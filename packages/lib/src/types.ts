@@ -194,7 +194,6 @@ declare global {
       effects?: Array<Function>
       immediateEffects?: Array<Function>
       memoizedProps?: Record<string, any>
-      isMemoized?: boolean
       arePropsEqual?: (
         prev: Record<string, any>,
         next: Record<string, any>

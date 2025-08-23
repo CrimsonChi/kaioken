@@ -1,6 +1,7 @@
 import {
   $FRAGMENT,
   FLAG_HAS_MEMO_ANCESTOR,
+  FLAG_MEMO,
   FLAG_PLACEMENT,
   FLAG_UPDATE,
 } from "./constants.js"
@@ -337,7 +338,7 @@ function placeChild(
   const prev = child.prev
   if (prev !== null) {
     const oldIndex = prev.index
-    if (oldIndex < lastPlacedIndex) {
+    if (oldIndex !== lastPlacedIndex) {
       child.flags |= FLAG_PLACEMENT
       return lastPlacedIndex
     } else {
@@ -459,7 +460,7 @@ function propsChanged(oldProps: VNode["props"], newProps: VNode["props"]) {
 function setParent(child: VNode, parent: VNode) {
   child.parent = parent
   child.depth = parent.depth + 1
-  if (parent.isMemoized || parent.flags & FLAG_HAS_MEMO_ANCESTOR) {
+  if (parent.flags & (FLAG_MEMO | FLAG_HAS_MEMO_ANCESTOR)) {
     child.flags |= FLAG_HAS_MEMO_ANCESTOR
   }
 }

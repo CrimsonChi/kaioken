@@ -1,4 +1,4 @@
-import { $FRAGMENT, $MEMO } from "./constants.js"
+import { $FRAGMENT, $MEMO, FLAG_MEMO } from "./constants.js"
 import { isMemoFn } from "./memo.js"
 import { isValidElementKeyProp, isValidElementRefProp } from "./props.js"
 
@@ -23,7 +23,7 @@ export function createElement<T extends Kiru.VNode["type"]>(
     deletions: null,
   }
   if (isMemoFn(type)) {
-    node.isMemoized = true
+    node.flags |= FLAG_MEMO
     node.arePropsEqual = type[$MEMO].arePropsEqual
   }
 

@@ -7,6 +7,7 @@ import {
   $CONTEXT_PROVIDER,
   CONSECUTIVE_DIRTY_LIMIT,
   FLAG_DELETION,
+  FLAG_MEMO,
 } from "./constants.js"
 import { commitDeletion, commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
@@ -363,8 +364,8 @@ function performUnitOfWork(vNode: VNode): VNode | void {
 }
 
 function updateFunctionComponent(vNode: FunctionVNode) {
-  const { type, props, subs, prev, isMemoized } = vNode
-  if (isMemoized) {
+  const { type, props, subs, prev, flags } = vNode
+  if (flags & FLAG_MEMO) {
     vNode.memoizedProps = props
     if (
       prev?.memoizedProps &&
