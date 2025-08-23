@@ -1,6 +1,7 @@
 import { node } from "../globals.js"
 import { sideEffectsEnabled } from "../utils.js"
 import { tracking, effectQueue } from "./globals.js"
+import { tick } from "./utils.js"
 import type { Signal } from "./base.js"
 import type { SignalValues } from "./types.js"
 
@@ -42,8 +43,8 @@ export function executeWithTracking<T, Deps extends readonly Signal<unknown>[]>(
     }
 
     const effect = () => {
-      if (!effectQueue.has(id)) {
-        queueMicrotask(() => effectQueue.get(id)?.())
+      if (!effectQueue.size) {
+        queueMicrotask(tick)
       }
       effectQueue.set(id, onDepChanged)
     }
