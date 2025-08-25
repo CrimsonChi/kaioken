@@ -7,6 +7,7 @@ import {
   $CONTEXT_PROVIDER,
   CONSECUTIVE_DIRTY_LIMIT,
   FLAG_DELETION,
+  FLAG_DIRTY,
   FLAG_MEMO,
   FLAG_NOOP,
 } from "./constants.js"
@@ -18,10 +19,8 @@ import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
 import {
-  willMemoBlockUpdate,
   latest,
   traverseApply,
-  vNodeContains,
   isExoticType,
   getVNodeAppContext,
 } from "./utils.js"
@@ -30,9 +29,7 @@ import type { AppContext } from "./appContext"
 type VNode = Kiru.VNode
 
 let appCtx: AppContext | null
-let nextUnitOfWork: VNode | null = null
 let treesInProgress: VNode[] = []
-let currentTreeIndex = 0
 let isRunningOrQueued = false
 let nextIdleEffects: (() => void)[] = []
 let deletions: VNode[] = []
@@ -40,7 +37,6 @@ let isImmediateEffectsMode = false
 let immediateEffectDirtiedRender = false
 let isRenderDirtied = false
 let consecutiveDirtyCount = 0
-let pendingContextChanges = new Set<ContextProviderNode<any>>()
 let preEffects: Array<Function> = []
 let postEffects: Array<Function> = []
 let animationFrameHandle = -1
@@ -107,91 +103,14 @@ function queueUpdate(vNode: VNode) {
     return
   }
 
-  // If it's already the next unit of work, no need to queue again
-  if (nextUnitOfWork === vNode) {
-    return
-  }
+  if (vNode.flags & (FLAG_DIRTY | FLAG_DELETION)) return
+  vNode.flags |= FLAG_DIRTY
 
-  if (nextUnitOfWork === null) {
+  if (!treesInProgress.length) {
     treesInProgress.push(vNode)
-    nextUnitOfWork = vNode
     return queueBeginWork()
   }
 
-  for (let i = 0; i < treesInProgress.length; i++) {
-    const tree = treesInProgress[i]
-    if (tree !== vNode) continue
-    if (i < currentTreeIndex) {
-      // It was already processed; requeue it to the end
-      currentTreeIndex--
-      treesInProgress.splice(i, 1)
-      treesInProgress.push(tree)
-    }
-    return
-  }
-
-  // Check if this node is a descendant of any trees already queued
-  for (let i = 0; i < treesInProgress.length; i++) {
-    const tree = treesInProgress[i]
-    if (!vNodeContains(tree, vNode)) continue
-
-    if (i === currentTreeIndex) {
-      // It's a child of the currently worked-on tree
-      // If it's deeper within the same tree, we can skip
-      if (vNodeContains(nextUnitOfWork, vNode)) return
-      // If it's not in the current work subtree, move back up to it
-      nextUnitOfWork = vNode
-    } else if (i < currentTreeIndex) {
-      // It's a descendant of an already processed tree; treat as a new update
-      treesInProgress.push(vNode)
-    }
-
-    return
-  }
-
-  // Check if this node contains any of the currently queued trees
-  let didReplaceTree = false
-  let shouldQueueAtEnd = false
-  for (let i = 0; i < treesInProgress.length; ) {
-    const tree = treesInProgress[i]
-    if (!vNodeContains(vNode, tree)) {
-      i++
-      continue
-    }
-    // This node contains another update root, replace it
-
-    if (i === currentTreeIndex) {
-      if (!didReplaceTree) {
-        treesInProgress.splice(i, 1, vNode)
-        nextUnitOfWork = vNode
-        didReplaceTree = true
-        i++ // advance past replaced node
-      } else {
-        treesInProgress.splice(i, 1)
-        // no increment
-      }
-    } else if (i < currentTreeIndex) {
-      currentTreeIndex--
-      treesInProgress.splice(i, 1)
-      if (!didReplaceTree) {
-        shouldQueueAtEnd = true
-        didReplaceTree = true
-      }
-      // no increment
-    } else {
-      // i > currentTreeIndex
-      treesInProgress.splice(i, 1)
-      if (!didReplaceTree) {
-        shouldQueueAtEnd = true
-        didReplaceTree = true
-      }
-      // no increment
-    }
-  }
-  if (!shouldQueueAtEnd && didReplaceTree) {
-    return
-  }
-  // If it doesn't overlap with any queued tree, queue as new independent update root
   treesInProgress.push(vNode)
 }
 
@@ -200,9 +119,13 @@ function queueDelete(vNode: VNode) {
   deletions.push(vNode)
 }
 
+const depthSort = (a: VNode, b: VNode) => b.depth - a.depth
+
+let currentWorkRoot: VNode | null = null
+
 function doWork(): void {
   if (__DEV__) {
-    const n = nextUnitOfWork ?? deletions[0] ?? treesInProgress[0]
+    const n = deletions[0] ?? treesInProgress[0]
     if (n) {
       appCtx = getVNodeAppContext(n)!
       window.__kiru?.profilingContext?.beginTick(appCtx)
@@ -211,21 +134,29 @@ function doWork(): void {
     }
   }
 
-  while (nextUnitOfWork) {
-    nextUnitOfWork =
-      performUnitOfWork(nextUnitOfWork) ??
-      treesInProgress[++currentTreeIndex] ??
-      queueBlockedContextDependencyRoots()
-  }
+  let len = 1
 
-  while (deletions.length) {
-    commitDeletion(deletions.shift()!)
-  }
-  const workRoots = [...treesInProgress]
-  treesInProgress.length = 0
-  currentTreeIndex = 0
-  for (const root of workRoots) {
-    commitWork(root)
+  while (treesInProgress.length) {
+    if (treesInProgress.length > len) {
+      treesInProgress.sort(depthSort)
+    }
+
+    currentWorkRoot = treesInProgress.shift()!
+    len = treesInProgress.length
+
+    const flags = currentWorkRoot.flags
+    if (flags & FLAG_DELETION) continue
+    if (flags & FLAG_DIRTY) {
+      let n: VNode | void = currentWorkRoot
+      while ((n = performUnitOfWork(n))) {}
+
+      while (deletions.length) {
+        commitDeletion(deletions.pop()!)
+      }
+      commitWork(currentWorkRoot)
+
+      currentWorkRoot.flags &= ~FLAG_DIRTY
+    }
   }
 
   isImmediateEffectsMode = true
@@ -254,39 +185,6 @@ function doWork(): void {
   }
 }
 
-function queueBlockedContextDependencyRoots(): VNode | null {
-  if (pendingContextChanges.size === 0) return null
-
-  // TODO: it's possible that a 'job' created by this process is
-  // blocked by a parent memo after a queueUpdate -> replaceTree action.
-  // To prevent this, we might need to add these to a distinct queue.
-  const jobRoots: VNode[] = []
-  pendingContextChanges.forEach((provider) => {
-    provider.props.dependents.forEach((dep) => {
-      if (!willMemoBlockUpdate(provider, dep)) return
-      for (let i = 0; i < jobRoots.length; i++) {
-        const root = jobRoots[i]
-        if (vNodeContains(root, dep)) {
-          if (willMemoBlockUpdate(root, dep)) {
-            // root is a parent of dep and there's a memo between them, prevent consolidation and queue as new root
-            break
-          }
-          return
-        }
-        if (vNodeContains(dep, root)) {
-          jobRoots[i] = dep
-          return
-        }
-      }
-      jobRoots.push(dep)
-    })
-  })
-
-  pendingContextChanges.clear()
-  treesInProgress.push(...jobRoots)
-  return jobRoots[0] ?? null
-}
-
 function performUnitOfWork(vNode: VNode): VNode | void {
   let renderChild = true
   try {
@@ -294,15 +192,15 @@ function performUnitOfWork(vNode: VNode): VNode | void {
     if (typeof vNode.type === "string") {
       updateHostComponent(vNode as DomVNode)
     } else if (isExoticType(vNode.type)) {
-      if (vNode.type === $CONTEXT_PROVIDER) {
+      if (vNode?.type === $CONTEXT_PROVIDER) {
         const asProvider = vNode as ContextProviderNode<any>
-        const { dependents, value } = asProvider.props
-        if (
-          dependents.size &&
-          asProvider.prev &&
-          asProvider.prev.props.value !== value
-        ) {
-          pendingContextChanges.add(asProvider)
+        const {
+          props: { dependents, value },
+          prev,
+        } = asProvider
+
+        if (dependents.size && prev && prev.props.value !== value) {
+          dependents.forEach(queueUpdate)
         }
       }
       vNode.child = reconcileChildren(vNode, props.children)
@@ -352,7 +250,7 @@ function performUnitOfWork(vNode: VNode): VNode | void {
       nextNode.effects = undefined
     }
 
-    if (nextNode === treesInProgress[currentTreeIndex]) return
+    if (nextNode === currentWorkRoot) return
     if (nextNode.sibling) {
       return nextNode.sibling
     }
@@ -383,6 +281,7 @@ function updateFunctionComponent(vNode: FunctionVNode) {
     let newChild
     let renderTryCount = 0
     do {
+      vNode.flags &= ~FLAG_DIRTY
       isRenderDirtied = false
       hookIndex.current = 0
 

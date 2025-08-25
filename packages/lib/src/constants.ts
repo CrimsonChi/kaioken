@@ -16,6 +16,7 @@ export {
   FLAG_STATIC_DOM,
   FLAG_MEMO,
   FLAG_NOOP,
+  FLAG_DIRTY,
 }
 
 export { voidElements, svgTags, booleanAttributes }
@@ -38,6 +39,7 @@ const FLAG_HAS_MEMO_ANCESTOR = 1 << 4
 const FLAG_STATIC_DOM = 1 << 5
 const FLAG_MEMO = 1 << 6
 const FLAG_NOOP = 1 << 7
+const FLAG_DIRTY = 1 << 8
 
 const REGEX_UNIT = {
   AMP_G: /&/g,

@@ -32,7 +32,6 @@ export function reconcileChildren(parent: VNode, children: unknown) {
 }
 
 function reconcileSingleChild(parent: VNode, child: unknown) {
-  const deletions: VNode[] = (parent.deletions = [])
   const oldChild = parent.child
   if (oldChild === null) {
     return createChild(parent, child)
@@ -60,13 +59,12 @@ function reconcileSingleChild(parent: VNode, child: unknown) {
       }
       placeChild(newNode, 0, 0)
     }
-    existingChildren.forEach((child) => deletions.push(child))
+    existingChildren.forEach((child) => deleteChild(parent, child))
     return newNode
   }
 }
 
 function reconcileChildrenArray(parent: VNode, children: unknown[]) {
-  const deletions: VNode[] = (parent.deletions = [])
   let resultingChild: VNode | null = null
   let prevNewChild: VNode | null = null
 
@@ -90,7 +88,7 @@ function reconcileChildrenArray(parent: VNode, children: unknown[]) {
       break
     }
     if (oldChild && !newChild.prev) {
-      deletions.push(oldChild)
+      deleteChild(parent, oldChild)
     }
     lastPlacedIndex = placeChild(newChild, lastPlacedIndex, newIdx)
     if (prevNewChild === null) {
@@ -151,7 +149,7 @@ function reconcileChildrenArray(parent: VNode, children: unknown[]) {
     }
   }
 
-  existingChildren.forEach((child) => deletions.push(child))
+  existingChildren.forEach((child) => deleteChild(parent, child))
   return resultingChild
 }
 
@@ -490,9 +488,17 @@ function mapRemainingChildren(child: VNode | null) {
   return map
 }
 
+function deleteChild(parent: VNode, child: VNode) {
+  if (parent.deletions === null) {
+    parent.deletions = [child]
+  } else {
+    parent.deletions.push(child)
+  }
+}
+
 function deleteRemainingChildren(parent: VNode, child: VNode | null) {
   while (child) {
-    parent.deletions!.push(child)
+    deleteChild(parent, child)
     child = child.sibling
   }
 }
