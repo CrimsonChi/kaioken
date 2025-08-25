@@ -8,7 +8,7 @@ import {
   FLAG_HAS_MEMO_ANCESTOR,
   FLAG_PLACEMENT,
   FLAG_UPDATE,
-  FLAG_MEMO,
+  FLAG_NOOP,
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
@@ -30,7 +30,6 @@ export {
   getVNodeAppContext,
   commitSnapshot,
   traverseApply,
-  postOrderApply,
   findParent,
   propToHtmlAttr,
   propValueToHtmlAttrValue,
@@ -164,11 +163,7 @@ function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
   while (node && node !== root && node.flags & FLAG_HAS_MEMO_ANCESTOR) {
     const parent = node.parent
     if (!parent) return false
-    if (
-      parent.flags & FLAG_MEMO &&
-      parent.prev?.memoizedProps &&
-      parent.arePropsEqual!(parent.prev.memoizedProps, parent.props)
-    ) {
+    if (parent.flags & FLAG_NOOP) {
       return true
     }
 
@@ -188,49 +183,6 @@ function traverseApply(vNode: VNode, func: (node: VNode) => void): void {
     applyToSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
-}
-
-function postOrderApply(
-  tree: VNode,
-  callbacks: {
-    /** called upon traversing to the next parent, and on the root */
-    onAscent: (vNode: VNode) => void
-    /** called before traversing to the next parent */
-    onBeforeAscent?: (vNode: VNode) => void
-    /** called before traversing to the next child */
-    onDescent?: (vNode: VNode) => void
-  }
-): void {
-  const root = tree
-  const rootChild = root.child
-  if (!rootChild) {
-    callbacks.onAscent(root)
-    return
-  }
-
-  callbacks.onDescent?.(root)
-  let branch = rootChild
-  while (branch) {
-    let c = branch
-    while (c) {
-      if (!c.child) break
-      callbacks.onDescent?.(c)
-      c = c.child
-    }
-
-    while (c && c !== root) {
-      callbacks.onAscent(c)
-      if (c.sibling) {
-        branch = c.sibling
-        break
-      }
-      callbacks.onBeforeAscent?.(c)
-      c = c.parent!
-    }
-    if (c === root) break
-  }
-
-  callbacks.onAscent(root)
 }
 
 function findParent(vNode: Kiru.VNode, predicate: (n: Kiru.VNode) => boolean) {

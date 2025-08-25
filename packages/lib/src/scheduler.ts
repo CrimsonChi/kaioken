@@ -8,6 +8,7 @@ import {
   CONSECUTIVE_DIRTY_LIMIT,
   FLAG_DELETION,
   FLAG_MEMO,
+  FLAG_NOOP,
 } from "./constants.js"
 import { commitDeletion, commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
@@ -372,8 +373,10 @@ function updateFunctionComponent(vNode: FunctionVNode) {
       vNode.arePropsEqual!(prev.memoizedProps, props) &&
       !vNode.hmrUpdated
     ) {
+      vNode.flags |= FLAG_NOOP
       return false
     }
+    vNode.flags &= ~FLAG_NOOP
   }
   try {
     node.current = vNode
