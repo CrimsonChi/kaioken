@@ -5,10 +5,8 @@ import {
   $HYDRATION_BOUNDARY,
   booleanAttributes,
   FLAG_DELETION,
-  FLAG_HAS_MEMO_ANCESTOR,
   FLAG_PLACEMENT,
   FLAG_UPDATE,
-  FLAG_NOOP,
   REGEX_UNIT,
 } from "./constants.js"
 import { unwrap } from "./signals/utils.js"
@@ -25,7 +23,6 @@ export {
   isExoticType,
   isVNodeDeleted,
   vNodeContains,
-  willMemoBlockUpdate,
   getCurrentVNode,
   getVNodeAppContext,
   commitSnapshot,
@@ -154,22 +151,6 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
     checkSiblings && n.sibling && stack.push(n.sibling)
     checkSiblings = true
   }
-  return false
-}
-
-function willMemoBlockUpdate(root: VNode, target: VNode): boolean {
-  let node: VNode | null = target
-
-  while (node && node !== root && node.flags & FLAG_HAS_MEMO_ANCESTOR) {
-    const parent = node.parent
-    if (!parent) return false
-    if (parent.flags & FLAG_NOOP) {
-      return true
-    }
-
-    node = node.parent
-  }
-
   return false
 }
 

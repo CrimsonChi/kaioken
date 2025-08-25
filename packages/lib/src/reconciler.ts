@@ -1,10 +1,4 @@
-import {
-  $FRAGMENT,
-  FLAG_HAS_MEMO_ANCESTOR,
-  FLAG_MEMO,
-  FLAG_PLACEMENT,
-  FLAG_UPDATE,
-} from "./constants.js"
+import { $FRAGMENT, FLAG_PLACEMENT, FLAG_UPDATE } from "./constants.js"
 import { getVNodeAppContext, isVNode, latest } from "./utils.js"
 import { Signal } from "./signals/base.js"
 import { __DEV__ } from "./env.js"
@@ -458,9 +452,6 @@ function propsChanged(oldProps: VNode["props"], newProps: VNode["props"]) {
 function setParent(child: VNode, parent: VNode) {
   child.parent = parent
   child.depth = parent.depth + 1
-  if (parent.flags & (FLAG_MEMO | FLAG_HAS_MEMO_ANCESTOR)) {
-    child.flags |= FLAG_HAS_MEMO_ANCESTOR
-  }
 }
 
 function dev_emitUpdateNode() {

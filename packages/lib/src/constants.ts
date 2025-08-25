@@ -12,7 +12,6 @@ export {
   FLAG_UPDATE,
   FLAG_PLACEMENT,
   FLAG_DELETION,
-  FLAG_HAS_MEMO_ANCESTOR,
   FLAG_STATIC_DOM,
   FLAG_MEMO,
   FLAG_NOOP,
@@ -35,11 +34,10 @@ const CONSECUTIVE_DIRTY_LIMIT = 50
 const FLAG_UPDATE = 1 << 1
 const FLAG_PLACEMENT = 1 << 2
 const FLAG_DELETION = 1 << 3
-const FLAG_HAS_MEMO_ANCESTOR = 1 << 4
-const FLAG_STATIC_DOM = 1 << 5
-const FLAG_MEMO = 1 << 6
-const FLAG_NOOP = 1 << 7
-const FLAG_DIRTY = 1 << 8
+const FLAG_STATIC_DOM = 1 << 4
+const FLAG_MEMO = 1 << 5
+const FLAG_NOOP = 1 << 6
+const FLAG_DIRTY = 1 << 7
 
 const REGEX_UNIT = {
   AMP_G: /&/g,
