@@ -112,6 +112,8 @@ declare global {
     }
   }
   namespace Kiru {
+    interface CustomEvents {}
+
     type ProviderProps<T> = {
       value: T
       children?: JSX.Children | ((value: T) => JSX.Element)

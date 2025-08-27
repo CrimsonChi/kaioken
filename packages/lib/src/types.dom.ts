@@ -398,7 +398,13 @@ declare global {
     type ToggleEventHandler<T = Element> = EventHandler<ToggleEvent<T>>
     type TransitionEventHandler<T = Element> = EventHandler<TransitionEvent<T>>
 
-    type EventAttributes<T = Element> = {
+    type CustomEventAttributes = {
+      [Key in keyof Kiru.CustomEvents as `on:${Key}`]?: (
+        event: CustomEvent<Kiru.CustomEvents[Key]>
+      ) => void
+    }
+
+    type EventAttributes<T = Element> = CustomEventAttributes & {
       // Clipboard Events
       oncopy?: ClipboardEventHandler<T> | undefined
       oncut?: ClipboardEventHandler<T> | undefined

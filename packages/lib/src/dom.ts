@@ -12,6 +12,7 @@ import {
   FLAG_STATIC_DOM,
   svgTags,
   FLAG_NOOP,
+  EVENT_PREFIX_REGEX,
 } from "./constants.js"
 import { Signal } from "./signals/base.js"
 import { unwrap } from "./signals/utils.js"
@@ -169,7 +170,8 @@ function updateDom(vNode: VNode) {
 
     if (propFilters.isEvent(key)) {
       if (prev !== next || renderMode.current === "hydrate") {
-        const evtName = key.toLowerCase().substring(2)
+        const evtName = key.replace(EVENT_PREFIX_REGEX, "")
+
         const isFocusEvent = evtName === "focus" || evtName === "blur"
         if (key in prevProps) {
           dom.removeEventListener(

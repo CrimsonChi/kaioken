@@ -9,6 +9,7 @@ export {
   $HYDRATION_BOUNDARY,
   CONSECUTIVE_DIRTY_LIMIT,
   REGEX_UNIT,
+  EVENT_PREFIX_REGEX,
   FLAG_UPDATE,
   FLAG_PLACEMENT,
   FLAG_DELETION,
@@ -49,6 +50,8 @@ const REGEX_UNIT = {
   SLASHN_SLASHR_G: /[\n\r]+/g,
   ALPHA_UPPER_G: /[A-Z]/g,
 } as const
+
+const EVENT_PREFIX_REGEX = /^on:?/
 
 const voidElements = new Set([
   "area",
