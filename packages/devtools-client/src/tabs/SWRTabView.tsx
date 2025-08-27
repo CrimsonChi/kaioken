@@ -41,8 +41,7 @@ export function SWRTabView() {
     return () => kiruGlobal?.off("update", onUpdate)
   }, [])
 
-  const SWR_GLOBAL_CACHE: SWRCache =
-    kiruGlobal?.globalState[Symbol.for("SWR_GLOBAL")] ?? new Map()
+  const SWR_GLOBAL_CACHE: SWRCache = kiruGlobal?.SWRGlobalCache ?? new Map()
 
   if (SWR_GLOBAL_CACHE.size === 0) {
     return (

@@ -1,8 +1,9 @@
-import type { AppContext } from "./appContext"
 import { __DEV__ } from "./env.js"
 import { createHMRContext } from "./hmr.js"
 import { createProfilingContext } from "./profiling.js"
-import { Store } from "./store"
+import type { AppContext } from "./appContext"
+import type { Store } from "./store"
+import type { SWRCache } from "./swr"
 
 export { createKiruGlobalContext, type GlobalKiruEvent, type KiruGlobalContext }
 
@@ -75,7 +76,7 @@ interface KiruGlobalContext {
   stores?: ReactiveMap<Store<any, any>>
   HMRContext?: ReturnType<typeof createHMRContext>
   profilingContext?: ReturnType<typeof createProfilingContext>
-  globalState: Record<symbol, any>
+  SWRGlobalCache?: SWRCache
   emit<T extends Evt>(event: T["name"], ctx: AppContext, data?: T["data"]): void
   on<T extends Evt>(
     event: T["name"],
@@ -93,8 +94,6 @@ function createKiruGlobalContext(): KiruGlobalContext {
     GlobalKiruEvent,
     Set<(ctx: AppContext, data?: Evt["data"]) => void>
   >()
-  const globalState: Record<symbol, any> = {}
-
   let stores: ReactiveMap<Store<any, any>> | undefined
   let HMRContext: ReturnType<typeof createHMRContext> | undefined
   let profilingContext: ReturnType<typeof createProfilingContext> | undefined
@@ -137,7 +136,6 @@ function createKiruGlobalContext(): KiruGlobalContext {
     get profilingContext() {
       return profilingContext
     },
-    globalState,
     emit,
     on,
     off,

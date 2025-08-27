@@ -1,11 +1,12 @@
-import { createKiruGlobalContext } from "./globalContext.js"
 import { __DEV__ } from "./env.js"
+import { createKiruGlobalContext } from "./globalContext.js"
 
 export type * from "./types"
 export * from "./signals/index.js"
 export * from "./appContext.js"
-export * from "./context.js"
 export * from "./cloneVNode.js"
+export * from "./context.js"
+export * from "./customEvents.js"
 export * from "./element.js"
 export * from "./hooks/index.js"
 export * from "./lazy.js"
@@ -16,6 +17,8 @@ export { nextIdle, flushSync, requestUpdate } from "./scheduler.js"
 export * from "./store.js"
 export * from "./transition.js"
 
-if ("window" in globalThis) {
-  globalThis.window.__kiru ??= createKiruGlobalContext()
+if (__DEV__) {
+  if ("window" in globalThis) {
+    globalThis.window.__kiru ??= createKiruGlobalContext()
+  }
 }

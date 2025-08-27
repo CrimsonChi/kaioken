@@ -103,19 +103,24 @@ export type SWRKey =
   | undefined
   | false
 
-let SWR_GLOBAL_CACHE: SWRCache
-let IS_ONLINE = false
+const SWRGlobalState = {
+  cache: null as any as SWRCache,
+  online: false,
+}
 
 if ("window" in globalThis) {
-  SWR_GLOBAL_CACHE = window.__kiru!.globalState[Symbol.for("SWR_GLOBAL")] ??=
-    new Map()
+  if (__DEV__) {
+    SWRGlobalState.cache = window.__kiru!.SWRGlobalCache ??= new Map()
+  } else {
+    SWRGlobalState.cache = new Map()
+  }
 
-  IS_ONLINE = navigator.onLine
+  SWRGlobalState.online = navigator.onLine
   window.addEventListener("online", () => {
-    IS_ONLINE = true
+    SWRGlobalState.online = true
   })
   window.addEventListener("offline", () => {
-    IS_ONLINE = false
+    SWRGlobalState.online = false
   })
 
   let blurStart: number | null = null
@@ -127,11 +132,12 @@ if ("window" in globalThis) {
     blurStart = null
     if (blurDuration < 3_000) return // only trigger revalidation after 3 seconds
 
-    SWR_GLOBAL_CACHE.forEach((entry) => {
+    SWRGlobalState.cache.forEach((entry) => {
       if (
         entry.subscribers.size === 0 ||
         entry.options.revalidateOnFocus === false ||
-        (entry.options.refetchWhenOffline === false && IS_ONLINE === false)
+        (entry.options.refetchWhenOffline === false &&
+          SWRGlobalState.online === false)
       ) {
         return
       }
@@ -171,16 +177,16 @@ export function preloadSWR<T>(
   if (!("window" in globalThis)) return
 
   const strKey = safeStringify(key, { functions: false })
-  if (!SWR_GLOBAL_CACHE.has(strKey)) {
+  if (!SWRGlobalState.cache.has(strKey)) {
     const entry = createSWRCacheEntry(key, fetcher)
-    SWR_GLOBAL_CACHE.set(strKey, entry)
+    SWRGlobalState.cache.set(strKey, entry)
     performFetch(entry)
   }
 }
 
 export function getSWRState<T>(key: SWRKey): SWRCacheEntry<T> | null {
   const strKey = safeStringify(key, { functions: false })
-  return SWR_GLOBAL_CACHE.get(strKey) ?? null
+  return SWRGlobalState.cache.get(strKey) ?? null
 }
 
 export function useSWR<T, K extends SWRKey>(
@@ -201,14 +207,14 @@ export function useSWR<T, K extends SWRKey>(
             devtools: {
               get: () => ({
                 key: hook.strKey,
-                value: SWR_GLOBAL_CACHE.get(strKey)!,
+                value: SWRGlobalState.cache.get(strKey)!,
               }),
             },
             initialArgs: [key, options],
           }
         }
         if (isHMR) {
-          const entry = SWR_GLOBAL_CACHE.get(hook.strKey)
+          const entry = SWRGlobalState.cache.get(hook.strKey)
           const [k, o] = hook.dev!.initialArgs
           hook.dev!.initialArgs = [key, options]
 
@@ -239,10 +245,10 @@ export function useSWR<T, K extends SWRKey>(
         hook.update = update
 
         let isNewEntry = false
-        if (!SWR_GLOBAL_CACHE.has(strKey)) {
+        if (!SWRGlobalState.cache.has(strKey)) {
           isNewEntry = true
           entry = createSWRCacheEntry(key, fetcher)
-          SWR_GLOBAL_CACHE.set(strKey, entry)
+          SWRGlobalState.cache.set(strKey, entry)
 
           entry.resource.subscribe(() => {
             entry.subscribers.forEach((sub) => sub.update())
@@ -251,7 +257,7 @@ export function useSWR<T, K extends SWRKey>(
           performFetch(entry)
         }
 
-        entry ??= SWR_GLOBAL_CACHE.get(strKey)!
+        entry ??= SWRGlobalState.cache.get(strKey)!
         const subs = entry.subscribers
         if (subs.size === 0) {
           if (!isNewEntry) {
@@ -279,7 +285,7 @@ export function useSWR<T, K extends SWRKey>(
         }
       }
 
-      entry ??= SWR_GLOBAL_CACHE.get(strKey)!
+      entry ??= SWRGlobalState.cache.get(strKey)!
       const { resource, isMutating, isValidating } = entry
       const { data, loading, error } = resource.peek()
 
