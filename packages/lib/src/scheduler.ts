@@ -11,7 +11,14 @@ import {
   FLAG_MEMO,
   FLAG_NOOP,
 } from "./constants.js"
-import { commitDeletion, commitWork, createDom, hydrateDom } from "./dom.js"
+import {
+  commitDeletion,
+  commitWork,
+  createDom,
+  hydrateDom,
+  onAfterFlushDomChanges,
+  onBeforeFlushDomChanges,
+} from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KiruError } from "./error.js"
 import { hookIndex, node, renderMode } from "./globals.js"
@@ -75,11 +82,8 @@ export function renderRootSync(rootNode: VNode) {
  * Queues a node for an update. Has no effect if the node is already deleted or marked for deletion.
  */
 export function requestUpdate(vNode: VNode): void {
-  if (vNode.flags & FLAG_DELETION) return
   if (renderMode.current === "hydrate") {
-    return nextIdle(() => {
-      vNode.flags & FLAG_DELETION || queueUpdate(vNode)
-    })
+    return nextIdle(() => queueUpdate(vNode))
   }
   queueUpdate(vNode)
 }
@@ -145,6 +149,7 @@ function doWork(): void {
 
   let len = 1
 
+  onBeforeFlushDomChanges()
   while (treesInProgress.length) {
     if (treesInProgress.length > len) {
       treesInProgress.sort(depthSort)
@@ -162,11 +167,12 @@ function doWork(): void {
       while (deletions.length) {
         commitDeletion(deletions.pop()!)
       }
-      commitWork(currentWorkRoot)
 
+      commitWork(currentWorkRoot)
       currentWorkRoot.flags &= ~FLAG_DIRTY
     }
   }
+  onAfterFlushDomChanges()
 
   isImmediateEffectsMode = true
   flushEffects(preEffects)
@@ -212,7 +218,6 @@ function performUnitOfWork(vNode: VNode): VNode | void {
         }
       }
       vNode.child = reconcileChildren(vNode, props.children)
-      queueNodeChildDeletions(vNode)
     } else {
       renderChild = updateFunctionComponent(vNode as FunctionVNode)
     }
@@ -240,6 +245,11 @@ function performUnitOfWork(vNode: VNode): VNode | void {
     setTimeout(() => {
       throw error
     })
+  }
+
+  if (vNode.deletions !== null) {
+    vNode.deletions.forEach(queueDelete)
+    vNode.deletions = null
   }
 
   if (renderChild && vNode.child) {
@@ -323,7 +333,6 @@ function updateFunctionComponent(vNode: FunctionVNode) {
       newChild = type(props)
     } while (isRenderDirtied)
     vNode.child = reconcileChildren(vNode, newChild)
-    queueNodeChildDeletions(vNode)
     return true
   } finally {
     node.current = null
@@ -350,17 +359,9 @@ function updateHostComponent(vNode: DomVNode) {
   // text should _never_ have children
   if (type !== "#text") {
     vNode.child = reconcileChildren(vNode, props.children)
-    queueNodeChildDeletions(vNode)
     if (vNode.child && renderMode.current === "hydrate") {
       hydrationStack.push(vNode.dom!)
     }
-  }
-}
-
-function queueNodeChildDeletions(vNode: VNode) {
-  if (vNode.deletions) {
-    vNode.deletions.forEach(queueDelete)
-    vNode.deletions = null
   }
 }
 

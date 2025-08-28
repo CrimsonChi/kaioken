@@ -30,17 +30,47 @@ import type {
 } from "./types.utils"
 import type { AppContext } from "./appContext.js"
 
-export { commitWork, commitDeletion, createDom, hydrateDom }
+export {
+  commitWork,
+  onBeforeFlushDomChanges,
+  onAfterFlushDomChanges,
+  commitDeletion,
+  createDom,
+  hydrateDom,
+}
 
 type VNode = Kiru.VNode
 type HostNode = {
   node: ElementVNode
   lastChild?: SomeDom
 }
-type PlacementScope = {
-  parent: VNode
-  active: boolean
-  child?: VNode
+
+let persistingFocus = false
+let didBlurActiveElement = false
+const placementBlurHandler = (event: Event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  didBlurActiveElement = true
+}
+
+let currentActiveElement: Element | null = null
+function onBeforeFlushDomChanges() {
+  persistingFocus = true
+  currentActiveElement = document.activeElement
+  if (currentActiveElement && currentActiveElement !== document.body) {
+    currentActiveElement.addEventListener("blur", placementBlurHandler)
+  }
+}
+
+function onAfterFlushDomChanges() {
+  if (didBlurActiveElement) {
+    currentActiveElement!.removeEventListener("blur", placementBlurHandler)
+    if (currentActiveElement!.isConnected) {
+      ;(currentActiveElement as any).focus()
+    }
+    didBlurActiveElement = false
+  }
+  persistingFocus = false
 }
 
 function setDomRef(ref: Kiru.Ref<SomeDom | null>, value: SomeDom | null) {
@@ -80,42 +110,6 @@ function createTextNode(vNode: VNode): Text {
 
   const textNode = document.createTextNode(nodeValue)
   return textNode
-}
-
-/**
- * toggled when we fire a focus event on an element
- * persist focus when the currently focused element is moved.
- */
-let persistingFocus = false
-
-// gets set prior to dom commits
-let currentActiveElement: Element | null = null
-
-let didBlurActiveElement = false
-const placementBlurHandler = (event: Event) => {
-  event.preventDefault()
-  event.stopPropagation()
-  didBlurActiveElement = true
-}
-
-function handlePrePlacementFocusPersistence() {
-  persistingFocus = true
-  currentActiveElement = document.activeElement
-  if (currentActiveElement && currentActiveElement !== document.body) {
-    currentActiveElement.addEventListener("blur", placementBlurHandler)
-  }
-}
-
-function handlePostPlacementFocusPersistence() {
-  if (!didBlurActiveElement) {
-    persistingFocus = false
-    return
-  }
-  currentActiveElement?.removeEventListener("blur", placementBlurHandler)
-  if (currentActiveElement?.isConnected) {
-    if ("focus" in currentActiveElement) (currentActiveElement as any).focus()
-  }
-  persistingFocus = false
 }
 
 function wrapFocusEventHandler(
@@ -606,128 +600,49 @@ function commitWork(vNode: VNode) {
   if (renderMode.current === "hydrate") {
     return traverseApply(vNode, commitSnapshot)
   }
-  handlePrePlacementFocusPersistence()
 
-  const hostNodes: HostNode[] = []
-  let currentHostNode: HostNode | undefined
-  const placementScopes: PlacementScope[] = []
-  let currentPlacementScope: PlacementScope | undefined
-
-  const root = vNode
-  const rootChild = root.child
-
-  const onAscent = (node: VNode) => {
-    let inheritsPlacement = false
-    if (currentPlacementScope?.child === node) {
-      currentPlacementScope.active = true
-      inheritsPlacement = true
-    }
-    if (node.dom) {
-      if (!currentHostNode) {
-        currentHostNode = { node: getDomParent(node) }
-        hostNodes.push(currentHostNode)
-      }
-      if (!(node.flags & FLAG_STATIC_DOM)) {
-        commitDom(node as DomVNode, currentHostNode, inheritsPlacement)
-      }
-    }
-    commitSnapshot(node)
+  const host: HostNode = {
+    node: vNode.dom ? (vNode as ElementVNode) : getDomParent(vNode),
   }
-
-  if (!rootChild) {
-    onAscent(root)
-    return
+  commitWork_impl(vNode, host, (vNode.flags & FLAG_PLACEMENT) > 0)
+  if (vNode.dom && !(vNode.flags & FLAG_STATIC_DOM)) {
+    commitDom(vNode as DomVNode, host, false)
   }
+  commitSnapshot(vNode)
+}
 
-  const onDescent = (node: VNode) => {
-    if (node.dom) {
-      // collect host nodes as we go
-      currentHostNode = { node: node as ElementVNode }
-      hostNodes.push(currentHostNode)
-
-      if (node.prev && "innerHTML" in node.prev.props) {
-        /**
-         * We need to update innerHTML during descent in cases
-         * where we previously set innerHTML on this element but
-         * now we provide children. Setting innerHTML _after_
-         * appending children will yeet em into the abyss.
-         */
-        delete node.props.innerHTML
-        setInnerHTML(node.dom as SomeElement, "")
-        // remove innerHTML from prev to prevent our ascension pass from doing this again
-        delete node.prev.props.innerHTML
+function commitWork_impl(
+  vNode: VNode,
+  currentHostNode: HostNode,
+  inheritsPlacement: boolean
+) {
+  let child: VNode | null = vNode.child
+  while (child) {
+    if (child.flags & FLAG_NOOP) {
+      if (child.flags & FLAG_PLACEMENT) {
+        placeAndCommitNoopChildren(child, currentHostNode)
       }
-
-      if (currentPlacementScope?.active) {
-        currentPlacementScope.child = node
-        // prevent scope applying to descendants of this element node
-        currentPlacementScope.active = false
-      }
-    } else if (node.flags & FLAG_PLACEMENT) {
-      currentPlacementScope = { parent: node, active: true }
-      placementScopes.push(currentPlacementScope)
-    }
-  }
-
-  onDescent(root)
-  let branch = rootChild
-  while (branch) {
-    let c = branch
-    while (c) {
-      if (!c.child) break
-      if (c.flags & FLAG_NOOP) {
-        if (c.flags & FLAG_PLACEMENT) {
-          const directDomChildren = findDirectDomChildren(c)
-          if (directDomChildren.length === 0) {
-            break
-          }
-          if (!currentHostNode) {
-            currentHostNode = { node: getDomParent(c) }
-            hostNodes.push(currentHostNode)
-          }
-          const { node, lastChild } = currentHostNode
-          if (lastChild) {
-            lastChild.after(...directDomChildren)
-          } else {
-            const nextSiblingDom = getNextSiblingDom(c, node)
-            const parentDom = node.dom
-            if (nextSiblingDom) {
-              const [first, ...rest] = directDomChildren
-              parentDom.insertBefore(first, nextSiblingDom)
-              first.after(...rest)
-            } else {
-              parentDom.append(...directDomChildren)
-            }
-          }
-          currentHostNode.lastChild =
-            directDomChildren[directDomChildren.length - 1]
-        }
-        break
-      }
-      onDescent(c)
-      c = c.child
+      commitSnapshot(child)
+      child = child.sibling
+      continue
     }
 
-    while (c && c !== root) {
-      onAscent(c)
-      if (c.sibling) {
-        branch = c.sibling
-        break
+    if (child.dom) {
+      commitWork_impl(child, { node: child as ElementVNode }, false)
+      if (!(child.flags & FLAG_STATIC_DOM)) {
+        commitDom(child as DomVNode, currentHostNode, inheritsPlacement)
       }
-      if (currentPlacementScope?.parent === c) {
-        placementScopes.pop()
-        currentPlacementScope = placementScopes[placementScopes.length - 1]
-      }
-      if (currentHostNode?.node === c.parent) {
-        hostNodes.pop()
-        currentHostNode = hostNodes[hostNodes.length - 1]
-      }
-      c = c.parent!
+    } else {
+      commitWork_impl(
+        child,
+        currentHostNode,
+        (child.flags & FLAG_PLACEMENT) > 0 || inheritsPlacement
+      )
     }
-    if (c === root) break
+
+    commitSnapshot(child)
+    child = child.sibling
   }
-  onAscent(root)
-  handlePostPlacementFocusPersistence()
 }
 
 function commitDom(
@@ -764,12 +679,16 @@ function commitDeletion(vNode: VNode) {
       dom,
       props: { ref },
     } = node
+
     subs?.forEach((unsub) => unsub())
     if (cleanups) Object.values(cleanups).forEach((c) => c())
     while (hooks?.length) hooks.pop()!.cleanup?.()
 
     if (__DEV__) {
       window.__kiru?.profilingContext?.emit("removeNode", ctx)
+      if (dom instanceof Element) {
+        delete dom.__kiruNode
+      }
     }
 
     if (dom) {
@@ -784,24 +703,41 @@ function commitDeletion(vNode: VNode) {
   vNode.parent = null
 }
 
-function findDirectDomChildren(vNode: VNode): SomeDom[] {
-  const domChildren: SomeDom[] = []
+function placeAndCommitNoopChildren(
+  parent: VNode,
+  currentHostNode: HostNode
+): void {
+  if (!parent.child) return
 
-  function collectDomNodes(node: VNode | null): void {
-    while (node) {
-      if (node.dom) {
-        // Found a DOM node, add it to the collection
-        domChildren.push(node.dom)
-      } else if (node.child) {
-        // This is a component or fragment, traverse its children
-        collectDomNodes(node.child)
-      }
-      node = node.sibling
+  const domChildren: SomeDom[] = []
+  collectDomNodes(parent.child, domChildren)
+  if (domChildren.length === 0) return
+
+  const { node, lastChild } = currentHostNode
+  if (lastChild) {
+    lastChild.after(...domChildren)
+  } else {
+    const nextSiblingDom = getNextSiblingDom(parent, node)
+    const parentDom = node.dom
+    if (nextSiblingDom) {
+      const [first, ...rest] = domChildren
+      parentDom.insertBefore(first, nextSiblingDom)
+      first.after(...rest)
+    } else {
+      parentDom.append(...domChildren)
     }
   }
+  currentHostNode.lastChild = domChildren[domChildren.length - 1]
+}
 
-  // Start collecting from the memo's children
-  collectDomNodes(vNode.child)
-
-  return domChildren
+function collectDomNodes(firstChild: VNode, children: SomeDom[]): void {
+  let child: VNode | null = firstChild
+  while (child) {
+    if (child.dom) {
+      children.push(child.dom)
+    } else if (child.child) {
+      collectDomNodes(child.child, children)
+    }
+    child = child.sibling
+  }
 }

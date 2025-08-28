@@ -155,15 +155,15 @@ function vNodeContains(haystack: VNode, needle: VNode): boolean {
 }
 
 function traverseApply(vNode: VNode, func: (node: VNode) => void): void {
-  let applyToSiblings = false
-  const nodes: VNode[] = [vNode]
-  const apply = (node: VNode) => {
-    func(node)
-    node.child && nodes.push(node.child)
-    applyToSiblings && node.sibling && nodes.push(node.sibling)
-    applyToSiblings = true
+  func(vNode)
+  let child = vNode.child
+  while (child) {
+    func(child)
+    if (child.child) {
+      traverseApply(child, func)
+    }
+    child = child.sibling
   }
-  while (nodes.length) apply(nodes.shift()!)
 }
 
 function findParent(vNode: Kiru.VNode, predicate: (n: Kiru.VNode) => boolean) {
