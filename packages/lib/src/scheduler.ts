@@ -62,6 +62,15 @@ export function flushSync() {
   doWork()
 }
 
+export function renderRootSync(rootNode: VNode) {
+  rootNode.flags |= FLAG_DIRTY
+  treesInProgress.push(rootNode)
+  if (!isRunningOrQueued) {
+    isRunningOrQueued = true
+    doWork()
+  }
+}
+
 /**
  * Queues a node for an update. Has no effect if the node is already deleted or marked for deletion.
  */

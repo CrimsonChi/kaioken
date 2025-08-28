@@ -1,7 +1,7 @@
 import { FLAG_STATIC_DOM } from "./constants.js"
 import { createElement } from "./element.js"
 import { __DEV__ } from "./env.js"
-import { requestUpdate, flushSync } from "./scheduler.js"
+import { renderRootSync } from "./scheduler.js"
 
 type VNode = Kiru.VNode
 
@@ -53,14 +53,12 @@ export function mount(
 
   function render(children: JSX.Element) {
     rootNode.props.children = children
-    requestUpdate(rootNode)
-    flushSync()
+    renderRootSync(rootNode)
   }
 
   function unmount() {
     rootNode.props.children = null
-    requestUpdate(rootNode)
-    flushSync()
+    renderRootSync(rootNode)
     if (__DEV__) {
       delete container.__kiruNode
       delete rootNode.app
