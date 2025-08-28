@@ -5,7 +5,7 @@ import { useRef } from "./hooks/useRef.js"
 import { useState } from "./hooks/useState.js"
 
 export type TransitionState = "entering" | "entered" | "exiting" | "exited"
-type TransitionProps = {
+interface TransitionProps {
   in: boolean
   /**
    * Initial state of the transition

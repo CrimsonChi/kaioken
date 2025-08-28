@@ -14,13 +14,17 @@ import {
 import type { SomeDom } from "./types.utils"
 import { noop } from "./utils.js"
 
-type FCModule = { default: Kiru.FC<any> }
+interface FCModule {
+  default: Kiru.FC<any>
+}
+
 type LazyImportValue = Kiru.FC<any> | FCModule
+
 type InferLazyImportProps<T extends LazyImportValue> = T extends FCModule
   ? Kiru.InferProps<T["default"]>
   : Kiru.InferProps<T>
 
-type LazyState = {
+interface LazyState {
   fn: string
   promise: Promise<LazyImportValue>
   result: Kiru.FC | null

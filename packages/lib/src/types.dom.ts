@@ -164,7 +164,7 @@ type ListOfUrlsOrPaths = string
 type FileName = string
 
 type MediaPreload = "none" | "metadata" | "auto" | ""
-type HTMLMediaElementAttrs = {
+interface HTMLMediaElementAttrs {
   autoplay?: boolean
   controls?: boolean
   crossOrigin?: string
@@ -298,7 +298,7 @@ type FormMethod = "get" | "post" | "dialog"
 
 type Direction = "ltr" | "rtl" | "auto"
 
-type GlobalAttributes = {
+interface GlobalAttributes {
   accessKey?: string
   autocapitalize?: "on" | "off" | "none" | "sentences" | "words" | "characters"
   className?: string
@@ -364,39 +364,94 @@ declare global {
       bivarianceHack(event: E): void
     }["bivarianceHack"]
 
-    type BaseEventHandler<T = Element> = EventHandler<DOMEvent<Event, T>>
-    type AnimationEvent<T = Element> = DOMEvent<NativeAnimationEvent, T>
-    type ClipboardEvent<T = Element> = DOMEvent<NativeClipboardEvent, T>
-    type CompositionEvent<T = Element> = DOMEvent<NativeCompositionEvent, T>
-    type DragEvent<T = Element> = DOMEvent<NativeDragEvent, T>
-    type FocusEvent<T = Element> = DOMEvent<NativeFocusEvent, T>
-    type FormEvent<T = Element> = DOMEvent<Event, T>
-    type KeyboardEvent<T = Element> = DOMEvent<NativeKeyboardEvent, T>
-    type MouseEvent<T = Element> = DOMEvent<NativeMouseEvent, T>
-    type PointerEvent<T = Element> = DOMEvent<NativePointerEvent, T>
-    type SubmitEvent<T = Element> = DOMEvent<NativeSubmitEvent, T>
-    type TouchEvent<T = Element> = DOMEvent<NativeTouchEvent, T>
-    type ToggleEvent<T = Element> = DOMEvent<NativeToggleEvent, T>
-    type TransitionEvent<T = Element> = DOMEvent<NativeTransitionEvent, T>
-    type UIEvent<T = Element> = DOMEvent<NativeUIEvent, T>
-    type WheelEvent<T = Element> = DOMEvent<NativeWheelEvent, T>
+    interface BaseEventHandler<T extends Element = Element>
+      extends DOMEvent<Event, T> {}
 
-    type ClipboardEventHandler<T = Element> = EventHandler<ClipboardEvent<T>>
-    type CompositionEventHandler<T = Element> = EventHandler<
+    interface AnimationEvent<T extends Element = Element>
+      extends DOMEvent<NativeAnimationEvent, T> {}
+
+    interface ClipboardEvent<T extends Element = Element>
+      extends DOMEvent<NativeClipboardEvent, T> {}
+
+    interface CompositionEvent<T extends Element = Element>
+      extends DOMEvent<NativeCompositionEvent, T> {}
+
+    interface DragEvent<T extends Element = Element>
+      extends DOMEvent<NativeDragEvent, T> {}
+
+    interface FocusEvent<T extends Element = Element>
+      extends DOMEvent<NativeFocusEvent, T> {}
+
+    interface FormEvent<T extends Element = Element>
+      extends DOMEvent<Event, T> {}
+
+    interface KeyboardEvent<T extends Element = Element>
+      extends DOMEvent<NativeKeyboardEvent, T> {}
+
+    interface MouseEvent<T extends Element = Element>
+      extends DOMEvent<NativeMouseEvent, T> {}
+
+    interface PointerEvent<T extends Element = Element>
+      extends DOMEvent<NativePointerEvent, T> {}
+
+    interface SubmitEvent<T extends Element = Element>
+      extends DOMEvent<NativeSubmitEvent, T> {}
+
+    interface TouchEvent<T extends Element = Element>
+      extends DOMEvent<NativeTouchEvent, T> {}
+
+    interface ToggleEvent<T extends Element = Element>
+      extends DOMEvent<NativeToggleEvent, T> {}
+
+    interface TransitionEvent<T extends Element = Element>
+      extends DOMEvent<NativeTransitionEvent, T> {}
+
+    interface UIEvent<T extends Element = Element>
+      extends DOMEvent<NativeUIEvent, T> {}
+
+    interface WheelEvent<T extends Element = Element>
+      extends DOMEvent<NativeWheelEvent, T> {}
+
+    type ClipboardEventHandler<T extends Element = Element> = EventHandler<
+      ClipboardEvent<T>
+    >
+    type CompositionEventHandler<T extends Element = Element> = EventHandler<
       CompositionEvent<T>
     >
-    type DragEventHandler<T = Element> = EventHandler<DragEvent<T>>
-    type FocusEventHandler<T = Element> = EventHandler<FocusEvent<T>>
-    type FormEventHandler<T = Element> = EventHandler<FormEvent<T>>
-    type KeyboardEventHandler<T = Element> = EventHandler<KeyboardEvent<T>>
-    type MouseEventHandler<T = Element> = EventHandler<MouseEvent<T>>
-    type TouchEventHandler<T = Element> = EventHandler<TouchEvent<T>>
-    type PointerEventHandler<T = Element> = EventHandler<PointerEvent<T>>
-    type UIEventHandler<T = Element> = EventHandler<UIEvent<T>>
-    type WheelEventHandler<T = Element> = EventHandler<WheelEvent<T>>
-    type AnimationEventHandler<T = Element> = EventHandler<AnimationEvent<T>>
-    type ToggleEventHandler<T = Element> = EventHandler<ToggleEvent<T>>
-    type TransitionEventHandler<T = Element> = EventHandler<TransitionEvent<T>>
+    type DragEventHandler<T extends Element = Element> = EventHandler<
+      DragEvent<T>
+    >
+    type FocusEventHandler<T extends Element = Element> = EventHandler<
+      FocusEvent<T>
+    >
+    type FormEventHandler<T extends Element = Element> = EventHandler<
+      FormEvent<T>
+    >
+    type KeyboardEventHandler<T extends Element = Element> = EventHandler<
+      KeyboardEvent<T>
+    >
+    type MouseEventHandler<T extends Element = Element> = EventHandler<
+      MouseEvent<T>
+    >
+    type TouchEventHandler<T extends Element = Element> = EventHandler<
+      TouchEvent<T>
+    >
+    type PointerEventHandler<T extends Element = Element> = EventHandler<
+      PointerEvent<T>
+    >
+    type UIEventHandler<T extends Element = Element> = EventHandler<UIEvent<T>>
+    type WheelEventHandler<T extends Element = Element> = EventHandler<
+      WheelEvent<T>
+    >
+    type AnimationEventHandler<T extends Element = Element> = EventHandler<
+      AnimationEvent<T>
+    >
+    type ToggleEventHandler<T extends Element = Element> = EventHandler<
+      ToggleEvent<T>
+    >
+    type TransitionEventHandler<T extends Element = Element> = EventHandler<
+      TransitionEvent<T>
+    >
 
     type CustomEventAttributes = {
       [Key in keyof Kiru.CustomEvents as `on:${Key}`]?: (
@@ -404,7 +459,8 @@ declare global {
       ) => void
     }
 
-    type EventAttributes<T = Element> = CustomEventAttributes & {
+    interface EventAttributes<T extends Element = Element>
+      extends CustomEventAttributes {
       // Clipboard Events
       oncopy?: ClipboardEventHandler<T> | undefined
       oncut?: ClipboardEventHandler<T> | undefined
@@ -530,7 +586,7 @@ declare global {
 
 type ElementReference<T extends HTMLElement> = T | null | string
 
-type PopoverControlAttributes = {
+interface PopoverControlAttributes {
   popoverTarget?: string
   popoverTargetAction?: "show" | "hide" | "toggle"
 }

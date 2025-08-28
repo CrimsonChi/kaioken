@@ -1,35 +1,47 @@
-import type { $CONTEXT_PROVIDER, $HYDRATION_BOUNDARY } from "./constants"
+import type {
+  $CONTEXT_PROVIDER,
+  $FRAGMENT,
+  $HYDRATION_BOUNDARY,
+} from "./constants"
 import type { HydrationBoundaryMode } from "./ssr/hydrationBoundary"
 import type { Signal } from "./signals"
 
 export type SomeElement = HTMLElement | SVGElement
 export type SomeDom = HTMLElement | SVGElement | Text
+export type MaybeElement = SomeElement | undefined
 export type MaybeDom = SomeDom | undefined
 
-type VNode = Kiru.VNode
+export interface FunctionVNode extends Kiru.VNode {
+  type: (...args: any) => JSX.Element
+}
 
-export type FunctionVNode = Omit<VNode, "type"> & {
-  type: (...args: any) => any
-}
-export type ExoticVNode = Omit<VNode, "type"> & {
-  type: Kiru.ExoticSymbol
-}
-export type ElementVNode = Omit<VNode, "dom" | "type"> & {
+export interface ElementVNode extends Kiru.VNode {
   dom: SomeElement
   type: string
 }
-export type DomVNode = Omit<VNode, "dom" | "type"> & {
+export interface DomVNode extends Kiru.VNode {
   dom: SomeDom
   type: "#text" | (string & {})
 }
 
-export type ContextProviderNode<T> = Kiru.VNode & {
+export interface ContextProviderNode<T> extends Kiru.VNode {
   type: typeof $CONTEXT_PROVIDER
-  props: { value: T; ctx: Kiru.Context<T>; dependents: Set<Kiru.VNode> }
+  props: Kiru.VNode["props"] & {
+    value: T
+    ctx: Kiru.Context<T>
+    dependents: Set<Kiru.VNode>
+  }
 }
-export type HydrationBoundaryNode = Kiru.VNode & {
+
+export interface HydrationBoundaryNode extends Kiru.VNode {
   type: typeof $HYDRATION_BOUNDARY
-  props: { mode: HydrationBoundaryMode }
+  props: Kiru.VNode["props"] & {
+    mode: HydrationBoundaryMode
+  }
+}
+
+export interface FragmentNode extends Kiru.VNode {
+  type: typeof $FRAGMENT
 }
 
 export type Prettify<T> = {
@@ -37,3 +49,20 @@ export type Prettify<T> = {
 } & {}
 
 export type Signalable<T> = T | Signal<T>
+
+export type AsyncTaskState<T, E extends Error = Error> =
+  | {
+      data: null
+      error: null
+      loading: true
+    }
+  | {
+      data: T
+      error: null
+      loading: false
+    }
+  | {
+      data: null
+      error: E
+      loading: false
+    }

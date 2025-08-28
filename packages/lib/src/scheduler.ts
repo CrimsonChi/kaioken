@@ -193,11 +193,10 @@ function performUnitOfWork(vNode: VNode): VNode | void {
       updateHostComponent(vNode as DomVNode)
     } else if (isExoticType(vNode.type)) {
       if (vNode?.type === $CONTEXT_PROVIDER) {
-        const asProvider = vNode as ContextProviderNode<any>
         const {
           props: { dependents, value },
           prev,
-        } = asProvider
+        } = vNode as ContextProviderNode<unknown>
 
         if (dependents.size && prev && prev.props.value !== value) {
           dependents.forEach(queueUpdate)

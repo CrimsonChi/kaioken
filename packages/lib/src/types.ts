@@ -16,10 +16,10 @@ import type {
   HTMLTagToElement,
   SVGTagToElement,
 } from "./types.dom"
-import { Signalable, SomeDom } from "./types.utils"
+import { AsyncTaskState, Prettify, Signalable, SomeDom } from "./types.utils"
 import type { AppContext } from "./appContext"
 
-export type { ElementProps, StyleObject }
+export type { AsyncTaskState, ElementProps, Prettify, Signalable, StyleObject }
 
 type ElementProps<T extends keyof JSX.IntrinsicElements> =
   JSX.IntrinsicElements[T]
@@ -102,7 +102,7 @@ declare global {
       | PrimitiveChild
       | Kiru.Signal<PrimitiveChild>
 
-    type ElementAttributes = {
+    interface ElementAttributes {
       key?: JSX.ElementKey
       children?: JSX.Children
       innerHTML?:
@@ -114,11 +114,11 @@ declare global {
   namespace Kiru {
     interface CustomEvents {}
 
-    type ProviderProps<T> = {
+    interface ProviderProps<T> {
       value: T
       children?: JSX.Children | ((value: T) => JSX.Element)
     }
-    type Context<T> = {
+    interface Context<T> {
       [$CONTEXT]: true
       Provider: (({ value, children }: ProviderProps<T>) => JSX.Element) & {
         displayName?: string
@@ -135,7 +135,7 @@ declare global {
     type FCProps<T = {}> = T & { children?: JSX.Children }
     type InferProps<T> = T extends Kiru.FC<infer P> ? P : never
 
-    type HookDevtoolsProvisions<T extends Record<string, any>> = {
+    interface HookDevtoolsProvisions<T extends Record<string, any>> {
       get: () => T
       set?: (value: T) => void
     }
@@ -148,10 +148,10 @@ declare global {
         devtools?: HookDevtoolsProvisions<any>
       }
     }
-    type RefObject<T> = {
+    interface RefObject<T> {
       readonly current: T | null
     }
-    type MutableRefObject<T> = {
+    interface MutableRefObject<T> {
       current: T
     }
     type RefCallback<T> = {
@@ -171,7 +171,7 @@ declare global {
       | typeof $CONTEXT_PROVIDER
       | typeof $HYDRATION_BOUNDARY
 
-    type VNode = {
+    interface VNode {
       app?: AppContext
       dom?: SomeDom
       lastChildDom?: SomeDom
@@ -205,7 +205,7 @@ declare global {
       hmrUpdated?: boolean
     }
   }
-  type VNodeSnapshot = {
+  interface VNodeSnapshot {
     props: Kiru.VNode["props"]
     memoizedProps: Kiru.VNode["memoizedProps"]
     index: number

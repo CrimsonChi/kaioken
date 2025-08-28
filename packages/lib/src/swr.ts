@@ -1,6 +1,7 @@
 import { __DEV__ } from "./env.js"
 import { useHook } from "./hooks/utils.js"
 import { Signal } from "./signals/base.js"
+import { AsyncTaskState } from "./types.utils.js"
 import {
   noop,
   deepCompare,
@@ -9,23 +10,7 @@ import {
   shallowCompare,
 } from "./utils.js"
 
-export type UseSWRState<T> = (
-  | {
-      data: null
-      error: null
-      loading: true
-    }
-  | {
-      data: T
-      error: null
-      loading: false
-    }
-  | {
-      data: null
-      error: UseSWRError
-      loading: false
-    }
-) & {
+export type UseSWRState<T> = AsyncTaskState<T, UseSWRError> & {
   mutate: (callback: () => Promise<T>) => void
   isMutating: Signal<boolean>
   isValidating: Signal<boolean>
@@ -51,7 +36,7 @@ export type SWRRetryState = {
   delay: number
 } | null
 
-export type SWRCacheEntry<T> = {
+export interface SWRCacheEntry<T> {
   key: any
   resource: Signal<SWRResourceState<T>>
   fetcher: (args: any) => Promise<T>
@@ -65,7 +50,7 @@ export type SWRCacheEntry<T> = {
 
 export type SWRCache = Map<string, SWRCacheEntry<any>>
 
-export type SWROptions = {
+export interface SWROptions {
   /**
    * Specify `false` to disable revalidation on focus
    */

@@ -1,24 +1,9 @@
 import { __DEV__ } from "../env.js"
 import { noop } from "../utils.js"
 import { depsRequireChange, sideEffectsEnabled, useHook } from "./utils.js"
+import type { AsyncTaskState } from "../types.utils.js"
 
-export type UseAsyncState<T> = (
-  | /** loading*/ {
-      data: null
-      loading: true
-      error: null
-    }
-  | /** loaded */ {
-      data: T
-      loading: false
-      error: null
-    }
-  | /** error */ {
-      data: null
-      loading: false
-      error: UseAsyncError
-    }
-) & {
+export type UseAsyncState<T> = AsyncTaskState<T, UseAsyncError> & {
   invalidate: () => void
 }
 
@@ -34,7 +19,7 @@ export class UseAsyncError extends Error {
   }
 }
 
-type AsyncTaskState<T> = {
+type InternalTaskState<T> = {
   data: T | null
   loading: boolean
   error: Error | null
@@ -62,10 +47,8 @@ export function useAsync<T>(
     {
       deps,
       id: 0,
-      task: null as any as AsyncTaskState<T>,
-      load: noop as (
-        func: (ctx: UseAsyncCallbackContext) => Promise<T>
-      ) => void,
+      task: null as any as InternalTaskState<T>,
+      load: noop as (func: (ctx: UseAsyncCallbackContext) => Promise<T>) => void,
     },
     ({ hook, isInit, isHMR, update }) => {
       if (__DEV__) {
@@ -83,7 +66,7 @@ export function useAsync<T>(
             invalidated = true
           })
           const id = ++hook.id
-          const task: AsyncTaskState<T> = (hook.task = {
+          const task: InternalTaskState<T> = (hook.task = {
             abortController,
             data: null,
             loading: true,
@@ -130,7 +113,7 @@ export function useAsync<T>(
   )
 }
 
-function abortTask<T>(task: AsyncTaskState<T> | null): void {
+function abortTask<T>(task: InternalTaskState<T> | null): void {
   if (task === null || task.abortController.signal.aborted) return
   task.abortController.abort()
 }

@@ -14,7 +14,7 @@ const ProfilingEvents = [
 
 export type ProfilingEvent = (typeof ProfilingEvents)[number]
 
-type TickTS = {
+interface TickTS {
   start: number
   end: number
 }
