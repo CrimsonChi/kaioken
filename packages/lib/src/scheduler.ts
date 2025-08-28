@@ -72,10 +72,10 @@ export function flushSync() {
 export function renderRootSync(rootNode: VNode) {
   rootNode.flags |= FLAG_DIRTY
   treesInProgress.push(rootNode)
-  if (!isRunningOrQueued) {
-    isRunningOrQueued = true
-    doWork()
+  if (isRunningOrQueued) {
+    window.cancelAnimationFrame(animationFrameHandle)
   }
+  doWork()
 }
 
 /**
